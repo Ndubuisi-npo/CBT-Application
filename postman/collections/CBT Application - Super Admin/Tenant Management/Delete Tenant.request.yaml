@@ -1,0 +1,7 @@
+$kind: http-request
+name: Delete Tenant
+method: DELETE
+url: '{{baseUrl}}/admin/tenants/{{tenantId}}'
+headers:
+  - key: Authorization
+    value: 'Bearer {{adminToken}}'

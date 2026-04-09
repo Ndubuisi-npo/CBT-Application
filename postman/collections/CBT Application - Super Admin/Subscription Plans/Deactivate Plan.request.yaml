@@ -1,0 +1,7 @@
+$kind: http-request
+name: Deactivate Plan
+method: DELETE
+url: '{{baseUrl}}/admin/plans/{{planId}}'
+headers:
+  - key: Authorization
+    value: 'Bearer {{adminToken}}'

@@ -1,7 +1,7 @@
 <template>
   <div class="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
     <SectionCard title="Terms" subtitle="Configure academic terms and link them to the correct session.">
-      <SkeletonRows v-if="termsStore.loading" :columns="4" />
+      <SkeletonRows v-if="loading" :columns="4" />
       <div v-else class="overflow-hidden rounded-[24px] border border-slate-200">
         <div class="overflow-x-auto">
           <table class="min-w-full divide-y divide-slate-200 bg-white">
@@ -11,9 +11,9 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
-              <tr v-for="term in termsStore.terms" :key="term.id" class="transition hover:bg-slate-50/80">
+              <tr v-for="term in currentTerms" :key="term.id" class="transition hover:bg-slate-50/80">
                 <td class="px-5 py-4 font-semibold text-slate-900">{{ term.name }}</td>
-                <td class="px-5 py-4 text-sm text-slate-600">{{ term.session }}</td>
+                <td class="px-5 py-4 text-sm text-slate-600">{{ currentSessionName }}</td>
                 <td class="px-5 py-4"><StatusBadge :status="term.status" /></td>
                 <td class="px-5 py-4">
                   <button type="button" class="rounded-lg border-2 border-slate-300 px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:ring-offset-2" @click="editTerm(term)">Edit</button>
@@ -30,10 +30,10 @@
         <FormField label="Term name" :error="errors.name">
           <input v-model="form.name" class="sa-input" placeholder="1st Term" />
         </FormField>
-        <FormField label="Linked session" :error="errors.session">
-          <select v-model="form.session" class="sa-input">
+        <FormField label="Linked session" :error="errors.sessionId">
+          <select v-model="form.sessionId" class="sa-input">
             <option value="">Select session</option>
-            <option v-for="session in sessionsStore.sessions" :key="session.id" :value="session.name">{{ session.name }}</option>
+            <option v-for="session in sessionsStore.sessions" :key="session.id" :value="session.id">{{ session.name }}</option>
           </select>
         </FormField>
         <FormField label="Start date" :error="errors.startDate">
@@ -49,43 +49,56 @@
 </template>
 
 <script setup>
-import { onMounted, reactive } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import FormField from '../components/FormField.vue'
 import SectionCard from '../components/SectionCard.vue'
 import SkeletonRows from '../components/SkeletonRows.vue'
 import StatusBadge from '../components/StatusBadge.vue'
 import { useSchoolAdminSessionsStore } from '../stores/sessions'
-import { useSchoolAdminTermsStore } from '../stores/terms'
 import { useSchoolAdminUiStore } from '../stores/ui'
+import { saveTerm, deleteTerm } from '../services/api/sessions'
 
 const headings = ['Term Name', 'Session', 'Status', 'Actions']
-const termsStore = useSchoolAdminTermsStore()
 const sessionsStore = useSchoolAdminSessionsStore()
 const uiStore = useSchoolAdminUiStore()
 
-const form = reactive({ id: null, name: '', session: '', startDate: '', endDate: '', status: 'Inactive' })
-const errors = reactive({ name: '', session: '', startDate: '', endDate: '' })
+const currentTerms = ref([])
+const loading = ref(false)
+const form = reactive({ id: null, name: '', sessionId: '', startDate: '', endDate: '', status: 'Inactive' })
+const errors = reactive({ name: '', sessionId: '', startDate: '', endDate: '' })
 
-onMounted(() => {
-  termsStore.fetchTerms()
-  sessionsStore.fetchSessions()
+const currentSessionName = computed(() => {
+  const session = sessionsStore.sessions.find(s => s.id === form.sessionId)
+  return session?.name || ''
 })
 
-const editTerm = (term) => Object.assign(form, term)
+onMounted(async () => {
+  await sessionsStore.fetchSessions()
+})
+
+const editTerm = (term) => {
+  Object.assign(form, term)
+}
 
 const validate = () => {
   errors.name = form.name ? '' : 'Term name is required.'
-  errors.session = form.session ? '' : 'Session is required.'
+  errors.sessionId = form.sessionId ? '' : 'Session is required.'
   errors.startDate = form.startDate ? '' : 'Start date is required.'
   errors.endDate = form.endDate ? '' : 'End date is required.'
-  return !errors.name && !errors.session && !errors.startDate && !errors.endDate
+  return !errors.name && !errors.sessionId && !errors.startDate && !errors.endDate
 }
 
 const submit = async () => {
   if (!validate()) return
-  form.status = 'Active'
-  await termsStore.saveTerm({ ...form })
-  uiStore.addToast({ title: 'Term saved', message: 'Academic term changes were saved.', variant: 'success' })
-  Object.assign(form, { id: null, name: '', session: '', startDate: '', endDate: '', status: 'Inactive' })
+  loading.value = true
+  try {
+    await saveTerm(form.sessionId, { ...form })
+    uiStore.addToast({ title: 'Term saved', message: 'Academic term changes were saved.', variant: 'success' })
+    Object.assign(form, { id: null, name: '', sessionId: '', startDate: '', endDate: '', status: 'Inactive' })
+  } catch (error) {
+    uiStore.addToast({ title: 'Error', message: error.message, variant: 'error' })
+  } finally {
+    loading.value = false
+  }
 }
 </script>

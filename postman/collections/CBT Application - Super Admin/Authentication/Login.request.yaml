@@ -1,0 +1,26 @@
+$kind: http-request
+name: Login
+method: POST
+url: '{{baseUrl}}/admin/auth/login'
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "email": "admin@cbt.com",
+      "password": "superadmin@123"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      var res = pm.response.json();
+      var token = (res.token) || (res.data && res.data.token) || (res.accessToken) || (res.data && res.data.accessToken);
+      if (token) {
+        pm.environment.set("adminToken", token);
+        console.log("Token saved successfully");
+      } else {
+        console.log("Token not found in response. Check response structure.");
+      }

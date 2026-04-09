@@ -1,4 +1,3 @@
-import axios from 'axios';
-window.axios = axios;
+import { API_BASE_URL } from './lib/api';
 
-window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
+window.API_BASE_URL = API_BASE_URL;

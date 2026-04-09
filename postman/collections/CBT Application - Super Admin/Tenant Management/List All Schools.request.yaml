@@ -1,0 +1,12 @@
+$kind: http-request
+name: List All Schools
+method: GET
+url: '{{baseUrl}}/admin/tenants'
+headers:
+  - key: Authorization
+    value: 'Bearer {{adminToken}}'
+queryParams:
+  - key: page
+    value: '1'
+  - key: limit
+    value: '10'

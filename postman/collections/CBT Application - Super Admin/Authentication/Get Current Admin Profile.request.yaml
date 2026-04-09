@@ -1,0 +1,7 @@
+$kind: http-request
+name: Get Current Admin Profile
+method: GET
+url: '{{baseUrl}}/admin/auth/me'
+headers:
+  - key: Authorization
+    value: 'Bearer {{adminToken}}'

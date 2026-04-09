@@ -1,0 +1,7 @@
+$kind: http-request
+name: Get School Details
+method: GET
+url: '{{baseUrl}}/admin/tenants/{{tenantId}}'
+headers:
+  - key: Authorization
+    value: 'Bearer {{adminToken}}'

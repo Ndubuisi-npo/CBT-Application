@@ -1,15 +1,20 @@
-import { schoolProfile } from './mockData'
-
-const wait = (duration = 350) => new Promise((resolve) => setTimeout(resolve, duration))
-let profile = { ...schoolProfile }
+import { apiFetch, extractErrorMessage } from '../../../../js/lib/api'
 
 export async function getProfile() {
-  await wait()
-  return { ...profile }
+  try {
+    return await apiFetch('/api/school-settings')
+  } catch (error) {
+    throw new Error(extractErrorMessage(error, 'Unable to fetch school profile.'))
+  }
 }
 
 export async function saveProfile(payload) {
-  await wait()
-  profile = { ...profile, ...payload }
-  return { ...profile }
+  try {
+    return await apiFetch('/api/school-settings', {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    })
+  } catch (error) {
+    throw new Error(extractErrorMessage(error, 'Unable to save school profile.'))
+  }
 }

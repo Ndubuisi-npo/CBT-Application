@@ -1,0 +1,7 @@
+$kind: http-request
+name: Get Tenant Stats
+method: GET
+url: '{{baseUrl}}/admin/tenants/{{tenantId}}/stats'
+headers:
+  - key: Authorization
+    value: 'Bearer {{adminToken}}'

@@ -1,21 +1,44 @@
-import { classes } from './mockData'
+import { apiFetch, extractErrorMessage } from '../../../../js/lib/api'
 
-const wait = (duration = 450) => new Promise((resolve) => setTimeout(resolve, duration))
-let records = [...classes]
-
-export async function getClasses() {
-  await wait()
-  return [...records]
+export async function getClassLevels() {
+  try {
+    return await apiFetch('/api/class-levels')
+  } catch (error) {
+    throw new Error(extractErrorMessage(error, 'Unable to fetch class levels.'))
+  }
 }
 
-export async function saveClassArm(payload) {
-  await wait()
-  if (payload.id) {
-    records = records.map((item) => (item.id === payload.id ? payload : item))
-    return payload
+export async function getClassArms(classLevelId) {
+  try {
+    return await apiFetch(`/api/class-levels/${classLevelId}/arms`)
+  } catch (error) {
+    throw new Error(extractErrorMessage(error, 'Unable to fetch class arms.'))
   }
+}
 
-  const record = { ...payload, id: Date.now() }
-  records = [record, ...records]
-  return record
+export async function saveClassArm(classLevelId, payload) {
+  try {
+    if (payload.id) {
+      return await apiFetch(`/api/class-levels/${classLevelId}/arms/${payload.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(payload),
+      })
+    }
+    return await apiFetch(`/api/class-levels/${classLevelId}/arms`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
+  } catch (error) {
+    throw new Error(extractErrorMessage(error, 'Unable to save class arm.'))
+  }
+}
+
+export async function deleteClassArm(classLevelId, armId) {
+  try {
+    return await apiFetch(`/api/class-levels/${classLevelId}/arms/${armId}`, {
+      method: 'DELETE',
+    })
+  } catch (error) {
+    throw new Error(extractErrorMessage(error, 'Unable to delete class arm.'))
+  }
 }

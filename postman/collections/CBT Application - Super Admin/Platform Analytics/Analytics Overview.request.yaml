@@ -1,0 +1,7 @@
+$kind: http-request
+name: Analytics Overview
+method: GET
+url: '{{baseUrl}}/admin/analytics/overview'
+headers:
+  - key: Authorization
+    value: 'Bearer {{adminToken}}'

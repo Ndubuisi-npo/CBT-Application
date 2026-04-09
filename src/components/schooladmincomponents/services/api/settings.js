@@ -1,15 +1,53 @@
-import { settings } from './mockData'
+import { apiFetch, extractErrorMessage } from '../../../../js/lib/api'
 
-const wait = (duration = 350) => new Promise((resolve) => setTimeout(resolve, duration))
-let record = { ...settings }
+export async function getGradingScales() {
+  try {
+    return await apiFetch('/api/grading-scales')
+  } catch (error) {
+    throw new Error(extractErrorMessage(error, 'Unable to fetch grading scales.'))
+  }
+}
+
+export async function saveGradingScale(payload) {
+  try {
+    if (payload.id) {
+      return await apiFetch(`/api/grading-scales/${payload.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(payload),
+      })
+    }
+    return await apiFetch('/api/grading-scales', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
+  } catch (error) {
+    throw new Error(extractErrorMessage(error, 'Unable to save grading scale.'))
+  }
+}
+
+export async function deleteGradingScale(id) {
+  try {
+    return await apiFetch(`/api/grading-scales/${id}`, { method: 'DELETE' })
+  } catch (error) {
+    throw new Error(extractErrorMessage(error, 'Unable to delete grading scale.'))
+  }
+}
 
 export async function getSettings() {
-  await wait()
-  return JSON.parse(JSON.stringify(record))
+  try {
+    return await apiFetch('/api/school-settings')
+  } catch (error) {
+    throw new Error(extractErrorMessage(error, 'Unable to fetch school settings.'))
+  }
 }
 
 export async function saveSettings(payload) {
-  await wait()
-  record = JSON.parse(JSON.stringify(payload))
-  return record
+  try {
+    return await apiFetch('/api/school-settings', {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    })
+  } catch (error) {
+    throw new Error(extractErrorMessage(error, 'Unable to save school settings.'))
+  }
 }

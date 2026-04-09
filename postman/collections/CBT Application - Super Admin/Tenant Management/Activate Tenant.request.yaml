@@ -1,0 +1,7 @@
+$kind: http-request
+name: Activate Tenant
+method: PATCH
+url: '{{baseUrl}}/admin/tenants/{{tenantId}}/activate'
+headers:
+  - key: Authorization
+    value: 'Bearer {{adminToken}}'

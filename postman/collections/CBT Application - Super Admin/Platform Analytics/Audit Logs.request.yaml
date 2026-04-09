@@ -1,0 +1,12 @@
+$kind: http-request
+name: Audit Logs
+method: GET
+url: '{{baseUrl}}/admin/audit-logs'
+headers:
+  - key: Authorization
+    value: 'Bearer {{adminToken}}'
+queryParams:
+  - key: page
+    value: '1'
+  - key: limit
+    value: '10'

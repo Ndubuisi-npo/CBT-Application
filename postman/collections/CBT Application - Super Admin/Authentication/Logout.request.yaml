@@ -1,0 +1,9 @@
+$kind: http-request
+name: Logout
+method: POST
+url: '{{baseUrl}}/admin/auth/logout'
+headers:
+  - key: Authorization
+    value: 'Bearer {{adminToken}}'
+  - key: Content-Type
+    value: application/json

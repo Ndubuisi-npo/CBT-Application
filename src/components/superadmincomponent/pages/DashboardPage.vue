@@ -10,7 +10,7 @@
     <section class="grid gap-6 xl:grid-cols-[1.35fr_0.65fr]">
       <SectionCard title="Recent Tenant Activity" subtitle="Operational visibility across your school portfolio.">
         <div class="space-y-4">
-          <div v-for="tenant in tenantsStore.tenants.slice(0, 4)" :key="tenant.id" class="flex flex-col gap-4 rounded-2xl border border-slate-100 bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div v-for="tenant in tenants.slice(0, 4)" :key="tenant.id" class="flex flex-col gap-4 rounded-2xl border border-slate-100 bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p class="font-semibold text-slate-900">{{ tenant.name }}</p>
               <p class="text-sm text-slate-500">{{ tenant.domain }} • {{ tenant.plan }}</p>
@@ -46,18 +46,18 @@ import { BadgeCheck, Building2, Coins, ShieldAlert } from 'lucide-vue-next'
 import OverviewCard from '../components/OverviewCard.vue'
 import SectionCard from '../components/SectionCard.vue'
 import StatusBadge from '../components/StatusBadge.vue'
-import { useSuperAdminTenantsStore } from '../stores/tenants'
+import { useSuperAdminTenants } from '../composables/useSuperAdminTenants'
 
-const tenantsStore = useSuperAdminTenantsStore()
+const { fetchTenants, tenants } = useSuperAdminTenants()
 
 onMounted(() => {
-  if (!tenantsStore.tenants.length) tenantsStore.fetchTenants()
+  if (!tenants.value.length) fetchTenants()
 })
 
 const metrics = computed(() => ({
-  totalTenants: `${tenantsStore.tenants.length || 128}`,
-  activeSubscriptions: `${tenantsStore.tenants.filter((tenant) => tenant.status === 'Active').length || 114}`,
-  suspendedTenants: `${tenantsStore.tenants.filter((tenant) => tenant.status === 'Suspended').length || 14}`,
+  totalTenants: `${tenants.value.length || 128}`,
+  activeSubscriptions: `${tenants.value.filter((tenant) => tenant.status === 'Active').length || 114}`,
+  suspendedTenants: `${tenants.value.filter((tenant) => tenant.status === 'Suspended').length || 14}`,
   revenue: '$84,200',
 }))
 

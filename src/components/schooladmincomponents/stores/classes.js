@@ -1,24 +1,43 @@
 import { defineStore } from 'pinia'
-import { getClasses, saveClassArm } from '../services/api/classes'
+import { getClassLevels, getClassArms, saveClassArm, deleteClassArm } from '../services/api/classes'
 
 export const useSchoolAdminClassesStore = defineStore('school-admin-classes', {
   state: () => ({
-    classes: [],
+    classLevels: [],
+    classArms: {},
     loading: false,
   }),
   actions: {
-    async fetchClasses() {
+    async fetchClassLevels() {
       this.loading = true
       try {
-        this.classes = await getClasses()
+        this.classLevels = await getClassLevels()
       } finally {
         this.loading = false
       }
     },
-    async saveClass(payload) {
-      const record = await saveClassArm(payload)
-      const exists = this.classes.some((item) => item.id === record.id)
-      this.classes = exists ? this.classes.map((item) => (item.id === record.id ? record : item)) : [record, ...this.classes]
+    async fetchClassArms(classLevelId) {
+      try {
+        this.classArms[classLevelId] = await getClassArms(classLevelId)
+      } catch (error) {
+        console.error('Failed to fetch class arms:', error)
+      }
+    },
+    async saveClassArm(classLevelId, payload) {
+      const record = await saveClassArm(classLevelId, payload)
+      if (!this.classArms[classLevelId]) {
+        this.classArms[classLevelId] = []
+      }
+      const exists = this.classArms[classLevelId].some((item) => item.id === record.id)
+      this.classArms[classLevelId] = exists
+        ? this.classArms[classLevelId].map((item) => (item.id === record.id ? record : item))
+        : [record, ...this.classArms[classLevelId]]
+    },
+    async deleteClassArm(classLevelId, armId) {
+      await deleteClassArm(classLevelId, armId)
+      if (this.classArms[classLevelId]) {
+        this.classArms[classLevelId] = this.classArms[classLevelId].filter((item) => item.id !== armId)
+      }
     },
   },
 })

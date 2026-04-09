@@ -1,16 +1,7 @@
 <template>
   <div class="space-y-6">
     <SectionCard title="Create Tenant" subtitle="Provision a new school workspace with plan assignment and administrator ownership.">
-      <TenantForm :form="form" :plans="plansStore.plans" @submit="handleSubmit" />
-    </SectionCard>
-
-    <SectionCard title="Provisioning Notes" subtitle="Suggested guardrails for production onboarding.">
-      <div class="grid gap-4 md:grid-cols-3">
-        <div v-for="item in notes" :key="item.title" class="rounded-2xl border border-slate-100 bg-slate-50 p-5">
-          <p class="font-semibold text-slate-900">{{ item.title }}</p>
-          <p class="mt-2 text-sm leading-6 text-slate-500">{{ item.description }}</p>
-        </div>
-      </div>
+      <TenantForm :form="form" :plans="plans" :loading="loading" @submit="handleSubmit" />
     </SectionCard>
   </div>
 </template>
@@ -20,28 +11,51 @@ import { onMounted, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import SectionCard from '../components/SectionCard.vue'
 import TenantForm from '../components/TenantForm.vue'
-import { useSuperAdminPlansStore } from '../stores/plans'
-import { useSuperAdminTenantsStore } from '../stores/tenants'
+import { useSuperAdminPlans } from '../composables/useSuperAdminPlans'
+import { useSuperAdminTenants } from '../composables/useSuperAdminTenants'
 import { useSuperAdminUiStore } from '../stores/ui'
+import { useTenantStore } from '../stores/tenant'
 
 const router = useRouter()
-const plansStore = useSuperAdminPlansStore()
-const tenantsStore = useSuperAdminTenantsStore()
+const { fetchPlans, plans, loading } = useSuperAdminPlans()
+const { createTenant } = useSuperAdminTenants()
 const uiStore = useSuperAdminUiStore()
+const tenantStore = useTenantStore()
 
 const form = reactive({
   name: '',
   domain: '',
-  adminEmail: '',
-  plan: '',
+  phone: '',
+  email: '',
+  city: '',
+  state: '',
+  admin_first_name: '',
+  admin_last_name: '',
+  admin_email: '',
+  admin_password: '',
+  admin_password_confirmation: '',
+  plan_id: '',
 })
 
-onMounted(() => {
-  if (!plansStore.plans.length) plansStore.fetchPlans()
+onMounted(async () => {
+  try {
+    await fetchPlans()
+  } catch (error) {
+    console.error('Failed to fetch plans:', error)
+    uiStore.addToast({
+      title: 'Error loading plans',
+      message: 'Unable to load subscription plans. Please refresh the page.',
+      variant: 'error',
+    })
+  }
 })
 
 const handleSubmit = async (payload) => {
-  await tenantsStore.createTenant(payload)
+  const tenant = await createTenant(payload)
+  
+  // Store the tenant slug in the store for X-Tenant header
+  tenantStore.setCurrentTenant(tenant)
+  
   uiStore.addToast({
     title: 'Tenant created',
     message: `${payload.name} was provisioned successfully.`,
@@ -49,10 +63,4 @@ const handleSubmit = async (payload) => {
   })
   router.push('/super-admin/tenants')
 }
-
-const notes = [
-  { title: 'Domain validation', description: 'Check subdomain uniqueness server-side before activating DNS or SSL provisioning.' },
-  { title: 'Admin invite', description: 'Trigger a welcome email and password setup flow after tenant record creation.' },
-  { title: 'Billing sync', description: 'Map the selected plan to your billing provider before enabling premium modules.' },
-]
 </script>

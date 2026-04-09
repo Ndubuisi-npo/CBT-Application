@@ -63,9 +63,9 @@
           {{ errors.general }}
         </p>
 
-        <button type="submit" class="cursor-pointer w-full rounded-lg bg-[#0B1F3A] px-4 py-3 font-medium text-white transition hover:bg-[#0F2940] focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:ring-offset-2" :disabled="authStore.loading">
-          <LoaderCircle v-if="authStore.loading" class="h-5 w-5 animate-spin" />
-          <span>{{ authStore.loading ? 'Signing in...' : 'Login to Dashboard' }}</span>
+        <button type="submit" class="cursor-pointer w-full rounded-lg bg-[#0B1F3A] px-4 py-3 font-medium text-white transition hover:bg-[#0F2940] focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:ring-offset-2" :disabled="authLoading">
+          <LoaderCircle v-if="authLoading" class="h-5 w-5 animate-spin" />
+          <span>{{ authLoading ? 'Signing in...' : 'Login to Dashboard' }}</span>
         </button>
       </form>
 
@@ -83,11 +83,11 @@
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { Eye, EyeOff, LoaderCircle, LockKeyhole, Mail } from 'lucide-vue-next'
-import { useSuperAdminAuthStore } from './stores/auth'
+import { useSuperAdminAuth } from './composables/useSuperAdminAuth'
 import { useSuperAdminUiStore } from './stores/ui'
 
 const router = useRouter()
-const authStore = useSuperAdminAuthStore()
+const { login, loading: authLoading } = useSuperAdminAuth()
 const uiStore = useSuperAdminUiStore()
 
 const form = reactive({
@@ -122,7 +122,7 @@ const submitLogin = async () => {
   if (!validate()) return
 
   try {
-    await authStore.login(form)
+    await login(form)
     uiStore.addToast({
       title: 'Welcome back',
       message: 'Super admin session started successfully.',

@@ -160,6 +160,7 @@ const errors = reactive({
 })
 
 const showPassword = ref(false)
+const tenantSlug = ref('')
 
 const validate = () => {
   errors.email = ''
@@ -175,11 +176,28 @@ const validate = () => {
   return !errors.email && !errors.password
 }
 
+const getTenantSlug = () => {
+  // Extract tenant slug from email domain
+  // Example: john.steve@lekkibritish.com -> lekkibritish
+  if (form.email && form.email.includes('@')) {
+    const emailDomain = form.email.split('@')[1]
+    const slug = emailDomain.split('.')[0]
+    if (slug) return slug
+  }
+  
+  // Fallback to localStorage if available
+  const stored = window.localStorage.getItem('school-tenant-slug')
+  if (stored) return stored
+  
+  return ''
+}
+
 const submitLogin = async () => {
   if (!validate()) return
 
   try {
-    await authStore.login(form)
+    const slug = getTenantSlug()
+    await authStore.login(form, slug)
 
     uiStore.addToast({
       title: 'Welcome back',
