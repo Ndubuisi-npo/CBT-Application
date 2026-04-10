@@ -21,7 +21,7 @@
 
         <div class="max-w-xl">
           <h1 class="mb-6 text-5xl font-semibold leading-[1.05] tracking-tight xl:text-6xl">
-            Empowering education with calm, structured operations.
+            Empowering educati with calm, structured operations.
           </h1>
 
           <p class="max-w-lg text-lg leading-8 text-white/78 xl:text-xl">
