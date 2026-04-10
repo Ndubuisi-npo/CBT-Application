@@ -129,23 +129,22 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import { Eye, EyeOff, Globe, LoaderCircle, LockKeyhole, Mail, School, Shield, Sparkles } from 'lucide-vue-next'
 import { useSchoolAdminAuthStore } from './stores/auth'
-import { useSchoolAdminProfileStore } from './stores/profile'
 import { useSchoolAdminUiStore } from './stores/ui'
 
 const router = useRouter()
 const authStore = useSchoolAdminAuthStore()
-const profileStore = useSchoolAdminProfileStore()
 const uiStore = useSchoolAdminUiStore()
 
-const branding = computed(() => profileStore.profile)
+const branding = computed(() => ({
+  schoolName: 'CBT Application',
+  domain: 'application.edu',
+}))
 
-onMounted(() => {
-  if (!profileStore.profile.address) profileStore.fetchProfile()
-})
+// Don't fetch profile on mount - let login establish tenant context
 
 const form = reactive({
   email: '',
@@ -160,7 +159,6 @@ const errors = reactive({
 })
 
 const showPassword = ref(false)
-const tenantSlug = ref('')
 
 const validate = () => {
   errors.email = ''
@@ -176,32 +174,17 @@ const validate = () => {
   return !errors.email && !errors.password
 }
 
-const getTenantSlug = () => {
-  // Extract tenant slug from email domain
-  // Example: john.steve@lekkibritish.com -> lekkibritish
-  if (form.email && form.email.includes('@')) {
-    const emailDomain = form.email.split('@')[1]
-    const slug = emailDomain.split('.')[0]
-    if (slug) return slug
-  }
-  
-  // Fallback to localStorage if available
-  const stored = window.localStorage.getItem('school-tenant-slug')
-  if (stored) return stored
-  
-  return ''
-}
+
 
 const submitLogin = async () => {
   if (!validate()) return
 
   try {
-    const slug = getTenantSlug()
-    await authStore.login(form, slug)
+    await authStore.login(form)
 
     uiStore.addToast({
       title: 'Welcome back',
-      message: `You are now signed in to ${branding.value.schoolName}.`,
+      message: 'You have successfully signed in.',
       variant: 'success',
     })
 

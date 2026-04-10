@@ -2,7 +2,7 @@ import { apiFetch, extractErrorMessage, setApiToken, clearApiState } from '../li
 
 /**
  * School User Authentication
- * POST /api/auth/login - School User authentication
+ * POST /auth/login - School User authentication
  * Body: { email, password }
  * Returns: { token, user }
  */
@@ -11,7 +11,7 @@ export async function loginSchoolUser(payload) {
     const response = await apiFetch('/api/auth/login', {
       method: 'POST',
       body: JSON.stringify(payload),
-      skipTenantHeader: true, // Login is public
+
     })
     
     // Store token for subsequent requests
@@ -26,7 +26,7 @@ export async function loginSchoolUser(payload) {
 }
 
 /**
- * GET /api/auth/me - Get current user profile, role, and permissions
+ * GET /auth/me - Get current user profile, role, and permissions
  */
 export async function getCurrentUserProfile() {
   try {
@@ -37,7 +37,7 @@ export async function getCurrentUserProfile() {
 }
 
 /**
- * POST /api/auth/logout - Invalidate current user session
+ * POST /auth/logout - Invalidate current user session
  */
 export async function logoutSchoolUser() {
   try {

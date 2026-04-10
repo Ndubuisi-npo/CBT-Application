@@ -20,4 +20,13 @@ export default defineConfig({
             '@': path.resolve(__dirname, './src/js'),
         },
     },
+    server: {
+        proxy: {
+            '/api': {
+                target: 'https://cbt-application-ufyd.onrender.com',
+                changeOrigin: true,
+                rewrite: (path) => path,
+            },
+        },
+    },
 });

@@ -5,7 +5,6 @@ export async function loginSuperAdmin(payload) {
     const response = await apiFetch('/api/super-admin/login', {
       method: 'POST',
       body: JSON.stringify(payload),
-      skipTenantHeader: true, // Login is public
     })
     
     // Store token for authenticated requests

@@ -2,9 +2,9 @@
   <div class="space-y-6">
     <section class="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
       <OverviewCard title="Total Students" value="1,284" helper="Current enrolled learners" :icon="GraduationCap" />
-      <OverviewCard title="Total Teachers" :value="`${teachersStore.teachers.length || 48}`" helper="Teaching staff across levels" :icon="Users" />
+      <OverviewCard title="Total Teachers" :value="`${teachersStore.teachers?.length || 0} Teachers`" helper="Teaching staff across levels" :icon="Users" />
       <OverviewCard title="Active Session" :value="activeSession" helper="Current academic cycle" :icon="CalendarClock" />
-      <OverviewCard title="Total Classes" :value="`${classesStore.classes.length || 12}`" helper="Active class arms configured" :icon="School" />
+      <OverviewCard title="Total Classes" :value="`${classesStore.classes?.length || 0} Classes`" helper="Active class arms configured" :icon="School" />
     </section>
 
     <section class="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
@@ -53,12 +53,12 @@ const classesStore = useSchoolAdminClassesStore()
 const teachersStore = useSchoolAdminTeachersStore()
 
 onMounted(() => {
-  if (!sessionsStore.sessions.length) sessionsStore.fetchSessions()
-  if (!classesStore.classes.length) classesStore.fetchClasses()
-  if (!teachersStore.teachers.length) teachersStore.fetchTeachers()
+  if (!sessionsStore.sessions?.length) sessionsStore.fetchSessions()
+  if (!classesStore.classes?.length) classesStore.fetchClasses()
+  if (!teachersStore.teachers?.length) teachersStore.fetchTeachers()
 })
 
-const activeSession = computed(() => sessionsStore.sessions.find((session) => session.status === 'Active')?.name || 'Not set')
+const activeSession = computed(() => sessionsStore.sessions?.find((session) => session.status === 'Active')?.name || 'Not set')
 
 const recentActivity = [
   { title: 'New class arm created', description: 'JSS1A was added and assigned to Mrs. Ada Nwosu.', icon: School },

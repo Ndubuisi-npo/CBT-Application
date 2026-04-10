@@ -3,15 +3,29 @@ import { getClassLevels, getClassArms, saveClassArm, deleteClassArm } from '../s
 
 export const useSchoolAdminClassesStore = defineStore('school-admin-classes', {
   state: () => ({
+    classes: [],
     classLevels: [],
     classArms: {},
     loading: false,
   }),
   actions: {
+    async fetchClasses() {
+      this.loading = true
+      try {
+        this.classLevels = await getClassLevels()
+        this.classes = this.classLevels // Alias for compatibility
+      } catch (error) {
+        console.error('Failed to fetch classes:', error)
+      } finally {
+        this.loading = false
+      }
+    },
     async fetchClassLevels() {
       this.loading = true
       try {
         this.classLevels = await getClassLevels()
+      } catch (error) {
+        console.error('Failed to fetch class levels:', error)
       } finally {
         this.loading = false
       }
@@ -37,6 +51,17 @@ export const useSchoolAdminClassesStore = defineStore('school-admin-classes', {
       await deleteClassArm(classLevelId, armId)
       if (this.classArms[classLevelId]) {
         this.classArms[classLevelId] = this.classArms[classLevelId].filter((item) => item.id !== armId)
+      }
+    },
+    async saveClass(payload) {
+      // For now, just add to classes array (no API call)
+      if (payload.id) {
+        const index = this.classes.findIndex((item) => item.id === payload.id)
+        if (index !== -1) {
+          this.classes[index] = payload
+        }
+      } else {
+        this.classes.push({ ...payload, id: Date.now() })
       }
     },
   },

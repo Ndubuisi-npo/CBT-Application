@@ -1,6 +1,11 @@
-const DEFAULT_BASE_URL = 'https://your-central-domain.onrender.com'
+const DEFAULT_BASE_URL = 'https://cbt-application-ufyd.onrender.com'
 
 function normalizeOrigin(rawBaseUrl) {
+  // In development, use /api (vite proxy handles it)
+  // In production, use the full URL
+  if (import.meta.env.DEV) {
+    return ''
+  }
   const value = (rawBaseUrl || DEFAULT_BASE_URL).trim().replace(/\/+$/, '')
   return value
 }
@@ -10,41 +15,31 @@ const origin = normalizeOrigin(import.meta.env.VITE_API_BASE_URL)
 export const API_BASE_URL = origin
 
 let authToken = ''
-let tenantSlug = ''
 
 // Initialize from localStorage on module load
 export function initializeApiState() {
   const savedToken = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null
-  const savedTenant = typeof window !== 'undefined' ? localStorage.getItem('tenantSlug') : null
   
   if (savedToken) {
     authToken = savedToken
-  }
-  if (savedTenant) {
-    tenantSlug = savedTenant
   }
 }
 
 export function setApiToken(token) {
   authToken = token || ''
-  if (typeof window !== 'undefined' && token) {
-    localStorage.setItem('authToken', token)
-  }
-}
-
-export function setTenantSlug(slug) {
-  tenantSlug = slug || ''
-  if (typeof window !== 'undefined' && slug) {
-    localStorage.setItem('tenantSlug', slug)
+  if (typeof window !== 'undefined') {
+    if (token) {
+      localStorage.setItem('authToken', token)
+    } else {
+      localStorage.removeItem('authToken')
+    }
   }
 }
 
 export function clearApiState() {
   authToken = ''
-  tenantSlug = ''
   if (typeof window !== 'undefined') {
     localStorage.removeItem('authToken')
-    localStorage.removeItem('tenantSlug')
   }
 }
 
@@ -57,11 +52,6 @@ export async function apiFetch(path, options = {}) {
 
   if (authToken) {
     headers.Authorization = `Bearer ${authToken}`
-  }
-
-  // Allow skipping tenant header for public endpoints
-  if (tenantSlug && !options.skipTenantHeader) {
-    headers['X-Tenant'] = tenantSlug
   }
 
   const response = await fetch(`${API_BASE_URL}${path}`, {
@@ -90,10 +80,6 @@ export function extractErrorMessage(error, fallback = 'Something went wrong.') {
 
   if (typeof error?.data?.message === 'string' && error.data.message.trim()) {
     return error.data.message
-  }
-
-  if (typeof error?.message === 'string' && error.message.trim()) {
-    return error.message
   }
 
   if (typeof error === 'string' && error.trim()) {

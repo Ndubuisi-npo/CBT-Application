@@ -53,7 +53,7 @@ onMounted(async () => {
 const handleSubmit = async (payload) => {
   const tenant = await createTenant(payload)
   
-  // Store the tenant slug in the store for X-Tenant header
+  // Store the tenant data in the store for reference
   tenantStore.setCurrentTenant(tenant)
   
   uiStore.addToast({

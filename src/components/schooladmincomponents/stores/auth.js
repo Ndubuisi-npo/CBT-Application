@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { loginSchoolAdmin, logoutSchoolAdmin } from '../services/api/auth'
-import { setApiToken, setTenantSlug } from '../../../js/lib/api'
+import { setApiToken } from '../../../js/lib/api'
 
 const STORAGE_KEY = 'school-admin-auth'
 
@@ -9,7 +9,6 @@ const readPersistedAuth = () => {
     return {
       user: null,
       token: null,
-      tenant: null,
     }
   }
 
@@ -19,7 +18,6 @@ const readPersistedAuth = () => {
     return {
       user: null,
       token: null,
-      tenant: null,
     }
   }
 
@@ -30,7 +28,6 @@ const readPersistedAuth = () => {
     return {
       user: null,
       token: null,
-      tenant: null,
     }
   }
 }
@@ -49,23 +46,16 @@ export const useSchoolAdminAuthStore = defineStore('school-admin-auth', {
         JSON.stringify({
           user: this.user,
           token: this.token,
-          tenant: this.tenant,
         }),
       )
     },
-    async login(payload, tenantSlug) {
+    async login(payload) {
       this.loading = true
       try {
-        const response = await loginSchoolAdmin(payload, tenantSlug)
+        const response = await loginSchoolAdmin(payload)
         this.user = response.user
         this.token = response.token
-        this.tenant = response.tenant
         setApiToken(this.token)
-        if (this.tenant?.slug) {
-          setTenantSlug(this.tenant.slug)
-        } else if (tenantSlug) {
-          setTenantSlug(tenantSlug)
-        }
         this.persist()
         return response
       } finally {
@@ -80,9 +70,7 @@ export const useSchoolAdminAuthStore = defineStore('school-admin-auth', {
       }
       this.user = null
       this.token = null
-      this.tenant = null
       setApiToken(null)
-      setTenantSlug(null)
 
       if (typeof window !== 'undefined') {
         window.localStorage.removeItem(STORAGE_KEY)

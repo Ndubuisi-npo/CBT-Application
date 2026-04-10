@@ -2,7 +2,7 @@ import { apiFetch, extractErrorMessage } from '../lib/api'
 
 /**
  * Class Management
- * Protected Routes - Requires: Authorization: Bearer <tenant-token> and X-Tenant header
+ * Protected Routes - Requires: Authorization: Bearer <token>
  */
 
 /**

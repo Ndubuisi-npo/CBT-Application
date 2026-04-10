@@ -1,20 +1,14 @@
-import { apiFetch, extractErrorMessage, setTenantSlug, setApiToken, clearApiState } from '../../../../js/lib/api'
+import { apiFetch, extractErrorMessage, clearApiState } from '../../../../js/lib/api'
 
-export async function loginSchoolAdmin(payload, tenantSlug) {
+export async function loginSchoolAdmin(payload) {
   try {
-    if (tenantSlug) {
-      setTenantSlug(tenantSlug)
-    }
     const response = await apiFetch('/api/auth/login', {
       method: 'POST',
-      body: JSON.stringify(payload),
-      skipTenantHeader: true, // Login is public, doesn't need X-Tenant yet
+      body: JSON.stringify({
+        email: payload.email,
+        password: payload.password,
+      }),
     })
-    
-    // Store token for authenticated requests
-    if (response.token) {
-      setApiToken(response.token)
-    }
     
     return response
   } catch (error) {
