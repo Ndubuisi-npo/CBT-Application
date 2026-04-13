@@ -13,9 +13,9 @@
             <tbody class="divide-y divide-slate-100">
               <tr v-for="session in sessionsStore.sessions" :key="session.id" class="transition hover:bg-slate-50/80">
                 <td class="px-5 py-4 font-semibold text-slate-900">{{ session.name }}</td>
-                <td class="px-5 py-4"><StatusBadge :status="session.status" /></td>
-                <td class="px-5 py-4 text-sm text-slate-600">{{ session.startDate }}</td>
-                <td class="px-5 py-4 text-sm text-slate-600">{{ session.endDate }}</td>
+                <td class="px-5 py-4"><StatusBadge :status="sessionStatus(session)" /></td>
+                <td class="px-5 py-4 text-sm text-nowrap text-slate-600">{{ fmtDate(session.startDate || session.start_date || '-') }}</td>
+                <td class="px-5 py-4 text-sm text-nowrap text-slate-600">{{ fmtDate(session.endDate || session.end_date || '-') }}</td>
                 <td class="px-5 py-4">
                   <div class="flex gap-2">
                     <button type="button" class="rounded-lg border-2 border-slate-300 px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:ring-offset-2" @click="editSession(session)">Edit</button>
@@ -41,8 +41,8 @@
           <input v-model="form.endDate" type="date" class="sa-input" />
         </FormField>
         <label class="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700">
-          <input v-model="isActive" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-[#0B1F3A] focus:ring-[#D4AF37]" />
-          Mark as active session
+          <input v-model="isCurrent" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-[#0B1F3A] focus:ring-[#D4AF37]" />
+          Mark as current session
         </label>
         <button type="submit" class="w-full rounded-lg bg-[#0B1F3A] px-4 py-2.5 font-medium text-white transition hover:bg-[#0F2940] focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:ring-offset-2">{{ form.id ? 'Update Session' : 'Create Session' }}</button>
       </form>
@@ -58,14 +58,15 @@ import SkeletonRows from '../components/SkeletonRows.vue'
 import StatusBadge from '../components/StatusBadge.vue'
 import { useSchoolAdminSessionsStore } from '../stores/sessions'
 import { useSchoolAdminUiStore } from '../stores/ui'
+import { fmtDate } from '@/lib/helpers'
 
 const headings = ['Session Name', 'Status', 'Start Date', 'End Date', 'Actions']
 const sessionsStore = useSchoolAdminSessionsStore()
 const uiStore = useSchoolAdminUiStore()
 
-const form = reactive({ id: null, name: '', startDate: '', endDate: '' })
+const form = reactive({ id: null, name: '', startDate: '', endDate: '', current: true })
 const errors = reactive({ name: '', startDate: '', endDate: '' })
-const isActive = ref(true)
+const isCurrent = ref(true)
 
 onMounted(() => {
   sessionsStore.fetchSessions()
@@ -76,7 +77,8 @@ const reset = () => {
   form.name = ''
   form.startDate = ''
   form.endDate = ''
-  isActive.value = true
+  form.current = true
+  isCurrent.value = true
 }
 
 const validate = () => {
@@ -89,10 +91,13 @@ const validate = () => {
 const editSession = (session) => {
   form.id = session.id
   form.name = session.name
-  form.startDate = session.startDate
-  form.endDate = session.endDate
-  isActive.value = session.status === 'Active'
+  form.startDate = session.startDate || session.start_date || ''
+  form.endDate = session.endDate || session.end_date || ''
+  form.current = session.current ?? session.status === 'Active'
+  isCurrent.value = form.current
 }
+
+const sessionStatus = (session) => ((session.current ?? session.status === 'Active') ? 'Active' : 'Inactive')
 
 const activate = async (id) => {
   await sessionsStore.activate(id)
@@ -101,8 +106,14 @@ const activate = async (id) => {
 
 const submit = async () => {
   if (!validate()) return
-  await sessionsStore.saveSession({ ...form, status: isActive.value ? 'Active' : 'Inactive' })
-  if (isActive.value) {
+  await sessionsStore.saveSession({
+    ...form,
+    start_date: form.startDate,
+    end_date: form.endDate,
+    current: isCurrent.value,
+    status: isCurrent.value ? 'Active' : 'Inactive',
+  })
+  if (isCurrent.value) {
     const latest = sessionsStore.sessions.find((session) => session.name === form.name)
     if (latest) await sessionsStore.activate(latest.id)
   }

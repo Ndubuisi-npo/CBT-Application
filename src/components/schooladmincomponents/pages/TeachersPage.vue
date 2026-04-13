@@ -1,5 +1,5 @@
 <template>
-  <div class="grid gap-6 xl:grid-cols-[1.25fr_0.75fr]">
+  <div class="grid gap-6 xl:grid-cols-[1fr_1.2fr]">
     <SectionCard title="Teachers" subtitle="Manage staff records, contacts, department ownership, and class/subject assignments.">
       <SkeletonRows v-if="teachersStore.loading" :columns="5" />
       <div v-else class="overflow-hidden rounded-[24px] border border-slate-200">
@@ -12,13 +12,12 @@
             </thead>
             <tbody class="divide-y divide-slate-100">
               <tr v-for="teacher in teachersStore.teachers" :key="teacher.id" class="transition hover:bg-slate-50/80">
-                <td class="px-5 py-4">
-                  <p class="font-semibold text-slate-900">{{ teacher.name }}</p>
-                  <p class="text-sm text-slate-500">{{ teacher.email }}</p>
-                </td>
-                <td class="px-5 py-4 text-sm text-slate-600">{{ teacher.department }}</td>
-                <td class="px-5 py-4 text-sm text-slate-600">{{ teacher.assignedClasses.join(', ') || '-' }}</td>
-                <td class="px-5 py-4 text-sm text-slate-600">{{ teacher.assignedSubjects.join(', ') || '-' }}</td>
+                <td class="px-5 py-4 text-sm text-slate-600">{{ teacher.user?.first_name || '-' }}</td>
+                <td class="px-5 py-4 text-sm text-slate-600">{{ teacher.user?.last_name || '-' }}</td>
+                <td class="px-5 py-4 text-sm text-slate-600">{{ teacher.user?.email || '-' }}</td>
+                <td class="px-5 py-4 text-sm text-slate-600">{{ teacher.user?.phone || '-' }}</td>
+                <td class="px-5 py-4 text-sm text-slate-600">{{ teacher.qualification || '-' }}</td>
+                <td class="px-5 py-4 text-sm text-slate-600">{{ teacher.staff_id || '-' }}</td>
                 <td class="px-5 py-4">
                   <button type="button" class="rounded-lg border-2 border-slate-300 px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:ring-offset-2" @click="editTeacher(teacher)">Edit</button>
                 </td>
@@ -31,26 +30,28 @@
 
     <SectionCard :title="form.id ? 'Edit Teacher' : 'Create Teacher'" subtitle="Create staff records and assign classes and subjects.">
       <form class="space-y-5" @submit.prevent="submit">
-        <FormField label="Teacher name" :error="errors.name">
-          <input v-model="form.name" class="sa-input" placeholder="Mrs. Ada Nwosu" />
-        </FormField>
         <div class="grid gap-5 md:grid-cols-2">
-          <FormField label="Email address" :error="errors.email">
-            <input v-model="form.email" type="email" class="sa-input" placeholder="teacher@greenfield.edu" />
+          <FormField label="First name" :error="errors.firstName">
+            <input v-model="form.firstName" class="sa-input" placeholder="Ada" />
           </FormField>
-          <FormField label="Phone number" :error="errors.phone">
-            <input v-model="form.phone" class="sa-input" placeholder="+234 800 000 0000" />
+          <FormField label="Last name" :error="errors.lastName">
+            <input v-model="form.lastName" class="sa-input" placeholder="Nwosu" />
           </FormField>
         </div>
-        <FormField label="Department" :error="errors.department">
-          <input v-model="form.department" class="sa-input" placeholder="Sciences" />
+        <FormField label="Email address" :error="errors.email">
+          <input v-model="form.email" type="email" class="sa-input" placeholder="teacher@greenfield.edu" />
         </FormField>
-        <FormField label="Assigned classes" :error="errors.assignedClasses">
-          <TagMultiSelect v-model="form.assignedClasses" :options="classOptions" placeholder="Select classes" />
+        <FormField label="Phone number" :error="errors.phone">
+          <input v-model="form.phone" class="sa-input" placeholder="+234 800 000 0000" />
         </FormField>
-        <FormField label="Assigned subjects" :error="errors.assignedSubjects">
-          <TagMultiSelect v-model="form.assignedSubjects" :options="subjectOptions" placeholder="Select subjects" />
-        </FormField>
+        <div class="grid gap-5 md:grid-cols-2">
+          <FormField label="Qualification" :error="errors.qualification">
+            <input v-model="form.qualification" class="sa-input" placeholder="MSc Mathematics" />
+          </FormField>
+          <FormField label="Staff ID" :error="errors.staffId">
+            <input v-model="form.staffId" class="sa-input" placeholder="STF-0392" />
+          </FormField>
+        </div>
         <button type="submit" class="w-full rounded-lg bg-[#0B1F3A] px-4 py-2.5 font-medium text-white transition hover:bg-[#0F2940] focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:ring-offset-2">{{ form.id ? 'Update Teacher' : 'Create Teacher' }}</button>
       </form>
     </SectionCard>
@@ -58,86 +59,84 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive } from 'vue'
+import { onMounted, reactive } from 'vue'
 import FormField from '../components/FormField.vue'
 import SectionCard from '../components/SectionCard.vue'
 import SkeletonRows from '../components/SkeletonRows.vue'
-import TagMultiSelect from '../components/TagMultiSelect.vue'
-import { useSchoolAdminClassesStore } from '../stores/classes'
-import { useSchoolAdminSubjectsStore } from '../stores/subjects'
 import { useSchoolAdminTeachersStore } from '../stores/teachers'
 import { useSchoolAdminUiStore } from '../stores/ui'
 
-const headings = ['Teacher', 'Department', 'Assigned Classes', 'Assigned Subjects', 'Actions']
+const headings = ['First Name', 'Last Name', 'Email', 'Phone', 'Qualification', 'Staff ID', 'Actions']
 const teachersStore = useSchoolAdminTeachersStore()
-const classesStore = useSchoolAdminClassesStore()
-const subjectsStore = useSchoolAdminSubjectsStore()
 const uiStore = useSchoolAdminUiStore()
 
 const form = reactive({
   id: null,
-  name: '',
+  firstName: '',
+  lastName: '',
   email: '',
   phone: '',
-  department: '',
-  assignedClasses: [],
-  assignedSubjects: [],
+  qualification: '',
+  staffId: '',
 })
 
 const errors = reactive({
-  name: '',
+  firstName: '',
+  lastName: '',
   email: '',
   phone: '',
-  department: '',
-  assignedClasses: '',
-  assignedSubjects: '',
+  qualification: '',
+  staffId: '',
 })
 
 onMounted(() => {
   teachersStore.fetchTeachers()
-  classesStore.fetchClasses()
-  subjectsStore.fetchSubjects()
 })
 
-const classOptions = computed(() => classesStore.classes.map((item) => item.name))
-const subjectOptions = computed(() => subjectsStore.subjects.map((item) => item.name))
+const formatTeacherName = (teacher) => {
+  const first = teacher.user?.first_name || ''
+  const last = teacher.user?.last_name || ''
+  return `${first} ${last}`.trim()
+}
 
 const editTeacher = (teacher) => {
   form.id = teacher.id
-  form.name = teacher.name
-  form.email = teacher.email
-  form.phone = teacher.phone
-  form.department = teacher.department
-  form.assignedClasses = [...teacher.assignedClasses]
-  form.assignedSubjects = [...teacher.assignedSubjects]
+  form.firstName = teacher.user?.first_name || ''
+  form.lastName = teacher.user?.last_name || ''
+  form.email = teacher.user?.email || ''
+  form.phone = teacher.user?.phone || ''
+  form.qualification = teacher.qualification || ''
+  form.staffId = teacher.staff_id || ''
 }
 
 const reset = () => {
   form.id = null
-  form.name = ''
+  form.firstName = ''
+  form.lastName = ''
   form.email = ''
   form.phone = ''
-  form.department = ''
-  form.assignedClasses = []
-  form.assignedSubjects = []
+  form.qualification = ''
+  form.staffId = ''
 }
 
 const validate = () => {
-  errors.name = form.name ? '' : 'Teacher name is required.'
+  errors.firstName = form.firstName ? '' : 'First name is required.'
+  errors.lastName = form.lastName ? '' : 'Last name is required.'
   errors.email = /\S+@\S+\.\S+/.test(form.email) ? '' : 'Enter a valid email address.'
   errors.phone = form.phone ? '' : 'Phone number is required.'
-  errors.department = form.department ? '' : 'Department is required.'
-  errors.assignedClasses = ''
-  errors.assignedSubjects = ''
-  return !errors.name && !errors.email && !errors.phone && !errors.department
+  errors.qualification = form.qualification ? '' : 'Qualification is required.'
+  errors.staffId = form.staffId ? '' : 'Staff ID is required.'
+  return !errors.firstName && !errors.lastName && !errors.email && !errors.phone && !errors.qualification && !errors.staffId
 }
 
 const submit = async () => {
   if (!validate()) return
   await teachersStore.saveTeacher({
     ...form,
-    assignedClasses: [...form.assignedClasses],
-    assignedSubjects: [...form.assignedSubjects],
+    first_name: form.firstName,
+    last_name: form.lastName,
+    staff_id: form.staffId,
+    name: `${form.firstName} ${form.lastName}`.trim(),
   })
   uiStore.addToast({ title: 'Teacher saved', message: 'Teacher record was updated successfully.', variant: 'success' })
   reset()

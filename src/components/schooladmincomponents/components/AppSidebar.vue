@@ -61,9 +61,9 @@ const navItems = computed(() => [
   { label: 'Dashboard', to: '/school-admin/dashboard', icon: LayoutDashboard },
   { label: 'Academic Sessions', to: '/school-admin/sessions', icon: CalendarRange },
   { label: 'Terms', to: '/school-admin/terms', icon: BookCopy },
-  { label: 'Classes', to: '/school-admin/classes', icon: Columns3 },
   { label: 'Teachers', to: '/school-admin/teachers', icon: Users },
-  { label: 'Subjects', to: '/school-admin/subjects', icon: Shapes },
+  { label: 'Classes', to: '/school-admin/classes', icon: Columns3 },
+    { label: 'Subjects', to: '/school-admin/subjects', icon: Shapes },
   { label: 'Settings', to: '/school-admin/settings', icon: Settings },
   { label: 'School Profile', to: '/school-admin/profile', icon: School },
 ])

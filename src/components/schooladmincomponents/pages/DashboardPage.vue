@@ -58,7 +58,7 @@ onMounted(() => {
   if (!teachersStore.teachers?.length) teachersStore.fetchTeachers()
 })
 
-const activeSession = computed(() => sessionsStore.sessions?.find((session) => session.status === 'Active')?.name || 'Not set')
+const activeSession = computed(() => sessionsStore.sessions?.find((session) => session.current ?? session.status === 'Active')?.name || 'Not set')
 
 const recentActivity = [
   { title: 'New class arm created', description: 'JSS1A was added and assigned to Mrs. Ada Nwosu.', icon: School },

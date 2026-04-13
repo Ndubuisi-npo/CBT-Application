@@ -8,14 +8,21 @@ export const useSchoolAdminTeachersStore = defineStore('school-admin-teachers', 
   }),
   getters: {
     teacherNames(state) {
-      return state.teachers.map((teacher) => teacher.name)
+      return state.teachers.map((teacher) => {
+        const first = teacher.user?.first_name || ''
+        const last = teacher.user?.last_name || ''
+        return `${first} ${last}`.trim()
+      })
     },
   },
   actions: {
     async fetchTeachers() {
       this.loading = true
       try {
-        this.teachers = await getTeachers()
+       const response = await getTeachers();
+       console.log(response);
+       
+        this.teachers = response || []
       } finally {
         this.loading = false
       }
