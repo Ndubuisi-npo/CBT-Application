@@ -1,5 +1,5 @@
 <template>
-  <div class="grid gap-6 xl:grid-cols-[1fr_1.2fr]">
+  <div class="space-y-6">
     <SectionCard title="Teachers" subtitle="Manage staff records, contacts, department ownership, and class/subject assignments.">
       <SkeletonRows v-if="teachersStore.loading" :columns="5" />
       <div v-else class="overflow-hidden rounded-[24px] border border-slate-200">
@@ -19,7 +19,10 @@
                 <td class="px-5 py-4 text-sm text-slate-600">{{ teacher.qualification || '-' }}</td>
                 <td class="px-5 py-4 text-sm text-slate-600">{{ teacher.staff_id || '-' }}</td>
                 <td class="px-5 py-4">
-                  <button type="button" class="rounded-lg border-2 border-slate-300 px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:ring-offset-2" @click="editTeacher(teacher)">Edit</button>
+                  <div class="flex gap-2">
+                    <button type="button" class="rounded-lg border-2 border-slate-300 px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:ring-offset-2" @click="editTeacher(teacher)">Edit</button>
+                    <button type="button" class="rounded-lg bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 transition hover:bg-red-100" @click="deleteTeacher(teacher.id)">Delete</button>
+                  </div>
                 </td>
               </tr>
             </tbody>
@@ -127,6 +130,21 @@ const validate = () => {
   errors.qualification = form.qualification ? '' : 'Qualification is required.'
   errors.staffId = form.staffId ? '' : 'Staff ID is required.'
   return !errors.firstName && !errors.lastName && !errors.email && !errors.phone && !errors.qualification && !errors.staffId
+}
+
+const deleteTeacher = async (id) => {
+  if (!confirm('Are you sure you want to delete this teacher? This action cannot be undone.')) {
+    return
+  }
+  
+  try {
+    console.log('Attempting to delete teacher with ID:', id)
+    await teachersStore.deleteTeacher(id)
+    uiStore.addToast({ title: 'Teacher deleted', message: 'Teacher record has been deleted.', variant: 'success' })
+  } catch (error) {
+    console.error('Error deleting teacher:', error)
+    uiStore.addToast({ title: 'Error', message: error.message || 'Failed to delete teacher.', variant: 'error' })
+  }
 }
 
 const submit = async () => {

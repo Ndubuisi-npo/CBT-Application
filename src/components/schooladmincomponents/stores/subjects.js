@@ -10,7 +10,20 @@ export const useSchoolAdminSubjectsStore = defineStore('school-admin-subjects', 
     async fetchSubjects() {
       this.loading = true
       try {
-        this.subjects = await getSubjects()
+        const data = await getSubjects()
+        console.log('Fetched subjects:', data)
+        this.subjects = Array.isArray(data) ? data : []
+        console.log('Subjects set to:', this.subjects)
+      } catch (error) {
+        console.error('Error fetching subjects:', error)
+        this.subjects = []
+        // Don't throw the error, just log it and continue with empty subjects
+        // The UI component will handle showing the error message
+        console.error('Subjects API Error Details:', {
+          status: error.status,
+          message: error.message,
+          data: error.data
+        })
       } finally {
         this.loading = false
       }

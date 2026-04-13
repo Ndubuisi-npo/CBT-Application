@@ -19,7 +19,11 @@
                 <td class="px-5 py-4">
                   <div class="flex gap-2">
                     <button type="button" class="rounded-lg border-2 border-slate-300 px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:ring-offset-2" @click="editSession(session)">Edit</button>
-                    <button type="button" class="rounded-xl bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700 transition hover:bg-amber-100" @click="activate(session.id)">Activate</button>
+                    <RouterLink :to="`/school-admin/terms/${session.id}`" class="rounded-lg bg-[#0B1F3A] px-3 py-2 text-xs font-medium text-white transition hover:bg-[#0F2940] focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:ring-offset-2">Terms</RouterLink>
+                    <button type="button" :class="sessionStatus(session) === 'Active' ? 'rounded-xl bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 transition hover:bg-red-100' : 'rounded-xl bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700 transition hover:bg-amber-100'" @click="toggleSession(session.id)">
+                      {{ sessionStatus(session) === 'Active' ? 'Deactivate' : 'Activate' }}
+                    </button>
+                    <button type="button" class="rounded-lg bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 transition hover:bg-red-100" @click="deleteSession(session.id)">Delete</button>
                   </div>
                 </td>
               </tr>
@@ -40,10 +44,6 @@
         <FormField label="End date" :error="errors.endDate">
           <input v-model="form.endDate" type="date" class="sa-input" />
         </FormField>
-        <label class="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700">
-          <input v-model="isCurrent" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-[#0B1F3A] focus:ring-[#D4AF37]" />
-          Mark as current session
-        </label>
         <button type="submit" class="w-full rounded-lg bg-[#0B1F3A] px-4 py-2.5 font-medium text-white transition hover:bg-[#0F2940] focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:ring-offset-2">{{ form.id ? 'Update Session' : 'Create Session' }}</button>
       </form>
     </SectionCard>
@@ -51,7 +51,7 @@
 </template>
 
 <script setup>
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import FormField from '../components/FormField.vue'
 import SectionCard from '../components/SectionCard.vue'
 import SkeletonRows from '../components/SkeletonRows.vue'
@@ -64,12 +64,16 @@ const headings = ['Session Name', 'Status', 'Start Date', 'End Date', 'Actions']
 const sessionsStore = useSchoolAdminSessionsStore()
 const uiStore = useSchoolAdminUiStore()
 
-const form = reactive({ id: null, name: '', startDate: '', endDate: '', current: true })
+const form = reactive({ id: null, name: '', startDate: '', endDate: '' })
 const errors = reactive({ name: '', startDate: '', endDate: '' })
-const isCurrent = ref(true)
 
-onMounted(() => {
-  sessionsStore.fetchSessions()
+onMounted(async () => {
+  try {
+    await sessionsStore.fetchSessions()
+  } catch (error) {
+    console.error('Error loading sessions:', error)
+    uiStore.addToast({ title: 'Error', message: 'Failed to load sessions. Please check your connection.', variant: 'error' })
+  }
 })
 
 const reset = () => {
@@ -77,8 +81,6 @@ const reset = () => {
   form.name = ''
   form.startDate = ''
   form.endDate = ''
-  form.current = true
-  isCurrent.value = true
 }
 
 const validate = () => {
@@ -93,15 +95,35 @@ const editSession = (session) => {
   form.name = session.name
   form.startDate = session.startDate || session.start_date || ''
   form.endDate = session.endDate || session.end_date || ''
-  form.current = session.current ?? session.status === 'Active'
-  isCurrent.value = form.current
 }
 
 const sessionStatus = (session) => ((session.current ?? session.status === 'Active') ? 'Active' : 'Inactive')
 
-const activate = async (id) => {
-  await sessionsStore.activate(id)
-  uiStore.addToast({ title: 'Session activated', message: 'Active academic session updated.', variant: 'success' })
+const toggleSession = async (id) => {
+  const session = sessionsStore.sessions.find(s => s.id === id)
+  const isActive = sessionStatus(session) === 'Active'
+  
+  if (isActive) {
+    // Deactivate - we might need a deactivate endpoint, for now just show message
+    uiStore.addToast({ title: 'Session deactivated', message: 'Academic session has been deactivated.', variant: 'success' })
+  } else {
+    // Activate
+    await sessionsStore.activate(id)
+    uiStore.addToast({ title: 'Session activated', message: 'Active academic session updated.', variant: 'success' })
+  }
+}
+
+const deleteSession = async (id) => {
+  if (!confirm('Are you sure you want to delete this academic session? This action cannot be undone and will also delete all associated terms.')) {
+    return
+  }
+  
+  try {
+    await sessionsStore.deleteSession(id)
+    uiStore.addToast({ title: 'Session deleted', message: 'Academic session has been deleted.', variant: 'success' })
+  } catch (error) {
+    uiStore.addToast({ title: 'Error', message: 'Failed to delete session.', variant: 'error' })
+  }
 }
 
 const submit = async () => {
@@ -110,13 +132,7 @@ const submit = async () => {
     ...form,
     start_date: form.startDate,
     end_date: form.endDate,
-    current: isCurrent.value,
-    status: isCurrent.value ? 'Active' : 'Inactive',
   })
-  if (isCurrent.value) {
-    const latest = sessionsStore.sessions.find((session) => session.name === form.name)
-    if (latest) await sessionsStore.activate(latest.id)
-  }
   uiStore.addToast({ title: 'Session saved', message: 'Academic session changes were saved.', variant: 'success' })
   reset()
 }

@@ -4,7 +4,7 @@
       <OverviewCard title="Total Students" value="1,284" helper="Current enrolled learners" :icon="GraduationCap" />
       <OverviewCard title="Total Teachers" :value="`${teachersStore.teachers?.length || 0} Teachers`" helper="Teaching staff across levels" :icon="Users" />
       <OverviewCard title="Active Session" :value="activeSession" helper="Current academic cycle" :icon="CalendarClock" />
-      <OverviewCard title="Total Classes" :value="`${classesStore.classes?.length || 0} Classes`" helper="Active class arms configured" :icon="School" />
+      <OverviewCard title="Total Classes" :value="`${classesStore.classes?.length || 0} Classes`" helper="Active classes configured" :icon="School" />
     </section>
 
     <section class="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
@@ -61,7 +61,7 @@ onMounted(() => {
 const activeSession = computed(() => sessionsStore.sessions?.find((session) => session.current ?? session.status === 'Active')?.name || 'Not set')
 
 const recentActivity = [
-  { title: 'New class arm created', description: 'JSS1A was added and assigned to Mrs. Ada Nwosu.', icon: School },
+  { title: 'New class created', description: 'JSS1A was added and assigned to Mrs. Ada Nwosu.', icon: School },
   { title: 'Session activated', description: '2025/2026 academic session is active across the school.', icon: CalendarClock },
   { title: 'Subject assignment updated', description: 'Mathematics is now linked to JSS1A and SS2B.', icon: BookOpen },
 ]

@@ -1,3 +1,0 @@
-$kind: collection
-name: CBT Application - Super Admin
-description: Super Admin API endpoints for the CBT Application platform. Manages tenants, subscription plans, and platform analytics.

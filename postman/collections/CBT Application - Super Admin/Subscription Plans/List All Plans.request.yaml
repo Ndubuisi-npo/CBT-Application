@@ -1,7 +1,0 @@
-$kind: http-request
-name: List All Plans
-method: GET
-url: '{{baseUrl}}/admin/plans'
-headers:
-  - key: Authorization
-    value: 'Bearer {{adminToken}}'

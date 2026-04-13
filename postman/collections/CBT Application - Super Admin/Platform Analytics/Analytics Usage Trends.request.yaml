@@ -1,7 +1,0 @@
-$kind: http-request
-name: Analytics Usage Trends
-method: GET
-url: '{{baseUrl}}/admin/analytics/usage'
-headers:
-  - key: Authorization
-    value: 'Bearer {{adminToken}}'

@@ -23,7 +23,7 @@ export async function fetchClassArms(classLevelId) {
   try {
     return await apiFetch(`/api/class-levels/${classLevelId}/arms`)
   } catch (error) {
-    throw new Error(extractErrorMessage(error, 'Unable to load class arms.'))
+    throw new Error(extractErrorMessage(error, 'Unable to load classes.'))
   }
 }
 

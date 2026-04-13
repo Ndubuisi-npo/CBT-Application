@@ -18,15 +18,24 @@ export async function getSubject(id) {
 
 export async function saveSubject(payload) {
   try {
+    const body = {
+      name: payload.name,
+    }
+
+    if (payload.code !== undefined) body.code = payload.code
+    if (payload.description !== undefined) body.description = payload.description
+    if (payload.class_level_id !== undefined) body.class_level_id = payload.class_level_id
+
     if (payload.id) {
       return await apiFetch(`/api/subjects/${payload.id}`, {
         method: 'PATCH',
-        body: JSON.stringify(payload),
+        body: JSON.stringify(body),
       })
     }
+
     return await apiFetch('/api/subjects', {
       method: 'POST',
-      body: JSON.stringify(payload),
+      body: JSON.stringify(body),
     })
   } catch (error) {
     throw new Error(extractErrorMessage(error, 'Unable to save subject.'))

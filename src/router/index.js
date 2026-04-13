@@ -8,8 +8,9 @@ import SchoolAdminLogin from '../components/schooladmincomponents/Login.vue';
 import SchoolAdminLayout from '../components/schooladmincomponents/layouts/SchoolAdminLayout.vue';
 import SchoolAdminDashboard from '../components/schooladmincomponents/pages/DashboardPage.vue';
 import SchoolAdminSessions from '../components/schooladmincomponents/pages/SessionsPage.vue';
-import SchoolAdminTerms from '../components/schooladmincomponents/pages/TermsPage.vue';
-import SchoolAdminClasses from '../components/schooladmincomponents/pages/ClassesPage.vue';
+import SchoolAdminSessionTerms from '../components/schooladmincomponents/pages/SessionTermsPage.vue';
+import SchoolAdminClassLevels from '../components/schooladmincomponents/pages/ClassLevelsPage.vue';
+import SchoolAdminClassArms from '../components/schooladmincomponents/pages/ClassArmsPage.vue';
 import SchoolAdminTeachers from '../components/schooladmincomponents/pages/TeachersPage.vue';
 import SchoolAdminSubjects from '../components/schooladmincomponents/pages/SubjectsPage.vue';
 import SchoolAdminSettings from '../components/schooladmincomponents/pages/SettingsPage.vue';
@@ -41,8 +42,9 @@ const routes = [
         children: [
           { path: 'dashboard', name: 'SchoolAdminDashboard', component: SchoolAdminDashboard },
           { path: 'sessions', name: 'SchoolAdminSessions', component: SchoolAdminSessions },
-          { path: 'terms', name: 'SchoolAdminTerms', component: SchoolAdminTerms },
-          { path: 'classes', name: 'SchoolAdminClasses', component: SchoolAdminClasses },
+          { path: 'terms/:id', name: 'SchoolAdminSessionTerms', component: SchoolAdminSessionTerms },
+          { path: 'class-levels', name: 'SchoolAdminClassLevels', component: SchoolAdminClassLevels },
+          { path: 'class-arms/:id', name: 'SchoolAdminClassArms', component: SchoolAdminClassArms },
           { path: 'teachers', name: 'SchoolAdminTeachers', component: SchoolAdminTeachers },
           { path: 'subjects', name: 'SchoolAdminSubjects', component: SchoolAdminSubjects },
           { path: 'settings', name: 'SchoolAdminSettings', component: SchoolAdminSettings },

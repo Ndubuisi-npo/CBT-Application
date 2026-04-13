@@ -1,5 +1,5 @@
 import { ref } from 'vue'
-import { loginSuperAdmin } from '../api/auth'
+import { loginSuperAdmin, getCurrentSuperAdmin, logoutSuperAdmin } from '../api/auth'
 import { setApiToken } from '../../../js/lib/api'
 
 const user = ref(null)
@@ -21,10 +21,33 @@ export function useSuperAdminAuth() {
     }
   }
 
+  const fetchCurrentUser = async () => {
+    loading.value = true
+    try {
+      user.value = await getCurrentSuperAdmin()
+      return user.value
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const logout = async () => {
+    try {
+      await logoutSuperAdmin()
+    } catch (error) {
+      console.error('Logout API call failed:', error)
+    }
+    user.value = null
+    token.value = ''
+    setApiToken(null)
+  }
+
   return {
     user,
     token,
     loading,
     login,
+    logout,
+    fetchCurrentUser,
   }
 }

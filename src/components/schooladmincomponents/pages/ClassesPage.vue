@@ -1,7 +1,7 @@
 <template>
   <div class="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-    <SectionCard title="Class Arms" subtitle="Manage class arms, class levels, and teacher ownership.">
-      <SkeletonRows v-if="classesStore.loading" :columns="4" />
+    <SectionCard title="Classes" subtitle="Manage classes and class levels.">
+      <SkeletonRows v-if="classesStore.loading" :columns="3" />
       <div v-else class="overflow-hidden rounded-[24px] border border-slate-200">
         <div class="overflow-x-auto">
           <table class="min-w-full divide-y divide-slate-200 bg-white">
@@ -14,7 +14,6 @@
               <tr v-for="item in classesStore.classes" :key="item.id" class="transition hover:bg-slate-50/80">
                 <td class="px-5 py-4 font-semibold text-slate-900">{{ item.name }}</td>
                 <td class="px-5 py-4 text-sm text-slate-600">{{ item.level }}</td>
-                <td class="px-5 py-4 text-sm text-slate-600">{{ item.teacher }}</td>
                 <td class="px-5 py-4">
                   <button type="button" class="rounded-lg border-2 border-slate-300 px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:ring-offset-2" @click="editClass(item)">Edit</button>
                 </td>
@@ -25,7 +24,7 @@
       </div>
     </SectionCard>
 
-    <SectionCard :title="form.id ? 'Edit Class Arm' : 'Create Class Arm'" subtitle="Map class arms to levels and class teachers.">
+    <SectionCard :title="form.id ? 'Edit Class' : 'Create Class'" subtitle="Create and manage class configurations.">
       <form class="space-y-5" @submit.prevent="submit">
         <FormField label="Class name" :error="errors.name">
           <input v-model="form.name" class="sa-input" placeholder="JSS1A" />
@@ -36,13 +35,7 @@
             <option v-for="level in levels" :key="level" :value="level">{{ level }}</option>
           </select>
         </FormField>
-        <FormField label="Assigned teacher" :error="errors.teacher">
-          <select v-model="form.teacher" class="sa-input">
-            <option value="">Assign teacher</option>
-            <option v-for="teacher in teachersStore.teacherNames" :key="teacher" :value="teacher">{{ teacher }}</option>
-          </select>
-        </FormField>
-        <button type="submit" class="w-full rounded-lg bg-[#0B1F3A] px-4 py-2.5 font-medium text-white transition hover:bg-[#0F2940] focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:ring-offset-2">{{ form.id ? 'Update Class Arm' : 'Create Class Arm' }}</button>
+        <button type="submit" class="w-full rounded-lg bg-[#0B1F3A] px-4 py-2.5 font-medium text-white transition hover:bg-[#0F2940] focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:ring-offset-2">{{ form.id ? 'Update Class' : 'Create Class' }}</button>
       </form>
     </SectionCard>
   </div>
@@ -54,21 +47,23 @@ import FormField from '../components/FormField.vue'
 import SectionCard from '../components/SectionCard.vue'
 import SkeletonRows from '../components/SkeletonRows.vue'
 import { useSchoolAdminClassesStore } from '../stores/classes'
-import { useSchoolAdminTeachersStore } from '../stores/teachers'
 import { useSchoolAdminUiStore } from '../stores/ui'
 
-const headings = ['Class Name', 'Class Level', 'Assigned Teacher', 'Actions']
+const headings = ['Class Name', 'Class Level', 'Actions']
 const levels = ['JSS1', 'JSS2', 'JSS3', 'SS1', 'SS2', 'SS3']
 const classesStore = useSchoolAdminClassesStore()
-const teachersStore = useSchoolAdminTeachersStore()
 const uiStore = useSchoolAdminUiStore()
 
-const form = reactive({ id: null, name: '', level: '', teacher: '' })
-const errors = reactive({ name: '', level: '', teacher: '' })
+const form = reactive({ id: null, name: '', level: '' })
+const errors = reactive({ name: '', level: '' })
 
-onMounted(() => {
-  classesStore.fetchClasses()
-  teachersStore.fetchTeachers()
+onMounted(async () => {
+  try {
+    await classesStore.fetchClasses()
+  } catch (error) {
+    console.error('Error loading classes:', error)
+    uiStore.addToast({ title: 'Error', message: 'Failed to load classes. Please check your connection.', variant: 'error' })
+  }
 })
 
 const editClass = (item) => Object.assign(form, item)
@@ -76,14 +71,13 @@ const editClass = (item) => Object.assign(form, item)
 const validate = () => {
   errors.name = form.name ? '' : 'Class name is required.'
   errors.level = form.level ? '' : 'Class level is required.'
-  errors.teacher = form.teacher ? '' : 'Assigned teacher is required.'
-  return !errors.name && !errors.level && !errors.teacher
+  return !errors.name && !errors.level
 }
 
 const submit = async () => {
   if (!validate()) return
   await classesStore.saveClass({ ...form })
-  uiStore.addToast({ title: 'Class arm saved', message: 'Class arm configuration was updated.', variant: 'success' })
-  Object.assign(form, { id: null, name: '', level: '', teacher: '' })
+  uiStore.addToast({ title: 'Class saved', message: 'Class configuration was updated.', variant: 'success' })
+  Object.assign(form, { id: null, name: '', level: '' })
 }
 </script>

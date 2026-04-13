@@ -32,7 +32,9 @@ export const useSchoolAdminSessionsStore = defineStore('school-admin-sessions', 
     async fetchSessions() {
       this.loading = true
       try {
-        this.sessions = (await getSessions()).map(normalizeSession)
+        const data = await getSessions()
+        console.log('Fetched sessions:', data)
+        this.sessions = (data || []).map(normalizeSession)
       } finally {
         this.loading = false
       }

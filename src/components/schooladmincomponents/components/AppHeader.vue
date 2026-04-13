@@ -76,7 +76,7 @@ const titles = {
   '/school-admin/dashboard': 'Dashboard Overview',
   '/school-admin/sessions': 'Academic Sessions',
   '/school-admin/terms': 'Terms',
-  '/school-admin/classes': 'Class Arms',
+  '/school-admin/classes': 'Classes',
   '/school-admin/teachers': 'Teachers',
   '/school-admin/subjects': 'Subjects',
   '/school-admin/settings': 'School Settings',
