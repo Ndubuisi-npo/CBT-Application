@@ -149,13 +149,22 @@ const deleteTeacher = async (id) => {
 
 const submit = async () => {
   if (!validate()) return
-  await teachersStore.saveTeacher({
-    ...form,
+  
+  const payload = {
     first_name: form.firstName,
     last_name: form.lastName,
+    email: form.email,
+    phone: form.phone,
+    qualification: form.qualification,
     staff_id: form.staffId,
-    name: `${form.firstName} ${form.lastName}`.trim(),
-  })
+  }
+  
+  // Include ID if editing (form.id exists)
+  if (form.id) {
+    payload.id = form.id
+  }
+  
+  await teachersStore.saveTeacher(payload)
   uiStore.addToast({ title: 'Teacher saved', message: 'Teacher record was updated successfully.', variant: 'success' })
   reset()
 }

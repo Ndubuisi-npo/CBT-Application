@@ -27,10 +27,10 @@
                 <td class="px-5 py-4 text-sm text-slate-600 text-nowrap">{{ fmtDate(term.endDate || term.end_date || '-') }}</td>
                 <td class="px-5 py-4">
                   <div class="flex gap-2">
-                    <StatusBadge :status="termStatus(term)" />
+                    <StatusBadge class="text-nowrap" :status="termStatus(term)" />
                     <button type="button" class="rounded-lg border-2 border-slate-300 px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:ring-offset-2" @click="editTerm(term)">Edit</button>
-                    <button type="button" :class="termStatus(term) === 'Active' ? 'rounded-xl bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 transition hover:bg-red-100' : 'rounded-xl bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700 transition hover:bg-amber-100'" @click="toggleTerm(term.id)">
-                      {{ termStatus(term) === 'Active' ? 'Deactivate' : 'Activate' }}
+                    <button type="button" :class="termStatus(term) === 'Current' ? 'rounded-xl bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 transition hover:bg-red-100' : 'rounded-xl bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700 transition hover:bg-amber-100'" @click="toggleTerm(term.id)">
+                      {{ termStatus(term) === 'Current' ? 'Deactivate' : 'Activate' }}
                     </button>
                     <button type="button" class="rounded-lg bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 transition hover:bg-red-100" @click="deleteTerm(term.id)">Delete</button>
                   </div>
@@ -53,6 +53,10 @@
         <FormField label="End date" :error="errors.endDate">
           <input v-model="form.endDate" type="date" class="sa-input" />
         </FormField>
+        <div class="flex items-center gap-2">
+          <input v-model="form.isCurrent" type="checkbox" id="is-current-term" class="h-4 w-4 rounded border-slate-300 text-[#D4AF37] focus:ring-[#D4AF37]" />
+          <label for="is-current-term" class="text-sm font-medium text-slate-700">Set as current term</label>
+        </div>
         <div class="flex gap-2">
           <button type="submit" class="flex-1 rounded-lg bg-[#0B1F3A] px-4 py-2.5 font-medium text-white transition hover:bg-[#0F2940] focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:ring-offset-2">{{ form.id ? 'Update Term' : 'Create Term' }}</button>
           <button type="button" class="rounded-lg border-2 border-slate-300 px-4 py-2.5 font-medium text-slate-700 transition hover:bg-slate-100" @click="resetForm">Clear</button>
@@ -78,7 +82,7 @@ const headings = ['Term Name', 'Start Date', 'End Date', 'Actions']
 const sessionsStore = useSchoolAdminSessionsStore()
 const uiStore = useSchoolAdminUiStore()
 
-const form = reactive({ id: null, name: '', startDate: '', endDate: '' })
+const form = reactive({ name: '', startDate: '', endDate: '', isCurrent: false })
 const errors = reactive({ name: '', startDate: '', endDate: '' })
 
 const sessionId = computed(() => route.params.id)
@@ -104,10 +108,7 @@ watch(() => sessionId.value, async (newId) => {
 })
 
 const resetForm = () => {
-  form.id = null
-  form.name = ''
-  form.startDate = ''
-  form.endDate = ''
+  Object.assign(form, { name: '', startDate: '', endDate: '', isCurrent: false })
   Object.assign(errors, { name: '', startDate: '', endDate: '' })
 }
 
@@ -119,23 +120,37 @@ const validate = () => {
 }
 
 const editTerm = (term) => {
-  form.id = term.id
   form.name = term.name || ''
   form.startDate = term.startDate || term.start_date || ''
   form.endDate = term.endDate || term.end_date || ''
+  form.isCurrent = term.current || term.status === 'Active'
 }
 
-const termStatus = (term) => ((term.current ?? term.status === 'Active') ? 'Active' : 'Inactive')
+const termStatus = (term) => (term.current ? 'Current' : 'Not current')
 
 const toggleTerm = async (termId) => {
   const term = currentTerms.value.find(t => t.id === termId)
-  const isActive = termStatus(term) === 'Active'
+  const isActive = termStatus(term) === 'Current'
   
   if (isActive) {
-    uiStore.addToast({ title: 'Term deactivated', message: 'Academic term has been deactivated.', variant: 'success' })
+    // Deactivate - set is_current to false
+    try {
+      await sessionsStore.saveTerm(sessionId.value, { 
+        id: termId,
+        is_current: false 
+      })
+      uiStore.addToast({ title: 'Term deactivated', message: 'Academic term has been deactivated.', variant: 'success' })
+    } catch (error) {
+      uiStore.addToast({ title: 'Error', message: 'Failed to deactivate term.', variant: 'error' })
+    }
   } else {
-    await sessionsStore.activateTerm(sessionId.value, termId)
-    uiStore.addToast({ title: 'Term activated', message: 'Active academic term updated.', variant: 'success' })
+    // Activate - use set-current endpoint
+    try {
+      await sessionsStore.activateTerm(sessionId.value, termId)
+      uiStore.addToast({ title: 'Term activated', message: 'Current academic term updated.', variant: 'success' })
+    } catch (error) {
+      uiStore.addToast({ title: 'Error', message: 'Failed to activate term.', variant: 'error' })
+    }
   }
 }
 
@@ -155,12 +170,19 @@ const deleteTerm = async (termId) => {
 const submit = async () => {
   if (!validate() || !sessionId.value) return
   
+  const payload = {
+    name: form.name,
+    start_date: form.startDate,
+    end_date: form.endDate,
+  }
+  
+  // Only include isCurrent if it's true, to avoid sending false
+  if (form.isCurrent) {
+    payload.is_current = true
+  }
+  
   try {
-    await sessionsStore.saveTerm(sessionId.value, {
-      ...form,
-      start_date: form.startDate,
-      end_date: form.endDate,
-    })
+    await sessionsStore.saveTerm(sessionId.value, payload)
     uiStore.addToast({ title: 'Term saved', message: 'Academic term changes were saved.', variant: 'success' })
     resetForm()
   } catch (error) {

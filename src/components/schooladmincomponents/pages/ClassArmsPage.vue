@@ -88,13 +88,11 @@ watch(() => classLevelId.value, async (newId) => {
 })
 
 const resetForm = () => {
-  form.id = null
   form.name = ''
   Object.assign(errors, { name: '' })
 }
 
 const editClassArm = (classArm) => {
-  form.id = classArm.id
   form.name = classArm.name
 }
 

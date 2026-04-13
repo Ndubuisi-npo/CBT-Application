@@ -1,26 +1,38 @@
 import { defineStore } from 'pinia'
 import {
-  activateSession,
-  activateTerm,
+  activateSession as activateSessionAPI,
+  activateTerm as activateTermAPI,
   deleteSession,
   deleteTerm,
   getSessions,
   getTerms,
-  saveSession,
-  saveTerm,
+  saveSession as saveSessionAPI,
+  saveTerm as saveTermAPI,
 } from '../services/api/sessions'
 
-const normalizeSession = (session) => ({
-  ...session,
-  current: session.current ?? session.status === 'Active',
-  status: session.status ?? (session.current ? 'Active' : 'Inactive'),
-})
+const normalizeSession = (session) => {
+  console.log('Normalizing session:', session)
+  const current = session.current ?? (session.status === 'Active' || session.status === 'Current')
+  const status = session.status ?? (session.current ? 'Current' : 'Not current')
+  console.log('Session normalization result:', { current, status })
+  return {
+    ...session,
+    current,
+    status,
+  }
+}
 
-const normalizeTerm = (term) => ({
-  ...term,
-  current: term.current ?? term.status === 'Active',
-  status: term.status ?? (term.current ? 'Active' : 'Inactive'),
-})
+const normalizeTerm = (term) => {
+  console.log('Normalizing term:', term)
+  const current = term.current ?? (term.status === 'Active' || term.status === 'Current')
+  const status = term.status ?? (term.current ? 'Current' : 'Not current')
+  console.log('Term normalization result:', { current, status })
+  return {
+    ...term,
+    current,
+    status,
+  }
+}
 
 export const useSchoolAdminSessionsStore = defineStore('school-admin-sessions', {
   state: () => ({
@@ -33,14 +45,18 @@ export const useSchoolAdminSessionsStore = defineStore('school-admin-sessions', 
       this.loading = true
       try {
         const data = await getSessions()
-        console.log('Fetched sessions:', data)
-        this.sessions = (data || []).map(normalizeSession)
+        console.log('Raw sessions data from API:', data)
+        const normalizedSessions = (data || []).map(normalizeSession)
+        console.log('Normalized sessions:', normalizedSessions)
+        console.log('Session statuses:', normalizedSessions.map(s => ({ id: s.id, name: s.name, current: s.current, status: s.status })))
+        this.sessions = normalizedSessions
+        console.log('Store sessions after update:', this.sessions)
       } finally {
         this.loading = false
       }
     },
     async saveSession(payload) {
-      const record = normalizeSession(await saveSession(payload))
+      const record = normalizeSession(await saveSessionAPI(payload))
       const exists = this.sessions.some((item) => item.id === record.id)
       this.sessions = exists
         ? this.sessions.map((item) => (item.id === record.id ? record : item))
@@ -51,22 +67,33 @@ export const useSchoolAdminSessionsStore = defineStore('school-admin-sessions', 
       this.sessions = this.sessions.filter((item) => item.id !== id)
     },
     async activateSession(id) {
-      await activateSession(id)
-      this.sessions = this.sessions.map((item) => ({
-        ...item,
-        current: item.id === id,
-        status: item.id === id ? 'Active' : 'Inactive',
-      }))
+      console.log('Activating session:', id)
+      console.log('Before activation - current sessions:', this.sessions.filter(s => s.current))
+      try {
+        await activateSessionAPI(id)
+        console.log('Session activation successful, refetching sessions...')
+        // Refetch sessions to get updated current status from backend
+        await this.fetchSessions()
+        console.log('After activation - current sessions:', this.sessions.filter(s => s.current))
+        console.log('Sessions refetched after activation')
+      } catch (error) {
+        console.error('Error activating session:', error)
+        throw error
+      }
     },
     async fetchTerms(sessionId) {
       try {
-        this.terms[sessionId] = (await getTerms(sessionId)).map(normalizeTerm)
+        const data = await getTerms(sessionId)
+        console.log('Fetched terms for session', sessionId, ':', data)
+        const normalizedTerms = data.map(normalizeTerm)
+        console.log('Normalized terms:', normalizedTerms)
+        this.terms[sessionId] = normalizedTerms
       } catch (error) {
         console.error('Failed to fetch terms:', error)
       }
     },
     async saveTerm(sessionId, payload) {
-      const record = normalizeTerm(await saveTerm(sessionId, payload))
+      const record = normalizeTerm(await saveTermAPI(sessionId, payload))
       if (!this.terms[sessionId]) {
         this.terms[sessionId] = []
       }
@@ -82,13 +109,16 @@ export const useSchoolAdminSessionsStore = defineStore('school-admin-sessions', 
       }
     },
     async activateTerm(sessionId, termId) {
-      await activateTerm(sessionId, termId)
-      if (this.terms[sessionId]) {
-        this.terms[sessionId] = this.terms[sessionId].map((item) => ({
-          ...item,
-          current: item.id === termId,
-          status: item.id === termId ? 'Active' : 'Inactive',
-        }))
+      console.log('Activating term:', termId, 'for session:', sessionId)
+      try {
+        await activateTermAPI(sessionId, termId)
+        console.log('Term activation successful, refetching terms...')
+        // Refetch terms to get updated current status from backend
+        await this.fetchTerms(sessionId)
+        console.log('Terms refetched after activation')
+      } catch (error) {
+        console.error('Error activating term:', error)
+        throw error
       }
     },
   },
