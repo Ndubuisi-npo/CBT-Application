@@ -23,8 +23,8 @@ export async function saveSubject(payload) {
     }
 
     if (payload.code !== undefined) body.code = payload.code
-    if (payload.description !== undefined) body.description = payload.description
-    if (payload.class_level_id !== undefined) body.class_level_id = payload.class_level_id
+    if (payload.class_level_ids !== undefined) body.class_level_ids = payload.class_level_ids
+    if (payload.id !== undefined) body.id = payload.id
 
     if (payload.id) {
       return await apiFetch(`/api/subjects/${payload.id}`, {

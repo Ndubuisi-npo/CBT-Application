@@ -22,8 +22,11 @@ export function useSuperAdminTenants() {
       const matchesSearch =
         !query ||
         tenant.name.toLowerCase().includes(query) ||
-        tenant.domain.toLowerCase().includes(query)
-      const matchesStatus = statusFilter.value === 'All' || tenant.status === statusFilter.value
+        tenant.slug.toLowerCase().includes(query) ||
+        tenant.contact?.email.toLowerCase().includes(query)
+      const matchesStatus = statusFilter.value === 'All' || 
+        (statusFilter.value === 'Active' && tenant.is_active) ||
+        (statusFilter.value === 'Suspended' && !tenant.is_active)
       return matchesSearch && matchesStatus
     }),
   )
@@ -49,7 +52,9 @@ export function useSuperAdminTenants() {
     loading.value = true
 
     try {
-      tenants.value = await fetchTenantsRequest()
+      const response = await fetchTenantsRequest()
+      // Handle nested data structure - extract data from response.data
+      tenants.value = Array.isArray(response) ? response : (response.data || [])
       page.value = 1
     } finally {
       loading.value = false
@@ -80,6 +85,10 @@ export function useSuperAdminTenants() {
     return updated
   }
 
+  const getTenant = async (id) => {
+    return await getTenantRequest(id)
+  }
+
   const deleteTenant = async (id) => {
     await deleteTenantRequest(id)
     tenants.value = tenants.value.filter((tenant) => tenant.id !== id)
@@ -97,6 +106,7 @@ export function useSuperAdminTenants() {
     paginationMeta,
     setPage,
     fetchTenants,
+    getTenant,
     createTenant,
     updateTenant,
     suspendTenant,

@@ -12,7 +12,7 @@ import {
 
 const normalizeSession = (session) => {
   console.log('Normalizing session:', session)
-  const current = session.current ?? (session.status === 'Active' || session.status === 'Current')
+  const current = session.current ?? session.is_current ?? (session.status === 'Active' || session.status === 'Current')
   const status = session.status ?? (session.current ? 'Current' : 'Not current')
   console.log('Session normalization result:', { current, status })
   return {
@@ -24,7 +24,7 @@ const normalizeSession = (session) => {
 
 const normalizeTerm = (term) => {
   console.log('Normalizing term:', term)
-  const current = term.current ?? (term.status === 'Active' || term.status === 'Current')
+  const current = term.current ?? term.is_current ?? (term.status === 'Active' || term.status === 'Current')
   const status = term.status ?? (term.current ? 'Current' : 'Not current')
   console.log('Term normalization result:', { current, status })
   return {

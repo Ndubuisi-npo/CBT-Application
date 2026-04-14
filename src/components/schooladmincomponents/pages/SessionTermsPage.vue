@@ -123,7 +123,7 @@ const editTerm = (term) => {
   form.name = term.name || ''
   form.startDate = term.startDate || term.start_date || ''
   form.endDate = term.endDate || term.end_date || ''
-  form.isCurrent = term.current || term.status === 'Active'
+  form.isCurrent = term.current || term.is_current || term.status === 'Active'
 }
 
 const termStatus = (term) => (term.current ? 'Current' : 'Not current')
