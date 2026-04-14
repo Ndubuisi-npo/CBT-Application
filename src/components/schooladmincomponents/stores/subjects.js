@@ -14,6 +14,7 @@ export const useSchoolAdminSubjectsStore = defineStore('school-admin-subjects', 
         console.log('Fetched subjects:', data)
         this.subjects = Array.isArray(data) ? data : []
         console.log('Subjects set to:', this.subjects)
+        console.log('Subject structure:', this.subjects[0])
       } catch (error) {
         console.error('Error fetching subjects:', error)
         this.subjects = []

@@ -38,19 +38,30 @@
               <tr v-for="tenant in paginatedTenants" :key="tenant.id" class="transition hover:bg-slate-50/80">
                 <td class="px-5 py-4">
                   <p class="font-semibold text-slate-900">{{ tenant.name }}</p>
-                  <p class="text-sm text-slate-500">{{ tenant.adminEmail }}</p>
+                  <p class="text-sm text-slate-500">{{ tenant.slug }}</p>
                 </td>
-                <td class="px-5 py-4 text-sm text-slate-600">{{ tenant.domain }}</td>
-                <td class="px-5 py-4"><StatusBadge :status="tenant.status" /></td>
-                <td class="px-5 py-4 text-sm text-slate-600">{{ tenant.plan }}</td>
-                <td class="px-5 py-4 text-sm text-slate-600">{{ tenant.createdAt }}</td>
+                <td class="px-5 py-4 text-sm text-slate-600">
+                  <p>{{ tenant.contact?.email || 'No email' }}</p>
+                  <p class="text-xs text-slate-500">{{ tenant.contact?.phone || 'No phone' }}</p>
+                </td>
+                <td class="px-5 py-4 text-sm text-slate-600">
+                  <p>{{ tenant.location?.address || 'No address' }}</p>
+                  <p class="text-xs text-slate-500">{{ tenant.location?.city || 'No city' }}, {{ tenant.location?.state || 'No state' }}</p>
+                </td>
+                <td class="px-5 py-4">
+                  <StatusBadge :status="tenant.subscription_status || 'Unknown'" />
+                </td>
+                <td class="px-5 py-4">
+                  <StatusBadge :status="tenant.is_active ? 'Active' : 'Suspended'" />
+                </td>
                 <td class="px-5 py-4">
                   <div class="flex flex-wrap gap-2">
                     <button type="button" class="rounded-lg border-2 border-slate-300 px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:ring-offset-2" @click="notify('View tenant details is ready for API hookup.')">View</button>
-                    <button type="button" class="rounded-lg border-2 border-slate-300 px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:ring-offset-2" @click="notify('Edit tenant workflow is ready for API hookup.')">Edit</button>
+                    <button type="button" class="rounded-lg border-2 border-slate-300 px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:ring-offset-2" @click="editTenant(tenant)">Edit</button>
                     <button type="button" class="rounded-xl bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700 transition hover:bg-amber-100" @click="toggleStatus(tenant)">
-                      {{ tenant.status === 'Active' ? 'Suspend' : 'Activate' }}
+                      {{ tenant.is_active ? 'Suspend' : 'Activate' }}
                     </button>
+                    <button type="button" class="rounded-lg bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 transition hover:bg-red-100" @click="deleteTenant(tenant.id)">Delete</button>
                   </div>
                 </td>
               </tr>
@@ -93,10 +104,11 @@ const {
   statusFilter,
   suspendTenant,
   reinstateTenant,
+  deleteTenant: deleteTenantApi,
 } = useSuperAdminTenants()
 const uiStore = useSuperAdminUiStore()
 
-const headings = ['Name', 'Domain/Subdomain', 'Status', 'Plan', 'Created Date', 'Actions']
+const headings = ['Name', 'Contact', 'Location', 'Subscription', 'Status', 'Actions']
 
 onMounted(() => {
   fetchTenants()
@@ -115,9 +127,14 @@ const notify = (message) => {
   })
 }
 
+const formatDate = (dateString) => {
+  if (!dateString) return '-'
+  return new Date(dateString).toLocaleDateString()
+}
+
 const toggleStatus = async (tenant) => {
   try {
-    if (tenant.status === 'Active') {
+    if (tenant.is_active) {
       await suspendTenant(tenant.id)
     } else {
       await reinstateTenant(tenant.id)
@@ -127,6 +144,8 @@ const toggleStatus = async (tenant) => {
       message: 'Tenant status was updated successfully.',
       variant: 'success',
     })
+    // Refresh data to get updated tenant information
+    await fetchTenants()
   } catch (error) {
     uiStore.addToast({
       title: 'Error',
@@ -134,5 +153,33 @@ const toggleStatus = async (tenant) => {
       variant: 'error',
     })
   }
+}
+
+const deleteTenant = async (id) => {
+  if (!confirm('Are you sure you want to delete this tenant? This action cannot be undone.')) {
+    return
+  }
+  
+  try {
+    await deleteTenantApi(id)
+    uiStore.addToast({
+      title: 'Tenant deleted',
+      message: 'Tenant has been deleted successfully.',
+      variant: 'success',
+    })
+    // Refresh data to get updated tenant list
+    await fetchTenants()
+  } catch (error) {
+    uiStore.addToast({
+      title: 'Error',
+      message: error.message || 'Failed to delete tenant.',
+      variant: 'error',
+    })
+  }
+}
+
+const editTenant = (tenant) => {
+  // Navigate to edit page
+  router.push(`/super-admin/tenants/${tenant.id}/edit`)
 }
 </script>

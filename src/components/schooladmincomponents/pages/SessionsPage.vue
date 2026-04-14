@@ -96,7 +96,7 @@ const editSession = (session) => {
   form.name = session.name
   form.startDate = session.startDate || session.start_date || ''
   form.endDate = session.endDate || session.end_date || ''
-  form.isCurrent = session.current || session.status === 'Active'
+  form.isCurrent = session.current || session.is_current || session.status === 'Active'
 }
 
 const sessionStatus = (session) => (session.current ? 'Current' : 'Not current')
