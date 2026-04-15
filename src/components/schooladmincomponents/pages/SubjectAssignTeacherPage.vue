@@ -47,7 +47,7 @@
         <FormField label="Teacher" :error="errors.user_id">
           <select v-model="form.user_id" class="w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#D4AF37]">
             <option value="">Select a teacher</option>
-            <option v-for="teacher in teachersStore.teachers" :key="teacher.id" :value="teacher.id">
+            <option v-for="teacher in teachersStore.teachers" :key="teacher.id" :value="teacher.user?.id || teacher.id">
               {{ teacher.user?.first_name }} {{ teacher.user?.last_name }}
             </option>
           </select>
@@ -128,7 +128,7 @@ const errors = reactive({
 })
 
 const getTeacherName = (teacherId) => {
-  const teacher = teachersStore.teachers.find(t => t.id === teacherId)
+  const teacher = teachersStore.teachers.find(t => (t.user?.id || t.id) === teacherId)
   return teacher ? `${teacher.user?.first_name} ${teacher.user?.last_name}` : 'Unknown'
 }
 
@@ -172,6 +172,11 @@ const submit = async () => {
   if (!validate()) return
 
   try {
+    console.log('Submitting teacher assignment:', {
+      subjectId: subjectId.value,
+      form: form
+    })
+    
     await subjectsStore.assignTeacher(subjectId.value, form)
     uiStore.addToast({ title: 'Teacher assigned', message: 'Teacher has been successfully assigned to the subject.', variant: 'success' })
     
@@ -184,6 +189,7 @@ const submit = async () => {
     
     await subjectsStore.fetchSubjects() // Refresh to get updated assignments
   } catch (error) {
+    console.error('Assignment error:', error)
     uiStore.addToast({ title: 'Error', message: error.message || 'Failed to assign teacher.', variant: 'error' })
   }
 }
@@ -194,6 +200,12 @@ onMounted(async () => {
     await classesStore.fetchClasses()
     await teachersStore.fetchTeachers()
     await sessionsStore.fetchSessions()
+    
+    // Debug: Log teacher data structure
+    console.log('Teachers data structure:', teachersStore.teachers)
+    if (teachersStore.teachers.length > 0) {
+      console.log('First teacher structure:', teachersStore.teachers[0])
+    }
   } catch (error) {
     console.error('Error loading data:', error)
     uiStore.addToast({ title: 'Error', message: 'Failed to load data. Please check your connection.', variant: 'error' })

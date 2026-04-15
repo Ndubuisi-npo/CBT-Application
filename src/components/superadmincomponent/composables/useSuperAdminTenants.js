@@ -2,6 +2,7 @@ import { computed, ref } from 'vue'
 import {
   createTenant as createTenantRequest,
   fetchTenants as fetchTenantsRequest,
+  getTenant as getTenantRequest,
   suspendTenant as suspendTenantRequest,
   reinstateTenant as reinstateTenantRequest,
   updateTenant as updateTenantRequest,
