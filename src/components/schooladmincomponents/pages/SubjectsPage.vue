@@ -134,19 +134,13 @@ const formatAssignedTeachers = (subject) => {
     return '-'
   }
   
-  console.log('Teacher assignments for subject:', subject.teacher_assignments)
-  console.log('Available teachers:', teachersStore.teachers)
-  
   const teacherNames = subject.teacher_assignments
     .map(assignment => {
-      console.log('Looking for teacher with user_id:', assignment.user_id)
-      const teacher = teachersStore.teachers.find(t => (t.user?.id || t.id) === assignment.user_id)
-      console.log('Found teacher:', teacher)
+      const teacher = teachersStore.teachers.find(t => t.id === assignment.user_id)
       return teacher ? `${teacher.user?.first_name} ${teacher.user?.last_name}` : null
     })
     .filter(Boolean)
   
-  console.log('Teacher names:', teacherNames)
   return teacherNames.length > 0 ? teacherNames.join(', ') : '-'
 }
 
