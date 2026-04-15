@@ -13,7 +13,7 @@
           <div v-for="tenant in tenants.slice(0, 4)" :key="tenant.id" class="flex flex-col gap-4 rounded-2xl border border-slate-100 bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p class="font-semibold text-slate-900">{{ tenant.name }}</p>
-              <p class="text-sm text-slate-500">{{ tenant.slug }} * {{ tenant.subscription_status || 'Unknown' }}</p>
+              <p class="text-sm text-slate-500">{{ tenant.slug }} * {{ tenant.subscription_status }}</p>
             </div>
             <div class="flex items-center gap-3">
               <StatusBadge :status="tenant.is_active ? 'Active' : 'Suspended'" />
@@ -55,16 +55,11 @@ onMounted(() => {
 })
 
 const metrics = computed(() => ({
-  totalTenants: `${tenants.value.length || 0}`,
-  activeSubscriptions: `${tenants.value.filter((tenant) => tenant.is_active).length || 0}`,
-  suspendedTenants: `${tenants.value.filter((tenant) => !tenant.is_active).length || 0}`,
-  revenue: tenants.value.length > 0 ? `$${(tenants.value.filter((tenant) => tenant.is_active).length * 729).toLocaleString()}` : '$0',
+  totalTenants: `${tenants.value.length}`,
+  activeSubscriptions: `${tenants.value.filter((tenant) => tenant.is_active).length}`,
+  suspendedTenants: `${tenants.value.filter((tenant) => !tenant.is_active).length}`,
+  revenue: '$84,200',
 }))
-
-const formatDate = (dateString) => {
-  if (!dateString) return 'Unknown'
-  return new Date(dateString).toLocaleDateString()
-}
 
 const healthMetrics = [
   { label: 'API uptime', value: '99.94%', progress: '94%' },
@@ -72,4 +67,9 @@ const healthMetrics = [
   { label: 'Open support cases', value: '12', progress: '31%' },
   { label: 'Provisioning queue', value: '4 pending', progress: '45%' },
 ]
+
+const formatDate = (dateString) => {
+  if (!dateString) return 'Not set'
+  return new Date(dateString).toLocaleDateString()
+}
 </script>

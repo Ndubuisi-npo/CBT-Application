@@ -106,11 +106,11 @@ onMounted(async () => {
     
     // Populate form with tenant data
     form.name = tenant.name || ''
-    form.email = tenant.contact?.email || ''
-    form.phone = tenant.contact?.phone || ''
-    form.address = tenant.location?.address || ''
-    form.city = tenant.location?.city || ''
-    form.state = tenant.location?.state || ''
+    form.email = tenant.email || ''
+    form.phone = tenant.phone || ''
+    form.address = tenant.address || ''
+    form.city = tenant.city || ''
+    form.state = tenant.state || ''
     form.is_active = tenant.is_active || false
   } catch (error) {
     console.error('Failed to load tenant:', error)

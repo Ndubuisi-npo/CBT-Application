@@ -20,7 +20,9 @@ export const useSchoolAdminTeachersStore = defineStore('school-admin-teachers', 
       this.loading = true
       try {
        const response = await getTeachers();
-       console.log(response);
+       console.log('Teachers API response:', response);
+       console.log('Teachers data type:', typeof response);
+       console.log('Teachers data is array:', Array.isArray(response));
        
         this.teachers = response || []
       } finally {

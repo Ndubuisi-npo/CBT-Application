@@ -41,12 +41,12 @@
                   <p class="text-sm text-slate-500">{{ tenant.slug }}</p>
                 </td>
                 <td class="px-5 py-4 text-sm text-slate-600">
-                  <p>{{ tenant.contact?.email || 'No email' }}</p>
-                  <p class="text-xs text-slate-500">{{ tenant.contact?.phone || 'No phone' }}</p>
+                  <p>{{ tenant.email || 'No email' }}</p>
+                  <p class="text-xs text-slate-500">{{ tenant.phone || 'No phone' }}</p>
                 </td>
                 <td class="px-5 py-4 text-sm text-slate-600">
-                  <p>{{ tenant.location?.address || 'No address' }}</p>
-                  <p class="text-xs text-slate-500">{{ tenant.location?.city || 'No city' }}, {{ tenant.location?.state || 'No state' }}</p>
+                  <p>{{ tenant.address || 'No address' }}</p>
+                  <p class="text-xs text-slate-500">{{ tenant.city || 'No city' }}, {{ tenant.state || 'No state' }}</p>
                 </td>
                 <td class="px-5 py-4">
                   <StatusBadge :status="tenant.subscription_status || 'Unknown'" />
@@ -56,7 +56,7 @@
                 </td>
                 <td class="px-5 py-4">
                   <div class="flex flex-wrap gap-2">
-                    <button type="button" class="rounded-lg border-2 border-slate-300 px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:ring-offset-2" @click="notify('View tenant details is ready for API hookup.')">View</button>
+                    <button type="button" class="rounded-lg border-2 border-slate-300 px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:ring-offset-2" @click="viewTenant(tenant)">View</button>
                     <button type="button" class="rounded-lg border-2 border-slate-300 px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:ring-offset-2" @click="editTenant(tenant)">Edit</button>
                     <button type="button" class="rounded-xl bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700 transition hover:bg-amber-100" @click="toggleStatus(tenant)">
                       {{ tenant.is_active ? 'Suspend' : 'Activate' }}
@@ -78,19 +78,20 @@
         />
       </div>
     </SectionCard>
-  <!-- View Tenant Modal -->
+    
+    <!-- View Tenant Modal -->
     <ViewTenantModal 
-      :show="showViewModal" 
+      :is-open="showViewModal" 
       :tenant-id="selectedTenantId" 
-      @close="showViewModal = false" 
+      @close="closeViewModal" 
     />
     
     <!-- Edit Tenant Modal -->
     <EditTenantModal 
-      :show="showEditModal" 
+      :is-open="showEditModal" 
       :tenant-id="selectedTenantId" 
-      @close="showEditModal = false"
-      @updated="handleTenantUpdated"
+      @close="closeEditModal" 
+      @updated="onTenantUpdated" 
     />
   </div>
 </template>
@@ -125,6 +126,11 @@ const {
 const uiStore = useSuperAdminUiStore()
 
 const headings = ['Name', 'Contact', 'Location', 'Subscription', 'Status', 'Actions']
+
+// Modal state
+const showViewModal = ref(false)
+const showEditModal = ref(false)
+const selectedTenantId = ref(null)
 
 onMounted(() => {
   fetchTenants()
@@ -194,8 +200,27 @@ const deleteTenant = async (id) => {
   }
 }
 
+const viewTenant = (tenant) => {
+  selectedTenantId.value = tenant.id
+  showViewModal.value = true
+}
+
 const editTenant = (tenant) => {
-  // Navigate to edit page
-  router.push(`/super-admin/tenants/${tenant.id}/edit`)
+  selectedTenantId.value = tenant.id
+  showEditModal.value = true
+}
+
+const closeViewModal = () => {
+  showViewModal.value = false
+  selectedTenantId.value = null
+}
+
+const closeEditModal = () => {
+  showEditModal.value = false
+  selectedTenantId.value = null
+}
+
+const onTenantUpdated = () => {
+  fetchTenants() // Refresh the tenant list
 }
 </script>
