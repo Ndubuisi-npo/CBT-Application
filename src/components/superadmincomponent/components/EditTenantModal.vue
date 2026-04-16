@@ -109,8 +109,8 @@ const props = defineProps({
     type: Boolean,
     default: false
   },
-  tenantId: {
-    type: String,
+  tenant: {
+    type: Object,
     default: null
   }
 })
@@ -118,7 +118,7 @@ const props = defineProps({
 const emit = defineEmits(['close', 'updated'])
 
 const uiStore = useSuperAdminUiStore()
-const tenant = ref(null)
+// const tenant = ref(null)
 const loading = ref(false)
 const submitting = ref(false)
 
@@ -141,29 +141,17 @@ const errors = reactive({
   state: '',
 })
 
-const loadTenant = async () => {
-  if (!props.tenantId) return
+const loadTenant = () => {
+  if (!props.tenant) return
   
-  loading.value = true
-  try {
-    const { useSuperAdminTenants } = await import('../composables/useSuperAdminTenants')
-    const { getTenant } = useSuperAdminTenants()
-    tenant.value = await getTenant(props.tenantId)
-    
-    // Populate form with tenant data
-    form.name = tenant.value.name || ''
-    form.email = tenant.value.email || ''
-    form.phone = tenant.value.phone || ''
-    form.address = tenant.value.address || ''
-    form.city = tenant.value.city || ''
-    form.state = tenant.value.state || ''
-    form.is_active = tenant.value.is_active || false
-  } catch (error) {
-    console.error('Failed to load tenant:', error)
-    tenant.value = null
-  } finally {
-    loading.value = false
-  }
+  // Populate form with tenant data
+  form.name = props.tenant.name || ''
+  form.email = props.tenant.email || ''
+  form.phone = props.tenant.phone || ''
+  form.address = props.tenant.address || ''
+  form.city = props.tenant.city || ''
+  form.state = props.tenant.state || ''
+  form.is_active = props.tenant.is_active || false
 }
 
 const validate = () => {
@@ -195,7 +183,7 @@ const handleSubmit = async () => {
       is_active: form.is_active,
     }
 
-    await updateTenant(props.tenantId, payload)
+    await updateTenant(props.tenant.id, payload)
     
     uiStore.addToast({
       title: 'Tenant updated',
@@ -221,7 +209,7 @@ const close = () => {
 }
 
 watch(() => props.isOpen, (newValue) => {
-  if (newValue && props.tenantId) {
+  if (newValue && props.tenant) {
     loadTenant()
   }
 })

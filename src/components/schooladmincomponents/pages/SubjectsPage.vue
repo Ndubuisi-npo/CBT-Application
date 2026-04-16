@@ -137,7 +137,7 @@ const formatAssignedTeachers = (subject) => {
   const teacherNames = subject.teacher_assignments
     .map(assignment => {
       const teacher = teachersStore.teachers.find(t => t.id === assignment.user_id)
-      return teacher ? `${teacher.user?.first_name} ${teacher.user?.last_name}` : null
+      return teacher ? `${teacher.first_name || ''} ${teacher.last_name || ''}`.trim() : null
     })
     .filter(Boolean)
   

@@ -62,7 +62,7 @@
             <div class="grid grid-cols-1 gap-4">
               <div>
                 <label class="block text-sm text-slate-500">Address</label>
-                <p class="text-sm font-medium text-slate-900">{{ tenant.address || 'Not provided' }}</p>
+                <p class="text-sm font-medium text-slate-900">{{ tenant.address || 'No Address' }}</p>
               </div>
               <div class="grid grid-cols-2 gap-4">
                 <div>
@@ -83,7 +83,7 @@
             <div class="grid grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm text-slate-500">Subscription Status</label>
-                <StatusBadge :status="tenant.subscription_status || 'Unknown'" />
+                <StatusBadge :status="tenant.subscription_status || 'Not Active'" />
               </div>
               <div>
                 <label class="block text-sm text-slate-500">Plan ID</label>
@@ -139,7 +139,7 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import StatusBadge from './StatusBadge.vue'
 
 const props = defineProps({
@@ -147,16 +147,19 @@ const props = defineProps({
     type: Boolean,
     default: false
   },
-  tenantId: {
-    type: String,
+  tenant: {
+    type: Object,
     default: null
   }
 })
 
+// console.log(props.tenant)
+
 const emit = defineEmits(['close'])
 
-const tenant = ref(null)
+// const tenant = ref(null)
 const loading = ref(false)
+
 
 const formatDate = (dateString) => {
   if (!dateString) return 'Not set'
@@ -189,4 +192,9 @@ watch(() => props.isOpen, (newValue) => {
     loadTenant()
   }
 })
+onMounted(() => {
+  console.log(props)
+})
 </script>
+
+

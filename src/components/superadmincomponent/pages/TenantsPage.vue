@@ -37,7 +37,7 @@
             <tbody class="divide-y divide-slate-100">
               <tr v-for="tenant in paginatedTenants" :key="tenant.id" class="transition hover:bg-slate-50/80">
                 <td class="px-5 py-4">
-                  <p class="font-semibold text-slate-900">{{ tenant.name }}</p>
+                  <p class="font-semibold text-slate-900 text-nowrap">{{ tenant.name }}</p>
                   <p class="text-sm text-slate-500">{{ tenant.slug }}</p>
                 </td>
                 <td class="px-5 py-4 text-sm text-slate-600">
@@ -49,7 +49,7 @@
                   <p class="text-xs text-slate-500">{{ tenant.city || 'No city' }}, {{ tenant.state || 'No state' }}</p>
                 </td>
                 <td class="px-5 py-4">
-                  <StatusBadge :status="tenant.subscription_status || 'Unknown'" />
+                  <StatusBadge :status="tenant.subscription_status || 'Not Active'" />
                 </td>
                 <td class="px-5 py-4">
                   <StatusBadge :status="tenant.is_active ? 'Active' : 'Suspended'" />
@@ -58,6 +58,7 @@
                   <div class="flex flex-wrap gap-2">
                     <button type="button" class="rounded-lg border-2 border-slate-300 px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:ring-offset-2" @click="viewTenant(tenant)">View</button>
                     <button type="button" class="rounded-lg border-2 border-slate-300 px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:ring-offset-2" @click="editTenant(tenant)">Edit</button>
+                    <br>
                     <button type="button" class="rounded-xl bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700 transition hover:bg-amber-100" @click="toggleStatus(tenant)">
                       {{ tenant.is_active ? 'Suspend' : 'Activate' }}
                     </button>
@@ -82,14 +83,14 @@
     <!-- View Tenant Modal -->
     <ViewTenantModal 
       :is-open="showViewModal" 
-      :tenant-id="selectedTenantId" 
+      :tenant="currentlyViewing" 
       @close="closeViewModal" 
     />
     
     <!-- Edit Tenant Modal -->
     <EditTenantModal 
       :is-open="showEditModal" 
-      :tenant-id="selectedTenantId" 
+      :tenant="currentlyViewing" 
       @close="closeEditModal" 
       @updated="onTenantUpdated" 
     />
@@ -131,6 +132,7 @@ const headings = ['Name', 'Contact', 'Location', 'Subscription', 'Status', 'Acti
 const showViewModal = ref(false)
 const showEditModal = ref(false)
 const selectedTenantId = ref(null)
+const currentlyViewing = ref(null);
 
 onMounted(() => {
   fetchTenants()
@@ -201,23 +203,23 @@ const deleteTenant = async (id) => {
 }
 
 const viewTenant = (tenant) => {
-  selectedTenantId.value = tenant.id
+  currentlyViewing.value = tenant
   showViewModal.value = true
 }
 
 const editTenant = (tenant) => {
-  selectedTenantId.value = tenant.id
+  currentlyViewing.value = tenant
   showEditModal.value = true
 }
 
 const closeViewModal = () => {
   showViewModal.value = false
-  selectedTenantId.value = null
+  currentlyViewing.value = null
 }
 
 const closeEditModal = () => {
   showEditModal.value = false
-  selectedTenantId.value = null
+  currentlyViewing.value = null
 }
 
 const onTenantUpdated = () => {

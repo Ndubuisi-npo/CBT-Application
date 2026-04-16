@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col gap-4 border-t border-slate-100 pt-5 sm:flex-row sm:items-center sm:justify-between">
+  <div class="flex flex-col gap-4 border-t border-slate-100 py-3 px-4 sm:flex-row sm:items-center sm:justify-between">
     <p class="text-sm text-slate-500">Showing {{ start }}-{{ end }} of {{ total }} records</p>
     <div class="flex items-center gap-2">
       <button type="button" class="sa-button-secondary px-4 py-2 text-sm" :disabled="page <= 1" @click="$emit('change', page - 1)">

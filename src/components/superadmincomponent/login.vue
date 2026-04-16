@@ -68,13 +68,6 @@
           <span>{{ authLoading ? 'Signing in...' : 'Login to Dashboard' }}</span>
         </button>
       </form>
-
-      <div class="mt-8 text-sm text-slate-500">
-        <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-          <p class="font-semibold text-slate-800">Demo access</p>
-          <p class="mt-1">Use any valid email and a password with 6+ characters.</p>
-        </div>
-      </div>
     </div>
   </div>
 </template>

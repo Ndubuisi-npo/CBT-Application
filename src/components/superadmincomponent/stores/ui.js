@@ -32,5 +32,8 @@ export const useSuperAdminUiStore = defineStore('super-admin-ui', {
         this.toasts = this.toasts.filter((entry) => entry.id !== item.id)
       }, 3200)
     },
+    removeToast(id) {
+      this.toasts = this.toasts.filter((toast) => toast.id !== id)
+    },
   },
 })
