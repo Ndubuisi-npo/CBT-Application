@@ -33,6 +33,14 @@ export async function saveTeacher(payload) {
   }
 }
 
+export async function revokeTeacher(id) {
+  try {
+    return await apiFetch(`/api/teachers/${id}/revoke`, { method: 'PATCH' })
+  } catch (error) {
+    throw new Error(extractErrorMessage(error, 'Unable to revoke teacher.'))
+  }
+}
+
 export async function deleteTeacher(id) {
   try {
     return await apiFetch(`/api/teachers/${id}`, { method: 'DELETE' })

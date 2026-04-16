@@ -70,11 +70,12 @@ onMounted(async () => {
 })
 
 const editClassLevel = (classLevel) => {
+  form.id = classLevel.id
   form.name = classLevel.name
 }
 
 const reset = () => {
-  form.name = ''
+  Object.assign(form, { id: null, name: '' })
 }
 
 const validate = () => {

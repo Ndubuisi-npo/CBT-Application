@@ -7,7 +7,7 @@
   >
     <div class="flex h-20 items-center gap-4 border-b border-white/10 px-5" :class="collapsed ? 'justify-center' : ''">
       <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-lg font-bold text-[#D4AF37]">
-        {{ initials }}
+        <Building2 class="h-5 w-5" />
       </div>
       <div v-if="!collapsed">
         <p class="text-xs uppercase tracking-[0.28em] text-[#D4AF37]">School Admin</p>
@@ -41,7 +41,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
-import { BookCopy, CalendarRange, Columns3, LayoutDashboard, PanelLeftClose, Settings, Shapes, School, Users } from 'lucide-vue-next'
+import { BookCopy, CalendarRange, Columns3, LayoutDashboard, PanelLeftClose, Settings, Shapes, School, Users, Building2 } from 'lucide-vue-next'
 import { useSchoolAdminProfileStore } from '../stores/profile'
 
 defineProps({

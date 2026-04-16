@@ -6,7 +6,7 @@
           <PanelLeft class="h-5 w-5" />
         </button>
         <div>
-          <p class="text-xs font-semibold uppercase tracking-[0.24em] text-[#D4AF37]">{{ profile.schoolName }}</p>
+          <p class="text-xs font-semibold uppercase tracking-[0.24em] text-[#D4AF37]">{{ authStore.tenant?.name || 'School Admin' }}</p>
           <h2 class="text-xl font-semibold tracking-tight text-slate-900">{{ pageTitle }}</h2>
         </div>
       </div>
@@ -35,7 +35,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Bell, PanelLeft, LogOut } from 'lucide-vue-next'
 import { useSchoolAdminAuthStore } from '../stores/auth'
@@ -49,6 +49,13 @@ const router = useRouter()
 const authStore = useSchoolAdminAuthStore()
 const profileStore = useSchoolAdminProfileStore()
 const uiStore = useSchoolAdminUiStore()
+
+// Fetch profile on component mount to ensure school name is loaded
+onMounted(() => {
+  if (!profileStore.profile.schoolName) {
+    profileStore.fetchProfile()
+  }
+})
 
 const profile = computed(() => profileStore.profile)
 const adminInitials = computed(() => (authStore.user?.name || 'School Admin').split(' ').map((part) => part[0]).slice(0, 2).join(''))

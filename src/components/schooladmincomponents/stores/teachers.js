@@ -2,6 +2,7 @@ import { defineStore } from "pinia";
 import {
     getTeachers,
     saveTeacher,
+    revokeTeacher,
     deleteTeacher,
 } from "../services/api/teachers";
 
@@ -10,13 +11,22 @@ export const useSchoolAdminTeachersStore = defineStore(
     {
         state: () => ({
             teachers: [],
+            archivedTeachers: [],
             totalTeachers: 0,
+            totalArchivedTeachers: 0,
             loading: false,
         }),
 
         getters: {
             teacherNames(state) {
                 return state.teachers.map((teacher) => {
+                    const first = teacher.first_name || "";
+                    const last = teacher.last_name || "";
+                    return `${first} ${last}`.trim();
+                });
+            },
+            archivedTeacherNames(state) {
+                return state.archivedTeachers.map((teacher) => {
                     const first = teacher.first_name || "";
                     const last = teacher.last_name || "";
                     return `${first} ${last}`.trim();
@@ -74,6 +84,39 @@ export const useSchoolAdminTeachersStore = defineStore(
                     // Add new
                     this.teachers = [record, ...this.teachers];
                     this.totalTeachers++;
+                }
+            },
+
+            async revokeTeacher(id) {
+                const teacher = this.teachers.find((t) => t.id === id);
+                if (teacher) {
+                    await revokeTeacher(id);
+                    // Move teacher from active to archived
+                    this.teachers = this.teachers.filter((item) => item.id !== id);
+                    this.totalTeachers--;
+                    this.archivedTeachers = [teacher, ...this.archivedTeachers];
+                    this.totalArchivedTeachers++;
+                }
+            },
+
+            async fetchArchivedTeachers(params = {}) {
+                this.loading = true;
+                try {
+                    const response = await getTeachers({ ...params, archived: true });
+                    console.log("Archived teachers API response:", response);
+                    
+                    if (Array.isArray(response)) {
+                        this.archivedTeachers = response || [];
+                        this.totalArchivedTeachers = response.length || 0;
+                    } else if (response && response.data) {
+                        this.archivedTeachers = response.data || [];
+                        this.totalArchivedTeachers = response.total ?? (Array.isArray(response.data) ? response.data.length : 0);
+                    } else {
+                        this.archivedTeachers = [];
+                        this.totalArchivedTeachers = 0;
+                    }
+                } finally {
+                    this.loading = false;
                 }
             },
 

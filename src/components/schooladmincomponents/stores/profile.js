@@ -4,8 +4,8 @@ import { getProfile, saveProfile } from '../services/api/profile'
 export const useSchoolAdminProfileStore = defineStore('school-admin-profile', {
   state: () => ({
     profile: {
-      schoolName: 'Greenfield International School',
-      domain: 'greenfield.educbt.app',
+      schoolName: '',
+      domain: '',
       logo: '',
       address: '',
       email: '',

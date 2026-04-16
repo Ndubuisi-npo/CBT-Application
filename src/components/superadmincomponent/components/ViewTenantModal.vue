@@ -86,8 +86,8 @@
                 <StatusBadge :status="tenant.subscription_status || 'Not Active'" />
               </div>
               <div>
-                <label class="block text-sm text-slate-500">Plan ID</label>
-                <p class="text-sm font-medium text-slate-900">{{ tenant.plan_id || 'Not assigned' }}</p>
+                <label class="block text-sm text-slate-500">Plan</label>
+                <p class="text-sm font-medium text-slate-900">{{ planName }}</p>
               </div>
               <div>
                 <label class="block text-sm text-slate-500">Subscription Ends</label>
@@ -139,8 +139,9 @@
 </template>
 
 <script setup>
-import { onMounted, ref, watch } from 'vue'
+import { onMounted, ref, watch, computed } from 'vue'
 import StatusBadge from './StatusBadge.vue'
+import { useSuperAdminPlans } from '../composables/useSuperAdminPlans'
 
 const props = defineProps({
   isOpen: {
@@ -159,6 +160,18 @@ const emit = defineEmits(['close'])
 
 // const tenant = ref(null)
 const loading = ref(false)
+
+// Initialize plans composable
+const { plans, fetchPlans } = useSuperAdminPlans()
+
+// Computed property to get plan name by ID
+const planName = computed(() => {
+  if (!props.tenant?.plan_id || !plans.value.length) {
+    return 'Not assigned'
+  }
+  const plan = plans.value.find(p => p.id === props.tenant.plan_id)
+  return plan ? plan.name : 'Unknown Plan'
+})
 
 
 const formatDate = (dateString) => {
@@ -188,12 +201,14 @@ const close = () => {
 }
 
 watch(() => props.isOpen, (newValue) => {
-  if (newValue && props.tenantId) {
-    loadTenant()
+  if (newValue) {
+    // Fetch plans to ensure we have the latest data
+    fetchPlans()
   }
 })
 onMounted(() => {
-  console.log(props)
+  // Fetch plans on component mount to ensure data is available
+  fetchPlans()
 })
 </script>
 

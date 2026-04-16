@@ -47,19 +47,34 @@ import OverviewCard from '../components/OverviewCard.vue'
 import SectionCard from '../components/SectionCard.vue'
 import StatusBadge from '../components/StatusBadge.vue'
 import { useSuperAdminTenants } from '../composables/useSuperAdminTenants'
+import { useSuperAdminPlans } from '../composables/useSuperAdminPlans'
 
 const { fetchTenants, tenants } = useSuperAdminTenants()
+const { plans, fetchPlans } = useSuperAdminPlans()
 
 onMounted(() => {
   if (!tenants.value.length) fetchTenants()
+  if (!plans.value.length) fetchPlans()
 })
 
-const metrics = computed(() => ({
-  totalTenants: `${tenants.value.length}`,
-  activeSubscriptions: `${tenants.value.filter((tenant) => tenant.is_active).length}`,
-  suspendedTenants: `${tenants.value.filter((tenant) => !tenant.is_active).length}`,
-  revenue: '$84,200',
-}))
+const metrics = computed(() => {
+  const activeTenants = tenants.value.filter((tenant) => tenant.is_active)
+  const totalRevenue = activeTenants.reduce((sum, tenant) => {
+    if (!tenant.plan_id) return sum
+    const plan = plans.value.find(p => p.id === tenant.plan_id)
+    if (!plan) return sum
+    // Use monthly price for calculation
+    const monthlyPrice = plan.price_monthly || 0
+    return sum + monthlyPrice
+  }, 0)
+  
+  return {
+    totalTenants: `${tenants.value.length}`,
+    activeSubscriptions: `${activeTenants.length}`,
+    suspendedTenants: `${tenants.value.filter((tenant) => !tenant.is_active).length}`,
+    revenue: `$${totalRevenue.toLocaleString()}`,
+  }
+})
 
 const healthMetrics = [
   { label: 'API uptime', value: '99.94%', progress: '94%' },

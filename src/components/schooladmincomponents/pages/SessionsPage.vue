@@ -20,7 +20,7 @@
                   <div class="flex gap-2">
                     <button type="button" class="rounded-lg border-2 border-slate-300 px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:ring-offset-2" @click="editSession(session)">Edit</button>
                     <RouterLink :to="`/school-admin/terms/${session.id}`" class="rounded-lg bg-[#0B1F3A] px-3 py-2 text-xs font-medium text-white transition hover:bg-[#0F2940] focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:ring-offset-2">Terms</RouterLink>
-                    <button type="button" :class="sessionStatus(session) === 'Current' ? 'rounded-xl bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 transition hover:bg-red-100' : 'rounded-xl bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700 transition hover:bg-amber-100'" @click="toggleSession(session.id)">
+                    <button type="button" :class="sessionStatus(session) === 'Current' ? 'rounded-xl bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 transition hover:bg-red-100' : 'rounded-xl bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100'" @click="toggleSession(session.id)">
                       {{ sessionStatus(session) === 'Current' ? 'Deactivate' : 'Activate' }}
                     </button>
                     <button type="button" class="rounded-lg bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 transition hover:bg-red-100" @click="deleteSession(session.id)">Delete</button>

@@ -15,6 +15,13 @@
             <p class="text-sm font-semibold text-slate-900">{{ toast.title }}</p>
             <p class="mt-1 text-sm leading-5 text-slate-500">{{ toast.message }}</p>
           </div>
+          <button
+            @click.stop="uiStore.removeToast(toast.id)"
+            class="rounded-lg p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+            type="button"
+          >
+            <X class="h-4 w-4" />
+          </button>
         </div>
       </div>
     </TransitionGroup>
@@ -22,10 +29,15 @@
 </template>
 
 <script setup>
-import { CircleAlert, CircleCheckBig } from 'lucide-vue-next'
+import { CircleAlert, CircleCheckBig, X } from 'lucide-vue-next'
 import { useSchoolAdminUiStore } from '../stores/ui'
 
 const uiStore = useSchoolAdminUiStore()
+
+const removeToast = (id) => {
+  console.log('Removing toast:', id)
+  uiStore.removeToast(id)
+}
 </script>
 
 <style scoped>
