@@ -43,6 +43,27 @@ export function clearApiState() {
   }
 }
 
+// NEW: Helper to dynamically extract the tenant handle from the browser URL
+function getTenantHandle() {
+  if (typeof window === 'undefined') return null
+
+  const hostname = window.location.hostname
+  const parts = hostname.split('.')
+
+  // Localhost logic (e.g., lek.localhost vs localhost)
+  if (hostname.includes('localhost')) {
+    return parts.length > 1 ? parts[0] : null
+  }
+
+  // Production logic (e.g., lek.educbt.com vs educbt.com)
+  // If using a standard domain, a subdomain means parts length > 2
+  if (parts.length > 2 && parts[0] !== 'www') {
+    return parts[0]
+  }
+
+  return null
+}
+
 export async function apiFetch(path, options = {}) {
   const headers = {
     Accept: 'application/json',
@@ -53,11 +74,23 @@ export async function apiFetch(path, options = {}) {
   if (authToken) {
     headers.Authorization = `Bearer ${authToken}`
   }
+  
+  const tenantHandle = getTenantHandle()
+  if (tenantHandle) {
+    headers['X-Tenant'] = tenantHandle
+  }
 
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
     headers,
   })
+  
+  // if (response.status === 401) {
+  //   clearApiState()
+  //   if (typeof window !== 'undefined') {
+  //     window.location.href = '/login'
+  //   }
+  // }
 
   const contentType = response.headers.get('content-type') || ''
   const isJson = contentType.includes('application/json')

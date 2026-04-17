@@ -2,7 +2,7 @@ import { apiFetch, extractErrorMessage, setApiToken, clearApiState } from '../..
 
 export async function loginSuperAdmin(payload) {
   try {
-    const response = await apiFetch('/api/super-admin/login', {
+    const response = await apiFetch('/api/auth/login', {
       method: 'POST',
       body: JSON.stringify(payload),
     })
@@ -20,7 +20,7 @@ export async function loginSuperAdmin(payload) {
 
 export async function getCurrentSuperAdmin() {
   try {
-    return await apiFetch('/api/super-admin/me')
+    return await apiFetch('/api/auth/me')
   } catch (error) {
     throw new Error(extractErrorMessage(error, 'Unable to fetch admin profile.'))
   }
@@ -28,7 +28,7 @@ export async function getCurrentSuperAdmin() {
 
 export async function logoutSuperAdmin() {
   try {
-    const response = await apiFetch('/api/super-admin/logout', { method: 'POST' })
+    const response = await apiFetch('/api/auth/logout', { method: 'POST' })
     clearApiState()
     return response
   } catch (error) {
