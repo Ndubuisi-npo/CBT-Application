@@ -41,13 +41,7 @@
               placeholder="Enter your password"
               autocomplete="current-password"
             />
-            <button
-              type="button"
-              class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-700"
-              @click="showPassword = !showPassword"
-            >
-              <component :is="showPassword ? EyeOff : Eye" class="h-5 w-5" />
-            </button>
+            <AppButton type="button" variant="ghost" class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700" @click="showPassword = !showPassword" :icon="showPassword ? EyeOff : Eye" />
           </div>
           <p v-if="errors.password" class="text-sm text-red-600">{{ errors.password }}</p>
         </div>
@@ -63,19 +57,25 @@
           {{ errors.general }}
         </p>
 
-        <button type="submit" class="cursor-pointer w-full rounded-lg bg-[#0B1F3A] px-4 py-3 font-medium text-white transition hover:bg-[#0F2940] focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:ring-offset-2" :disabled="authLoading">
-          <LoaderCircle v-if="authLoading" class="h-5 w-5 animate-spin" />
-          <span>{{ authLoading ? 'Signing in...' : 'Login to Dashboard' }}</span>
-        </button>
+        <AppButton 
+          type="submit" 
+          :text="authLoading ? 'Signing in...' : 'Login to Dashboard'" 
+          :processing="authLoading" 
+          full-width 
+          variant="primary" 
+          size="lg" 
+          :icon="authLoading ? LoaderCircle : null" 
+        />
       </form>
     </div>
   </div>
 </template>
 
 <script setup>
-import { reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { Eye, EyeOff, LoaderCircle, LockKeyhole, Mail } from 'lucide-vue-next'
+import { ref, reactive } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { Eye, EyeOff, LoaderCircle } from 'lucide-vue-next'
+import AppButton from '../shared/AppButton.vue'
 import { useSuperAdminAuth } from './composables/useSuperAdminAuth'
 import { useSuperAdminUiStore } from './stores/ui'
 

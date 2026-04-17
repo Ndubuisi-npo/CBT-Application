@@ -3,12 +3,12 @@
     <SectionCard v-if="!showArchived" title="Teachers" subtitle="Manage staff records, contacts, department ownership, and class/subject assignments.">
       <template #header>
         <div class="flex flex-wrap items-center gap-3">
-          <button 
+          <AppButton 
             @click="toggleView" 
-            class="rounded-lg bg-[#0B1F3A] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#0F2940]"
-          >
-            Show Archived
-          </button>
+            text="Show Archived"
+            variant="primary"
+            size="sm"
+          />
         </div>
       </template>
       <SkeletonRows v-if="teachersStore.loading" :columns="5" />
@@ -30,8 +30,8 @@
                 <td class="px-5 py-4 text-sm text-slate-600">{{ teacher.teacher_profile?.staff_id || '-' }}</td>
                 <td class="px-5 py-4">
                   <div class="flex gap-2">
-                    <button type="button" class="rounded-lg border-2 border-slate-300 px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:ring-offset-2" @click="editTeacher(teacher)">Edit</button>
-                    <button type="button" class="rounded-lg bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700 transition hover:bg-amber-100" @click="revokeTeacher(teacher.id)">Revoke</button>
+                    <AppButton text="Edit" @click="editTeacher(teacher)" variant="outline" size="xs" />
+                    <AppButton text="Revoke" @click="revokeTeacher(teacher.id)" variant="warning" size="xs" />
                   </div>
                 </td>
               </tr>
@@ -44,12 +44,12 @@
     <SectionCard v-if="showArchived" title="Archived Teachers" subtitle="View and manage revoked teachers.">
       <template #header>
         <div class="flex flex-wrap items-center gap-3">
-          <button 
+          <AppButton 
             @click="toggleView" 
-            class="rounded-lg bg-emerald-50 border-2 border-emerald-200 px-4 py-2 text-sm font-medium text-emerald-700 transition hover:bg-emerald-100"
-          >
-            Show Active
-          </button>
+            text="Show Active"
+            variant="success"
+            size="sm"
+          />
         </div>
       </template>
       <SkeletonRows v-if="teachersStore.loading" :columns="5" />
@@ -140,12 +140,13 @@
             />
           </FormField>
         </div>
-        <button
+        <AppButton
             type="submit"
-            class="w-full rounded-lg bg-[#0B1F3A] px-4 py-2.5 font-medium text-white transition hover:bg-[#0F2940] focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:ring-offset-2"
-        >
-          {{ form.id ? "Update Teacher" : "Create Teacher" }}
-        </button>
+            :text="form.id ? 'Update Teacher' : 'Create Teacher'"
+            full-width
+            variant="primary"
+            :processing="teachersStore.loading"
+        />
       </form>
     </SectionCard>
   </div>
@@ -156,6 +157,7 @@ import { onMounted, reactive, computed, ref } from "vue";
 import FormField from "../components/FormField.vue";
 import SectionCard from "../components/SectionCard.vue";
 import SkeletonRows from "../components/SkeletonRows.vue";
+import AppButton from '../../shared/AppButton.vue';
 import { useSchoolAdminTeachersStore } from "../stores/teachers";
 import { useSchoolAdminUiStore } from "../stores/ui";
 

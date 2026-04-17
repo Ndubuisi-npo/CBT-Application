@@ -2,9 +2,7 @@
   <header class="sticky top-0 z-30 border-b border-slate-200/80 bg-white/90 backdrop-blur-xl">
     <div class="flex h-20 items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
       <div class="flex items-center gap-3">
-        <button type="button" class="sa-icon-button lg:hidden" @click="$emit('toggle-sidebar')">
-          <PanelLeft class="h-25 w-5" />
-        </button>
+        <AppButton type="button" :icon="PanelLeft" variant="ghost" class="lg:hidden" @click="$emit('toggle-sidebar')" />
         <div>
           <p class="text-xs font-semibold uppercase tracking-[0.24em] text-[#D4AF37]">Multi-tenant operations</p>
           <h2 class="text-xl font-semibold tracking-tight text-slate-900">{{ pageTitle }}</h2>
@@ -12,13 +10,13 @@
       </div>
 
       <div class="flex items-center gap-3">
-        <button type="button" class="sa-icon-button relative">
-          <Bell class="h-5 w-5" />
+        <AppButton type="button" :icon="Bell" variant="ghost" class="relative">
           <span class="absolute right-2 top-2 h-2.5 w-2.5 rounded-full bg-[#D4AF37]"></span>
-        </button>
-        <button
+        </AppButton>
+        <AppButton
           type="button"
-          class="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 py-2 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#D4AF37] cursor-pointer"
+          variant="outline"
+          class="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 py-2 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#D4AF37] cursor-pointer"
           @click="handleLogout"
           title="Logout"
         >
@@ -28,7 +26,7 @@
             <p class="text-xs text-slate-500">{{ authComposable.user?.role || 'Platform administrator' }}</p>
           </div>
           <LogOut class="h-4 w-4 text-slate-400" />
-        </button>
+        </AppButton>
       </div>
     </div>
   </header>
@@ -38,6 +36,7 @@
 import { computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Bell, PanelLeft, LogOut } from 'lucide-vue-next'
+import AppButton from '../../shared/AppButton.vue'
 import { useSuperAdminAuth } from '../composables/useSuperAdminAuth'
 import { useSuperAdminUiStore } from '../stores/ui'
 

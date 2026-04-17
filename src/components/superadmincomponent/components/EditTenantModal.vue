@@ -6,11 +6,7 @@
       <div class="relative w-full max-w-2xl rounded-lg bg-white p-6 shadow-xl">
         <div class="mb-4 flex items-center justify-between">
           <h3 class="text-lg font-semibold text-slate-900">Edit Tenant</h3>
-          <button @click="close" class="text-slate-400 hover:text-slate-600">
-            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-            </svg>
-          </button>
+          <AppButton @click="close" :icon="X" variant="ghost" class="text-slate-400 hover:text-slate-600" />
         </div>
         
         <div v-if="loading" class="text-center py-8">
@@ -83,12 +79,14 @@
           </div>
           
           <div class="flex justify-end space-x-3">
-            <button type="button" @click="close" class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
-              Cancel
-            </button>
-            <button type="submit" :disabled="submitting" class="rounded-lg bg-[#0B1F3A] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#0F2940] disabled:opacity-50">
-              {{ submitting ? 'Updating...' : 'Update Tenant' }}
-            </button>
+            <AppButton type="button" @click="close" text="Cancel" variant="outline" />
+            <AppButton 
+              type="submit" 
+              :disabled="submitting" 
+              :text="submitting ? 'Updating...' : 'Update Tenant'" 
+              variant="primary" 
+              :processing="submitting" 
+            />
           </div>
         </form>
         
@@ -103,6 +101,7 @@
 <script setup>
 import { ref, reactive, watch } from 'vue'
 import { useSuperAdminUiStore } from '../stores/ui'
+import AppButton from '../../shared/AppButton.vue'
 
 const props = defineProps({
   isOpen: {

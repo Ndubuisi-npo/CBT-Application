@@ -18,9 +18,9 @@
                 <td class="px-5 py-4 text-sm text-slate-600">{{ formatAssignedTeachers(subject) }}</td>
                 <td class="px-5 py-4">
                   <div class="flex gap-2">
-                    <button type="button" class="rounded-lg border-2 border-slate-300 px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:ring-offset-2" @click="editSubject(subject)">Edit</button>
-                    <button type="button" class="rounded-lg bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700 transition hover:bg-amber-100 focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:ring-offset-2" @click="$router.push(`/school-admin/subjects/${subject.id}/assign-teacher`)">Assign Teacher</button>
-                    <button type="button" class="rounded-lg bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 transition hover:bg-red-100" @click="deleteSubject(subject.id)">Delete</button>
+                    <AppButton text="Edit" @click="editSubject(subject)" variant="outline" size="xs" />
+                    <AppButton text="Assign Teacher" @click="$router.push(`/school-admin/subjects/${subject.id}/assign-teacher`)" variant="warning" size="xs" />
+                    <AppButton text="Delete" @click="deleteSubject(subject.id)" variant="danger" size="xs" />
                   </div>
                 </td>
               </tr>
@@ -35,37 +35,33 @@
           Showing {{ ((currentPage - 1) * itemsPerPage) + 1 }} to {{ Math.min(currentPage * itemsPerPage, subjectsStore.subjects.length) }} of {{ subjectsStore.subjects.length }} subjects
         </div>
         <div class="flex gap-2">
-          <button 
+          <AppButton 
             @click="previousPage" 
+            text="Previous"
             :disabled="!hasPreviousPage"
-            class="px-3 py-1 text-sm border border-slate-300 rounded-md hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Previous
-          </button>
+            variant="outline"
+            size="sm"
+          />
           
           <span class="flex items-center gap-1">
-            <button 
+            <AppButton 
               v-for="page in totalPages" 
               :key="page"
               @click="goToPage(page)"
-              :class="[
-                'px-3 py-1 text-sm border rounded-md',
-                page === currentPage 
-                  ? 'bg-[#0B1F3A] text-white border-[#0B1F3A]' 
-                  : 'border-slate-300 hover:bg-slate-50'
-              ]"
-            >
-              {{ page }}
-            </button>
+              :text="page.toString()"
+              :variant="page === currentPage ? 'primary' : 'outline'"
+              size="sm"
+              rounded="md"
+            />
           </span>
           
-          <button 
+          <AppButton 
             @click="nextPage" 
+            text="Next"
             :disabled="!hasNextPage"
-            class="px-3 py-1 text-sm border border-slate-300 rounded-md hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Next
-          </button>
+            variant="outline"
+            size="sm"
+          />
         </div>
       </div>
     </SectionCard>
@@ -84,17 +80,24 @@
           <TagMultiSelect v-model="form.class_level_ids" :options="classOptions" placeholder="Select class levels" />
         </FormField>
 
-        <button type="submit" class="w-full rounded-lg bg-[#0B1F3A] px-4 py-2.5 font-medium text-white transition hover:bg-[#0F2940] focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:ring-offset-2">{{ form.id ? 'Update Subject' : 'Create Subject' }}</button>
+        <AppButton 
+          type="submit" 
+          :text="form.id ? 'Update Subject' : 'Create Subject'"
+          full-width
+          variant="primary"
+          :processing="subjectsStore.loading"
+        />
       </form>
     </SectionCard>
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import FormField from '../components/FormField.vue'
 import SectionCard from '../components/SectionCard.vue'
 import SkeletonRows from '../components/SkeletonRows.vue'
+import AppButton from '../../shared/AppButton.vue'
 import TagMultiSelect from '../components/TagMultiSelect.vue'
 import { useSchoolAdminClassesStore } from '../stores/classes'
 import { useSchoolAdminSessionsStore } from '../stores/sessions'

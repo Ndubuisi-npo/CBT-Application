@@ -4,9 +4,7 @@
       <SkeletonRows v-if="isLoading" :columns="5" />
       <div v-else-if="hasError" class="text-center py-8">
         <p class="text-slate-600">Subject not found or an error occurred.</p>
-        <button @click="$router.push('/school-admin/subjects')" class="mt-4 text-blue-600 hover:text-blue-800">
-          Back to Subjects
-        </button>
+        <AppButton @click="$router.push('/school-admin/subjects')" text="Back to Subjects" variant="ghost" class="mt-4" />
       </div>
       <div v-else-if="!subject" class="text-center py-8">
         <p class="text-slate-600">Loading subject information...</p>
@@ -32,7 +30,7 @@
                 <td class="px-5 py-4 text-sm text-slate-600">{{ formatDate(assignment.created_at) }}</td>
                 <td class="px-5 py-4">
                   <div class="flex gap-2">
-                    <button type="button" class="rounded-lg bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 transition hover:bg-red-100" @click="deleteAssignment(assignment.id)">Remove</button>
+                    <AppButton text="Remove" @click="deleteAssignment(assignment.id)" variant="danger" size="xs" />
                   </div>
                 </td>
               </tr>
@@ -71,7 +69,13 @@
           </select>
         </FormField>
 
-        <button type="submit" class="w-full rounded-lg bg-[#0B1F3A] px-4 py-2.5 font-medium text-white transition hover:bg-[#0F2940] focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:ring-offset-2">Assign Teacher</button>
+        <AppButton 
+          type="submit" 
+          text="Assign Teacher" 
+          full-width 
+          variant="primary" 
+          :processing="isLoading" 
+        />
       </form>
     </SectionCard>
   </div>
@@ -83,6 +87,7 @@ import { useRoute } from 'vue-router'
 import FormField from '../components/FormField.vue'
 import SectionCard from '../components/SectionCard.vue'
 import SkeletonRows from '../components/SkeletonRows.vue'
+import AppButton from '../../shared/AppButton.vue'
 import { useSchoolAdminClassesStore } from '../stores/classes'
 import { useSchoolAdminSessionsStore } from '../stores/sessions'
 import { useSchoolAdminSubjectsStore } from '../stores/subjects'

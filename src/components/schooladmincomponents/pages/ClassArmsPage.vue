@@ -25,8 +25,8 @@
                 <td class="px-5 py-4 text-sm text-slate-600">{{ classLevel?.name || '-' }}</td>
                 <td class="px-5 py-4">
                   <div class="flex gap-2">
-                    <button type="button" class="rounded-lg border-2 border-slate-300 px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:ring-offset-2" @click="editClassArm(classArm)">Edit</button>
-                    <button type="button" class="rounded-lg bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 transition hover:bg-red-100" @click="deleteClassArm(classArm.id)">Delete</button>
+                    <AppButton text="Edit" @click="editClassArm(classArm)" variant="outline" size="xs" />
+                    <AppButton text="Delete" @click="deleteClassArm(classArm.id)" variant="danger" size="xs" />
                   </div>
                 </td>
               </tr>
@@ -41,20 +41,26 @@
         <FormField label="Class arm name" :error="errors.name">
           <input v-model="form.name" class="sa-input" placeholder="JSS 1A" />
         </FormField>
-        <button type="submit" class="w-full rounded-lg bg-[#0B1F3A] px-4 py-2.5 font-medium text-white transition hover:bg-[#0F2940] focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:ring-offset-2">{{ form.id ? 'Update Class Arm' : 'Create Class Arm' }}</button>
+        <AppButton 
+          type="submit" 
+          :text="form.id ? 'Update Class Arm' : 'Create Class Arm'" 
+          full-width 
+          variant="primary" 
+          :processing="classArmsStore.loading" 
+        />
       </form>
     </SectionCard>
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, watch } from 'vue'
-import { useRoute } from 'vue-router'
-import FormField from '../components/FormField.vue'
+import { computed, onMounted, reactive, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import SectionCard from '../components/SectionCard.vue'
 import SkeletonRows from '../components/SkeletonRows.vue'
-import { useSchoolAdminClassLevelsStore } from '../stores/classLevels'
+import AppButton from '../../shared/AppButton.vue'
 import { useSchoolAdminClassArmsStore } from '../stores/classArms'
+import { useSchoolAdminClassLevelsStore } from '../stores/classLevels'
 import { useSchoolAdminUiStore } from '../stores/ui'
 
 const route = useRoute()

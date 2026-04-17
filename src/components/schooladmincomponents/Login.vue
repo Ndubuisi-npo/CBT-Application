@@ -87,9 +87,7 @@
                 class="w-full rounded-lg border-2 border-[#0B1F3A] bg-white px-4 py-3 pl-12 pr-12 text-base text-slate-900 placeholder:text-slate-400 focus:border-[#D4AF37] focus:outline-none focus:ring-0 transition"
               />
 
-              <button type="button" class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-700" @click="showPassword = !showPassword">
-                <component :is="showPassword ? EyeOff : Eye" class="h-5 w-5" />
-              </button>
+              <AppButton type="button" variant="ghost" class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700" @click="showPassword = !showPassword" :icon="showPassword ? EyeOff : Eye" />
             </div>
 
             <p v-if="errors.password" class="text-sm font-medium text-rose-600">{{ errors.password }}</p>
@@ -111,16 +109,19 @@
             {{ errors.general }}
           </p>
 
-          <button type="submit" :disabled="authStore.loading" class="cursor-pointer flex w-full items-center justify-center gap-2 rounded-lg bg-[#0B1F3A] px-4 py-4 text-base font-medium text-white transition hover:bg-[#0F2940] focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:ring-offset-2">
-            <LoaderCircle v-if="authStore.loading" class="h-5 w-5 animate-spin" />
-            {{ authStore.loading ? 'Signing in...' : 'Sign In' }}
-          </button>
+          <AppButton 
+            type="submit" 
+            :disabled="authStore.loading" 
+            :text="authStore.loading ? 'Signing in...' : 'Sign In'" 
+            :processing="authStore.loading" 
+            full-width 
+            variant="primary" 
+            size="lg" 
+          />
 
           <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-center text-sm leading-6 text-slate-500 sm:text-base">
             Need access to a new school workspace?
-            <RouterLink to="/onboarding" class="font-semibold text-[#0B1F3A] transition hover:text-[#D4AF37]">
-              Start onboarding
-            </RouterLink>
+            <ActionButton tag="RouterLink" to="/onboarding" text="Start onboarding" variant="primary" class="font-semibold text-[#0B1F3A] transition hover:text-[#D4AF37]" />
           </div>
         </form>
       </div>
@@ -130,8 +131,10 @@
 
 <script setup>
 import { computed, reactive, ref } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
-import { Eye, EyeOff, Globe, LoaderCircle, LockKeyhole, Mail, School, Shield, Sparkles } from 'lucide-vue-next'
+import { useRouter } from 'vue-router'
+import { Eye, EyeOff, Globe, LockKeyhole, Mail, School, Shield, Sparkles } from 'lucide-vue-next'
+import AppButton from '../shared/AppButton.vue'
+import ActionButton from '../shared/ActionButton.vue'
 import { useSchoolAdminAuthStore } from './stores/auth'
 import { useSchoolAdminUiStore } from './stores/ui'
 

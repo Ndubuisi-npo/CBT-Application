@@ -3,7 +3,7 @@
     <section class="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
       <OverviewCard title="Total Tenants" :value="metrics.totalTenants" change="+12% from last month" progress="78%" :icon="Building2" />
       <OverviewCard title="Active Subscriptions" :value="metrics.activeSubscriptions" change="+8% renewal growth" progress="69%" :icon="BadgeCheck" />
-      <OverviewCard title="Suspended Tenants" :value="metrics.suspendedTenants" change="-3% operational issues" progress="22%" :icon="ShieldAlert" :positive="false" />
+      <OverviewCard title="Suspended Tenants" :value="metrics.suspendedTenants" change="-3% suspension" progress="22%" :icon="ShieldAlert" :positive="false" />
       <OverviewCard title="Revenue" :value="metrics.revenue" change="+18% MRR expansion" progress="84%" :icon="Coins" />
     </section>
 
@@ -44,6 +44,7 @@
 import { computed, onMounted } from 'vue'
 import { BadgeCheck, Building2, Coins, ShieldAlert } from 'lucide-vue-next'
 import OverviewCard from '../components/OverviewCard.vue'
+import AppButton from '../../shared/AppButton.vue'
 import SectionCard from '../components/SectionCard.vue'
 import StatusBadge from '../components/StatusBadge.vue'
 import { useSuperAdminTenants } from '../composables/useSuperAdminTenants'

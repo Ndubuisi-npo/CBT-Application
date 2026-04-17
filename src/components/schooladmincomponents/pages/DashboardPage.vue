@@ -43,6 +43,7 @@
 import { computed, onMounted } from 'vue'
 import { BookOpen, CalendarClock, GraduationCap, School, Users } from 'lucide-vue-next'
 import OverviewCard from '../components/OverviewCard.vue'
+import AppButton from '../../shared/AppButton.vue'
 import SectionCard from '../components/SectionCard.vue'
 import { useSchoolAdminClassesStore } from '../stores/classes'
 import { useSchoolAdminSessionsStore } from '../stores/sessions'

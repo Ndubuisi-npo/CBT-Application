@@ -10,7 +10,7 @@
         </div>
         <h3 class="text-lg font-medium text-slate-900 mb-2">No terms found</h3>
         <p class="text-slate-600 mb-6">Get started by creating your first term for {{ session?.name || 'this session' }}.</p>
-        <button type="button" class="rounded-lg bg-[#0B1F3A] px-4 py-2 font-medium text-white transition hover:bg-[#0F2940]" @click="resetForm">Create First Term</button>
+        <AppButton type="button" text="Create First Term" variant="primary" @click="resetForm" />
       </div>
       <div v-else class="overflow-hidden rounded-[24px] border border-slate-200">
         <div class="overflow-x-auto">
@@ -28,11 +28,14 @@
                 <td class="px-5 py-4">
                   <div class="flex gap-2">
                     <StatusBadge class="text-nowrap" :status="termStatus(term)" />
-                    <button type="button" class="rounded-lg border-2 border-slate-300 px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:ring-offset-2" @click="editTerm(term)">Edit</button>
-                    <button type="button" :class="termStatus(term) === 'Current' ? 'rounded-xl bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 transition hover:bg-red-100' : 'rounded-xl bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700 transition hover:bg-amber-100'" @click="toggleTerm(term.id)">
-                      {{ termStatus(term) === 'Current' ? 'Deactivate' : 'Activate' }}
-                    </button>
-                    <button type="button" class="rounded-lg bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 transition hover:bg-red-100" @click="deleteTerm(term.id)">Delete</button>
+                    <AppButton text="Edit" @click="editTerm(term)" variant="outline" size="xs" />
+                    <AppButton 
+                      :text="termStatus(term) === 'Current' ? 'Deactivate' : 'Activate'" 
+                      @click="toggleTerm(term.id)" 
+                      :variant="termStatus(term) === 'Current' ? 'danger' : 'warning'" 
+                      size="xs" 
+                    />
+                    <AppButton text="Delete" @click="deleteTerm(term.id)" variant="danger" size="xs" />
                   </div>
                 </td>
               </tr>
@@ -58,8 +61,8 @@
           <label for="is-current-term" class="text-sm font-medium text-slate-700">Set as current term</label>
         </div>
         <div class="flex gap-2">
-          <button type="submit" class="flex-1 rounded-lg bg-[#0B1F3A] px-4 py-2.5 font-medium text-white transition hover:bg-[#0F2940] focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:ring-offset-2">{{ form.id ? 'Update Term' : 'Create Term' }}</button>
-          <button type="button" class="rounded-lg border-2 border-slate-300 px-4 py-2.5 font-medium text-slate-700 transition hover:bg-slate-100" @click="resetForm">Clear</button>
+          <AppButton type="submit" :text="form.id ? 'Update Term' : 'Create Term'" variant="primary" class="flex-1" :processing="sessionsStore.loading" />
+          <AppButton type="button" text="Clear" variant="outline" @click="resetForm" />
         </div>
       </form>
     </SectionCard>
@@ -73,6 +76,7 @@ import FormField from '../components/FormField.vue'
 import SectionCard from '../components/SectionCard.vue'
 import SkeletonRows from '../components/SkeletonRows.vue'
 import StatusBadge from '../components/StatusBadge.vue'
+import AppButton from '../../shared/AppButton.vue'
 import { useSchoolAdminSessionsStore } from '../stores/sessions'
 import { useSchoolAdminUiStore } from '../stores/ui'
 import { fmtDate } from '@/lib/helpers'

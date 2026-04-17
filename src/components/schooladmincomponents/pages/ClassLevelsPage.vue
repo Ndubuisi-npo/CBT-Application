@@ -16,9 +16,9 @@
                 <td class="px-5 py-4 text-sm text-slate-600">{{ getArmsCount(classLevel.id) }} arms</td>
                 <td class="px-5 py-4">
                   <div class="flex gap-2">
-                    <button type="button" class="rounded-lg border-2 border-slate-300 px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:ring-offset-2" @click="editClassLevel(classLevel)">Edit</button>
-                    <RouterLink :to="`/school-admin/class-arms/${classLevel.id}`" class="rounded-lg bg-[#0B1F3A] px-3 py-2 text-xs font-medium text-white transition hover:bg-[#0F2940] focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:ring-offset-2">View Arms</RouterLink>
-                    <button type="button" class="rounded-lg bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 transition hover:bg-red-100" @click="deleteClassLevel(classLevel.id)">Delete</button>
+                    <AppButton text="Edit" @click="editClassLevel(classLevel)" variant="outline" size="xs" />
+                    <ActionButton tag="RouterLink" :to="`/school-admin/class-arms/${classLevel.id}`" text="View Arms" variant="primary" size="xs" />
+                    <AppButton text="Delete" @click="deleteClassLevel(classLevel.id)" variant="danger" size="xs" />
                   </div>
                 </td>
               </tr>
@@ -33,17 +33,24 @@
         <FormField label="Class level name" :error="errors.name">
           <input v-model="form.name" class="sa-input" placeholder="JSS 1" />
         </FormField>
-        <button type="submit" class="w-full rounded-lg bg-[#0B1F3A] px-4 py-2.5 font-medium text-white transition hover:bg-[#0F2940] focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:ring-offset-2">{{ form.id ? 'Update Class Level' : 'Create Class Level' }}</button>
+        <AppButton 
+          type="submit" 
+          :text="form.id ? 'Update Class Level' : 'Create Class Level'" 
+          full-width 
+          variant="primary" 
+          :processing="classLevelsStore.loading" 
+        />
       </form>
     </SectionCard>
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted, reactive } from 'vue'
-import FormField from '../components/FormField.vue'
+import { computed, onMounted, reactive, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import SectionCard from '../components/SectionCard.vue'
 import SkeletonRows from '../components/SkeletonRows.vue'
+import AppButton from '../../shared/AppButton.vue'
 import { useSchoolAdminClassLevelsStore } from '../stores/classLevels'
 import { useSchoolAdminClassArmsStore } from '../stores/classArms'
 import { useSchoolAdminUiStore } from '../stores/ui'

@@ -52,12 +52,8 @@
 
         <!-- Actions -->
         <div class="flex items-end space-x-3">
-          <button type="submit" class="rounded-lg bg-[#0B1F3A] px-6 py-2.5 font-medium text-white transition hover:bg-[#0F2940] focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:ring-offset-2">
-            Update Tenant
-          </button>
-          <button type="button" class="rounded-lg border-2 border-slate-300 px-6 py-2.5 font-medium text-slate-700 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:ring-offset-2" @click="router.push('/super-admin/tenants')">
-            Cancel
-          </button>
+          <AppButton type="submit" text="Update Tenant" variant="primary" :processing="loading" />
+          <AppButton type="button" text="Cancel" variant="outline" @click="router.push('/super-admin/tenants')" />
         </div>
       </form>
 
@@ -72,6 +68,7 @@
 import { onMounted, reactive } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import SectionCard from '../components/SectionCard.vue'
+import AppButton from '../../shared/AppButton.vue'
 import { useSuperAdminTenants } from '../composables/useSuperAdminTenants'
 import { useSuperAdminUiStore } from '../stores/ui'
 

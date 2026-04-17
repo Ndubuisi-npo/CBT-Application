@@ -78,10 +78,13 @@
     </div>
 
     <div class="flex justify-end lg:col-span-2">
-      <button type="submit" class="inline-flex items-center gap-2 rounded-lg bg-[#0B1F3A] px-4 py-2.5 font-medium text-white transition hover:bg-[#0F2940] focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:ring-offset-2">
-        <Plus class="h-4 w-4" />
-        <span>Create Tenant</span>
-      </button>
+      <AppButton 
+        type="submit" 
+        :icon="Plus" 
+        text="Create Tenant" 
+        variant="primary" 
+        :processing="submitting" 
+      />
     </div>
   </form>
 </template>
@@ -89,6 +92,7 @@
 <script setup>
 import { reactive, watch } from 'vue'
 import { Plus } from 'lucide-vue-next'
+import AppButton from '../../shared/AppButton.vue'
 
 const props = defineProps({
   form: {

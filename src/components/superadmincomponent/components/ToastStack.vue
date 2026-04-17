@@ -18,12 +18,13 @@
             <p class="text-sm font-semibold text-slate-900">{{ toast.title }}</p>
             <p class="mt-1 text-sm leading-5 text-slate-500">{{ toast.message }}</p>
           </div>
-          <button
+          <AppButton
             @click="uiStore.removeToast(toast.id)"
+            :icon="X"
+            variant="ghost"
+            size="xs"
             class="rounded-lg p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
-          >
-            <X class="h-4 w-4" />
-          </button>
+          />
         </div>
       </div>
     </TransitionGroup>
@@ -31,7 +32,9 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import { CircleAlert, CircleCheckBig, X } from 'lucide-vue-next'
+import AppButton from '../../shared/AppButton.vue'
 import { useSuperAdminUiStore } from '../stores/ui'
 
 const uiStore = useSuperAdminUiStore()

@@ -30,7 +30,13 @@
             <input v-model="form.phone" class="sa-input" />
           </FormField>
         </div>
-        <button type="submit" class="w-full rounded-lg bg-[#0B1F3A] px-4 py-2.5 font-medium text-white transition hover:bg-[#0F2940] focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:ring-offset-2">Save Profile</button>
+        <AppButton 
+          type="submit" 
+          text="Save Profile" 
+          full-width 
+          variant="primary" 
+          :processing="profileStore.loading" 
+        />
       </form>
     </SectionCard>
   </div>
@@ -41,6 +47,7 @@ import { onMounted, reactive } from 'vue'
 import { ImagePlus } from 'lucide-vue-next'
 import FormField from '../components/FormField.vue'
 import SectionCard from '../components/SectionCard.vue'
+import AppButton from '../../shared/AppButton.vue'
 import { useSchoolAdminProfileStore } from '../stores/profile'
 import { useSchoolAdminUiStore } from '../stores/ui'
 

@@ -6,11 +6,7 @@
       <div class="relative w-full max-w-2xl rounded-lg bg-white p-6 shadow-xl">
         <div class="mb-4 flex items-center justify-between">
           <h3 class="text-lg font-semibold text-slate-900">{{ isEdit ? 'Edit Plan' : 'Create Plan' }}</h3>
-          <button @click="close" class="text-slate-400 hover:text-slate-600">
-            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-            </svg>
-          </button>
+          <AppButton @click="close" :icon="X" variant="ghost" class="text-slate-400 hover:text-slate-600" />
         </div>
         
         <PlanForm 
@@ -26,6 +22,8 @@
 
 <script setup>
 import { reactive, ref, watch, computed } from 'vue'
+import { X } from 'lucide-vue-next'
+import AppButton from '../../shared/AppButton.vue'
 import PlanForm from './PlanForm.vue'
 import { useSuperAdminUiStore } from '../stores/ui'
 

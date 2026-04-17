@@ -15,7 +15,7 @@
                 <td class="px-5 py-4 font-semibold text-slate-900">{{ item.name }}</td>
                 <td class="px-5 py-4 text-sm text-slate-600">{{ item.level }}</td>
                 <td class="px-5 py-4">
-                  <button type="button" class="rounded-lg border-2 border-slate-300 px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:ring-offset-2" @click="editClass(item)">Edit</button>
+                  <AppButton text="Edit" @click="editClass(item)" variant="outline" size="xs" />
                 </td>
               </tr>
             </tbody>
@@ -35,7 +35,13 @@
             <option v-for="level in levels" :key="level" :value="level">{{ level }}</option>
           </select>
         </FormField>
-        <button type="submit" class="w-full rounded-lg bg-[#0B1F3A] px-4 py-2.5 font-medium text-white transition hover:bg-[#0F2940] focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:ring-offset-2">{{ form.id ? 'Update Class' : 'Create Class' }}</button>
+        <AppButton 
+          type="submit" 
+          :text="form.id ? 'Update Class' : 'Create Class'" 
+          full-width 
+          variant="primary" 
+          :processing="classesStore.loading" 
+        />
       </form>
     </SectionCard>
   </div>
@@ -46,6 +52,7 @@ import { onMounted, reactive } from 'vue'
 import FormField from '../components/FormField.vue'
 import SectionCard from '../components/SectionCard.vue'
 import SkeletonRows from '../components/SkeletonRows.vue'
+import AppButton from '../../shared/AppButton.vue'
 import { useSchoolAdminClassesStore } from '../stores/classes'
 import { useSchoolAdminUiStore } from '../stores/ui'
 

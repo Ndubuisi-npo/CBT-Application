@@ -3,10 +3,7 @@
     <SectionCard title="Subscription Plans" subtitle="View available subscription plans for tenant provisioning.">
       <template #header>
         <div class="flex flex-wrap items-center gap-3">
-          <button @click="openCreateModal" class="inline-flex items-center gap-2 rounded-lg bg-[#0B1F3A] px-4 py-2.5 font-medium text-white transition hover:bg-[#0F2940] focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:ring-offset-2">
-            <Plus class="h-4 w-4" />
-            <span>Create Plan</span>
-          </button>
+          <AppButton @click="openCreateModal" :icon="Plus" text="Create Plan" variant="primary" />
         </div>
       </template>
       <div v-if="loading" class="grid gap-6 xl:grid-cols-3">
@@ -16,12 +13,8 @@
       <div v-else class="grid gap-6 xl:grid-cols-3">
         <article v-for="plan in plans" :key="plan.id" class="group relative overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-900/10">
           <div class="absolute top-4 right-4 z-10 flex gap-2 opacity-0 transition-opacity group-hover:opacity-100">
-            <button @click="editPlan(plan)" class="rounded-lg bg-white/90 p-2 text-slate-600 shadow-md transition hover:bg-white hover:text-[#0B1F3A]">
-              <Edit class="h-4 w-4" />
-            </button>
-            <button @click="deletePlan(plan.id)" class="rounded-lg bg-white/90 p-2 text-slate-600 shadow-md transition hover:bg-white hover:text-red-600">
-              <Trash class="h-4 w-4" />
-            </button>
+            <AppButton @click="editPlan(plan)" :icon="Edit" variant="ghost" class="rounded-lg bg-white/90 p-2 text-slate-600 shadow-md hover:bg-white hover:text-[#0B1F3A]" />
+            <AppButton @click="deletePlan(plan.id)" :icon="Trash" variant="ghost" class="rounded-lg bg-white/90 p-2 text-slate-600 shadow-md hover:bg-white hover:text-red-600" />
           </div>
           
           <div class="bg-gradient-to-br from-[#0B1F3A] to-[#163154] p-6 text-white">
@@ -79,9 +72,10 @@
 
 <script setup>
 import { onMounted, ref } from 'vue'
-import { Check, Edit, Trash, Plus } from 'lucide-vue-next'
+import { Edit, Plus, Trash } from 'lucide-vue-next'
 import SectionCard from '../components/SectionCard.vue'
 import PlanModal from '../components/PlanModal.vue'
+import AppButton from '../../shared/AppButton.vue'
 import { useSuperAdminPlans } from '../composables/useSuperAdminPlans'
 import { useSuperAdminUiStore } from '../stores/ui'
 
