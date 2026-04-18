@@ -40,6 +40,7 @@
               :text="isEdit ? 'Update Teacher' : 'Create Teacher'" 
               full-width 
               variant="primary" 
+              :loadingText="isEdit ? 'Updating Teacher...' : 'Creating Teacher...'"
               :processing="loading" 
               :disabled="loading"
             />
@@ -94,14 +95,29 @@ const resetForm = () => {
 
 // Watch for teacher changes and update form
 watch(() => props.teacher, (teacher) => {
+  console.log('Teacher changed:', teacher)
+  console.log('Teacher data structure:', JSON.stringify(teacher, null, 2))
   if (teacher) {
-    form.firstName = teacher.user?.first_name || ''
-    form.lastName = teacher.user?.last_name || ''
-    form.email = teacher.user?.email || ''
-    form.phone = teacher.user?.phone || ''
-    form.qualification = teacher.qualification || ''
-    form.staffId = teacher.staff_id || ''
+    console.log('Populating form with teacher data:', teacher)
+    console.log('Teacher user data:', teacher.user)
+    console.log('Teacher profile data:', teacher.teacher_profile)
+    console.log('Teacher first_name paths:', {
+      'teacher.user?.first_name': teacher.user?.first_name,
+      'teacher.first_name': teacher.first_name,
+      'teacher.first_name (direct)': teacher.first_name
+    })
+    
+    // Try multiple possible paths for the data
+    form.firstName = teacher.user?.first_name || teacher.first_name || ''
+    form.lastName = teacher.user?.last_name || teacher.last_name || ''
+    form.email = teacher.user?.email || teacher.email || ''
+    form.phone = teacher.user?.phone || teacher.phone || ''
+    form.qualification = teacher.teacher_profile?.qualification || teacher.qualification || ''
+    form.staffId = teacher.teacher_profile?.staff_id || teacher.staff_id || ''
+    
+    console.log('Form after population:', form)
   } else {
+    console.log('Resetting form')
     resetForm()
   }
 }, { immediate: true })
@@ -141,7 +157,10 @@ const submit = async () => {
   } catch (error) {
     console.error('Teacher form error:', error)
   } finally {
-    loading.value = false
+    // Add a small delay to ensure loading state is visible
+    setTimeout(() => {
+      loading.value = false
+    }, 500)
   }
 }
 </script>

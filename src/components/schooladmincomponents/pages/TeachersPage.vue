@@ -3,12 +3,12 @@
     <SectionCard v-if="!showArchived" title="Teachers" subtitle="Manage staff records, contacts, department ownership, and class/subject assignments.">
       <template #header>
         <div class="flex flex-wrap items-center gap-3">
-          <AppButton @click="openModal()" :icon="Plus" text="Create Teacher" variant="primary" size="sm" />
+          <AppButton @click="openModal()" :icon="Plus" text="Create Teacher" variant="primary" size="base" />
           <AppButton 
             @click="toggleView" 
             text="Show Archived"
             variant="outline"
-            size="sm"
+            size="base"
           />
         </div>
       </template>

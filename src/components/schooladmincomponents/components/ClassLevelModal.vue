@@ -19,6 +19,7 @@
               :text="isEdit ? 'Update Class Level' : 'Create Class Level'" 
               full-width 
               variant="primary" 
+              :loadingText="isEdit ? 'Updating Class Level...' : 'Creating Class Level...'"
               :processing="loading" 
               :disabled="loading"
             />
@@ -62,9 +63,13 @@ const resetForm = () => {
 
 // Watch for class level changes and update form
 watch(() => props.classLevel, (classLevel) => {
+  console.log('ClassLevel changed:', classLevel)
   if (classLevel) {
+    console.log('Populating form with class level data:', classLevel)
     form.name = classLevel.name || ''
+    console.log('Form after population:', form)
   } else {
+    console.log('Resetting form')
     resetForm()
   }
 }, { immediate: true })
@@ -80,21 +85,19 @@ const submit = async () => {
   loading.value = true
   
   try {
-    const payload = {
-      name: form.name
-    }
-    
     await emit('submit', {
       id: props.classLevel?.id,
-      ...payload
+      name: form.name
     })
     
     resetForm()
-    emit('close')
   } catch (error) {
     console.error('Class level form error:', error)
   } finally {
-    loading.value = false
+    // Add a small delay to ensure loading state is visible
+    setTimeout(() => {
+      loading.value = false
+    }, 500)
   }
 }
 </script>

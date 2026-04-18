@@ -32,6 +32,7 @@
               :text="isEdit ? 'Update Session' : 'Create Session'" 
               full-width 
               variant="primary" 
+              :loadingText="isEdit ? 'Updating Session...' : 'Creating Session...'"
               :processing="loading" 
               :disabled="loading"
             />
@@ -80,12 +81,19 @@ const resetForm = () => {
 
 // Watch for session changes and update form
 watch(() => props.session, (session) => {
+  console.log('Session changed:', session)
   if (session) {
+    console.log('Populating form with session data:', session)
     form.name = session.name || ''
-    form.startDate = session.startDate || session.start_date || ''
-    form.endDate = session.endDate || session.end_date || ''
-    form.isCurrent = session.current || session.is_current || session.status === 'Active'
+    // Format dates for date input (YYYY-MM-DD)
+    const startDate = session.startDate || session.start_date || ''
+    const endDate = session.endDate || session.end_date || ''
+    form.startDate = startDate ? startDate.split('T')[0] : ''
+    form.endDate = endDate ? endDate.split('T')[0] : ''
+    form.isCurrent = session.current || session.is_current || false
+    console.log('Form after population:', form)
   } else {
+    console.log('Resetting form')
     resetForm()
   }
 }, { immediate: true })
@@ -103,17 +111,13 @@ const submit = async () => {
   loading.value = true
   
   try {
-    console.log('Form data before submission:', form)
-    
     const payload = {
       name: form.name,
-      start_date: form.startDate ? new Date(form.startDate + 'T00:00:00').toISOString() : null,
-      end_date: form.endDate ? new Date(form.endDate + 'T00:00:00').toISOString() : null,
+      start_date: form.startDate,
+      end_date: form.endDate,
     }
     
-    console.log('Payload before submission:', payload)
-    
-    // Only include isCurrent if it's true, to avoid sending false
+    // Only include is_current if it's true, to avoid sending false
     if (form.isCurrent) {
       payload.is_current = true
     }
@@ -124,11 +128,13 @@ const submit = async () => {
     })
     
     resetForm()
-    emit('close')
   } catch (error) {
     console.error('Session form error:', error)
   } finally {
-    loading.value = false
+    // Add a small delay to ensure loading state is visible
+    setTimeout(() => {
+      loading.value = false
+    }, 500)
   }
 }
 </script>

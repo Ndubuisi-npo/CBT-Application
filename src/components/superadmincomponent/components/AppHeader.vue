@@ -13,20 +13,7 @@
         <AppButton type="button" :icon="Bell" variant="ghost" class="relative">
           <span class="absolute right-2 top-2 h-2.5 w-2.5 rounded-full bg-[#D4AF37]"></span>
         </AppButton>
-        <AppButton
-          type="button"
-          variant="outline"
-          class="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 py-2 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#D4AF37] cursor-pointer"
-          @click="handleLogout"
-          title="Logout"
-        >
-          <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#0B1F3A] text-sm font-semibold text-white">{{ adminInitials }}</div>
-          <div class="hidden text-left sm:block">
-            <p class="text-sm font-semibold text-slate-900">{{ authComposable.user?.name || 'Super Admin' }}</p>
-            <p class="text-xs text-slate-500">{{ authComposable.user?.role || 'Platform administrator' }}</p>
-          </div>
-          <LogOut class="h-4 w-4 text-slate-400" />
-        </AppButton>
+        <ProfileDropdown />
       </div>
     </div>
   </header>
@@ -34,42 +21,18 @@
 
 <script setup>
 import { computed, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { Bell, PanelLeft, LogOut } from 'lucide-vue-next'
+import { useRoute } from 'vue-router'
+import { Bell, PanelLeft } from 'lucide-vue-next'
 import AppButton from '../../shared/AppButton.vue'
+import ProfileDropdown from './ProfileDropdown.vue'
 import { useSuperAdminAuth } from '../composables/useSuperAdminAuth'
 import { useSuperAdminUiStore } from '../stores/ui'
 
 defineEmits(['toggle-sidebar'])
 
 const route = useRoute()
-const router = useRouter()
 const authComposable = useSuperAdminAuth()
 const uiStore = useSuperAdminUiStore()
-
-const adminInitials = computed(() => {
-  const name = authComposable.user?.name || authComposable.user?.email || 'Super Admin'
-  return name.split(' ').map((part) => part[0]).slice(0, 2).join('').toUpperCase()
-})
-
-const handleLogout = async () => {
-  try {
-    await authComposable.logout()
-    uiStore.addToast({
-      title: 'Logged out',
-      message: 'You have been signed out successfully.',
-      variant: 'success',
-    })
-    router.push('/super-admin/login')
-  } catch (error) {
-    console.error('Logout failed:', error)
-    uiStore.addToast({
-      title: 'Logout failed',
-      message: error?.message || 'Unable to sign out.',
-      variant: 'error',
-    })
-  }
-}
 
 onMounted(async () => {
   if (!authComposable.user) {

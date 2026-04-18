@@ -28,6 +28,7 @@
               :text="isEdit ? 'Update Subject' : 'Create Subject'" 
               full-width 
               variant="primary" 
+              :loadingText="isEdit ? 'Updating Subject...' : 'Creating Subject...'"
               :processing="loading" 
               :disabled="loading"
             />
@@ -99,11 +100,15 @@ onMounted(async () => {
 
 // Watch for subject changes and update form
 watch(() => props.subject, (subject) => {
+  console.log('Subject changed:', subject)
   if (subject) {
+    console.log('Populating form with subject data:', subject)
     form.name = subject.name || ''
     form.code = subject.code || ''
     form.class_level_ids = subject.class_levels?.map(level => level.name) || []
+    console.log('Form after population:', form)
   } else {
+    console.log('Resetting form')
     resetForm()
   }
 }, { immediate: true })
@@ -143,7 +148,10 @@ const submit = async () => {
   } catch (error) {
     console.error('Subject form error:', error)
   } finally {
-    loading.value = false
+    // Add a small delay to ensure loading state is visible
+    setTimeout(() => {
+      loading.value = false
+    }, 500)
   }
 }
 </script>

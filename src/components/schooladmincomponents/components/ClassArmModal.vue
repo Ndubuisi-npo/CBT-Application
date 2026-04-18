@@ -20,6 +20,7 @@
               :text="isEdit ? 'Update Class Arm' : 'Create Class Arm'" 
               full-width 
               variant="primary" 
+              :loadingText="isEdit ? 'Updating Class Arm...' : 'Creating Class Arm...'"
               :processing="loading" 
               :disabled="loading"
             />
@@ -64,9 +65,13 @@ const resetForm = () => {
 
 // Watch for class arm changes and update form
 watch(() => props.classArm, (classArm) => {
+  console.log('ClassArm changed:', classArm)
   if (classArm) {
+    console.log('Populating form with class arm data:', classArm)
     form.name = classArm.name || ''
+    console.log('Form after population:', form)
   } else {
+    console.log('Resetting form')
     resetForm()
   }
 }, { immediate: true })
@@ -82,21 +87,19 @@ const submit = async () => {
   loading.value = true
   
   try {
-    const payload = {
-      name: form.name.trim()
-    }
-    
     await emit('submit', {
       id: props.classArm?.id,
-      ...payload
+      name: form.name
     })
     
     resetForm()
-    emit('close')
   } catch (error) {
     console.error('Class arm form error:', error)
   } finally {
-    loading.value = false
+    // Add a small delay to ensure loading state is visible
+    setTimeout(() => {
+      loading.value = false
+    }, 500)
   }
 }
 </script>

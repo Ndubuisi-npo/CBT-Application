@@ -43,6 +43,7 @@
               :text="isEdit ? 'Update Assignment' : 'Assign Teacher'" 
               full-width 
               variant="primary" 
+              :loadingText="isEdit ? 'Updating Assignment...' : 'Assigning Teacher...'"
               :processing="loading" 
               :disabled="loading"
             />
@@ -148,11 +149,15 @@ onMounted(async () => {
 
 // Watch for assignment changes and update form
 watch(() => props.assignment, (assignment) => {
+  console.log('Assignment changed:', assignment)
   if (assignment) {
+    console.log('Populating form with assignment data:', assignment)
     form.user_id = assignment.user_id || ''
     form.class_level_id = assignment.class_level_id || ''
     form.academic_session_id = assignment.academic_session_id || ''
+    console.log('Form after population:', form)
   } else {
+    console.log('Resetting form')
     resetForm()
   }
 }, { immediate: true })
@@ -184,9 +189,12 @@ const submit = async () => {
     // Don't close here - let parent handle closing after toast
     resetForm()
   } catch (error) {
-    console.error('Teacher assignment form error:', error)
+    console.error('Assignment form error:', error)
   } finally {
-    loading.value = false
+    // Add a small delay to ensure loading state is visible
+    setTimeout(() => {
+      loading.value = false
+    }, 500)
   }
 }
 </script>
