@@ -26,9 +26,9 @@
             <input v-model="form.phone" class="sa-input" placeholder="+1 (555) 123-4567" required />
           </FormField>
           
-          <FormField label="Staff ID" :error="errors.staffId">
+          <!-- <FormField label="Staff ID" :error="errors.staffId">
             <input v-model="form.staffId" class="sa-input" placeholder="STF001" required />
-          </FormField>
+          </FormField> -->
           
           <FormField label="Qualification" :error="errors.qualification">
             <input v-model="form.qualification" class="sa-input" placeholder="B.Sc. Mathematics" required />
@@ -102,7 +102,7 @@ watch(() => props.teacher, (teacher) => {
     form.email = teacher.user?.email || teacher.email || ''
     form.phone = teacher.user?.phone || teacher.phone || ''
     form.qualification = teacher.teacher_profile?.qualification || teacher.qualification || ''
-    form.staffId = teacher.teacher_profile?.staff_id || teacher.staff_id || ''
+    // form.staffId = teacher.teacher_profile?.staff_id || teacher.staff_id || ''
   } else {
     resetForm()
   }
@@ -122,7 +122,7 @@ const validate = () => {
   errors.email = form.email?.trim() ? '' : 'Email is required.'
   errors.phone = form.phone?.trim() ? '' : 'Phone is required.'
   errors.qualification = form.qualification?.trim() ? '' : 'Qualification is required.'
-  errors.staffId = form.staffId?.trim() ? '' : 'Staff ID is required.'
+  // errors.staffId = form.staffId?.trim() ? '' : 'Staff ID is required.'
   return !errors.firstName && !errors.lastName && !errors.email && !errors.phone && !errors.qualification && !errors.staffId
 }
 
@@ -141,7 +141,7 @@ const submit = async () => {
       staff_id: form.staffId
     }
     
-    await emit('submit', {
+    emit('submit', {
       id: props.teacher?.id,
       ...payload
     })

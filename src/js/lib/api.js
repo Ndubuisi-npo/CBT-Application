@@ -43,30 +43,27 @@ export function clearApiState() {
   }
 }
 
-// NEW: Helper to dynamically extract the tenant handle from the browser URL
 function getTenantHandle() {
   if (typeof window === 'undefined') return null
 
-  const hostname = window.location.hostname
+  const hostname = window.location.hostname.split(':')[0] // Strip port
   const parts = hostname.split('.')
 
-  // Localhost logic (e.g., lek.localhost vs localhost)
-  if (hostname.includes('localhost')) {
-    return parts.length > 1 ? parts[0] : null
+  // Local dev: lek.localhost:3000 → "lek"
+  if (hostname.includes('localhost') || hostname.includes('127.')) {
+    return parts.length > 1 && parts[0] !== 'www' ? parts[0] : null
   }
 
-  // Production logic (e.g., lek.educbt.com vs educbt.com)
-  // If using a standard domain, a subdomain means parts length > 2
-  if (parts.length > 2 && parts[0] !== 'www') {
-    return parts[0]
-  }
-
-  return null
+  // Production: lek.yourapp.com → "lek"
+  return parts.length > 2 && parts[0] !== 'www' ? parts[0] : null
 }
 
 export async function apiFetch(path, options = {}) {
+  const tenantHandle = getTenantHandle()
+  const baseUrl = tenantHandle ? window.location.origin : API_BASE_URL
+
   const headers = {
-    Accept: 'application/json',
+    'Accept': 'application/json',
     'Content-Type': 'application/json',
     ...(options.headers || {}),
   }
@@ -75,21 +72,24 @@ export async function apiFetch(path, options = {}) {
     headers.Authorization = `Bearer ${authToken}`
   }
   
-  const tenantHandle = getTenantHandle()
   if (tenantHandle) {
-    headers['X-Tenant'] = tenantHandle
+    headers['X-Tenant'] = tenantHandle // Fallback for central domain
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const response = await fetch(`${baseUrl}${path}`, {
     ...options,
     headers,
   })
-  
+
+  // // Auto-logout on 401
   // if (response.status === 401) {
   //   clearApiState()
+  //   const handle = getTenantHandle()
+  //   const loginPath = handle ? `/${handle}/login` : '/super-admin/login'
   //   if (typeof window !== 'undefined') {
-  //     window.location.href = '/login'
+  //     window.location.href = loginPath
   //   }
+  //   return
   // }
 
   const contentType = response.headers.get('content-type') || ''
@@ -97,7 +97,7 @@ export async function apiFetch(path, options = {}) {
   const data = isJson ? await response.json() : await response.text()
 
   if (!response.ok) {
-    const error = new Error(extractErrorMessage(data, 'Something went wrong.'))
+    const error = new Error(extractErrorMessage(data))
     error.status = response.status
     error.data = data
     throw error

@@ -162,15 +162,15 @@ const submitSession = async (sessionData) => {
       name: sessionData.name,
       start_date: sessionData.start_date,
       end_date: sessionData.end_date,
+      is_current: false ,
     }
     
-    console.log('Payload to be sent to API:', payload)
-    
-    // Only include is_current if it's true, to avoid sending false
-    if (sessionData.is_current) {
+    if (sessionData.is_current === true) {
       payload.is_current = true
     }
-    
+       
+    console.log('📤 Payload:', payload)
+
     if (sessionData.id) {
       await sessionsStore.saveSession({ id: sessionData.id, ...payload })
     } else {

@@ -182,12 +182,12 @@ const submitTeacher = async (teacherData) => {
     console.log('Teacher data received in page:', teacherData)
     
     const payload = {
-      first_name: teacherData.firstName,
-      last_name: teacherData.lastName,
+      first_name: teacherData.first_name,
+      last_name: teacherData.last_name,
       email: teacherData.email,
       phone: teacherData.phone,
       qualification: teacherData.qualification,
-      staff_id: teacherData.staffId
+      staff_id: teacherData.staff_id
     }
     
     console.log('Payload to be sent to API:', payload)
