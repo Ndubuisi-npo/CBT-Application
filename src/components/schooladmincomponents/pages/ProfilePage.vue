@@ -36,6 +36,7 @@
           full-width 
           variant="primary" 
           :processing="profileStore.loading" 
+          :disabled="profileStore.loading"
         />
       </form>
     </SectionCard>

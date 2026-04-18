@@ -29,8 +29,8 @@
         tag="RouterLink"
         :to="item.to"
         variant="ghost"
-        class="group flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition duration-200"
-        :class="isActive(item.to) ? 'bg-white text-[#0B1F3A] shadow-lg shadow-black/10' : 'border-transparent text-slate-300 hover:bg-white/10 hover:text-white'"
+        class="group flex items-start justify-start gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition duration-200 w-full"
+        :class="isActive(item.to) ? 'bg-white text-[#0B1F3A] shadow-lg shadow-black/10' : 'text-slate-300 hover:bg-white/10 hover:text-white'"
         @click="$emit('close-mobile')"
       >
         <component :is="item.icon" class="h-5 w-5 shrink-0" :class="isActive(item.to) ? 'text-[#D4AF37]' : 'text-slate-400 group-hover:text-[#D4AF37]'" />
@@ -47,7 +47,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
-import { BookCopy, CalendarRange, Columns3, LayoutDashboard, PanelLeftClose, Settings, Shapes, School, Users, Building2 } from 'lucide-vue-next'
+import { BookCopy, CalendarRange, Columns3, CreditCard, ClipboardList, LayoutDashboard, PanelLeftClose, Settings, Shapes, School, Users, Building2 } from 'lucide-vue-next'
 import AppButton from '../../shared/AppButton.vue'
 import ActionButton from '../../shared/ActionButton.vue'
 

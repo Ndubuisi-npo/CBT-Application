@@ -1,6 +1,9 @@
 <template>
   <div class="space-y-6">
     <SectionCard :title="`Assign Teachers to ${subject?.name || 'Subject'}`" subtitle="Manage teacher assignments for this subject.">
+      <template #header>
+        <AppButton @click="openModal()" :icon="Plus" text="Create and Assign" variant="primary" size="sm" />
+      </template>
       <SkeletonRows v-if="isLoading" :columns="5" />
       <div v-else-if="hasError" class="text-center py-8">
         <p class="text-slate-600">Subject not found or an error occurred.</p>
@@ -30,7 +33,14 @@
                 <td class="px-5 py-4 text-sm text-slate-600">{{ formatDate(assignment.created_at) }}</td>
                 <td class="px-5 py-4">
                   <div class="flex gap-2">
-                    <AppButton text="Remove" @click="deleteAssignment(assignment.id)" variant="danger" size="xs" />
+                    <AppButton 
+                      text="Remove" 
+                      @click="deleteAssignment(assignment.id)" 
+                      variant="danger" 
+                      size="xs"
+                      :processing="deleteLoading.has(assignment.id)"
+                      :disabled="deleteLoading.has(assignment.id)"
+                    />
                   </div>
                 </td>
               </tr>
@@ -40,54 +50,23 @@
       </div>
     </SectionCard>
 
-    <SectionCard title="Assign New Teacher" subtitle="Add a new teacher assignment for this subject.">
-      <form class="space-y-5" @submit.prevent="submit">
-        <FormField label="Teacher" :error="errors.user_id">
-          <select v-model="form.user_id" class="w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#D4AF37]">
-            <option value="">Select a teacher</option>
-            <option v-for="teacher in teachersStore.teachers" :key="teacher.id" :value="teacher.user?.id || teacher.id">
-              {{ teacher.user?.first_name }} {{ teacher.user?.last_name }}
-            </option>
-          </select>
-        </FormField>
-
-        <FormField label="Class Level" :error="errors.class_level_id">
-          <select v-model="form.class_level_id" class="w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#D4AF37]">
-            <option value="">Select a class level</option>
-            <option v-for="classLevel in classesStore.classes" :key="classLevel.id" :value="classLevel.id">
-              {{ classLevel.name }}
-            </option>
-          </select>
-        </FormField>
-
-        <FormField label="Academic Session" :error="errors.academic_session_id">
-          <select v-model="form.academic_session_id" class="w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#D4AF37]">
-            <option value="">Select an academic session</option>
-            <option v-for="session in sessionsStore.sessions" :key="session.id" :value="session.id">
-              {{ session.name }}
-            </option>
-          </select>
-        </FormField>
-
-        <AppButton 
-          type="submit" 
-          text="Assign Teacher" 
-          full-width 
-          variant="primary" 
-          :processing="isLoading" 
-        />
-      </form>
-    </SectionCard>
+    <TeacherAssignmentModal 
+      :show="showModal" 
+      :assignment="selectedAssignment"
+      @close="closeModal"
+      @submit="submitAssignment"
+    />
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted, reactive } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import FormField from '../components/FormField.vue'
 import SectionCard from '../components/SectionCard.vue'
 import SkeletonRows from '../components/SkeletonRows.vue'
 import AppButton from '../../shared/AppButton.vue'
+import TeacherAssignmentModal from '../components/TeacherAssignmentModal.vue'
+import { Plus } from 'lucide-vue-next'
 import { useSchoolAdminClassesStore } from '../stores/classes'
 import { useSchoolAdminSessionsStore } from '../stores/sessions'
 import { useSchoolAdminSubjectsStore } from '../stores/subjects'
@@ -120,21 +99,16 @@ const assignments = computed(() => {
   return assignments
 })
 
-const form = reactive({
-  user_id: '',
-  class_level_id: '',
-  academic_session_id: ''
-})
+// Modal state
+const showModal = ref(false)
+const selectedAssignment = ref(null)
 
-const errors = reactive({
-  user_id: '',
-  class_level_id: '',
-  academic_session_id: ''
-})
+// Loading states
+const deleteLoading = ref(new Set())
 
 const getTeacherName = (teacherId) => {
-  const teacher = teachersStore.teachers.find(t => (t.user?.id || t.id) === teacherId)
-  return teacher ? `${teacher.user?.first_name} ${teacher.user?.last_name}` : 'Unknown'
+  const teacher = teachersStore.teachers.find(t => t.id === teacherId)
+  return teacher ? `${teacher.first_name} ${teacher.last_name}` : 'Unknown'
 }
 
 const getClassName = (classId) => {
@@ -152,50 +126,67 @@ const formatDate = (dateString) => {
   return new Date(dateString).toLocaleDateString()
 }
 
-const validate = () => {
-  errors.user_id = form.user_id ? '' : 'Teacher is required.'
-  errors.class_level_id = form.class_level_id ? '' : 'Class level is required.'
-  errors.academic_session_id = form.academic_session_id ? '' : 'Academic session is required.'
-  return !errors.user_id && !errors.class_level_id && !errors.academic_session_id
+// Modal functions
+const openModal = () => {
+  selectedAssignment.value = null
+  showModal.value = true
 }
 
-const deleteAssignment = async (assignmentId) => {
+const closeModal = () => {
+  showModal.value = false
+  selectedAssignment.value = null
+}
+
+const editAssignment = (assignment) => {
+  selectedAssignment.value = assignment
+  showModal.value = true
+}
+
+const submitAssignment = async (assignmentData) => {
+  try {
+    if (assignmentData.id) {
+      // Update existing assignment
+      await subjectsStore.updateAssignment(subjectId.value, assignmentData.id, {
+        user_id: assignmentData.user_id,
+        class_level_id: assignmentData.class_level_id,
+        academic_session_id: assignmentData.academic_session_id
+      })
+      uiStore.addToast({ title: 'Assignment updated', message: 'Teacher assignment has been updated.', variant: 'success' })
+    } else {
+      // Create new assignment
+      await subjectsStore.assignTeacher(subjectId.value, {
+        user_id: assignmentData.user_id,
+        class_level_id: assignmentData.class_level_id,
+        academic_session_id: assignmentData.academic_session_id
+      })
+      uiStore.addToast({ title: 'Teacher assigned', message: 'Teacher has been successfully assigned to the subject.', variant: 'success' })
+    }
+    
+    // Close modal after showing toast
+    closeModal()
+    await subjectsStore.fetchSubjects() // Refresh to get updated assignments
+  } catch (error) {
+    console.error('Assignment error:', error)
+    uiStore.addToast({ title: 'Error', message: error.message || 'Failed to save assignment.', variant: 'error' })
+  }
+}
+
+const deleteAssignment = async (id) => {
   if (!confirm('Are you sure you want to remove this teacher assignment? This action cannot be undone.')) {
     return
   }
   
+  deleteLoading.value = new Set([...deleteLoading.value, id])
+  
   try {
-    await subjectsStore.removeAssignment(subjectId.value, assignmentId)
+    await subjectsStore.deleteAssignment(subjectId.value, id)
     uiStore.addToast({ title: 'Assignment removed', message: 'Teacher assignment has been removed.', variant: 'success' })
     await subjectsStore.fetchSubjects() // Refresh to get updated assignments
   } catch (error) {
-    uiStore.addToast({ title: 'Error', message: 'Failed to remove assignment.', variant: 'error' })
-  }
-}
-
-const submit = async () => {
-  if (!validate()) return
-
-  try {
-    console.log('Submitting teacher assignment:', {
-      subjectId: subjectId.value,
-      form: form
-    })
-    
-    await subjectsStore.assignTeacher(subjectId.value, form)
-    uiStore.addToast({ title: 'Teacher assigned', message: 'Teacher has been successfully assigned to the subject.', variant: 'success' })
-    
-    // Reset form
-    Object.assign(form, {
-      user_id: '',
-      class_level_id: '',
-      academic_session_id: ''
-    })
-    
-    await subjectsStore.fetchSubjects() // Refresh to get updated assignments
-  } catch (error) {
     console.error('Assignment error:', error)
-    uiStore.addToast({ title: 'Error', message: error.message || 'Failed to assign teacher.', variant: 'error' })
+    uiStore.addToast({ title: 'Error', message: error.message || 'Failed to remove assignment.', variant: 'error' })
+  } finally {
+    deleteLoading.value = new Set([...deleteLoading.value].filter(loadingId => loadingId !== id))
   }
 }
 

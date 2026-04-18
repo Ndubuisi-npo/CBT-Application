@@ -2,6 +2,8 @@ import { defineStore } from 'pinia'
 import {
   getClassLevels,
   saveClassLevel,
+  updateClassLevel,
+  createClassLevel,
   deleteClassLevel,
 } from '../services/api/classes'
 
@@ -27,6 +29,16 @@ export const useSchoolAdminClassLevelsStore = defineStore('school-admin-class-le
       this.classLevels = exists
         ? this.classLevels.map((item) => (item.id === record.id ? record : item))
         : [record, ...this.classLevels]
+    },
+    async updateClassLevel(id, payload) {
+      const record = await updateClassLevel(id, payload)
+      this.classLevels = this.classLevels.map((item) => (item.id === record.id ? record : item))
+      return record
+    },
+    async createClassLevel(payload) {
+      const record = await createClassLevel(payload)
+      this.classLevels = [record, ...this.classLevels]
+      return record
     },
     async deleteClassLevel(id) {
       await deleteClassLevel(id)

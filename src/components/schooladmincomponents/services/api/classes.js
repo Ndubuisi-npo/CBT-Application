@@ -30,6 +30,32 @@ export async function saveClassLevel(payload) {
   }
 }
 
+export async function updateClassLevel(id, payload) {
+  try {
+    return await apiFetch(`/api/class-levels/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        name: payload.name,
+      }),
+    })
+  } catch (error) {
+    throw new Error(extractErrorMessage(error, 'Unable to update class level.'))
+  }
+}
+
+export async function createClassLevel(payload) {
+  try {
+    return await apiFetch('/api/class-levels', {
+      method: 'POST',
+      body: JSON.stringify({
+        name: payload.name,
+      }),
+    })
+  } catch (error) {
+    throw new Error(extractErrorMessage(error, 'Unable to create class level.'))
+  }
+}
+
 export async function deleteClassLevel(id) {
   try {
     return await apiFetch(`/api/class-levels/${id}`, { method: 'DELETE' })

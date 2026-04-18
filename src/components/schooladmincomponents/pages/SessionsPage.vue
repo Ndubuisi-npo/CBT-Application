@@ -1,6 +1,11 @@
 <template>
-  <div class="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+  <div class="space-y-6">
     <SectionCard title="Academic Sessions" subtitle="Manage session timelines and activate the current school year.">
+      <template #header>
+        <div class="flex flex-wrap items-center gap-3">
+          <AppButton @click="openModal()" :icon="Plus" text="Create Session" variant="primary" />
+        </div>
+      </template>
       <SkeletonRows v-if="sessionsStore.loading" :columns="5" />
       <div v-else class="overflow-hidden rounded-[24px] border border-slate-200">
         <div class="overflow-x-auto">
@@ -18,15 +23,26 @@
                 <td class="px-5 py-4 text-sm text-nowrap text-slate-600">{{ fmtDate(session.endDate || session.end_date || '-') }}</td>
                 <td class="px-5 py-4">
                   <div class="flex gap-2">
-                    <AppButton text="Edit" @click="editSession(session)" variant="outline" size="xs" />
+                    <AppButton text="Edit" @click="openModal(session)" variant="outline" size="xs" />
                     <ActionButton tag="RouterLink" :to="`/school-admin/terms/${session.id}`" text="Terms" variant="primary" size="xs" />
                     <AppButton 
                       :text="sessionStatus(session) === 'Current' ? 'Deactivate' : 'Activate'" 
                       @click="toggleSession(session.id)" 
                       :variant="sessionStatus(session) === 'Current' ? 'danger' : 'success'" 
-                      size="xs" 
+                      size="xs"
+                      :loadingText="sessionStatus(session) === 'Current' ? 'Deactivating...' : 'Activating...'"
+                      :processing="toggleLoading.has(session.id)"
+                      :disabled="toggleLoading.has(session.id)"
                     />
-                    <AppButton text="Delete" @click="deleteSession(session.id)" variant="danger" size="xs" />
+                    <AppButton 
+                      text="Delete" 
+                      @click="deleteSession(session.id)" 
+                      variant="danger" 
+                      size="xs"
+                      loadingText="Deleting..."
+                      :processing="deleteLoading.has(session.id)"
+                      :disabled="deleteLoading.has(session.id)"
+                    />
                   </div>
                 </td>
               </tr>
@@ -36,40 +52,24 @@
       </div>
     </SectionCard>
 
-    <SectionCard :title="form.id ? 'Edit Session' : 'Create Session'" subtitle="Define the academic session window and status.">
-      <form class="space-y-5" @submit.prevent="submit">
-        <FormField label="Session name" :error="errors.name">
-          <input v-model="form.name" class="sa-input" placeholder="2025/2026" />
-        </FormField>
-        <FormField label="Start date" :error="errors.startDate">
-          <input v-model="form.startDate" type="date" class="sa-input" />
-        </FormField>
-        <FormField label="End date" :error="errors.endDate">
-          <input v-model="form.endDate" type="date" class="sa-input" />
-        </FormField>
-        <div class="flex items-center gap-2">
-          <input v-model="form.isCurrent" type="checkbox" id="is-current" class="h-4 w-4 rounded border-slate-300 text-[#D4AF37] focus:ring-[#D4AF37]" />
-          <label for="is-current" class="text-sm font-medium text-slate-700">Set as current academic session</label>
-        </div>
-        <AppButton 
-          type="submit" 
-          :text="form.id ? 'Update Session' : 'Create Session'" 
-          full-width 
-          variant="primary" 
-          :processing="sessionsStore.loading" 
-        />
-      </form>
-    </SectionCard>
+    <SessionModal 
+      :show="showModal" 
+      :session="selectedSession"
+      @close="closeModal"
+      @submit="submitSession"
+    />
   </div>
 </template>
 
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
+import { Plus } from 'lucide-vue-next'
 import { useRoute, useRouter } from 'vue-router'
 import SectionCard from '../components/SectionCard.vue'
 import SkeletonRows from '../components/SkeletonRows.vue'
 import StatusBadge from '../components/StatusBadge.vue'
 import AppButton from '../../shared/AppButton.vue'
+import SessionModal from '../components/SessionModal.vue'
 import { useSchoolAdminSessionsStore } from '../stores/sessions'
 import { useSchoolAdminUiStore } from '../stores/ui'
 import { fmtDate } from '@/lib/helpers'
@@ -78,8 +78,13 @@ const headings = ['Session Name', 'Status', 'Start Date', 'End Date', 'Actions']
 const sessionsStore = useSchoolAdminSessionsStore()
 const uiStore = useSchoolAdminUiStore()
 
-const form = reactive({ name: '', startDate: '', endDate: '', isCurrent: false })
-const errors = reactive({ name: '', startDate: '', endDate: '' })
+// Modal state
+const showModal = ref(false)
+const selectedSession = ref(null)
+
+// Loading states
+const toggleLoading = ref(new Set())
+const deleteLoading = ref(new Set())
 
 onMounted(async () => {
   try {
@@ -90,23 +95,18 @@ onMounted(async () => {
   }
 })
 
+const closeModal = () => {
+  showModal.value = false
+  selectedSession.value = null
+}
+
+const openModal = (session) => {
+  selectedSession.value = session
+  showModal.value = true
+}
+
 const reset = () => {
-  Object.assign(form, { name: '', startDate: '', endDate: '', isCurrent: false })
-  Object.assign(errors, { name: '', startDate: '', endDate: '' })
-}
-
-const validate = () => {
-  errors.name = form.name ? '' : 'Session name is required.'
-  errors.startDate = form.startDate ? '' : 'Start date is required.'
-  errors.endDate = form.endDate ? '' : 'End date is required.'
-  return !errors.name && !errors.startDate && !errors.endDate
-}
-
-const editSession = (session) => {
-  form.name = session.name
-  form.startDate = session.startDate || session.start_date || ''
-  form.endDate = session.endDate || session.end_date || ''
-  form.isCurrent = session.current || session.is_current || session.status === 'Active'
+  selectedSession.value = null
 }
 
 const sessionStatus = (session) => (session.current ? 'Current' : 'Not current')
@@ -115,25 +115,25 @@ const toggleSession = async (id) => {
   const session = sessionsStore.sessions.find(s => s.id === id)
   const isActive = sessionStatus(session) === 'Current'
   
-  if (isActive) {
-    // Deactivate - set is_current to false
-    try {
+  toggleLoading.value = new Set([...toggleLoading.value, id])
+  
+  try {
+    if (isActive) {
+      // Deactivate - set is_current to false
       await sessionsStore.saveSession({ 
         id,
         is_current: false 
       })
       uiStore.addToast({ title: 'Session deactivated', message: 'Academic session has been deactivated.', variant: 'success' })
-    } catch (error) {
-      uiStore.addToast({ title: 'Error', message: 'Failed to deactivate session.', variant: 'error' })
-    }
-  } else {
-    // Activate - use set-current endpoint
-    try {
+    } else {
+      // Activate - use set-current endpoint
       await sessionsStore.activateSession(id)
       uiStore.addToast({ title: 'Session activated', message: 'Current academic session updated.', variant: 'success' })
-    } catch (error) {
-      uiStore.addToast({ title: 'Error', message: 'Failed to activate session.', variant: 'error' })
     }
+  } catch (error) {
+    uiStore.addToast({ title: 'Error', message: isActive ? 'Failed to deactivate session.' : 'Failed to activate session.', variant: 'error' })
+  } finally {
+    toggleLoading.value = new Set([...toggleLoading.value].filter(loadingId => loadingId !== id))
   }
 }
 
@@ -142,30 +142,46 @@ const deleteSession = async (id) => {
     return
   }
   
+  deleteLoading.value = new Set([...deleteLoading.value, id])
+  
   try {
     await sessionsStore.deleteSession(id)
     uiStore.addToast({ title: 'Session deleted', message: 'Academic session has been deleted.', variant: 'success' })
   } catch (error) {
     uiStore.addToast({ title: 'Error', message: 'Failed to delete session.', variant: 'error' })
+  } finally {
+    deleteLoading.value = new Set([...deleteLoading.value].filter(loadingId => loadingId !== id))
   }
 }
 
-const submit = async () => {
-  if (!validate()) return
-  
-  const payload = {
-    name: form.name,
-    start_date: form.startDate,
-    end_date: form.endDate,
+const submitSession = async (sessionData) => {
+  try {
+    console.log('Session data received in page:', sessionData)
+    
+    const payload = {
+      name: sessionData.name,
+      start_date: sessionData.start_date,
+      end_date: sessionData.end_date,
+    }
+    
+    console.log('Payload to be sent to API:', payload)
+    
+    // Only include is_current if it's true, to avoid sending false
+    if (sessionData.is_current) {
+      payload.is_current = true
+    }
+    
+    if (sessionData.id) {
+      await sessionsStore.saveSession({ id: sessionData.id, ...payload })
+    } else {
+      await sessionsStore.createSession(payload)
+    }
+    
+    closeModal()
+    uiStore.addToast({ title: 'Session saved', message: 'Academic session has been saved.', variant: 'success' })
+  } catch (error) {
+    console.error('Session form error:', error)
+    uiStore.addToast({ title: 'Error', message: 'Failed to save session.', variant: 'error' })
   }
-  
-  // Only include isCurrent if it's true, to avoid sending false
-  if (form.isCurrent) {
-    payload.is_current = true
-  }
-  
-  await sessionsStore.saveSession(payload)
-  uiStore.addToast({ title: 'Session saved', message: 'Academic session changes were saved.', variant: 'success' })
-  reset()
 }
 </script>

@@ -7,6 +7,8 @@ import {
   getSessions,
   getTerms,
   saveSession as saveSessionAPI,
+  updateSession as updateSessionAPI,
+  createSession as createSessionAPI,
   saveTerm as saveTermAPI,
 } from '../services/api/sessions'
 
@@ -61,6 +63,16 @@ export const useSchoolAdminSessionsStore = defineStore('school-admin-sessions', 
       this.sessions = exists
         ? this.sessions.map((item) => (item.id === record.id ? record : item))
         : [record, ...this.sessions]
+    },
+    async updateSession(id, payload) {
+      const record = normalizeSession(await updateSessionAPI(id, payload))
+      this.sessions = this.sessions.map((item) => (item.id === record.id ? record : item))
+      return record
+    },
+    async createSession(payload) {
+      const record = normalizeSession(await createSessionAPI(payload))
+      this.sessions = [record, ...this.sessions]
+      return record
     },
     async deleteSession(id) {
       await deleteSession(id)

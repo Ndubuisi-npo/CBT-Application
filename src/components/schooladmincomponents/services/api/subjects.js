@@ -42,6 +42,42 @@ export async function saveSubject(payload) {
   }
 }
 
+export async function updateSubject(id, payload) {
+  try {
+    const body = {
+      name: payload.name,
+    }
+
+    if (payload.code !== undefined) body.code = payload.code
+    if (payload.class_level_ids !== undefined) body.class_level_ids = payload.class_level_ids
+
+    return await apiFetch(`/api/subjects/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    })
+  } catch (error) {
+    throw new Error(extractErrorMessage(error, 'Unable to update subject.'))
+  }
+}
+
+export async function createSubject(payload) {
+  try {
+    const body = {
+      name: payload.name,
+    }
+
+    if (payload.code !== undefined) body.code = payload.code
+    if (payload.class_level_ids !== undefined) body.class_level_ids = payload.class_level_ids
+
+    return await apiFetch('/api/subjects', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    })
+  } catch (error) {
+    throw new Error(extractErrorMessage(error, 'Unable to create subject.'))
+  }
+}
+
 export async function deleteSubject(id) {
   try {
     return await apiFetch(`/api/subjects/${id}`, { method: 'DELETE' })

@@ -41,6 +41,7 @@
           full-width 
           variant="primary" 
           :processing="classesStore.loading" 
+          :disabled="classesStore.loading"
         />
       </form>
     </SectionCard>

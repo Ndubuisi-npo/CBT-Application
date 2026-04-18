@@ -3,10 +3,11 @@
     <SectionCard v-if="!showArchived" title="Teachers" subtitle="Manage staff records, contacts, department ownership, and class/subject assignments.">
       <template #header>
         <div class="flex flex-wrap items-center gap-3">
+          <AppButton @click="openModal()" :icon="Plus" text="Create Teacher" variant="primary" size="sm" />
           <AppButton 
             @click="toggleView" 
             text="Show Archived"
-            variant="primary"
+            variant="outline"
             size="sm"
           />
         </div>
@@ -31,7 +32,15 @@
                 <td class="px-5 py-4">
                   <div class="flex gap-2">
                     <AppButton text="Edit" @click="editTeacher(teacher)" variant="outline" size="xs" />
-                    <AppButton text="Revoke" @click="revokeTeacher(teacher.id)" variant="warning" size="xs" />
+                    <AppButton 
+                      text="Revoke" 
+                      @click="revokeTeacher(teacher.id)" 
+                      variant="warning" 
+                      size="xs"
+                      loadingText="Revoking..."
+                      :processing="revokeLoading.has(teacher.id)"
+                      :disabled="revokeLoading.has(teacher.id)"
+                    />
                   </div>
                 </td>
               </tr>
@@ -85,79 +94,23 @@
       </div>
     </SectionCard>
 
-    <SectionCard
-        :title="form.id ? 'Edit Teacher' : 'Create Teacher'"
-        subtitle="Create staff records and assign classes and subjects."
-    >
-      <form class="space-y-5" @submit.prevent="submit">
-        <div class="grid gap-5 md:grid-cols-2">
-          <FormField label="First name" :error="errors.firstName">
-            <input
-                v-model="form.firstName"
-                class="sa-input"
-                placeholder="Ada"
-            />
-          </FormField>
-          <FormField label="Last name" :error="errors.lastName">
-            <input
-                v-model="form.lastName"
-                class="sa-input"
-                placeholder="Nwosu"
-            />
-          </FormField>
-        </div>
-        <FormField label="Email address" :error="errors.email">
-          <input
-              v-model="form.email"
-              type="email"
-              class="sa-input"
-              placeholder="teacher@greenfield.edu"
-          />
-        </FormField>
-        <FormField label="Phone number" :error="errors.phone">
-          <input
-              v-model="form.phone"
-              class="sa-input"
-              placeholder="+234 800 000 0000"
-          />
-        </FormField>
-        <div class="grid gap-5 md:grid-cols-2">
-          <FormField
-              label="Qualification"
-              :error="errors.qualification"
-          >
-            <input
-                v-model="form.qualification"
-                class="sa-input"
-                placeholder="MSc Mathematics"
-            />
-          </FormField>
-          <FormField label="Staff ID" :error="errors.staffId">
-            <input
-                v-model="form.staffId"
-                class="sa-input"
-                placeholder="STF-0392"
-            />
-          </FormField>
-        </div>
-        <AppButton
-            type="submit"
-            :text="form.id ? 'Update Teacher' : 'Create Teacher'"
-            full-width
-            variant="primary"
-            :processing="teachersStore.loading"
-        />
-      </form>
-    </SectionCard>
+    <TeacherModal 
+      :show="showModal" 
+      :teacher="selectedTeacher"
+      @close="closeModal"
+      @submit="submitTeacher"
+    />
   </div>
 </template>
 
 <script setup>
 import { onMounted, reactive, computed, ref } from "vue";
+import { Plus } from 'lucide-vue-next';
 import FormField from "../components/FormField.vue";
 import SectionCard from "../components/SectionCard.vue";
 import SkeletonRows from "../components/SkeletonRows.vue";
 import AppButton from '../../shared/AppButton.vue';
+import TeacherModal from '../components/TeacherModal.vue'
 import { useSchoolAdminTeachersStore } from "../stores/teachers";
 import { useSchoolAdminUiStore } from "../stores/ui";
 
@@ -173,6 +126,17 @@ const headings = [
 const teachersStore = useSchoolAdminTeachersStore();
 const uiStore = useSchoolAdminUiStore();
 
+// Modal state
+const showModal = ref(false)
+const selectedTeacher = ref(null)
+
+// Loading states
+const revokeLoading = ref(new Set())
+
+// Form state
+const form = reactive({ id: null, firstName: '', lastName: '', email: '', phone: '', qualification: '', staffId: '' })
+const errors = reactive({ firstName: '', lastName: '', email: '', phone: '', qualification: '', staffId: '' })
+
 // Toggle state for active/archived view
 const showArchived = ref(false);
 
@@ -181,81 +145,73 @@ const currentTeachers = computed(() => {
   return showArchived.value ? teachersStore.archivedTeachers : teachersStore.teachers;
 });
 
+const closeModal = () => {
+  showModal.value = false
+  selectedTeacher.value = null
+}
+
+const openModal = (teacher) => {
+  selectedTeacher.value = teacher
+  showModal.value = true
+}
+
+const validate = () => {
+  errors.firstName = form.firstName ? '' : 'First name is required.'
+  errors.lastName = form.lastName ? '' : 'Last name is required.'
+  errors.email = form.email ? '' : 'Email is required.'
+  errors.phone = form.phone ? '' : 'Phone is required.'
+  errors.qualification = form.qualification ? '' : 'Qualification is required.'
+  errors.staffId = form.staffId ? '' : 'Staff ID is required.'
+  return !errors.firstName && !errors.lastName && !errors.email && !errors.phone && !errors.qualification && !errors.staffId
+}
+
+const submit = async () => {
+  if (!validate()) return
+  const savedTeacher = await teachersStore.saveTeacher({ ...form })
+  uiStore.addToast({ title: 'Teacher saved', message: 'Teacher configuration was updated.', variant: 'success' })
+  Object.assign(form, { id: null, firstName: '', lastName: '', email: '', phone: '', qualification: '', staffId: '' })
+}
+
+const editTeacher = (teacher) => {
+  selectedTeacher.value = teacher
+  showModal.value = true
+}
+
+const submitTeacher = async (teacherData) => {
+  try {
+    console.log('Teacher data received in page:', teacherData)
+    
+    const payload = {
+      first_name: teacherData.firstName,
+      last_name: teacherData.lastName,
+      email: teacherData.email,
+      phone: teacherData.phone,
+      qualification: teacherData.qualification,
+      staff_id: teacherData.staffId
+    }
+    
+    console.log('Payload to be sent to API:', payload)
+    
+    if (teacherData.id) {
+      await teachersStore.updateTeacher(teacherData.id, payload)
+    } else {
+      await teachersStore.createTeacher(payload)
+    }
+    
+    uiStore.addToast({ title: 'Teacher saved', message: 'Teacher has been saved successfully.', variant: 'success' })
+    // Close modal after showing toast
+    closeModal()
+  } catch (error) {
+    console.error('Teacher form error:', error)
+    uiStore.addToast({ title: 'Error', message: 'Failed to save teacher.', variant: 'error' })
+  }
+}
+
 const toggleView = () => {
   showArchived.value = !showArchived.value;
   if (showArchived.value) {
     teachersStore.fetchArchivedTeachers();
   }
-};
-
-const form = reactive({
-    id: null,
-    firstName: "",
-    lastName: "",
-    email: "",
-    phone: "",
-    qualification: "",
-    staffId: "",
-});
-
-const errors = reactive({
-    firstName: "",
-    lastName: "",
-    email: "",
-    phone: "",
-    qualification: "",
-    staffId: "",
-});
-
-onMounted(() => {
-    teachersStore.fetchTeachers();
-});
-
-const formatTeacherName = (teacher) => {
-    const first = teacher.user?.first_name || "";
-    const last = teacher.user?.last_name || "";
-    return `${first} ${last}`.trim();
-};
-
-const editTeacher = (teacher) => {
-    form.id = teacher.id;
-    form.firstName = teacher.user?.first_name || "";
-    form.lastName = teacher.user?.last_name || "";
-    form.email = teacher.user?.email || "";
-    form.phone = teacher.user?.phone || "";
-    form.qualification = teacher.qualification || "";
-    form.staffId = teacher.staff_id || "";
-};
-
-const reset = () => {
-    form.id = null;
-    form.firstName = "";
-    form.lastName = "";
-    form.email = "";
-    form.phone = "";
-    form.qualification = "";
-    form.staffId = "";
-};
-
-const validate = () => {
-    errors.firstName = form.firstName ? "" : "First name is required.";
-    errors.lastName = form.lastName ? "" : "Last name is required.";
-    errors.email = /\S+@\S+\.\S+/.test(form.email)
-        ? ""
-        : "Enter a valid email address.";
-    errors.phone = form.phone ? "" : "Phone number is required.";
-    errors.qualification = form.qualification
-        ? ""
-        : "Qualification is required.";
-    errors.staffId = form.staffId ? "" : "Staff ID is required.";
-    return (
-        !errors.firstName &&
-        !errors.lastName &&
-        !errors.email &&
-        !errors.phone &&
-        !errors.qualification &&
-        !errors.staffId
-    );
 };
 
 const revokeTeacher = async (id) => {
@@ -267,8 +223,9 @@ const revokeTeacher = async (id) => {
         return;
     }
 
+    revokeLoading.value = new Set([...revokeLoading.value, id])
+
     try {
-        console.log("Attempting to revoke teacher with ID:", id);
         await teachersStore.revokeTeacher(id);
         uiStore.addToast({
             title: "Teacher revoked",
@@ -276,38 +233,22 @@ const revokeTeacher = async (id) => {
             variant: "success",
         });
     } catch (error) {
-        console.error("Error revoking teacher:", error);
         uiStore.addToast({
             title: "Error",
             message: error.message || "Failed to revoke teacher.",
             variant: "error",
         });
+    } finally {
+        revokeLoading.value = new Set([...revokeLoading.value].filter(loadingId => loadingId !== id))
     }
 };
 
-const submit = async () => {
-    if (!validate()) return;
-
-    const payload = {
-        first_name: form.firstName,
-        last_name: form.lastName,
-        email: form.email,
-        phone: form.phone,
-        qualification: form.qualification,
-        staff_id: form.staffId,
-    };
-
-    // Include ID if editing (form.id exists)
-    if (form.id) {
-        payload.id = form.id;
-    }
-
-    await teachersStore.saveTeacher(payload);
-    uiStore.addToast({
-        title: "Teacher saved",
-        message: "Teacher record was updated successfully.",
-        variant: "success",
-    });
-    reset();
+const resetForm = () => {
+  Object.assign(form, { id: null, firstName: '', lastName: '', email: '', phone: '', qualification: '', staffId: '' });
+  Object.assign(errors, { firstName: '', lastName: '', email: '', phone: '', qualification: '', staffId: '' });
 };
+
+onMounted(() => {
+    teachersStore.fetchTeachers();
+});
 </script>

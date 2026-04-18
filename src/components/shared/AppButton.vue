@@ -6,9 +6,9 @@
     @click="handleClick"
   >
     <component v-if="icon && iconPosition === 'left'" :is="icon" class="h-4 w-4" />
-    <LoaderCircle v-if="processing" class="h-4 w-4 animate-spin" />
+    <LoaderCircle v-if="processing" class="h-4 w-4 animate-spin" :class="getSpinnerColor()" />
     <span v-if="text" :class="{ 'ml-2': (icon && iconPosition === 'left') || processing, 'mr-2': icon && iconPosition === 'right' }">
-      {{ text }}
+      {{ processing ? (loadingText || 'Loading...') : text }}
     </span>
     <component v-if="icon && iconPosition === 'right'" :is="icon" class="h-4 w-4" />
     <slot v-if="!text"></slot>
@@ -22,6 +22,7 @@ import { LoaderCircle } from 'lucide-vue-next'
 const props = defineProps({
   // Button content
   text: { type: String, default: '' },
+  loadingText: { type: String, default: null },
   icon: { type: [Object, Function], default: null },
   iconPosition: { type: String, default: 'left', validator: (value) => ['left', 'right'].includes(value) },
   
@@ -58,6 +59,20 @@ const handleClick = (event) => {
   if (!props.disabled && !props.processing) {
     emit('click', event)
   }
+}
+
+const getSpinnerColor = () => {
+  const colorMap = {
+    primary: 'text-white',
+    secondary: 'text-slate-700',
+    outline: 'text-slate-700',
+    ghost: 'text-slate-600',
+    success: 'text-white',
+    warning: 'text-amber-700',
+    danger: 'text-red-700',
+    info: 'text-blue-700'
+  }
+  return colorMap[props.variant] || 'text-white'
 }
 
 const buttonClasses = computed(() => {

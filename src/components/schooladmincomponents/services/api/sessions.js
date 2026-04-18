@@ -33,6 +33,28 @@ export async function saveSession(payload) {
   }
 }
 
+export async function updateSession(id, payload) {
+  try {
+    return await apiFetch(`/api/academic-sessions/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    })
+  } catch (error) {
+    throw new Error(extractErrorMessage(error, 'Unable to update session.'))
+  }
+}
+
+export async function createSession(payload) {
+  try {
+    return await apiFetch('/api/academic-sessions', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
+  } catch (error) {
+    throw new Error(extractErrorMessage(error, 'Unable to create session.'))
+  }
+}
+
 export async function deleteSession(id) {
   try {
     return await apiFetch(`/api/academic-sessions/${id}`, { method: 'DELETE' })

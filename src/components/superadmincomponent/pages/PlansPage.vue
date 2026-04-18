@@ -14,7 +14,15 @@
         <article v-for="plan in plans" :key="plan.id" class="group relative overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-900/10">
           <div class="absolute top-4 right-4 z-10 flex gap-2 opacity-0 transition-opacity group-hover:opacity-100">
             <AppButton @click="editPlan(plan)" :icon="Edit" variant="ghost" class="rounded-lg bg-white/90 p-2 text-slate-600 shadow-md hover:bg-white hover:text-[#0B1F3A]" />
-            <AppButton @click="deletePlan(plan.id)" :icon="Trash" variant="ghost" class="rounded-lg bg-white/90 p-2 text-slate-600 shadow-md hover:bg-white hover:text-red-600" />
+            <AppButton 
+              @click="deletePlan(plan.id)" 
+              :icon="Trash" 
+              variant="ghost" 
+              class="rounded-lg bg-white/90 p-2 text-slate-600 shadow-md hover:bg-white hover:text-red-600"
+              loadingText="Deleting..."
+              :processing="deleteLoading.has(plan.id)"
+              :disabled="deleteLoading.has(plan.id)"
+            />
           </div>
           
           <div class="bg-gradient-to-br from-[#0B1F3A] to-[#163154] p-6 text-white">
@@ -82,6 +90,9 @@ import { useSuperAdminUiStore } from '../stores/ui'
 const { fetchPlans, plans, loading, deletePlan: deletePlanApi } = useSuperAdminPlans()
 const uiStore = useSuperAdminUiStore()
 
+// Loading states
+const deleteLoading = ref(new Set())
+
 // Modal state
 const showModal = ref(false)
 const selectedPlan = ref(null)
@@ -105,6 +116,8 @@ const deletePlan = async (id) => {
     return
   }
   
+  deleteLoading.value = new Set([...deleteLoading.value, id])
+  
   try {
     await deletePlanApi(id)
     uiStore.addToast({
@@ -118,6 +131,8 @@ const deletePlan = async (id) => {
       message: error.message || 'Failed to delete plan.',
       variant: 'error',
     })
+  } finally {
+    deleteLoading.value = new Set([...deleteLoading.value].filter(loadingId => loadingId !== id))
   }
 }
 

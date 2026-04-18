@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { getSubjects, saveSubject, deleteSubject, assignTeacher, removeAssignment } from '../services/api/subjects'
+import { getSubjects, saveSubject, updateSubject, createSubject, deleteSubject, assignTeacher, removeAssignment } from '../services/api/subjects'
 
 export const useSchoolAdminSubjectsStore = defineStore('school-admin-subjects', {
   state: () => ({
@@ -35,6 +35,16 @@ export const useSchoolAdminSubjectsStore = defineStore('school-admin-subjects', 
       this.subjects = exists
         ? this.subjects.map((item) => (item.id === record.id ? record : item))
         : [record, ...this.subjects]
+    },
+    async updateSubject(id, payload) {
+      const record = await updateSubject(id, payload)
+      this.subjects = this.subjects.map((item) => (item.id === record.id ? record : item))
+      return record
+    },
+    async createSubject(payload) {
+      const record = await createSubject(payload)
+      this.subjects = [record, ...this.subjects]
+      return record
     },
     async deleteSubject(id) {
       await deleteSubject(id)

@@ -1,6 +1,9 @@
 <template>
   <div class="space-y-6">
     <SectionCard title="Subjects" subtitle="Manage subjects and teacher assignments.">
+      <template #header>
+        <AppButton @click="openModal()" :icon="Plus" text="Create Subject" variant="primary" />
+      </template>
       <SkeletonRows v-if="subjectsStore.loading" :columns="5" />
       <div v-else class="overflow-hidden rounded-[24px] border border-slate-200">
         <div class="overflow-x-auto">
@@ -18,9 +21,17 @@
                 <td class="px-5 py-4 text-sm text-slate-600">{{ formatAssignedTeachers(subject) }}</td>
                 <td class="px-5 py-4">
                   <div class="flex gap-2">
-                    <AppButton text="Edit" @click="editSubject(subject)" variant="outline" size="xs" />
+                    <AppButton text="Edit" @click="openModal(subject)" variant="outline" size="xs" />
                     <AppButton text="Assign Teacher" @click="$router.push(`/school-admin/subjects/${subject.id}/assign-teacher`)" variant="warning" size="xs" />
-                    <AppButton text="Delete" @click="deleteSubject(subject.id)" variant="danger" size="xs" />
+                    <AppButton 
+                      text="Delete" 
+                      @click="deleteSubject(subject.id)" 
+                      variant="danger" 
+                      size="xs"
+                      loadingText="Deleting..."
+                      :processing="deleteLoading.has(subject.id)"
+                      :disabled="deleteLoading.has(subject.id)"
+                    />
                   </div>
                 </td>
               </tr>
@@ -66,52 +77,39 @@
       </div>
     </SectionCard>
 
-    <SectionCard :title="form.id ? 'Edit Subject' : 'Create Subject'" subtitle="Create and manage subject configurations.">
-      <form class="space-y-5" @submit.prevent="submit">
-        <FormField label="Subject name" :error="errors.name">
-          <input v-model="form.name" class="sa-input" placeholder="Mathematics" />
-        </FormField>
-
-        <FormField label="Subject code (optional)" :error="errors.code">
-          <input v-model="form.code" class="sa-input" placeholder="ENG" />
-        </FormField>
-
-        <FormField label="Class Levels (optional)" :error="errors.class_level_ids">
-          <TagMultiSelect v-model="form.class_level_ids" :options="classOptions" placeholder="Select class levels" />
-        </FormField>
-
-        <AppButton 
-          type="submit" 
-          :text="form.id ? 'Update Subject' : 'Create Subject'"
-          full-width
-          variant="primary"
-          :processing="subjectsStore.loading"
-        />
-      </form>
-    </SectionCard>
+    <SubjectModal 
+      :show="showModal" 
+      :subject="selectedSubject"
+      @close="closeModal"
+      @submit="submitSubject"
+    />
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, reactive } from 'vue'
+import { Plus } from 'lucide-vue-next'
 import FormField from '../components/FormField.vue'
 import SectionCard from '../components/SectionCard.vue'
 import SkeletonRows from '../components/SkeletonRows.vue'
 import AppButton from '../../shared/AppButton.vue'
+import SubjectModal from '../components/SubjectModal.vue'
 import TagMultiSelect from '../components/TagMultiSelect.vue'
-import { useSchoolAdminClassesStore } from '../stores/classes'
-import { useSchoolAdminSessionsStore } from '../stores/sessions'
 import { useSchoolAdminSubjectsStore } from '../stores/subjects'
-import { useSchoolAdminTeachersStore } from '../stores/teachers'
 import { useSchoolAdminUiStore } from '../stores/ui'
 
 const headings = ['Subject Name', 'Code', 'Class Levels', 'Assigned Teachers', 'Actions']
 const subjectsStore = useSchoolAdminSubjectsStore()
-const classesStore = useSchoolAdminClassesStore()
-const teachersStore = useSchoolAdminTeachersStore()
-const sessionsStore = useSchoolAdminSessionsStore()
 const uiStore = useSchoolAdminUiStore()
 
+// Modal state
+const showModal = ref(false)
+const selectedSubject = ref(null)
+
+// Loading states
+const deleteLoading = ref(new Set())
+
+// Form state
 const form = reactive({ id: null, name: '', code: '', class_level_ids: [] })
 const errors = reactive({ name: '', code: '', class_level_ids: '' })
 
@@ -119,10 +117,6 @@ const errors = reactive({ name: '', code: '', class_level_ids: '' })
 const currentPage = ref(1)
 const itemsPerPage = 10
 
-const classOptions = computed(() => classesStore.classes.map((item) => item.name))
-const teacherOptions = computed(() => teachersStore.teachers.map((teacher) => teacher.user?.first_name + ' ' + teacher.user?.last_name).filter(Boolean))
-
-const getClassNameById = (id) => classesStore.classes.find((item) => item.id === id)?.name || id
 
 const formatClassLevels = (subject) => {
   if (!subject.class_levels || !Array.isArray(subject.class_levels)) {
@@ -139,8 +133,10 @@ const formatAssignedTeachers = (subject) => {
   
   const teacherNames = subject.teacher_assignments
     .map(assignment => {
-      const teacher = teachersStore.teachers.find(t => t.id === assignment.user_id)
-      return teacher ? `${teacher.first_name || ''} ${teacher.last_name || ''}`.trim() : null
+      if (assignment.user && assignment.user.first_name && assignment.user.last_name) {
+        return `${assignment.user.first_name} ${assignment.user.last_name}`.trim()
+      }
+      return null
     })
     .filter(Boolean)
   
@@ -169,29 +165,52 @@ const hasPreviousPage = computed(() => {
 onMounted(async () => {
   try {
     await subjectsStore.fetchSubjects()
-    await classesStore.fetchClasses()
-    await teachersStore.fetchTeachers()
   } catch (error) {
-    console.error('Error loading data:', error)
-    uiStore.addToast({ title: 'Error', message: 'Failed to load data. Please check your connection.', variant: 'error' })
+    console.error('Error loading subjects:', error)
+    uiStore.addToast({ title: 'Error', message: 'Failed to load subjects. Please check your connection.', variant: 'error' })
   }
 })
 
-const editSubject = (subject) => {
-  form.id = subject.id
-  form.name = subject.name || ''
-  form.code = subject.code || ''
+const closeModal = () => {
+  showModal.value = false
+  selectedSubject.value = null
+}
 
-  const selected = []
-  if (Array.isArray(subject.class_levels)) {
-    selected.push(...subject.class_levels.map(classLevel => classLevel.name))
-  }
-  form.class_level_ids = selected.filter(Boolean)
+const openModal = (subject) => {
+  selectedSubject.value = subject
+  showModal.value = true
 }
 
 const validate = () => {
   errors.name = form.name ? '' : 'Subject name is required.'
-  return !errors.name
+  errors.code = form.code ? '' : 'Subject code is required.'
+  errors.class_level_ids = form.class_level_ids.length === 0 ? 'At least one class level is required.' : ''
+  return !errors.name && !errors.code && !errors.class_level_ids
+}
+
+// Remove unused submit function - submitSubject handles modal submissions
+
+const submitSubject = async (subjectData) => {
+  try {
+    const payload = {
+      name: subjectData.name,
+      code: subjectData.code,
+      class_level_ids: subjectData.class_level_ids
+    }
+    
+    if (subjectData.id) {
+      await subjectsStore.updateSubject(subjectData.id, payload)
+    } else {
+      await subjectsStore.createSubject(payload)
+    }
+    
+    uiStore.addToast({ title: 'Subject saved', message: 'Subject has been saved successfully.', variant: 'success' })
+    // Close modal after showing toast
+    closeModal()
+  } catch (error) {
+    console.error('Subject form error:', error)
+    uiStore.addToast({ title: 'Error', message: 'Failed to save subject.', variant: 'error' })
+  }
 }
 
 // Pagination functions
@@ -218,42 +237,17 @@ const deleteSubject = async (id) => {
     return
   }
   
+  // Create new Set to trigger reactivity
+  deleteLoading.value = new Set([...deleteLoading.value, id])
+  
   try {
     await subjectsStore.deleteSubject(id)
     uiStore.addToast({ title: 'Subject deleted', message: 'Subject has been deleted.', variant: 'success' })
   } catch (error) {
     uiStore.addToast({ title: 'Error', message: 'Failed to delete subject.', variant: 'error' })
-  }
-}
-
-const submit = async () => {
-  if (!validate()) return
-
-  const payload = {
-    name: form.name,
-    code: form.code || undefined,
-  }
-
-  // Handle class_level_ids
-  if (form.class_level_ids.length) {
-    const ids = form.class_level_ids
-      .map((name) => classesStore.classes.find((item) => item.name === name)?.id)
-      .filter(Boolean)
-    payload.class_level_ids = ids
-  }
-
-  // Include ID if editing
-  if (form.id) {
-    payload.id = form.id
-  }
-
-  try {
-    await subjectsStore.saveSubject(payload)
-
-    uiStore.addToast({ title: 'Subject saved', message: 'Subject configuration was updated.', variant: 'success' })
-    Object.assign(form, { id: null, name: '', code: '', class_level_ids: [] })
-  } catch (error) {
-    uiStore.addToast({ title: 'Error', message: error.message || 'Failed to save subject', variant: 'error' })
+  } finally {
+    // Create new Set to trigger reactivity
+    deleteLoading.value = new Set([...deleteLoading.value].filter(loadingId => loadingId !== id))
   }
 }
 </script>

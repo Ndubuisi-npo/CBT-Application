@@ -60,9 +60,20 @@
                       :text="tenant.is_active ? 'Suspend' : 'Activate'" 
                       @click="toggleStatus(tenant)" 
                       :variant="tenant.is_active ? 'warning' : 'success'" 
-                      size="xs" 
+                      size="xs"
+                      :loadingText="tenant.is_active ? 'Suspending...' : 'Activating...'"
+                      :processing="statusLoading.has(tenant.id)"
+                      :disabled="statusLoading.has(tenant.id)"
                     />
-                    <AppButton text="Delete" @click="deleteTenant(tenant.id)" variant="danger" size="xs" />
+                    <AppButton 
+                      text="Delete" 
+                      @click="deleteTenant(tenant.id)" 
+                      variant="danger" 
+                      size="xs"
+                      loadingText="Deleting..."
+                      :processing="deleteLoading.has(tenant.id)"
+                      :disabled="deleteLoading.has(tenant.id)"
+                    />
                   </div>
                 </td>
               </tr>
@@ -135,6 +146,10 @@ const showEditModal = ref(false)
 const selectedTenantId = ref(null)
 const currentlyViewing = ref(null);
 
+// Loading states
+const statusLoading = ref(new Set())
+const deleteLoading = ref(new Set())
+
 onMounted(() => {
   fetchTenants()
 })
@@ -158,6 +173,8 @@ const formatDate = (dateString) => {
 }
 
 const toggleStatus = async (tenant) => {
+  statusLoading.value = new Set([...statusLoading.value, tenant.id])
+  
   try {
     if (tenant.is_active) {
       await suspendTenant(tenant.id)
@@ -177,6 +194,8 @@ const toggleStatus = async (tenant) => {
       message: error.message,
       variant: 'error',
     })
+  } finally {
+    statusLoading.value = new Set([...statusLoading.value].filter(loadingId => loadingId !== tenant.id))
   }
 }
 
@@ -184,6 +203,8 @@ const deleteTenant = async (id) => {
   if (!confirm('Are you sure you want to delete this tenant? This action cannot be undone.')) {
     return
   }
+  
+  deleteLoading.value = new Set([...deleteLoading.value, id])
   
   try {
     await deleteTenantApi(id)
@@ -200,6 +221,8 @@ const deleteTenant = async (id) => {
       message: error.message || 'Failed to delete tenant.',
       variant: 'error',
     })
+  } finally {
+    deleteLoading.value = new Set([...deleteLoading.value].filter(loadingId => loadingId !== id))
   }
 }
 

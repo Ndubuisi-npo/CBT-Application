@@ -17,7 +17,6 @@ import SchoolAdminSubjectAssignTeacher from '../components/schooladmincomponents
 import SchoolAdminSettings from '../components/schooladmincomponents/pages/SettingsPage.vue';
 import SchoolAdminProfile from '../components/schooladmincomponents/pages/ProfilePage.vue';
 import SuperAdminRoot from '../components/superadmincomponent/SuperAdminRoot.vue';
-import SuperAdminLogin from '../components/superadmincomponent/login.vue';
 import SuperAdminLayout from '../components/superadmincomponent/layouts/SuperAdminLayout.vue';
 import SuperAdminDashboard from '../components/superadmincomponent/pages/DashboardPage.vue';
 import SuperAdminTenants from '../components/superadmincomponent/pages/TenantsPage.vue';
@@ -31,6 +30,7 @@ const routes = [
   { path: '/', name: 'LandingPage', component: LandingPage },
   { path: '/onboarding', name: 'Onboarding', component: Onboarding },
   { path: '/signin', redirect: '/school-admin/login' },
+  { path: '/super-admin/login', redirect: '/school-admin/login' },
   { path: '/dashboard', redirect: '/school-admin/dashboard' },
   {
     path: '/school-admin',
@@ -60,8 +60,7 @@ const routes = [
     path: '/super-admin',
     component: SuperAdminRoot,
     children: [
-      { path: '', redirect: '/super-admin/login' },
-      { path: 'login', name: 'SuperAdminLogin', component: SuperAdminLogin },
+      { path: '', redirect: '/school-admin/login' },
       {
         path: '',
         component: SuperAdminLayout,

@@ -49,9 +49,10 @@ const authStore = useSchoolAdminAuthStore()
 const profileStore = useSchoolAdminProfileStore()
 const uiStore = useSchoolAdminUiStore()
 
-// Fetch profile on component mount to ensure school name is loaded
+// Only fetch profile on pages that need it (profile/settings pages)
 onMounted(() => {
-  if (!profileStore.profile.schoolName) {
+  const pagesNeedingProfile = ['/school-admin/profile', '/school-admin/settings']
+  if (pagesNeedingProfile.includes(route.path) && !profileStore.profile.schoolName && !profileStore.loading) {
     profileStore.fetchProfile()
   }
 })

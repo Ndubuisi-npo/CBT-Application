@@ -1,6 +1,9 @@
 <template>
-  <div class="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+  <div class="space-y-6">
     <SectionCard :title="`Class Arms for ${classLevel?.name || '...'}`" subtitle="Manage class arms (e.g., JSS 1A, JSS 1B).">
+      <template #header>
+        <AppButton @click="openModal()" :icon="Plus" text="Create" variant="primary" size="sm" />
+      </template>
       <SkeletonRows v-if="classArmsStore.loading" :columns="3" />
       <div v-else-if="classArmsStore.classArms.length === 0" class="text-center py-12">
         <div class="mx-auto w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mb-4">
@@ -26,7 +29,15 @@
                 <td class="px-5 py-4">
                   <div class="flex gap-2">
                     <AppButton text="Edit" @click="editClassArm(classArm)" variant="outline" size="xs" />
-                    <AppButton text="Delete" @click="deleteClassArm(classArm.id)" variant="danger" size="xs" />
+                    <AppButton 
+                      text="Delete" 
+                      @click="deleteClassArm(classArm.id)" 
+                      variant="danger" 
+                      size="xs"
+                      loadingText="Deleting..."
+                      :processing="deleteLoading.has(classArm.id)"
+                      :disabled="deleteLoading.has(classArm.id)"
+                    />
                   </div>
                 </td>
               </tr>
@@ -36,29 +47,23 @@
       </div>
     </SectionCard>
 
-    <SectionCard :title="form.id ? 'Edit Class Arm' : 'Create Class Arm'" subtitle="Create class arms for this class level.">
-      <form class="space-y-5" @submit.prevent="submit">
-        <FormField label="Class arm name" :error="errors.name">
-          <input v-model="form.name" class="sa-input" placeholder="JSS 1A" />
-        </FormField>
-        <AppButton 
-          type="submit" 
-          :text="form.id ? 'Update Class Arm' : 'Create Class Arm'" 
-          full-width 
-          variant="primary" 
-          :processing="classArmsStore.loading" 
-        />
-      </form>
-    </SectionCard>
+    <ClassArmModal 
+      :show="showModal" 
+      :classArm="selectedClassArm"
+      @close="closeModal"
+      @submit="submitClassArm"
+    />
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import SectionCard from '../components/SectionCard.vue'
 import SkeletonRows from '../components/SkeletonRows.vue'
 import AppButton from '../../shared/AppButton.vue'
+import ClassArmModal from '../components/ClassArmModal.vue'
+import { Plus } from 'lucide-vue-next'
 import { useSchoolAdminClassArmsStore } from '../stores/classArms'
 import { useSchoolAdminClassLevelsStore } from '../stores/classLevels'
 import { useSchoolAdminUiStore } from '../stores/ui'
@@ -69,8 +74,12 @@ const classLevelsStore = useSchoolAdminClassLevelsStore()
 const classArmsStore = useSchoolAdminClassArmsStore()
 const uiStore = useSchoolAdminUiStore()
 
-const form = reactive({ id: null, name: '' })
-const errors = reactive({ name: '' })
+// Modal state
+const showModal = ref(false)
+const selectedClassArm = ref(null)
+
+// Loading states
+const deleteLoading = ref(new Set())
 
 const classLevelId = computed(() => route.params.id)
 const classLevel = computed(() => classLevelsStore.classLevels.find(cl => cl.id === classLevelId.value))
@@ -93,20 +102,45 @@ watch(() => classLevelId.value, async (newId) => {
   }
 })
 
-const resetForm = () => {
-  form.id = null
-  form.name = ''
-  Object.assign(errors, { name: '' })
+// Modal functions
+const openModal = () => {
+  selectedClassArm.value = null
+  showModal.value = true
+}
+
+const closeModal = () => {
+  showModal.value = false
+  selectedClassArm.value = null
 }
 
 const editClassArm = (classArm) => {
-  form.id = classArm.id
-  form.name = classArm.name
+  selectedClassArm.value = classArm
+  showModal.value = true
 }
 
-const validate = () => {
-  errors.name = form.name ? '' : 'Class arm name is required.'
-  return !errors.name
+const submitClassArm = async (classArmData) => {
+  try {
+    if (classArmData.id) {
+      // Update existing class arm
+      await classArmsStore.saveClassArm(classLevelId.value, {
+        id: classArmData.id,
+        name: classArmData.name
+      })
+      uiStore.addToast({ title: 'Class arm updated', message: 'Class arm has been updated.', variant: 'success' })
+    } else {
+      // Create new class arm
+      await classArmsStore.saveClassArm(classLevelId.value, {
+        name: classArmData.name
+      })
+      uiStore.addToast({ title: 'Class arm created', message: 'Class arm has been created.', variant: 'success' })
+    }
+    
+    closeModal()
+    await classArmsStore.fetchClassArms(classLevelId.value) // Refresh to get updated list
+  } catch (error) {
+    console.error('Class arm error:', error)
+    uiStore.addToast({ title: 'Error', message: error.message || 'Failed to save class arm.', variant: 'error' })
+  }
 }
 
 const deleteClassArm = async (id) => {
@@ -114,18 +148,15 @@ const deleteClassArm = async (id) => {
     return
   }
   
+  deleteLoading.value = new Set([...deleteLoading.value, id])
+  
   try {
     await classArmsStore.deleteClassArm(classLevelId.value, id)
     uiStore.addToast({ title: 'Class arm deleted', message: 'Class arm has been deleted.', variant: 'success' })
   } catch (error) {
     uiStore.addToast({ title: 'Error', message: 'Failed to delete class arm.', variant: 'error' })
+  } finally {
+    deleteLoading.value = new Set([...deleteLoading.value].filter(loadingId => loadingId !== id))
   }
-}
-
-const submit = async () => {
-  if (!validate() || !classLevelId.value) return
-  await classArmsStore.saveClassArm(classLevelId.value, { ...form })
-  uiStore.addToast({ title: 'Class arm saved', message: 'Class arm configuration was updated.', variant: 'success' })
-  Object.assign(form, { id: null, name: '' })
 }
 </script>

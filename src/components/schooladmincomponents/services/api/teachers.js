@@ -33,6 +33,28 @@ export async function saveTeacher(payload) {
   }
 }
 
+export async function updateTeacher(id, payload) {
+  try {
+    return await apiFetch(`/api/teachers/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    })
+  } catch (error) {
+    throw new Error(extractErrorMessage(error, 'Unable to update teacher.'))
+  }
+}
+
+export async function createTeacher(payload) {
+  try {
+    return await apiFetch('/api/teachers', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
+  } catch (error) {
+    throw new Error(extractErrorMessage(error, 'Unable to create teacher.'))
+  }
+}
+
 export async function revokeTeacher(id) {
   try {
     return await apiFetch(`/api/teachers/${id}/revoke`, { method: 'PATCH' })
@@ -46,5 +68,29 @@ export async function deleteTeacher(id) {
     return await apiFetch(`/api/teachers/${id}`, { method: 'DELETE' })
   } catch (error) {
     throw new Error(extractErrorMessage(error, 'Unable to delete teacher.'))
+  }
+}
+
+export async function toggleActive(id) {
+  try {
+    return await apiFetch(`/api/teachers/${id}/toggle-active`, { method: 'POST' })
+  } catch (error) {
+    throw new Error(extractErrorMessage(error, 'Unable to toggle teacher active status.'))
+  }
+}
+
+export async function resetPassword(id) {
+  try {
+    return await apiFetch(`/api/teachers/${id}/reset-password`, { method: 'POST' })
+  } catch (error) {
+    throw new Error(extractErrorMessage(error, 'Unable to reset teacher password.'))
+  }
+}
+
+export async function restoreTeacher(id) {
+  try {
+    return await apiFetch(`/api/teachers/${id}/restore`, { method: 'POST' })
+  } catch (error) {
+    throw new Error(extractErrorMessage(error, 'Unable to restore teacher.'))
   }
 }

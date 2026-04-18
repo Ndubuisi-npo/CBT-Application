@@ -14,24 +14,29 @@
             <Shield class="h-7 w-7 text-[#D4AF37]" />
           </div>
           <div>
-            <p class="text-sm font-semibold uppercase tracking-[0.26em] text-[#D4AF37]">Tenant Portal</p>
+            <p class="text-sm font-semibold uppercase tracking-[0.26em] text-[#D4AF37]">Admin Portal</p>
             <span class="text-2xl font-semibold tracking-wide">{{ branding.schoolName }}</span>
           </div>
         </div>
 
         <div class="max-w-xl">
           <h1 class="mb-6 text-5xl font-semibold leading-[1.05] tracking-tight xl:text-6xl">
-            Empowering education with calm, structured operations.
+            Unified Admin Portal
           </h1>
 
           <p class="max-w-lg text-lg leading-8 text-white/78 xl:text-xl">
-            Sign in to manage academic sessions, classes, teachers, subjects, and school-wide configuration from one focused workspace.
+            Sign in to access your admin dashboard. School admins manage academic operations, while super admins oversee platform-wide management.
           </p>
 
           <div class="mt-10 grid max-w-lg gap-4">
             <div class="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/10 px-4 py-4 backdrop-blur-sm">
               <Sparkles class="h-5 w-5 text-[#D4AF37]" />
-              <span class="text-base text-white/88">Academic workflows, grading setup, and staff management in one place.</span>
+              <span class="text-base text-white/88">School Admin: Academic workflows, grading setup, and staff management.</span>
+            </div>
+
+            <div class="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/10 px-4 py-4 backdrop-blur-sm">
+              <Shield class="h-5 w-5 text-[#D4AF37]" />
+              <span class="text-base text-white/88">Super Admin: Platform-wide tenant and system management.</span>
             </div>
 
             <div class="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/10 px-4 py-4 backdrop-blur-sm">
@@ -43,7 +48,7 @@
 
         <div class="flex items-center gap-3 text-sm text-white/60">
           <div class="h-2 w-2 rounded-full bg-emerald-400"></div>
-          Secure tenant-scoped access
+          Secure role-based access for all admin types
         </div>
       </div>
     </div>
@@ -137,15 +142,21 @@ import AppButton from '../shared/AppButton.vue'
 import ActionButton from '../shared/ActionButton.vue'
 import { useSchoolAdminAuthStore } from './stores/auth'
 import { useSchoolAdminUiStore } from './stores/ui'
+import { useSuperAdminAuth } from '../superadmincomponent/composables/useSuperAdminAuth'
 
 const router = useRouter()
 const authStore = useSchoolAdminAuthStore()
 const uiStore = useSchoolAdminUiStore()
+const { login: superAdminLogin } = useSuperAdminAuth()
 
 const branding = computed(() => ({
   schoolName: 'CBT Application',
   domain: 'application.edu',
 }))
+
+// Add user type detection
+const isSuperAdmin = ref(false)
+const userType = computed(() => isSuperAdmin.value ? 'Super Admin' : 'School Admin')
 
 // Don't fetch profile on mount - let login establish tenant context
 
@@ -183,8 +194,27 @@ const submitLogin = async () => {
   if (!validate()) return
 
   try {
+    // Try super admin login first if email suggests it's a super admin
+    if (form.email.includes('admin@') || form.email.includes('super')) {
+      try {
+        await superAdminLogin(form)
+        isSuperAdmin.value = true
+        uiStore.addToast({
+          title: 'Welcome back',
+          message: 'Super admin session started successfully.',
+          variant: 'success',
+        })
+        router.push('/super-admin/dashboard')
+        return
+      } catch (superAdminError) {
+        // If super admin login fails, try school admin login
+        console.log('Super admin login failed, trying school admin login')
+      }
+    }
+    
+    // Try school admin login
     await authStore.login(form)
-
+    isSuperAdmin.value = false
     uiStore.addToast({
       title: 'Welcome back',
       message: 'You have successfully signed in.',

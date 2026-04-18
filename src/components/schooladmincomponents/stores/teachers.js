@@ -2,8 +2,13 @@ import { defineStore } from "pinia";
 import {
     getTeachers,
     saveTeacher,
+    updateTeacher,
+    createTeacher,
     revokeTeacher,
     deleteTeacher,
+    toggleActive,
+    resetPassword,
+    restoreTeacher,
 } from "../services/api/teachers";
 
 export const useSchoolAdminTeachersStore = defineStore(
@@ -87,6 +92,21 @@ export const useSchoolAdminTeachersStore = defineStore(
                 }
             },
 
+            async updateTeacher(id, payload) {
+                const record = await updateTeacher(id, payload);
+                this.teachers = this.teachers.map((item) =>
+                    item.id === record.id ? record : item,
+                );
+                return record;
+            },
+
+            async createTeacher(payload) {
+                const record = await createTeacher(payload);
+                this.teachers = [record, ...this.teachers];
+                this.totalTeachers++;
+                return record;
+            },
+
             async revokeTeacher(id) {
                 const teacher = this.teachers.find((t) => t.id === id);
                 if (teacher) {
@@ -120,10 +140,69 @@ export const useSchoolAdminTeachersStore = defineStore(
                 }
             },
 
-            async deleteTeacher(id) {
+            async deleteTeacherFromStore(id) {
                 await deleteTeacher(id);
                 this.teachers = this.teachers.filter((item) => item.id !== id);
                 this.totalTeachers--;
+            },
+            async toggleActive(id) {
+                try {
+                    await toggleActive(id);
+                    uiStore.addToast({
+                        title: "Teacher status toggled",
+                        message: "Teacher active status has been updated.",
+                        variant: "success",
+                    });
+                } catch (error) {
+                    console.error("Error toggling teacher active status:", error);
+                    uiStore.addToast({
+                        title: "Error",
+                        message: error.message || "Failed to toggle teacher status.",
+                        variant: "error",
+                    });
+                }
+            },
+            async resetPassword(id) {
+                try {
+                    await resetPassword(id);
+                    uiStore.addToast({
+                        title: "Password reset",
+                        message: "Teacher password has been reset successfully.",
+                        variant: "success",
+                    });
+                } catch (error) {
+                    console.error("Error resetting teacher password:", error);
+                    uiStore.addToast({
+                        title: "Error",
+                        message: error.message || "Failed to reset teacher password.",
+                        variant: "error",
+                    });
+                }
+            },
+            async restoreTeacher(id) {
+                try {
+                    await restoreTeacher(id);
+                    // Move teacher from archived to active
+                    const teacher = this.archivedTeachers.find(t => t.id === id);
+                    if (teacher) {
+                        this.archivedTeachers = this.archivedTeachers.filter(item => item.id !== id);
+                        this.totalArchivedTeachers--;
+                        this.teachers = [teacher, ...this.teachers];
+                        this.totalTeachers++;
+                    }
+                    uiStore.addToast({
+                        title: "Teacher restored",
+                        message: "Teacher has been restored successfully.",
+                        variant: "success",
+                    });
+                } catch (error) {
+                    console.error("Error restoring teacher:", error);
+                    uiStore.addToast({
+                        title: "Error",
+                        message: error.message || "Failed to restore teacher.",
+                        variant: "error",
+                    });
+                }
             },
         },
     },
