@@ -29,15 +29,15 @@ import SuperAdminSettings from '../components/superadmincomponent/pages/Settings
 const routes = [
   { path: '/', name: 'LandingPage', component: LandingPage },
   { path: '/onboarding', name: 'Onboarding', component: Onboarding },
-  { path: '/signin', redirect: '/school-admin/login' },
-  { path: '/super-admin/login', redirect: '/school-admin/login' },
+  { path: '/login', name: 'SchoolAdminLogin', component: SchoolAdminLogin },
+  { path: '/signin', redirect: '/login' },
+  { path: '/super-admin/login', redirect: '/login' },
   { path: '/dashboard', redirect: '/school-admin/dashboard' },
   {
     path: '/school-admin',
     component: SchoolAdminRoot,
     children: [
-      { path: '', redirect: '/school-admin/login' },
-      { path: 'login', name: 'SchoolAdminLogin', component: SchoolAdminLogin },
+      { path: '', redirect: '/login' },
       {
         path: '',
         component: SchoolAdminLayout,
@@ -60,7 +60,7 @@ const routes = [
     path: '/super-admin',
     component: SuperAdminRoot,
     children: [
-      { path: '', redirect: '/school-admin/login' },
+      { path: '', redirect: '/login' },
       {
         path: '',
         component: SuperAdminLayout,
@@ -81,6 +81,33 @@ const routes = [
 const router = createRouter({
   history: createWebHistory(),
   routes,
+})
+
+// Route guards for authentication
+router.beforeEach((to, from, next) => {
+  // Check if route requires authentication
+  const requiresAuth = to.path.startsWith('/school-admin') || to.path.startsWith('/super-admin')
+  const isLoginPage = to.path === '/login'
+  
+  if (requiresAuth && !isLoginPage) {
+    // Check school admin authentication
+    const schoolAdminToken = localStorage.getItem('school-admin-auth')
+    const schoolAdminAuth = schoolAdminToken ? JSON.parse(schoolAdminToken) : null
+    
+    // Check super admin authentication (stored as authToken)
+    const superAdminToken = localStorage.getItem('authToken')
+    
+    const isAuthenticated = (schoolAdminAuth && schoolAdminAuth.token) || superAdminToken
+    
+    if (!isAuthenticated) {
+      // Redirect to login if not authenticated
+      next('/login')
+      return
+    }
+  }
+  
+  // Allow navigation
+  next()
 })
 
 export default router

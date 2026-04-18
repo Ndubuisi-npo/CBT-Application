@@ -116,9 +116,10 @@
 
           <AppButton 
             type="submit" 
-            :disabled="authStore.loading" 
-            :text="authStore.loading ? 'Signing in...' : 'Sign In'" 
-            :processing="authStore.loading" 
+            :disabled="isLoading" 
+            text="Sign In"
+            :loadingText="isLoading ? 'Signing In...' : null"
+            :processing="isLoading" 
             full-width 
             variant="primary" 
             size="lg" 
@@ -157,6 +158,10 @@ const branding = computed(() => ({
 // Add user type detection
 const isSuperAdmin = ref(false)
 const userType = computed(() => isSuperAdmin.value ? 'Super Admin' : 'School Admin')
+
+// Add loading state for super admin login
+const isSuperAdminLoading = ref(false)
+const isLoading = computed(() => authStore.loading || isSuperAdminLoading.value)
 
 // Don't fetch profile on mount - let login establish tenant context
 
@@ -197,6 +202,7 @@ const submitLogin = async () => {
     // Try super admin login first if email suggests it's a super admin
     if (form.email.includes('admin@') || form.email.includes('super')) {
       try {
+        isSuperAdminLoading.value = true
         await superAdminLogin(form)
         isSuperAdmin.value = true
         uiStore.addToast({
@@ -209,6 +215,7 @@ const submitLogin = async () => {
       } catch (superAdminError) {
         // If super admin login fails, try school admin login
         console.log('Super admin login failed, trying school admin login')
+        isSuperAdminLoading.value = false
       }
     }
     
@@ -230,6 +237,8 @@ const submitLogin = async () => {
       message: errors.general,
       variant: 'error',
     })
+  } finally {
+    isSuperAdminLoading.value = false
   }
 }
 </script>

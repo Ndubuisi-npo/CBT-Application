@@ -63,16 +63,20 @@ const resetForm = () => {
 
 // Watch for class level changes and update form
 watch(() => props.classLevel, (classLevel) => {
-  console.log('ClassLevel changed:', classLevel)
   if (classLevel) {
-    console.log('Populating form with class level data:', classLevel)
     form.name = classLevel.name || ''
-    console.log('Form after population:', form)
   } else {
-    console.log('Resetting form')
     resetForm()
   }
 }, { immediate: true })
+
+// Watch for modal close to reset loading state
+watch(() => props.show, (show) => {
+  if (!show) {
+    loading.value = false
+    resetForm()
+  }
+})
 
 const validate = () => {
   errors.name = form.name ? '' : 'Class level name is required.'
@@ -90,14 +94,12 @@ const submit = async () => {
       name: form.name
     })
     
-    resetForm()
+    // Don't reset form or close here - let parent handle after toast
   } catch (error) {
     console.error('Class level form error:', error)
   } finally {
-    // Add a small delay to ensure loading state is visible
-    setTimeout(() => {
-      loading.value = false
-    }, 500)
+    // Keep loading state active until parent closes modal
+    // Don't auto-reset loading state
   }
 }
 </script>

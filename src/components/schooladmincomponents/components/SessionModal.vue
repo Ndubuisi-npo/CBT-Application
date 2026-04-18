@@ -81,9 +81,7 @@ const resetForm = () => {
 
 // Watch for session changes and update form
 watch(() => props.session, (session) => {
-  console.log('Session changed:', session)
   if (session) {
-    console.log('Populating form with session data:', session)
     form.name = session.name || ''
     // Format dates for date input (YYYY-MM-DD)
     const startDate = session.startDate || session.start_date || ''
@@ -91,12 +89,18 @@ watch(() => props.session, (session) => {
     form.startDate = startDate ? startDate.split('T')[0] : ''
     form.endDate = endDate ? endDate.split('T')[0] : ''
     form.isCurrent = session.current || session.is_current || false
-    console.log('Form after population:', form)
   } else {
-    console.log('Resetting form')
     resetForm()
   }
 }, { immediate: true })
+
+// Watch for modal close to reset loading state
+watch(() => props.show, (show) => {
+  if (!show) {
+    loading.value = false
+    resetForm()
+  }
+})
 
 const validate = () => {
   errors.name = form.name ? '' : 'Session name is required.'
@@ -127,14 +131,12 @@ const submit = async () => {
       ...payload
     })
     
-    resetForm()
+    // Don't reset form or close here - let parent handle after toast
   } catch (error) {
     console.error('Session form error:', error)
   } finally {
-    // Add a small delay to ensure loading state is visible
-    setTimeout(() => {
-      loading.value = false
-    }, 500)
+    // Keep loading state active until parent closes modal
+    // Don't auto-reset loading state
   }
 }
 </script>

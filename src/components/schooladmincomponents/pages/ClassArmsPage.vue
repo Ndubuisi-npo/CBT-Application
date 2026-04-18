@@ -135,11 +135,18 @@ const submitClassArm = async (classArmData) => {
       uiStore.addToast({ title: 'Class arm created', message: 'Class arm has been created.', variant: 'success' })
     }
     
-    closeModal()
+    // Close modal after a short delay to ensure toast is visible
+    setTimeout(() => {
+      closeModal()
+    }, 100)
     await classArmsStore.fetchClassArms(classLevelId.value) // Refresh to get updated list
   } catch (error) {
     console.error('Class arm error:', error)
     uiStore.addToast({ title: 'Error', message: error.message || 'Failed to save class arm.', variant: 'error' })
+    // Close modal after error toast as well
+    setTimeout(() => {
+      closeModal()
+    }, 100)
   }
 }
 

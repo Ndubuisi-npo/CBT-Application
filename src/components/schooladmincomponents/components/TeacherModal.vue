@@ -11,27 +11,27 @@
         <div class="flex-1 overflow-y-auto">
           <form class="space-y-4" @submit.prevent="submit">
           <FormField label="First Name" :error="errors.firstName">
-            <input v-model="form.firstName" class="sa-input" placeholder="John" />
+            <input v-model="form.firstName" class="sa-input" placeholder="John" required />
           </FormField>
           
           <FormField label="Last Name" :error="errors.lastName">
-            <input v-model="form.lastName" class="sa-input" placeholder="Doe" />
+            <input v-model="form.lastName" class="sa-input" placeholder="Doe" required />
           </FormField>
           
           <FormField label="Email" :error="errors.email">
-            <input v-model="form.email" type="email" class="sa-input" placeholder="john.doe@example.com" />
+            <input v-model="form.email" type="email" class="sa-input" placeholder="john.doe@example.com" required />
           </FormField>
           
           <FormField label="Phone" :error="errors.phone">
-            <input v-model="form.phone" class="sa-input" placeholder="+1 (555) 123-4567" />
+            <input v-model="form.phone" class="sa-input" placeholder="+1 (555) 123-4567" required />
           </FormField>
           
           <FormField label="Staff ID" :error="errors.staffId">
-            <input v-model="form.staffId" class="sa-input" placeholder="STF001" />
+            <input v-model="form.staffId" class="sa-input" placeholder="STF001" required />
           </FormField>
           
           <FormField label="Qualification" :error="errors.qualification">
-            <input v-model="form.qualification" class="sa-input" placeholder="B.Sc. Mathematics" />
+            <input v-model="form.qualification" class="sa-input" placeholder="B.Sc. Mathematics" required />
           </FormField>
           
           <div class="flex gap-2">
@@ -95,18 +95,7 @@ const resetForm = () => {
 
 // Watch for teacher changes and update form
 watch(() => props.teacher, (teacher) => {
-  console.log('Teacher changed:', teacher)
-  console.log('Teacher data structure:', JSON.stringify(teacher, null, 2))
   if (teacher) {
-    console.log('Populating form with teacher data:', teacher)
-    console.log('Teacher user data:', teacher.user)
-    console.log('Teacher profile data:', teacher.teacher_profile)
-    console.log('Teacher first_name paths:', {
-      'teacher.user?.first_name': teacher.user?.first_name,
-      'teacher.first_name': teacher.first_name,
-      'teacher.first_name (direct)': teacher.first_name
-    })
-    
     // Try multiple possible paths for the data
     form.firstName = teacher.user?.first_name || teacher.first_name || ''
     form.lastName = teacher.user?.last_name || teacher.last_name || ''
@@ -114,21 +103,26 @@ watch(() => props.teacher, (teacher) => {
     form.phone = teacher.user?.phone || teacher.phone || ''
     form.qualification = teacher.teacher_profile?.qualification || teacher.qualification || ''
     form.staffId = teacher.teacher_profile?.staff_id || teacher.staff_id || ''
-    
-    console.log('Form after population:', form)
   } else {
-    console.log('Resetting form')
     resetForm()
   }
 }, { immediate: true })
 
+// Watch for modal close to reset loading state
+watch(() => props.show, (show) => {
+  if (!show) {
+    loading.value = false
+    resetForm()
+  }
+})
+
 const validate = () => {
-  errors.firstName = form.firstName ? '' : 'First name is required.'
-  errors.lastName = form.lastName ? '' : 'Last name is required.'
-  errors.email = form.email ? '' : 'Email is required.'
-  errors.phone = form.phone ? '' : 'Phone is required.'
-  errors.qualification = form.qualification ? '' : 'Qualification is required.'
-  errors.staffId = form.staffId ? '' : 'Staff ID is required.'
+  errors.firstName = form.firstName?.trim() ? '' : 'First name is required.'
+  errors.lastName = form.lastName?.trim() ? '' : 'Last name is required.'
+  errors.email = form.email?.trim() ? '' : 'Email is required.'
+  errors.phone = form.phone?.trim() ? '' : 'Phone is required.'
+  errors.qualification = form.qualification?.trim() ? '' : 'Qualification is required.'
+  errors.staffId = form.staffId?.trim() ? '' : 'Staff ID is required.'
   return !errors.firstName && !errors.lastName && !errors.email && !errors.phone && !errors.qualification && !errors.staffId
 }
 
@@ -152,15 +146,12 @@ const submit = async () => {
       ...payload
     })
     
-    // Don't close here - let parent handle closing after toast
-    resetForm()
+    // Don't reset form or close here - let parent handle after toast
   } catch (error) {
     console.error('Teacher form error:', error)
   } finally {
-    // Add a small delay to ensure loading state is visible
-    setTimeout(() => {
-      loading.value = false
-    }, 500)
+    // Keep loading state active until parent closes modal
+    // Don't auto-reset loading state
   }
 }
 </script>

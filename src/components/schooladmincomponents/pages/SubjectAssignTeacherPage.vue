@@ -162,12 +162,18 @@ const submitAssignment = async (assignmentData) => {
       uiStore.addToast({ title: 'Teacher assigned', message: 'Teacher has been successfully assigned to the subject.', variant: 'success' })
     }
     
-    // Close modal after showing toast
-    closeModal()
+    // Close modal after a short delay to ensure toast is visible
+    setTimeout(() => {
+      closeModal()
+    }, 100)
     await subjectsStore.fetchSubjects() // Refresh to get updated assignments
   } catch (error) {
     console.error('Assignment error:', error)
     uiStore.addToast({ title: 'Error', message: error.message || 'Failed to save assignment.', variant: 'error' })
+    // Close modal after error toast as well
+    setTimeout(() => {
+      closeModal()
+    }, 100)
   }
 }
 

@@ -65,16 +65,20 @@ const resetForm = () => {
 
 // Watch for class arm changes and update form
 watch(() => props.classArm, (classArm) => {
-  console.log('ClassArm changed:', classArm)
   if (classArm) {
-    console.log('Populating form with class arm data:', classArm)
     form.name = classArm.name || ''
-    console.log('Form after population:', form)
   } else {
-    console.log('Resetting form')
     resetForm()
   }
 }, { immediate: true })
+
+// Watch for modal close to reset loading state
+watch(() => props.show, (show) => {
+  if (!show) {
+    loading.value = false
+    resetForm()
+  }
+})
 
 const validate = () => {
   errors.name = form.name ? '' : 'Class arm name is required.'
@@ -92,14 +96,12 @@ const submit = async () => {
       name: form.name
     })
     
-    resetForm()
+    // Don't reset form or close here - let parent handle after toast
   } catch (error) {
     console.error('Class arm form error:', error)
   } finally {
-    // Add a small delay to ensure loading state is visible
-    setTimeout(() => {
-      loading.value = false
-    }, 500)
+    // Keep loading state active until parent closes modal
+    // Don't auto-reset loading state
   }
 }
 </script>

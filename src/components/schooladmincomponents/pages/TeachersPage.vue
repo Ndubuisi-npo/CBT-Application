@@ -199,11 +199,17 @@ const submitTeacher = async (teacherData) => {
     }
     
     uiStore.addToast({ title: 'Teacher saved', message: 'Teacher has been saved successfully.', variant: 'success' })
-    // Close modal after showing toast
-    closeModal()
+    // Close modal after a short delay to ensure toast is visible
+    setTimeout(() => {
+      closeModal()
+    }, 100)
   } catch (error) {
     console.error('Teacher form error:', error)
     uiStore.addToast({ title: 'Error', message: 'Failed to save teacher.', variant: 'error' })
+    // Close modal after error toast as well
+    setTimeout(() => {
+      closeModal()
+    }, 100)
   }
 }
 

@@ -113,6 +113,14 @@ watch(() => props.subject, (subject) => {
   }
 }, { immediate: true })
 
+// Watch for modal close to reset loading state
+watch(() => props.show, (show) => {
+  if (!show) {
+    loading.value = false
+    resetForm()
+  }
+})
+
 const validate = () => {
   errors.name = form.name ? '' : 'Subject name is required.'
   errors.code = form.code ? '' : 'Subject code is required.'
@@ -143,15 +151,12 @@ const submit = async () => {
       ...payload
     })
     
-    // Don't close here - let parent handle closing after toast
-    resetForm()
+    // Don't reset form or close here - let parent handle after toast
   } catch (error) {
     console.error('Subject form error:', error)
   } finally {
-    // Add a small delay to ensure loading state is visible
-    setTimeout(() => {
-      loading.value = false
-    }, 500)
+    // Keep loading state active until parent closes modal
+    // Don't auto-reset loading state
   }
 }
 </script>

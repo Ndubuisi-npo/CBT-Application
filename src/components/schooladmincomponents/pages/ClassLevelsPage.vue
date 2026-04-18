@@ -145,11 +145,18 @@ const submitClassLevel = async (classLevelData) => {
       await classLevelsStore.createClassLevel(payload)
     }
     
-    closeModal()
     uiStore.addToast({ title: 'Class level saved', message: 'Class level has been saved successfully.', variant: 'success' })
+    // Close modal after a short delay to ensure toast is visible
+    setTimeout(() => {
+      closeModal()
+    }, 100)
   } catch (error) {
     console.error('Class level form error:', error)
     uiStore.addToast({ title: 'Error', message: 'Failed to save class level.', variant: 'error' })
+    // Close modal after error toast as well
+    setTimeout(() => {
+      closeModal()
+    }, 100)
   }
 }
 

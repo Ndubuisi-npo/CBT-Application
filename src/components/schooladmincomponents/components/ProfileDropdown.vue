@@ -2,13 +2,11 @@
   <div class="relative" ref="dropdownRef">
     <button
       @click="toggleDropdown"
-      class="flex items-center gap-3 px-3 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 transition-colors"
       :class="{ 'ring-2 ring-[#D4AF37] ring-offset-2': isOpen }"
     >
       <div class="h-10 w-10 flex items-center justify-center rounded-full bg-[#0B1F3A] text-sm font-semibold text-white">
         {{ userInitials }}
       </div>
-      <ChevronDown class="h-4 w-4 text-slate-400 transition-transform" :class="{ 'rotate-180': isOpen }" />
     </button>
 
     <!-- Dropdown -->
@@ -33,17 +31,13 @@
 
       <!-- Actions -->
       <div class="p-2">
-        <AppButton
+        <button
           @click="handleLogout"
-          text="Log Out"
-          variant="outline"
-          size="sm"
-          full-width
-          class="justify-start"
-          loadingText="Logging out..."
-          :processing="isLoggingOut"
           :disabled="isLoggingOut"
-        />
+          class="w-full text-left px-3 py-2 text-sm font-medium text-red-600 hover:text-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {{ isLoggingOut ? 'Logging out...' : 'Log Out' }}
+        </button>
       </div>
     </div>
   </div>
@@ -51,7 +45,6 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { ChevronDown } from 'lucide-vue-next'
 import AppButton from '../../shared/AppButton.vue'
 import { useSchoolAdminAuthStore } from '../stores/auth'
 import { useSchoolAdminUiStore } from '../stores/ui'
@@ -87,7 +80,7 @@ const handleLogout = async () => {
       variant: 'success',
     })
     // Navigate to login page
-    window.location.href = '/school-admin/login'
+    window.location.href = '/login'
   } catch (error) {
     console.error('Logout failed:', error)
     uiStore.addToast({

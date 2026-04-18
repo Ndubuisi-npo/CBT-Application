@@ -177,11 +177,18 @@ const submitSession = async (sessionData) => {
       await sessionsStore.createSession(payload)
     }
     
-    closeModal()
     uiStore.addToast({ title: 'Session saved', message: 'Academic session has been saved.', variant: 'success' })
+    // Close modal after a short delay to ensure toast is visible
+    setTimeout(() => {
+      closeModal()
+    }, 100)
   } catch (error) {
     console.error('Session form error:', error)
     uiStore.addToast({ title: 'Error', message: 'Failed to save session.', variant: 'error' })
+    // Close modal after error toast as well
+    setTimeout(() => {
+      closeModal()
+    }, 100)
   }
 }
 </script>
