@@ -98,18 +98,6 @@
             <p v-if="errors.password" class="text-sm font-medium text-rose-600">{{ errors.password }}</p>
           </div>
 
-          <div class="flex flex-wrap items-center justify-between gap-3 text-base">
-            <label class="flex items-center gap-3 text-slate-600">
-              <input v-model="form.remember" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-[#0B1F3A] focus:ring-[#D4AF37]" />
-              Remember me
-            </label>
-
-            <div class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-medium text-slate-500">
-              <Globe class="h-4 w-4 text-[#D4AF37]" />
-              {{ branding.domain }}
-            </div>
-          </div>
-
           <p v-if="errors.general" class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-600">
             {{ errors.general }}
           </p>

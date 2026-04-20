@@ -64,8 +64,8 @@ const metrics = computed(() => {
     if (!tenant.plan_id) return sum
     const plan = plans.value.find(p => p.id === tenant.plan_id)
     if (!plan) return sum
-    // Use monthly price for calculation
-    const monthlyPrice = plan.price_monthly || 0
+    // Use monthly price for calculation - ensure it's converted to number
+    const monthlyPrice = parseFloat(plan.price_monthly) || 0
     return sum + monthlyPrice
   }, 0)
   
