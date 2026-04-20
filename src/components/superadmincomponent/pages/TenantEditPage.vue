@@ -110,7 +110,6 @@ onMounted(async () => {
     form.state = tenant.state || ''
     form.is_active = tenant.is_active || false
   } catch (error) {
-    console.error('Failed to load tenant:', error)
     uiStore.addToast({
       title: 'Error',
       message: 'Failed to load tenant information.',

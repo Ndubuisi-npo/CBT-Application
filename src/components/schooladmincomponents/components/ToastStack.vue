@@ -37,7 +37,6 @@ import { useSchoolAdminUiStore } from '../stores/ui'
 const uiStore = useSchoolAdminUiStore()
 
 const removeToast = (id) => {
-  console.log('Removing toast:', id)
   uiStore.removeToast(id)
 }
 </script>

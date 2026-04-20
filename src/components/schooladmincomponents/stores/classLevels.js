@@ -17,7 +17,6 @@ export const useSchoolAdminClassLevelsStore = defineStore('school-admin-class-le
       this.loading = true
       try {
         const data = await getClassLevels()
-        console.log('Fetched class levels:', data)
         this.classLevels = data || []
       } finally {
         this.loading = false

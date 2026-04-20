@@ -69,7 +69,6 @@ onMounted(async () => {
   try {
     await classesStore.fetchClasses()
   } catch (error) {
-    console.error('Error loading classes:', error)
     uiStore.addToast({ title: 'Error', message: 'Failed to load classes. Please check your connection.', variant: 'error' })
   }
 })

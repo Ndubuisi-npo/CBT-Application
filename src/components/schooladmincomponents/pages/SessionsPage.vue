@@ -90,7 +90,6 @@ onMounted(async () => {
   try {
     await sessionsStore.fetchSessions()
   } catch (error) {
-    console.error('Error loading sessions:', error)
     uiStore.addToast({ title: 'Error', message: 'Failed to load sessions. Please check your connection.', variant: 'error' })
   }
 })
@@ -156,20 +155,17 @@ const deleteSession = async (id) => {
 
 const submitSession = async (sessionData) => {
   try {
-    console.log('Session data received in page:', sessionData)
-    
     const payload = {
       name: sessionData.name,
-      start_date: sessionData.start_date,
-      end_date: sessionData.end_date,
-      is_current: false ,
+      start_date: sessionData.startDate,
+      end_date: sessionData.endDate,
+      is_current: sessionData.isCurrent
     }
     
-    if (sessionData.is_current === true) {
+    // If setting as current, ensure is_current is true
+    if (sessionData.isCurrent) {
       payload.is_current = true
     }
-       
-    console.log('📤 Payload:', payload)
 
     if (sessionData.id) {
       await sessionsStore.saveSession({ id: sessionData.id, ...payload })
@@ -183,7 +179,6 @@ const submitSession = async (sessionData) => {
       closeModal()
     }, 100)
   } catch (error) {
-    console.error('Session form error:', error)
     uiStore.addToast({ title: 'Error', message: 'Failed to save session.', variant: 'error' })
     // Close modal after error toast as well
     setTimeout(() => {

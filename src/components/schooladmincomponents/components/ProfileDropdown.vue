@@ -82,7 +82,6 @@ const handleLogout = async () => {
     // Navigate to login page
     window.location.href = '/login'
   } catch (error) {
-    console.error('Logout failed:', error)
     uiStore.addToast({
       title: 'Logout failed',
       message: error?.message || 'Unable to sign out.',

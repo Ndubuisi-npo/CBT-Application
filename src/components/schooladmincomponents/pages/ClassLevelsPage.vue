@@ -81,7 +81,6 @@ onMounted(async () => {
   try {
     await classLevelsStore.fetchClassLevels()
   } catch (error) {
-    console.error('Error loading class levels:', error)
     uiStore.addToast({ title: 'Error', message: 'Failed to load class levels. Please check your connection.', variant: 'error' })
   }
 })
@@ -151,7 +150,6 @@ const submitClassLevel = async (classLevelData) => {
       closeModal()
     }, 100)
   } catch (error) {
-    console.error('Class level form error:', error)
     uiStore.addToast({ title: 'Error', message: 'Failed to save class level.', variant: 'error' })
     // Close modal after error toast as well
     setTimeout(() => {

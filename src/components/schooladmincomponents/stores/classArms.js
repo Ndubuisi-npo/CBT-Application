@@ -15,7 +15,6 @@ export const useSchoolAdminClassArmsStore = defineStore('school-admin-class-arms
       this.loading = true
       try {
         const data = await getClassArms(classLevelId)
-        console.log('Fetched class arms:', data)
         this.classArms = data || []
       } finally {
         this.loading = false

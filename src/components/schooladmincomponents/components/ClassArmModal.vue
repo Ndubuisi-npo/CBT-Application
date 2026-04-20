@@ -98,7 +98,6 @@ const submit = async () => {
     
     // Don't reset form or close here - let parent handle after toast
   } catch (error) {
-    console.error('Class arm form error:', error)
   } finally {
     // Keep loading state active until parent closes modal
     // Don't auto-reset loading state

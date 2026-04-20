@@ -41,7 +41,6 @@ onMounted(async () => {
   try {
     await fetchPlans()
   } catch (error) {
-    console.error('Failed to fetch plans:', error)
     uiStore.addToast({
       title: 'Error loading plans',
       message: 'Unable to load subscription plans. Please refresh the page.',

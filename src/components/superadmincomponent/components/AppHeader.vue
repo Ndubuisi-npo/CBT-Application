@@ -39,7 +39,7 @@ onMounted(async () => {
     try {
       await authComposable.fetchCurrentUser()
     } catch (error) {
-      console.error('Failed to fetch current user:', error)
+      // Failed to fetch current user
     }
   }
 })

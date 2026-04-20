@@ -26,14 +26,14 @@
             <input v-model="form.phone" class="sa-input" placeholder="+1 (555) 123-4567" required />
           </FormField>
           
-          <!-- <FormField label="Staff ID" :error="errors.staffId">
-            <input v-model="form.staffId" class="sa-input" placeholder="STF001" required />
-          </FormField> -->
+          <FormField label="Staff ID" :error="errors.staff_id">
+            <input v-model="form.staff_id" class="sa-input" placeholder="STF001" required />
+          </FormField>
           
           <FormField label="Qualification" :error="errors.qualification">
             <input v-model="form.qualification" class="sa-input" placeholder="B.Sc. Mathematics" required />
           </FormField>
-          
+
           <div class="flex gap-2">
             <AppButton 
               type="submit" 
@@ -74,7 +74,7 @@ const form = reactive({
   email: '',
   phone: '',
   qualification: '',
-  staffId: ''
+  staff_id: ''
 })
 
 const errors = reactive({
@@ -83,14 +83,14 @@ const errors = reactive({
   email: '',
   phone: '',
   qualification: '',
-  staffId: ''
+  staff_id: ''
 })
 
 const loading = ref(false)
 
 const resetForm = () => {
-  Object.assign(form, { firstName: '', lastName: '', email: '', phone: '', qualification: '', staffId: '' })
-  Object.assign(errors, { firstName: '', lastName: '', email: '', phone: '', qualification: '', staffId: '' })
+  Object.assign(form, { firstName: '', lastName: '', email: '', phone: '', qualification: '', staff_id: '' })
+  Object.assign(errors, { firstName: '', lastName: '', email: '', phone: '', qualification: '', staff_id: '' })
 }
 
 // Watch for teacher changes and update form
@@ -102,7 +102,7 @@ watch(() => props.teacher, (teacher) => {
     form.email = teacher.user?.email || teacher.email || ''
     form.phone = teacher.user?.phone || teacher.phone || ''
     form.qualification = teacher.teacher_profile?.qualification || teacher.qualification || ''
-    // form.staffId = teacher.teacher_profile?.staff_id || teacher.staff_id || ''
+    form.staff_id = teacher.teacher_profile?.staff_id || teacher.staff_id || ''
   } else {
     resetForm()
   }
@@ -122,8 +122,8 @@ const validate = () => {
   errors.email = form.email?.trim() ? '' : 'Email is required.'
   errors.phone = form.phone?.trim() ? '' : 'Phone is required.'
   errors.qualification = form.qualification?.trim() ? '' : 'Qualification is required.'
-  // errors.staffId = form.staffId?.trim() ? '' : 'Staff ID is required.'
-  return !errors.firstName && !errors.lastName && !errors.email && !errors.phone && !errors.qualification && !errors.staffId
+  errors.staff_id = form.staff_id?.trim() ? '' : 'Staff ID is required.'
+  return !errors.firstName && !errors.lastName && !errors.email && !errors.phone && !errors.qualification && !errors.staff_id
 }
 
 const submit = async () => {
@@ -138,7 +138,7 @@ const submit = async () => {
       email: form.email,
       phone: form.phone,
       qualification: form.qualification,
-      staff_id: form.staffId
+      staff_id: form.staff_id
     }
     
     emit('submit', {
@@ -148,7 +148,6 @@ const submit = async () => {
     
     // Don't reset form or close here - let parent handle after toast
   } catch (error) {
-    console.error('Teacher form error:', error)
   } finally {
     // Keep loading state active until parent closes modal
     // Don't auto-reset loading state

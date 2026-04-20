@@ -76,9 +76,7 @@ const loading = ref(false)
 const classesStore = useSchoolAdminClassesStore()
 
 const classOptions = computed(() => {
-  console.log('Classes store data:', classesStore.classes)
   const options = classesStore.classes.map(classLevel => classLevel.name)
-  console.log('Class options:', options)
   return options
 })
 
@@ -94,21 +92,16 @@ onMounted(async () => {
       await classesStore.fetchClasses()
     }
   } catch (error) {
-    console.error('Error loading class levels:', error)
   }
 })
 
 // Watch for subject changes and update form
 watch(() => props.subject, (subject) => {
-  console.log('Subject changed:', subject)
   if (subject) {
-    console.log('Populating form with subject data:', subject)
     form.name = subject.name || ''
     form.code = subject.code || ''
     form.class_level_ids = subject.class_levels?.map(level => level.name) || []
-    console.log('Form after population:', form)
   } else {
-    console.log('Resetting form')
     resetForm()
   }
 }, { immediate: true })
@@ -153,7 +146,6 @@ const submit = async () => {
     
     // Don't reset form or close here - let parent handle after toast
   } catch (error) {
-    console.error('Subject form error:', error)
   } finally {
     // Keep loading state active until parent closes modal
     // Don't auto-reset loading state

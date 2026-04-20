@@ -44,13 +44,6 @@ export const useSchoolAdminTeachersStore = defineStore(
                 this.loading = true;
                 try {
                     const response = await getTeachers(params);
-                    // Keep some debug information from both branches so it's easier to troubleshoot API shape issues
-                    console.log("Teachers API response:", response);
-                    console.log("Teachers data type:", typeof response);
-                    console.log(
-                        "Teachers data is array:",
-                        Array.isArray(response),
-                    );
 
                     // Support either an array response (legacy/simple) or an object with `data` and `total`
                     if (Array.isArray(response)) {
@@ -123,7 +116,6 @@ export const useSchoolAdminTeachersStore = defineStore(
                 this.loading = true;
                 try {
                     const response = await getTeachers({ ...params, archived: true });
-                    console.log("Archived teachers API response:", response);
                     
                     if (Array.isArray(response)) {
                         this.archivedTeachers = response || [];
@@ -154,7 +146,6 @@ export const useSchoolAdminTeachersStore = defineStore(
                         variant: "success",
                     });
                 } catch (error) {
-                    console.error("Error toggling teacher active status:", error);
                     uiStore.addToast({
                         title: "Error",
                         message: error.message || "Failed to toggle teacher status.",
@@ -171,7 +162,6 @@ export const useSchoolAdminTeachersStore = defineStore(
                         variant: "success",
                     });
                 } catch (error) {
-                    console.error("Error resetting teacher password:", error);
                     uiStore.addToast({
                         title: "Error",
                         message: error.message || "Failed to reset teacher password.",
@@ -196,7 +186,6 @@ export const useSchoolAdminTeachersStore = defineStore(
                         variant: "success",
                     });
                 } catch (error) {
-                    console.error("Error restoring teacher:", error);
                     uiStore.addToast({
                         title: "Error",
                         message: error.message || "Failed to restore teacher.",

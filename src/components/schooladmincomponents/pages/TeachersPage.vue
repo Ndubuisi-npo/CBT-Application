@@ -179,8 +179,6 @@ const editTeacher = (teacher) => {
 
 const submitTeacher = async (teacherData) => {
   try {
-    console.log('Teacher data received in page:', teacherData)
-    
     const payload = {
       first_name: teacherData.first_name,
       last_name: teacherData.last_name,
@@ -189,8 +187,6 @@ const submitTeacher = async (teacherData) => {
       qualification: teacherData.qualification,
       staff_id: teacherData.staff_id
     }
-    
-    console.log('Payload to be sent to API:', payload)
     
     if (teacherData.id) {
       await teachersStore.updateTeacher(teacherData.id, payload)
@@ -204,7 +200,6 @@ const submitTeacher = async (teacherData) => {
       closeModal()
     }, 100)
   } catch (error) {
-    console.error('Teacher form error:', error)
     uiStore.addToast({ title: 'Error', message: 'Failed to save teacher.', variant: 'error' })
     // Close modal after error toast as well
     setTimeout(() => {

@@ -66,7 +66,7 @@ export const useSchoolAdminAuthStore = defineStore('school-admin-auth', {
       try {
         await logoutSchoolAdmin()
       } catch (error) {
-        console.error('Logout API call failed:', error)
+        // Logout API call failed
       }
       this.user = null
       this.token = null

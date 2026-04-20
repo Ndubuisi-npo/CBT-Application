@@ -150,8 +150,6 @@ const props = defineProps({
   }
 })
 
-// console.log(props.tenant)
-
 const emit = defineEmits(['close'])
 
 // const tenant = ref(null)
@@ -185,7 +183,6 @@ const loadTenant = async () => {
     const { getTenant } = useSuperAdminTenants()
     tenant.value = await getTenant(props.tenantId)
   } catch (error) {
-    console.error('Failed to load tenant:', error)
     tenant.value = null
   } finally {
     loading.value = false

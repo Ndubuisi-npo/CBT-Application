@@ -86,16 +86,12 @@ const hasError = computed(() => !isLoading.value && !subject.value && subjectsSt
 
 const subjectId = computed(() => route.params.id)
 const subject = computed(() => {
-  console.log('Looking for subject with ID:', subjectId.value)
-  console.log('Available subjects:', subjectsStore.subjects)
   const found = subjectsStore.subjects.find(s => s.id === subjectId.value)
-  console.log('Found subject:', found)
   return found
 })
 const assignments = computed(() => {
   if (!subject.value) return []
   const assignments = subject.value?.teacher_assignments || []
-  console.log('Subject assignments:', assignments)
   return assignments
 })
 
@@ -168,7 +164,6 @@ const submitAssignment = async (assignmentData) => {
     }, 100)
     await subjectsStore.fetchSubjects() // Refresh to get updated assignments
   } catch (error) {
-    console.error('Assignment error:', error)
     uiStore.addToast({ title: 'Error', message: error.message || 'Failed to save assignment.', variant: 'error' })
     // Close modal after error toast as well
     setTimeout(() => {
@@ -189,7 +184,6 @@ const deleteAssignment = async (id) => {
     uiStore.addToast({ title: 'Assignment removed', message: 'Teacher assignment has been removed.', variant: 'success' })
     await subjectsStore.fetchSubjects() // Refresh to get updated assignments
   } catch (error) {
-    console.error('Assignment error:', error)
     uiStore.addToast({ title: 'Error', message: error.message || 'Failed to remove assignment.', variant: 'error' })
   } finally {
     deleteLoading.value = new Set([...deleteLoading.value].filter(loadingId => loadingId !== id))
@@ -202,14 +196,7 @@ onMounted(async () => {
     await classesStore.fetchClasses()
     await teachersStore.fetchTeachers()
     await sessionsStore.fetchSessions()
-    
-    // Debug: Log teacher data structure
-    console.log('Teachers data structure:', teachersStore.teachers)
-    if (teachersStore.teachers.length > 0) {
-      console.log('First teacher structure:', teachersStore.teachers[0])
-    }
   } catch (error) {
-    console.error('Error loading data:', error)
     uiStore.addToast({ title: 'Error', message: 'Failed to load data. Please check your connection.', variant: 'error' })
   }
 })

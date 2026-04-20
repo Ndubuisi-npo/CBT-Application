@@ -214,7 +214,6 @@ const submitLogin = async () => {
         return
       } catch (superAdminError) {
         // If super admin login fails, try school admin login
-        console.log('Super admin login failed, trying school admin login')
         isSuperAdminLoading.value = false
       }
     }

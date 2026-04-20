@@ -100,7 +100,6 @@ onMounted(async () => {
       await sessionsStore.fetchTerms(sessionId.value)
     }
   } catch (error) {
-    console.error('Error loading data:', error)
     uiStore.addToast({ title: 'Error', message: 'Failed to load data. Please check your connection.', variant: 'error' })
   }
 })

@@ -91,7 +91,6 @@ onMounted(async () => {
       await classArmsStore.fetchClassArms(classLevelId.value)
     }
   } catch (error) {
-    console.error('Error loading data:', error)
     uiStore.addToast({ title: 'Error', message: 'Failed to load data. Please check your connection.', variant: 'error' })
   }
 })
@@ -141,7 +140,6 @@ const submitClassArm = async (classArmData) => {
     }, 100)
     await classArmsStore.fetchClassArms(classLevelId.value) // Refresh to get updated list
   } catch (error) {
-    console.error('Class arm error:', error)
     uiStore.addToast({ title: 'Error', message: error.message || 'Failed to save class arm.', variant: 'error' })
     // Close modal after error toast as well
     setTimeout(() => {

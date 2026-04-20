@@ -166,7 +166,6 @@ onMounted(async () => {
   try {
     await subjectsStore.fetchSubjects()
   } catch (error) {
-    console.error('Error loading subjects:', error)
     uiStore.addToast({ title: 'Error', message: 'Failed to load subjects. Please check your connection.', variant: 'error' })
   }
 })
@@ -210,7 +209,6 @@ const submitSubject = async (subjectData) => {
       closeModal()
     }, 100)
   } catch (error) {
-    console.error('Subject form error:', error)
     uiStore.addToast({ title: 'Error', message: 'Failed to save subject.', variant: 'error' })
     // Close modal after error toast as well
     setTimeout(() => {

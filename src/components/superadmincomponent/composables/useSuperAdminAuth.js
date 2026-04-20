@@ -35,7 +35,7 @@ export function useSuperAdminAuth() {
     try {
       await logoutSuperAdmin()
     } catch (error) {
-      console.error('Logout API call failed:', error)
+      // Logout API call failed
     }
     user.value = null
     token.value = ''

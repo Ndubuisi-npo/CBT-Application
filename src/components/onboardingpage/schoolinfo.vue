@@ -43,14 +43,16 @@
         </div>
 
         <div class="space-y-3">
-          <label for="website" class="block text-base font-semibold text-slate-700">Website (Optional)</label>
+          <label for="website" class="block text-base font-semibold text-slate-700">Website Handle</label>
           <input
             id="website"
-            v-model="formData.website"
-            type="url"
-            placeholder="https://www.example.edu"
-            class="h-14 w-full rounded-xl border-2 border-[#0B1F3A] px-4 text-base text-slate-700 outline-none transition duration-300 placeholder:text-slate-400 focus:border-[#D4AF37] focus:shadow-sm"
+            :value="websiteHandle"
+            type="text"
+            readonly
+            placeholder="https://edu.localhost:5173"
+            class="h-14 w-full rounded-xl border-2 border-[#0B1F3A] bg-slate-50 px-4 text-base text-slate-700 outline-none transition duration-300 placeholder:text-slate-400 focus:border-[#D4AF37] focus:shadow-sm cursor-not-allowed"
           />
+          <p class="text-sm text-slate-500">Automatically generated from school name</p>
         </div>
       </div>
 
@@ -100,9 +102,10 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { ArrowRight, ChevronDown, School2 } from 'lucide-vue-next'
 
-defineProps<{
+const props = defineProps<{
   formData: {
     schoolName: string
     schoolType: string
@@ -116,4 +119,15 @@ defineProps<{
 const emit = defineEmits<{
   continue: []
 }>()
+
+// Auto-generate website handle from school name
+const websiteHandle = computed(() => {
+  if (!props.formData.schoolName) return ''
+  
+  // Extract first 3 letters from school name (cleaned)
+  const cleanName = props.formData.schoolName.replace(/[^a-zA-Z]/g, '').toLowerCase()
+  const handle = cleanName.substring(0, 3)
+  
+  return `https://${handle}.localhost:5173`
+})
 </script>

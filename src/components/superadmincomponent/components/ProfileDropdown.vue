@@ -72,14 +72,10 @@ const handleLogout = async () => {
   
   try {
     await authComposable.logout()
-    // Show success message if toast system is available
-    console.log('Logged out successfully')
     // Navigate to login page
     window.location.href = '/login'
   } catch (error) {
-    console.error('Logout failed:', error)
     // Show error message if toast system is available
-    console.error('Unable to sign out.')
   } finally {
     isLoggingOut.value = false
     closeDropdown()

@@ -11,11 +11,9 @@ export const useSchoolAdminClassesStore = defineStore('school-admin-classes', {
       this.loading = true
       try {
         const rawClasses = await getClasses()
-        console.log('Fetched classes:', rawClasses)
         // Use the API data directly without transformations
         this.classes = rawClasses
       } catch (error) {
-        console.error('Failed to fetch classes:', error)
         this.classes = []
       } finally {
         this.loading = false
