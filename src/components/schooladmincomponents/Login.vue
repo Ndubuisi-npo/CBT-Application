@@ -38,11 +38,6 @@
               <Shield class="h-5 w-5 text-[#D4AF37]" />
               <span class="text-base text-white/88">Super Admin: Platform-wide tenant and system management.</span>
             </div>
-
-            <div class="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/10 px-4 py-4 backdrop-blur-sm">
-              <Globe class="h-5 w-5 text-[#D4AF37]" />
-              <span class="text-base text-white/88">{{ branding.domain }}</span>
-            </div>
           </div>
         </div>
 
@@ -140,7 +135,6 @@ const { login: superAdminLogin } = useSuperAdminAuth()
 
 const branding = computed(() => ({
   schoolName: 'CBT Application',
-  domain: 'application.edu',
 }))
 
 // Add user type detection

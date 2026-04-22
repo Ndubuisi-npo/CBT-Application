@@ -54,7 +54,7 @@
 
       <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-2">
         <div class="flex items-center justify-between">
-          <h2 class="text-xl font-bold tracking-tight text-slate-800">Curriculum</h2>
+          <h2 class="text-xl font-bold tracking-tight text-slate-800">Selected Plan</h2>
           <button type="button" class="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-400 shadow-sm">
             <Pencil class="h-4 w-4" />
           </button>
@@ -103,19 +103,17 @@ const props = defineProps<{
   formData: {
     schoolName: string
     schoolType: string
-    website: string
+    handle: string
     address: string
     state: string
     city: string
     fullName: string
     email: string
     phone: string
-    role: string
-    referralSource: string
-    grades: string[]
-    subjectCount: string
-    termSystem: string
-    gradingScale: string
+    jobTitle: string
+    password: string
+    confirmPassword: string
+    plan_id: string
   }
 }>()
 
@@ -125,7 +123,7 @@ const emit = defineEmits<{
 }>()
 
 const display = (value: string) => value?.trim() || '-'
-const displayArray = (value: string[]) => (value.length ? value.join(', ') : 'None selected')
+const displayArray = (value: string[] | undefined) => (value && value.length ? value.join(', ') : 'None selected')
 const displayLocation = computed(() => {
   const pieces = [props.formData.address, props.formData.city, props.formData.state].filter(Boolean)
   return pieces.length ? pieces.join(', ') : '-'
@@ -135,20 +133,17 @@ const schoolInfo = computed(() => [
   { label: 'Name', value: display(props.formData.schoolName) },
   { label: 'Type', value: display(props.formData.schoolType) },
   { label: 'Location', value: displayLocation.value },
-  { label: 'Website', value: display(props.formData.website) },
+  { label: 'Handle', value: display(props.formData.handle) },
 ])
 
 const administratorInfo = computed(() => [
   { label: 'Name', value: display(props.formData.fullName) },
-  { label: 'Role', value: display(props.formData.role) },
+  { label: 'Job Title', value: display(props.formData.jobTitle) },
   { label: 'Email', value: display(props.formData.email) },
   { label: 'Phone', value: display(props.formData.phone) },
 ])
 
 const curriculumInfo = computed(() => [
-  { label: 'Type', value: display(props.formData.termSystem) },
-  { label: 'Grades', value: displayArray(props.formData.grades) },
-  { label: 'Subjects', value: display(props.formData.subjectCount) },
-  { label: 'Grading Scale', value: display(props.formData.gradingScale) },
+  { label: 'Plan ID', value: display(props.formData.plan_id) },
 ])
 </script>

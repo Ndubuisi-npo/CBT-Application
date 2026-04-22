@@ -11,7 +11,7 @@
       </div>
     </div>
 
-    <form class="mt-10 space-y-7" @submit.prevent="emit('continue')">
+    <form class="mt-10 space-y-7" @submit.prevent="handleSubmit">
       <div class="space-y-3">
         <label for="school-name" class="block text-base font-semibold text-slate-700">School Name</label>
         <input
@@ -50,7 +50,7 @@
             type="text"
             readonly
             placeholder="https://edu.localhost:5173"
-            class="h-14 w-full rounded-xl border-2 border-[#0B1F3A] bg-slate-50 px-4 text-base text-slate-700 outline-none transition duration-300 placeholder:text-slate-400 focus:border-[#D4AF37] focus:shadow-sm cursor-not-allowed"
+            class="h-14 w-full rounded-xl border-2 bg-slate-50 px-4 text-base text-slate-700 outline-none transition duration-300 placeholder:text-slate-400 focus:border-[#D4AF37] focus:shadow-sm cursor-not-allowed"
           />
           <p class="text-sm text-slate-500">Automatically generated from school name</p>
         </div>
@@ -102,14 +102,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { ArrowRight, ChevronDown, School2 } from 'lucide-vue-next'
 
 const props = defineProps<{
   formData: {
     schoolName: string
     schoolType: string
-    website: string
+    handle: string
     address: string
     state: string
     city: string
@@ -130,4 +130,19 @@ const websiteHandle = computed(() => {
   
   return `https://${handle}.localhost:5173`
 })
+
+// Watch for school name changes and update handle
+watch(() => props.formData.schoolName, (newSchoolName) => {
+  if (newSchoolName) {
+    const cleanName = newSchoolName.replace(/[^a-zA-Z]/g, '').toLowerCase()
+    const handle = cleanName.substring(0, 3)
+    props.formData.handle = handle
+  } else {
+    props.formData.handle = ''
+  }
+}, { immediate: true })
+
+const handleSubmit = () => {
+  emit('continue')
+}
 </script>

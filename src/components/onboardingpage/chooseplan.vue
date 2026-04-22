@@ -11,7 +11,7 @@
 
       <p class="mt-5 text-lg leading-relaxed text-slate-600">
         Based on your school setup, we recommend the
-        <span class="font-semibold text-slate-800">{{ recommendedPlan.name }}</span>
+        <span class="font-semibold text-slate-800">{{ recommendedPlan?.name || '...' }}</span>
         plan.
       </p>
 
@@ -35,14 +35,30 @@
     </div>
 
     <div class="mt-12 grid grid-cols-1 gap-5 xl:grid-cols-4">
+      <!-- Loading state -->
+      <div v-if="loading" class="col-span-full flex items-center justify-center py-12">
+        <div class="text-center">
+          <div class="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-slate-300 border-t-slate-800"></div>
+          <p class="mt-4 text-slate-600">Loading plans...</p>
+        </div>
+      </div>
+      
+      <!-- Plans -->
       <article
+        v-else
         v-for="plan in plans"
-        :key="plan.name"
-        :class="plan.name === recommendedPlan.name ? 'border-slate-300 bg-slate-50 shadow-md' : 'bg-white'"
-        class="relative flex h-full flex-col rounded-2xl border border-slate-200 p-6 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-md"
+        :key="plan.id || plan.name"
+        :class="[
+          'relative flex h-full flex-col rounded-2xl border p-6 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-md',
+          plan.id === props.formData.plan_id 
+            ? 'border-[#D4AF37] bg-amber-50 shadow-lg border-2' 
+            : plan.name === recommendedPlan?.name 
+              ? 'border-slate-300 bg-slate-50 shadow-md' 
+              : 'bg-white border-slate-200'
+        ]"
       >
         <div
-          v-if="plan.name === recommendedPlan.name"
+          v-if="plan.name === recommendedPlan?.name"
           class="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 rounded-full bg-slate-800 px-4 py-1 text-sm font-semibold text-amber-400"
         >
           Recommended
@@ -86,10 +102,17 @@
 
         <button
           type="button"
-          :class="plan.name === recommendedPlan.name ? 'bg-[#0B1F3A] text-white hover:bg-[#0F2940] focus:ring-[#D4AF37]' : 'border-2 border-slate-300 bg-white text-slate-800 hover:bg-slate-50 focus:ring-[#D4AF37]'"
-          class="cursor-pointer mt-10 w-full rounded-xl px-5 py-4 text-base font-semibold shadow-sm transition duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2"
+          @click="selectPlan(plan)"
+          :class="[
+            'cursor-pointer mt-10 w-full rounded-xl px-5 py-4 text-base font-semibold shadow-sm transition duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2',
+            plan.id === props.formData.plan_id
+              ? 'bg-[#D4AF37] text-white hover:bg-[#B8941F] focus:ring-[#D4AF37]'
+              : plan.name === recommendedPlan?.name
+                ? 'bg-[#0B1F3A] text-white hover:bg-[#0F2940] focus:ring-[#D4AF37]'
+                : 'border-2 border-slate-300 bg-white text-slate-800 hover:bg-slate-50 focus:ring-[#D4AF37]'
+          ]"
         >
-          {{ plan.name === recommendedPlan.name ? 'Select Recommended' : 'Select Plan' }}
+          {{ plan.id === props.formData.plan_id ? 'Selected' : plan.name === recommendedPlan?.name ? 'Select Recommended' : 'Select Plan' }}
         </button>
       </article>
     </div>
@@ -99,7 +122,7 @@
       <span>30-day money-back guarantee on all plans. No questions asked.</span>
     </div>
 
-    <div class="mt-8 flex justify-start">
+    <div class="mt-8 flex justify-between">
       <button
         type="button"
         class="inline-flex items-center gap-3 rounded-xl border-2 border-[#0B1F3A] bg-white px-7 py-3 text-base font-medium text-[#0B1F3A] shadow-sm transition duration-300 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:ring-offset-2"
@@ -107,88 +130,97 @@
       >
         Back
       </button>
+
+      <button
+        type="button"
+        @click="emit('submit-registration')"
+        :disabled="!props.formData.plan_id"
+        class="inline-flex items-center gap-3 rounded-xl bg-[#0B1F3A] px-7 py-3 text-base font-semibold text-white shadow-lg shadow-[#0B1F3A]/10 transition duration-300 hover:bg-[#0F2940] focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {{ props.formData.plan_id ? 'Finish Onboarding' : 'Select a Plan First' }}
+        <ArrowRight class="h-5 w-5" />
+      </button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { Check, ShieldCheck, Sparkles } from 'lucide-vue-next'
+import { computed, onMounted, ref } from 'vue'
+import { ArrowRight, Check, ShieldCheck, Sparkles } from 'lucide-vue-next'
+import { fetchPlans } from '../superadmincomponent/api/plans'
 
 const props = defineProps<{
   formData: {
     subjectCount: string
+    plan_id: string
   }
 }>()
 
 const emit = defineEmits<{
   back: []
+  continue: []
+  'submit-registration': []
 }>()
 
 const isAnnual = ref(true)
+const plans = ref([])
+const loading = ref(true)
 
-const plans = [
-  {
-    name: 'Starter',
-    range: 'Up to 200 students',
-    price: 239,
-    features: [
-      'Basic student management',
-      'Attendance tracking',
-      'Parent portal access',
-      'Standard reporting',
-      'Email support',
-    ],
-  },
-  {
-    name: 'Growth',
-    range: '201-500 students',
-    price: 479,
-    features: [
-      'Everything in Starter',
-      'Advanced curriculum planning',
-      'Teacher evaluation tools',
-      'Custom report cards',
-      'Priority support',
-    ],
-  },
-  {
-    name: 'Premium',
-    range: '501-1000 students',
-    price: 799,
-    features: [
-      'Everything in Growth',
-      'Multi-campus support',
-      'API access & integrations',
-      'Dedicated account manager',
-      'Custom onboarding',
-    ],
-  },
-  {
-    name: 'Enterprise',
-    range: '1000+ students',
-    price: null,
-    features: [
-      'Unlimited everything',
-      'Custom feature development',
-      'On-premise deployment option',
-      '24/7 phone support',
-      'SLA guarantee',
-    ],
-  },
-]
+// Transform API plan data to match the expected format
+const transformPlans = (apiPlans) => {
+  return apiPlans.map(plan => ({
+    name: plan.name,
+    range: plan.max_students ? `Up to ${plan.max_students} students` : 'Unlimited students',
+    price: plan.price_monthly || plan.price || null,
+    features: plan.features || [],
+    id: plan.id
+  }))
+}
+
+onMounted(async () => {
+  try {
+    const apiPlans = await fetchPlans()
+    plans.value = transformPlans(apiPlans)
+  } catch (error) {
+    // Fallback to basic plans if API fails
+    plans.value = [
+      {
+        name: 'Basic Plan',
+        range: 'Up to 100 students',
+        price: 29.99,
+        features: ['Up to 100 students', 'Basic grading', 'Email support'],
+        id: 'basic'
+      },
+      {
+        name: 'Premium Plan',
+        range: 'Up to 500 students',
+        price: 79.99,
+        features: ['Up to 500 students', 'Advanced grading', 'Priority support'],
+        id: 'premium'
+      }
+    ]
+  } finally {
+    loading.value = false
+  }
+})
 
 const recommendedPlan = computed(() => {
+  if (plans.value.length === 0) return null
   const count = Number(props.formData.subjectCount || 0)
 
-  if (count >= 20) return plans[2]
-  if (count >= 10) return plans[1]
-  if (count > 0) return plans[0]
-  return plans[1]
+  if (count >= 20) return plans.value[2]
+  if (count >= 10) return plans.value[1]
+  if (count > 0) return plans.value[0]
+  return plans.value[1]
 })
 
 const displayedPrice = (price: number) => {
   const value = isAnnual.value ? Math.round(price * 0.8) : price
   return `$ ${value}`
+}
+
+const selectPlan = (plan) => {
+  props.formData.plan_id = plan.id
+  // Don't emit submit-registration here - just select the plan
 }
 </script>

@@ -46,15 +46,13 @@
           />
         </div>
       </div>
-
-      <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div class="space-y-3">
           <label for="role-title" class="block text-base font-semibold text-slate-700">Role / Title</label>
           <div class="relative">
             <select
               id="role-title"
-              v-model="formData.role"
-              :class="formData.role ? 'text-slate-800' : 'text-slate-400'"
+              v-model="formData.jobTitle"
+              :class="formData.jobTitle ? 'text-slate-800' : 'text-slate-400'"
               class="cursor-pointer h-14 w-full appearance-none rounded-xl border-2 border-[#0B1F3A] bg-white px-4 pr-12 text-base outline-none transition duration-300 focus:border-[#D4AF37] focus:shadow-sm"
             >
               <option value="" disabled>Select a role</option>
@@ -66,26 +64,6 @@
             <ChevronDown class="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-700" />
           </div>
         </div>
-
-        <div class="space-y-3">
-          <label for="referral-source" class="block text-base font-semibold text-slate-700">How did you hear about us?</label>
-          <div class="relative">
-            <select
-              id="referral-source"
-              v-model="formData.referralSource"
-              :class="formData.referralSource ? 'text-slate-800' : 'text-slate-400'"
-              class="h-14 w-full appearance-none rounded-xl border-2 border-[#0B1F3A] bg-white px-4 pr-12 text-base outline-none transition duration-300 focus:border-[#D4AF37] focus:shadow-sm"
-            >
-              <option value="" disabled>Select an option...</option>
-              <option value="Google Search">Google Search</option>
-              <option value="Social Media">Social Media</option>
-              <option value="Referral">Referral</option>
-              <option value="Conference or Event">Conference or Event</option>
-            </select>
-            <ChevronDown class="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-700" />
-          </div>
-        </div>
-      </div>
 
       <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div class="space-y-3">
@@ -160,8 +138,7 @@ defineProps<{
     fullName: string
     email: string
     phone: string
-    role: string
-    referralSource: string
+    jobTitle: string
     password: string
     confirmPassword: string
   }

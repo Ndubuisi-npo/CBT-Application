@@ -48,8 +48,22 @@
           :form-data="formData"
           @continue="goForward"
           @back="goBack"
+          @submit-registration="submitRegistration"
         />
       </Transition>
+      
+      <!-- Error message display -->
+      <div v-if="errorMessage" class="fixed bottom-4 left-1/2 transform -translate-x-1/2 rounded-2xl border border-red-200 bg-red-50 px-6 py-4 text-sm font-medium text-red-600 shadow-lg">
+        {{ errorMessage }}
+      </div>
+      
+      <!-- Loading overlay -->
+      <div v-if="isSubmitting" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-2xl p-8 text-center">
+          <div class="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-slate-300 border-t-slate-800"></div>
+          <p class="mt-4 text-slate-600">Onboarding your school...</p>
+        </div>
+      </div>
     </div>
   </section>
 </template>
@@ -62,30 +76,29 @@ import AdminDetails from './admindetails.vue'
 import ChoosePlan from './chooseplan.vue'
 import Review from './review.vue'
 import SchoolInfo from './schoolinfo.vue'
+import { registerOnboarding } from './api/onboarding'
 
 const steps = ['School Info', 'Admin Details', 'Review', 'Choose Plan']
 
 const router = useRouter()
 const currentStep = ref(0)
 const transitionName = ref('step-forward')
+const isSubmitting = ref(false)
+const errorMessage = ref('')
 const formData = ref({
   schoolName: '',
   schoolType: '',
-  website: '',
+  handle: '',
   address: '',
   state: '',
   city: '',
   fullName: '',
   email: '',
   phone: '',
-  role: '',
-  referralSource: '',
+  jobTitle: '',
   password: '',
   confirmPassword: '',
-  grades: [] as string[],
-  subjectCount: '',
-  termSystem: '',
-  gradingScale: '',
+  plan_id: '',
 })
 
 const currentComponent = computed(() => {
@@ -117,6 +130,39 @@ const goBack = () => {
   if (currentStep.value > 0) {
     transitionName.value = 'step-backward'
     currentStep.value -= 1
+  }
+}
+
+const submitRegistration = async () => {
+  if (isSubmitting.value) return
+  
+  isSubmitting.value = true
+  errorMessage.value = ''
+  
+  try {
+    const payload = {
+      schoolName: formData.value.schoolName,
+      handle: formData.value.handle,
+      address: formData.value.address,
+      state: formData.value.state,
+      city: formData.value.city,
+      schoolType: formData.value.schoolType,
+      fullName: formData.value.fullName,
+      email: formData.value.email,
+      phone: formData.value.phone,
+      jobTitle: formData.value.jobTitle,
+      password: formData.value.password,
+      plan_id: formData.value.plan_id
+    }
+    
+    await registerOnboarding(payload)
+    
+    // Redirect to success page or login
+    router.push('/login')
+  } catch (error) {
+    errorMessage.value = error.message || 'Registration failed. Please try again.'
+  } finally {
+    isSubmitting.value = false
   }
 }
 
