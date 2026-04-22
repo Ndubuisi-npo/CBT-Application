@@ -1,3 +1,15 @@
+/**
+ * @deprecated Use unified auth from '../../../js/lib/auth' instead.
+ * This store is kept for backward compatibility during migration.
+ *
+ * Migration guide:
+ * - Import login/logout from '../../../js/lib/auth' directly
+ * - Import getAuthUser() for current user
+ * - Import isAuthenticated() for auth state check
+ *
+ * Example:
+ *   import { login, logout, getAuthUser, isAuthenticated } from '../../../js/lib/auth'
+ */
 import { defineStore } from 'pinia'
 import { loginSchoolAdmin, logoutSchoolAdmin } from '../services/api/auth'
 import { setApiToken } from '../../../js/lib/api'

@@ -1,4 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { isAuthenticated, getAuthRole } from '../js/lib/auth'
+import { getTenantHandle } from '../js/lib/api'
 
 // pages
 import LandingPage from '../components/landingpage/landingPage.vue';
@@ -83,30 +85,44 @@ const router = createRouter({
   routes,
 })
 
-// Route guards for authentication
+const roleRedirectMap = {
+  super_admin: '/super-admin/dashboard',
+  school_admin: '/school-admin/dashboard',
+  teacher: '/teacher/dashboard',
+  student: '/student/dashboard',
+}
+
+const buildRedirectUrl = (path) => {
+  const tenantHandle = getTenantHandle()
+  if (!tenantHandle) return path
+  return `${window.location.origin}${path}`
+}
+
 router.beforeEach((to, from, next) => {
-  // Check if route requires authentication
-  const requiresAuth = to.path.startsWith('/school-admin') || to.path.startsWith('/super-admin')
+  const requiresAuth = to.path.startsWith('/school-admin') || to.path.startsWith('/super-admin') || to.path.startsWith('/teacher') || to.path.startsWith('/student')
   const isLoginPage = to.path === '/login'
-  
+
   if (requiresAuth && !isLoginPage) {
-    // Check school admin authentication
-    const schoolAdminToken = localStorage.getItem('school-admin-auth')
-    const schoolAdminAuth = schoolAdminToken ? JSON.parse(schoolAdminToken) : null
-    
-    // Check super admin authentication (stored as authToken)
-    const superAdminToken = localStorage.getItem('authToken')
-    
-    const isAuthenticated = (schoolAdminAuth && schoolAdminAuth.token) || superAdminToken
-    
-    if (!isAuthenticated) {
-      // Redirect to login if not authenticated
+    if (!isAuthenticated()) {
       next('/login')
       return
     }
+
+    const userRole = getAuthRole()
+
+    if (to.path.startsWith('/super-admin') && userRole !== 'super_admin') {
+      const redirectPath = roleRedirectMap[userRole] || '/school-admin/dashboard'
+      next(buildRedirectUrl(redirectPath))
+      return
+    }
+
+    if (to.path.startsWith('/school-admin') && userRole !== 'school_admin') {
+      const redirectPath = roleRedirectMap[userRole] || '/super-admin/dashboard'
+      next(buildRedirectUrl(redirectPath))
+      return
+    }
   }
-  
-  // Allow navigation
+
   next()
 })
 

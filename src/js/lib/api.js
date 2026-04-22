@@ -43,18 +43,16 @@ export function clearApiState() {
   }
 }
 
-function getTenantHandle() {
+export function getTenantHandle() {
   if (typeof window === 'undefined') return null
 
-  const hostname = window.location.hostname.split(':')[0] // Strip port
+  const hostname = window.location.hostname.split(':')[0]
   const parts = hostname.split('.')
 
-  // Local dev: lek.localhost:3000 → "lek"
   if (hostname.includes('localhost') || hostname.includes('127.')) {
     return parts.length > 1 && parts[0] !== 'www' ? parts[0] : null
   }
 
-  // Production: lek.yourapp.com → "lek"
   return parts.length > 2 && parts[0] !== 'www' ? parts[0] : null
 }
 

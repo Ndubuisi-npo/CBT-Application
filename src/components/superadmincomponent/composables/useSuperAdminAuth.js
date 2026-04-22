@@ -1,3 +1,15 @@
+/**
+ * @deprecated Use unified auth from '../../../js/lib/auth' instead.
+ * This composable is kept for backward compatibility during migration.
+ *
+ * Migration guide:
+ * - Import login/logout from '../../../js/lib/auth' directly
+ * - Import getAuthUser() for current user
+ * - Import getAuthRole() for user role
+ *
+ * Example:
+ *   import { login, logout, getAuthUser, getAuthRole, isAuthenticated } from '../../../js/lib/auth'
+ */
 import { ref } from 'vue'
 import { loginSuperAdmin, getCurrentSuperAdmin, logoutSuperAdmin } from '../api/auth'
 import { setApiToken } from '../../../js/lib/api'

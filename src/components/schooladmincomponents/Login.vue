@@ -124,28 +124,16 @@ import { useRouter } from 'vue-router'
 import { Eye, EyeOff, Globe, LockKeyhole, Mail, School, Shield, Sparkles } from 'lucide-vue-next'
 import AppButton from '../shared/AppButton.vue'
 import ActionButton from '../shared/ActionButton.vue'
-import { useSchoolAdminAuthStore } from './stores/auth'
 import { useSchoolAdminUiStore } from './stores/ui'
-import { useSuperAdminAuth } from '../superadmincomponent/composables/useSuperAdminAuth'
+import { login as unifiedLogin } from '../../js/lib/auth'
+import { getTenantHandle } from '../../js/lib/api'
 
 const router = useRouter()
-const authStore = useSchoolAdminAuthStore()
 const uiStore = useSchoolAdminUiStore()
-const { login: superAdminLogin } = useSuperAdminAuth()
 
 const branding = computed(() => ({
   schoolName: 'CBT Application',
 }))
-
-// Add user type detection
-const isSuperAdmin = ref(false)
-const userType = computed(() => isSuperAdmin.value ? 'Super Admin' : 'School Admin')
-
-// Add loading state for super admin login
-const isSuperAdminLoading = ref(false)
-const isLoading = computed(() => authStore.loading || isSuperAdminLoading.value)
-
-// Don't fetch profile on mount - let login establish tenant context
 
 const form = reactive({
   email: '',
@@ -160,6 +148,7 @@ const errors = reactive({
 })
 
 const showPassword = ref(false)
+const isLoading = ref(false)
 
 const validate = () => {
   errors.email = ''
@@ -181,35 +170,38 @@ const submitLogin = async () => {
   if (!validate()) return
 
   try {
-    // Try super admin login first if email suggests it's a super admin
-    if (form.email.includes('admin@') || form.email.includes('super')) {
-      try {
-        isSuperAdminLoading.value = true
-        await superAdminLogin(form)
-        isSuperAdmin.value = true
-        uiStore.addToast({
-          title: 'Welcome back',
-          message: 'Super admin session started successfully.',
-          variant: 'success',
-        })
-        router.push('/super-admin/dashboard')
-        return
-      } catch (superAdminError) {
-        // If super admin login fails, try school admin login
-        isSuperAdminLoading.value = false
-      }
+    isLoading.value = true
+
+const authData = await unifiedLogin(form)
+
+    const tenantHandle = getTenantHandle()
+
+    const buildRedirectUrl = (path) => {
+      if (!tenantHandle) return path
+      return `${window.location.origin}${path}`
     }
-    
-    // Try school admin login
-    await authStore.login(form)
-    isSuperAdmin.value = false
+
+    const roleRedirectMap = {
+      super_admin: '/super-admin/dashboard',
+      school_admin: '/school-admin/dashboard',
+      teacher: '/teacher/dashboard',
+      student: '/student/dashboard',
+    }
+
+    const redirectPath = roleRedirectMap[authData.role] || '/school-admin/dashboard'
+    const fullRedirectUrl = buildRedirectUrl(redirectPath)
+
+    const userName = authData.user?.first_name
+      ? `${authData.user.first_name} ${authData.user.last_name || ''}`.trim()
+      : authData.admin?.name || authData.user?.name || 'User'
+
     uiStore.addToast({
       title: 'Welcome back',
-      message: 'You have successfully signed in.',
+      message: `Signed in as ${userName}`,
       variant: 'success',
     })
 
-    router.push('/school-admin/dashboard')
+    window.location.href = fullRedirectUrl
   } catch (error) {
     errors.general = error.message || 'Unable to sign in.'
 
@@ -219,7 +211,7 @@ const submitLogin = async () => {
       variant: 'error',
     })
   } finally {
-    isSuperAdminLoading.value = false
+    isLoading.value = false
   }
 }
 </script>

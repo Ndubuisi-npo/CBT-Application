@@ -22,9 +22,9 @@
             {{ userInitials }}
           </div>
           <div class="flex-1">
-            <h3 class="font-semibold text-slate-900">{{ authComposable.user?.name || 'Super Admin' }}</h3>
-            <p class="text-sm text-slate-500">{{ authComposable.user?.role || 'Platform administrator' }}</p>
-            <p class="text-xs text-slate-400 mt-1">{{ authComposable.user?.email || '' }}</p>
+            <h3 class="font-semibold text-slate-900">{{ `${user?.first_name || ''} ${user?.last_name || ''}`.trim() || 'Super Admin' }}</h3>
+            <p class="text-sm text-slate-500">{{ roleLabels[role] || role || 'Platform administrator' }}</p>
+            <p class="text-xs text-slate-400 mt-1">{{ user?.email || '' }}</p>
           </div>
         </div>
       </div>
@@ -45,17 +45,25 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import AppButton from '../../shared/AppButton.vue'
-import { useSuperAdminAuth } from '../composables/useSuperAdminAuth'
-
-const authComposable = useSuperAdminAuth()
+import { logout as unifiedLogout, getAuthUser, getAuthRole } from '../../../js/lib/auth'
 
 const isOpen = ref(false)
 const isLoggingOut = ref(false)
 const dropdownRef = ref(null)
 
+const user = computed(() => getAuthUser())
+const role = computed(() => getAuthRole())
+
+const roleLabels = {
+  super_admin: 'Platform administrator',
+  school_admin: 'School administrator',
+  teacher: 'Teacher',
+  student: 'Student',
+}
+
 const userInitials = computed(() => {
-  const name = authComposable.user?.name || 'Super Admin'
+  if (!user.value) return 'SA'
+  const name = `${user.value.first_name || ''} ${user.value.last_name || ''}`.trim() || 'User'
   return name.split(' ').map((part) => part[0]).slice(0, 2).join('').toUpperCase()
 })
 
@@ -69,13 +77,12 @@ const closeDropdown = () => {
 
 const handleLogout = async () => {
   isLoggingOut.value = true
-  
+
   try {
-    await authComposable.logout()
-    // Navigate to login page
+    await unifiedLogout()
     window.location.href = '/login'
   } catch (error) {
-    // Show error message if toast system is available
+    window.location.href = '/login'
   } finally {
     isLoggingOut.value = false
     closeDropdown()

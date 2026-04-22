@@ -4,7 +4,7 @@
       <div class="flex items-center gap-3">
         <AppButton type="button" :icon="PanelLeft" variant="ghost" class="lg:hidden" @click="$emit('toggle-sidebar')" />
         <div>
-          <p class="text-xs font-semibold uppercase tracking-[0.24em] text-[#D4AF37]">{{ authStore.tenant?.name || 'School Admin' }}</p>
+          <p class="text-xs font-semibold uppercase tracking-[0.24em] text-[#D4AF37]">{{ profileStore.profile.schoolName || 'School Admin' }}</p>
           <h2 class="text-xl font-semibold tracking-tight text-slate-900">{{ pageTitle }}</h2>
         </div>
       </div>
@@ -20,29 +20,19 @@
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue'
+import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { Bell, PanelLeft } from 'lucide-vue-next'
 import AppButton from '../../shared/AppButton.vue'
 import ProfileDropdown from './ProfileDropdown.vue'
-import { useSchoolAdminAuthStore } from '../stores/auth'
-import { useSchoolAdminProfileStore } from '../stores/profile'
 import { useSchoolAdminUiStore } from '../stores/ui'
+import { useSchoolAdminProfileStore } from '../stores/profile'
 
 defineEmits(['toggle-sidebar'])
 
 const route = useRoute()
-const authStore = useSchoolAdminAuthStore()
 const profileStore = useSchoolAdminProfileStore()
 const uiStore = useSchoolAdminUiStore()
-
-// Only fetch profile on pages that need it (profile/settings pages)
-onMounted(() => {
-  const pagesNeedingProfile = ['/school-admin/profile', '/school-admin/settings']
-  if (pagesNeedingProfile.includes(route.path) && !profileStore.profile.schoolName && !profileStore.loading) {
-    profileStore.fetchProfile()
-  }
-})
 
 const titles = {
   '/school-admin/dashboard': 'Dashboard Overview',

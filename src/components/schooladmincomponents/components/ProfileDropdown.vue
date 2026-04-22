@@ -22,9 +22,9 @@
             {{ userInitials }}
           </div>
           <div class="flex-1">
-            <h3 class="font-semibold text-slate-900">{{ authStore.user?.name || 'School Admin' }}</h3>
-            <p class="text-sm text-slate-500">{{ authStore.user?.role || 'Tenant administrator' }}</p>
-            <p class="text-xs text-slate-400 mt-1">{{ authStore.user?.email || '' }}</p>
+            <h3 class="font-semibold text-slate-900">{{ `${user?.first_name || ''} ${user?.last_name || ''}`.trim() || 'School Admin' }}</h3>
+            <p class="text-sm text-slate-500">{{ user?.role || 'Tenant administrator' }}</p>
+            <p class="text-xs text-slate-400 mt-1">{{ user?.email || '' }}</p>
           </div>
         </div>
       </div>
@@ -45,19 +45,20 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import AppButton from '../../shared/AppButton.vue'
-import { useSchoolAdminAuthStore } from '../stores/auth'
+import { logout as unifiedLogout, getAuthUser } from '../../../js/lib/auth'
 import { useSchoolAdminUiStore } from '../stores/ui'
 
-const authStore = useSchoolAdminAuthStore()
 const uiStore = useSchoolAdminUiStore()
 
 const isOpen = ref(false)
 const isLoggingOut = ref(false)
 const dropdownRef = ref(null)
 
+const user = computed(() => getAuthUser())
+
 const userInitials = computed(() => {
-  const name = authStore.user?.name || 'School Admin'
+  if (!user.value) return 'SA'
+  const name = `${user.value.first_name || ''} ${user.value.last_name || ''}`.trim() || 'User'
   return name.split(' ').map((part) => part[0]).slice(0, 2).join('').toUpperCase()
 })
 
@@ -71,15 +72,14 @@ const closeDropdown = () => {
 
 const handleLogout = async () => {
   isLoggingOut.value = true
-  
+
   try {
-    await authStore.logout()
+    await unifiedLogout()
     uiStore.addToast({
       title: 'Logged out',
       message: 'You have been signed out successfully.',
       variant: 'success',
     })
-    // Navigate to login page
     window.location.href = '/login'
   } catch (error) {
     uiStore.addToast({

@@ -1,3 +1,11 @@
+/**
+ * @deprecated These functions are deprecated. Use unified auth from '../../../../js/lib/auth' instead.
+ *
+ * Migration guide:
+ * - loginSchoolAdmin() → import { login } from '../../../../js/lib/auth'
+ * - getCurrentUser() → import { getAuthUser } from '../../../../js/lib/auth'
+ * - logoutSchoolAdmin() → import { logout } from '../../../../js/lib/auth'
+ */
 import { apiFetch, extractErrorMessage, clearApiState } from '../../../../js/lib/api'
 
 export async function loginSchoolAdmin(payload) {
@@ -9,7 +17,7 @@ export async function loginSchoolAdmin(payload) {
         password: payload.password,
       }),
     })
-    
+
     return response
   } catch (error) {
     throw new Error(extractErrorMessage(error, 'Login failed.'))
@@ -30,7 +38,7 @@ export async function logoutSchoolAdmin() {
     clearApiState()
     return response
   } catch (error) {
-    clearApiState() // Clear anyway even if logout fails
+    clearApiState()
     throw new Error(extractErrorMessage(error, 'Logout failed.'))
   }
 }

@@ -20,29 +20,17 @@
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue'
+import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { Bell, PanelLeft } from 'lucide-vue-next'
 import AppButton from '../../shared/AppButton.vue'
 import ProfileDropdown from './ProfileDropdown.vue'
-import { useSuperAdminAuth } from '../composables/useSuperAdminAuth'
 import { useSuperAdminUiStore } from '../stores/ui'
 
 defineEmits(['toggle-sidebar'])
 
 const route = useRoute()
-const authComposable = useSuperAdminAuth()
 const uiStore = useSuperAdminUiStore()
-
-onMounted(async () => {
-  if (!authComposable.user) {
-    try {
-      await authComposable.fetchCurrentUser()
-    } catch (error) {
-      // Failed to fetch current user
-    }
-  }
-})
 
 const titles = {
   '/super-admin/dashboard': 'Dashboard Overview',
