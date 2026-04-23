@@ -119,7 +119,7 @@
 
     <div class="mt-10 flex items-center justify-center gap-3 text-base text-slate-500">
       <ShieldCheck class="h-5 w-5 text-amber-500" />
-      <span>30-day money-back guarantee on all plans. No questions asked.</span>
+      <span>30-day free trial. You will be requested for your card details only after your 30-day free trial is over.</span>
     </div>
 
     <div class="mt-8 flex justify-between">
@@ -133,11 +133,11 @@
 
       <button
         type="button"
-        @click="emit('submit-registration')"
+        @click="emit('continue')"
         :disabled="!props.formData.plan_id"
         class="inline-flex items-center gap-3 rounded-xl bg-[#0B1F3A] px-7 py-3 text-base font-semibold text-white shadow-lg shadow-[#0B1F3A]/10 transition duration-300 hover:bg-[#0F2940] focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        {{ props.formData.plan_id ? 'Finish Onboarding' : 'Select a Plan First' }}
+        {{ props.formData.plan_id ? 'Continue' : 'Select a Plan First' }}
         <ArrowRight class="h-5 w-5" />
       </button>
     </div>
@@ -159,7 +159,6 @@ const props = defineProps<{
 const emit = defineEmits<{
   back: []
   continue: []
-  'submit-registration': []
 }>()
 
 const isAnnual = ref(true)

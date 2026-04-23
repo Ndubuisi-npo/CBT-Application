@@ -8,7 +8,7 @@
             <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-base font-bold text-black-400 shadow-sm">
               E
             </div>
-            <span class="text-xl font-bold tracking-tight text-slate-800">EduBoard</span>
+            <span class="text-xl font-bold tracking-tight text-slate-800">EduCBT</span>
           </div>
 
           <div class="mt-10">
@@ -78,7 +78,7 @@ import Review from './review.vue'
 import SchoolInfo from './schoolinfo.vue'
 import { registerOnboarding } from './api/onboarding'
 
-const steps = ['School Info', 'Admin Details', 'Review', 'Choose Plan']
+const steps = ['School Info', 'Admin Details', 'Choose Plan', 'Review']
 
 const router = useRouter()
 const currentStep = ref(0)
@@ -104,8 +104,8 @@ const formData = ref({
 const currentComponent = computed(() => {
   if (currentStep.value === 0) return SchoolInfo
   if (currentStep.value === 1) return AdminDetails
-  if (currentStep.value === 2) return Review
-  return ChoosePlan
+  if (currentStep.value === 2) return ChoosePlan
+  return Review
 })
 
 const progressWidth = computed(() => {

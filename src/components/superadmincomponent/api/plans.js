@@ -2,7 +2,7 @@ import { apiFetch, extractErrorMessage } from '../../../js/lib/api'
 
 export async function fetchPlans() {
   try {
-    return await apiFetch('/api/plans')
+    return await apiFetch('/api/super-admin/plans')
   } catch (error) {
     // Return mock data if API is not available
     if (error.status === 404) {
@@ -51,7 +51,7 @@ export async function fetchPlans() {
 
 export async function getPlan(id) {
   try {
-    return await apiFetch(`/api/plans/${id}`)
+    return await apiFetch(`/api/super-admin/plans/${id}`)
   } catch (error) {
     // Return mock data if API is not available
     if (error.status === 404) {
@@ -101,7 +101,7 @@ export async function getPlan(id) {
 
 export async function createPlan(payload) {
   try {
-    return await apiFetch('/api/plans', {
+    return await apiFetch('/api/super-admin/plans', {
       method: 'POST',
       body: JSON.stringify(payload),
     })
@@ -122,7 +122,7 @@ export async function createPlan(payload) {
 
 export async function updatePlan(id, payload) {
   try {
-    return await apiFetch(`/api/plans/${id}`, {
+    return await apiFetch(`/api/super-admin/plans/${id}`, {
       method: 'PUT',
       body: JSON.stringify(payload),
     })
@@ -141,7 +141,7 @@ export async function updatePlan(id, payload) {
 
 export async function deletePlan(id) {
   try {
-    return await apiFetch(`/api/plans/${id}`, {
+    return await apiFetch(`/api/super-admin/plans/${id}`, {
       method: 'DELETE',
     })
   } catch (error) {

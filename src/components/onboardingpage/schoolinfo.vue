@@ -19,8 +19,10 @@
           v-model="formData.schoolName"
           type="text"
           placeholder="e.g. Enugu Secondary School"
-          class="h-14 w-full rounded-xl border-2 border-[#0B1F3A] px-4 text-base text-slate-700 outline-none transition duration-300 placeholder:text-slate-400 focus:border-[#D4AF37] focus:shadow-sm"
+          class="h-14 w-full rounded-xl border-2 px-4 text-base text-slate-700 outline-none transition duration-300 placeholder:text-slate-400 focus:border-[#D4AF37] focus:shadow-sm"
+          :class="{ 'border-red-500 focus:border-red-500': errors.schoolName }"
         />
+        <p v-if="errors.schoolName" class="text-sm text-red-500">{{ errors.schoolName }}</p>
       </div>
 
       <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -30,8 +32,11 @@
             <select
               id="school-type"
               v-model="formData.schoolType"
-              :class="formData.schoolType ? 'text-slate-800' : 'text-slate-400'"
-              class="cursor-pointer h-14 w-full appearance-none rounded-xl border-2 border-[#0B1F3A] bg-white px-4 pr-12 text-base outline-none transition duration-300 focus:border-[#D4AF37] focus:shadow-sm"
+              :class="[
+                formData.schoolType ? 'text-slate-800' : 'text-slate-400',
+                errors.schoolType ? 'border-red-500 focus:border-red-500' : 'border-[#0B1F3A] focus:border-[#D4AF37]'
+              ]"
+              class="cursor-pointer h-14 w-full appearance-none rounded-xl border-2 bg-white px-4 pr-12 text-base outline-none transition duration-300 focus:shadow-sm"
             >
               <option value="" disabled>Select School Type</option>
               <option value="Secondary School">Secondary School</option>
@@ -40,19 +45,41 @@
             </select>
             <ChevronDown class="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-700" />
           </div>
+          <p v-if="errors.schoolType" class="text-sm text-red-500">{{ errors.schoolType }}</p>
         </div>
 
         <div class="space-y-3">
           <label for="website" class="block text-base font-semibold text-slate-700">Website Handle</label>
-          <input
-            id="website"
-            :value="websiteHandle"
-            type="text"
-            readonly
-            placeholder="https://edu.localhost:5173"
-            class="h-14 w-full rounded-xl border-2 bg-slate-50 px-4 text-base text-slate-700 outline-none transition duration-300 placeholder:text-slate-400 focus:border-[#D4AF37] focus:shadow-sm cursor-not-allowed"
-          />
-          <p class="text-sm text-slate-500">Automatically generated from school name</p>
+          <div class="relative">
+            <div class="flex items-center rounded-xl border-2 px-4 text-base transition duration-300"
+                 :class="{
+                   'border-green-500 focus-within:border-green-500': handleStatus === 'available',
+                   'border-red-500 focus-within:border-red-500': handleStatus === 'taken',
+                   'border-[#0B1F3A] focus-within:border-[#D4AF37]': handleStatus === 'idle' || handleStatus === 'checking'
+                 }">
+              <span class="text-slate-500">https://</span>
+              <input
+                id="website"
+                v-model="formData.handle"
+                type="text"
+                placeholder="e.g. lekki"
+                class="flex-1 bg-transparent py-4 outline-none placeholder:text-slate-400"
+              />
+              <span class="text-slate-500">.localhost:5173</span>
+              <div class="ml-3">
+                <Loader2 v-if="handleStatus === 'checking'" class="h-5 w-5 animate-spin text-slate-400" />
+                <Check v-else-if="handleStatus === 'available'" class="h-5 w-5 text-green-500" />
+                <X v-else-if="handleStatus === 'taken'" class="h-5 w-5 text-red-500" />
+              </div>
+            </div>
+          </div>
+          <div class="space-y-1">
+            <p class="text-sm text-slate-500">Automatically generated from school name, but you can customize it</p>
+            <p v-if="errors.handle" class="text-sm text-red-500">{{ errors.handle }}</p>
+            <p v-else-if="handleError" class="text-sm text-red-500">{{ handleError }}</p>
+            <p v-else-if="handleStatus === 'available'" class="text-sm text-green-500">Handle is available!</p>
+            <p v-else-if="handleStatus === 'taken'" class="text-sm text-red-500">This handle is already taken</p>
+          </div>
         </div>
       </div>
 
@@ -63,8 +90,10 @@
           v-model="formData.address"
           type="text"
           placeholder="123 Education Lane"
-          class="h-14 w-full rounded-xl border-2 border-[#0B1F3A] px-4 text-base text-slate-700 outline-none transition duration-300 placeholder:text-slate-400 focus:border-[#D4AF37] focus:shadow-sm"
+          class="h-14 w-full rounded-xl border-2 px-4 text-base text-slate-700 outline-none transition duration-300 placeholder:text-slate-400 focus:border-[#D4AF37] focus:shadow-sm"
+          :class="{ 'border-red-500 focus:border-red-500': errors.address }"
         />
+        <p v-if="errors.address" class="text-sm text-red-500">{{ errors.address }}</p>
       </div>
 
       <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -74,8 +103,10 @@
             id="state"
             v-model="formData.state"
             type="text"
-            class="h-14 w-full rounded-xl border-2 border-[#0B1F3A] px-4 text-base text-slate-700 outline-none transition duration-300 focus:border-[#D4AF37] focus:shadow-sm"
+            class="h-14 w-full rounded-xl border-2 px-4 text-base text-slate-700 outline-none transition duration-300 placeholder:text-slate-400 focus:border-[#D4AF37] focus:shadow-sm"
+            :class="{ 'border-red-500 focus:border-red-500': errors.state }"
           />
+          <p v-if="errors.state" class="text-sm text-red-500">{{ errors.state }}</p>
         </div>
         <div class="space-y-3">
           <label for="city" class="block text-base font-semibold text-slate-700">City</label>
@@ -83,8 +114,10 @@
             id="city"
             v-model="formData.city"
             type="text"
-            class="h-14 w-full rounded-xl border-2 border-[#0B1F3A] px-4 text-base text-slate-700 outline-none transition duration-300 focus:border-[#D4AF37] focus:shadow-sm"
+            class="h-14 w-full rounded-xl border-2 px-4 text-base text-slate-700 outline-none transition duration-300 placeholder:text-slate-400 focus:border-[#D4AF37] focus:shadow-sm"
+            :class="{ 'border-red-500 focus:border-red-500': errors.city }"
           />
+          <p v-if="errors.city" class="text-sm text-red-500">{{ errors.city }}</p>
         </div>
       </div>
 
@@ -102,8 +135,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, watch } from 'vue'
-import { ArrowRight, ChevronDown, School2 } from 'lucide-vue-next'
+import { computed, ref, watch } from 'vue'
+import { ArrowRight, ChevronDown, School2, Check, X, Loader2 } from 'lucide-vue-next'
+import { checkHandle } from './api/onboarding'
 
 const props = defineProps<{
   formData: {
@@ -120,29 +154,153 @@ const emit = defineEmits<{
   continue: []
 }>()
 
-// Auto-generate website handle from school name
-const websiteHandle = computed(() => {
-  if (!props.formData.schoolName) return ''
-  
-  // Extract first 3 letters from school name (cleaned)
-  const cleanName = props.formData.schoolName.replace(/[^a-zA-Z]/g, '').toLowerCase()
-  const handle = cleanName.substring(0, 3)
-  
-  return `https://${handle}.localhost:5173`
+// Handle checking state
+const handleStatus = ref<'idle' | 'checking' | 'available' | 'taken'>('idle')
+const handleError = ref('')
+
+// Form validation state
+const errors = ref({
+  schoolName: '',
+  schoolType: '',
+  handle: '',
+  address: '',
+  state: '',
+  city: ''
 })
 
-// Watch for school name changes and update handle
+// Auto-generate website handle from school name
+const websiteHandle = computed(() => {
+  if (!props.formData.handle) return ''
+  return `https://${props.formData.handle}.localhost:5173`
+})
+
+// Check handle availability
+const checkHandleAvailability = async (handle: string) => {
+  if (!handle || handle.length === 0) {
+    handleStatus.value = 'idle'
+    return
+  }
+
+  // Only check handles with 3 or fewer characters
+  if (handle.length > 3) {
+    handleStatus.value = 'idle'
+    handleError.value = 'Handle must be 3 characters or less'
+    return
+  }
+
+  handleStatus.value = 'checking'
+  handleError.value = ''
+
+  try {
+    const result = await checkHandle(handle)
+    if (result.available) {
+      handleStatus.value = 'available'
+    } else {
+      handleStatus.value = 'taken'
+      handleError.value = 'This handle is already taken'
+    }
+  } catch (error) {
+    handleStatus.value = 'idle'
+    handleError.value = 'Unable to check handle availability'
+  }
+}
+
+// Watch for school name changes and update handle (only first 3 letters)
 watch(() => props.formData.schoolName, (newSchoolName) => {
   if (newSchoolName) {
     const cleanName = newSchoolName.replace(/[^a-zA-Z]/g, '').toLowerCase()
-    const handle = cleanName.substring(0, 3)
-    props.formData.handle = handle
+    const firstThreeLetters = cleanName.substring(0, 3)
+    
+    // Update handle if it would be different (handles both addition and deletion)
+    if (props.formData.handle !== firstThreeLetters) {
+      props.formData.handle = firstThreeLetters
+      checkHandleAvailability(firstThreeLetters)
+    }
   } else {
     props.formData.handle = ''
+    handleStatus.value = 'idle'
   }
 }, { immediate: true })
 
+// Watch for handle changes and check availability (only for manual edits)
+watch(() => props.formData.handle, (newHandle, oldHandle) => {
+  // Skip if this was triggered by school name change (handle length <= 3 and matches first 3 letters of school name)
+  if (newHandle && oldHandle && props.formData.schoolName) {
+    const cleanSchoolName = props.formData.schoolName.replace(/[^a-zA-Z]/g, '').toLowerCase()
+    const expectedHandle = cleanSchoolName.substring(0, 3)
+    
+    // If the new handle matches what would be generated from school name, skip checking
+    if (newHandle === expectedHandle && newHandle.length <= 3) {
+      return
+    }
+  }
+  
+  if (newHandle) {
+    checkHandleAvailability(newHandle)
+  } else {
+    handleStatus.value = 'idle'
+  }
+})
+
+const validateForm = () => {
+  // Reset errors
+  errors.value = {
+    schoolName: '',
+    schoolType: '',
+    handle: '',
+    address: '',
+    state: '',
+    city: ''
+  }
+
+  let isValid = true
+
+  // Validate school name
+  if (!props.formData.schoolName?.trim()) {
+    errors.value.schoolName = 'School name is required'
+    isValid = false
+  }
+
+  // Validate school type
+  if (!props.formData.schoolType?.trim()) {
+    errors.value.schoolType = 'School type is required'
+    isValid = false
+  }
+
+  // Validate handle
+  if (!props.formData.handle?.trim()) {
+    errors.value.handle = 'Website handle is required'
+    isValid = false
+  } else if (handleStatus.value === 'taken') {
+    errors.value.handle = 'This handle is already taken'
+    isValid = false
+  }
+
+  // Validate address
+  if (!props.formData.address?.trim()) {
+    errors.value.address = 'Address is required'
+    isValid = false
+  }
+
+  // Validate state
+  if (!props.formData.state?.trim()) {
+    errors.value.state = 'State is required'
+    isValid = false
+  }
+
+  // Validate city
+  if (!props.formData.city?.trim()) {
+    errors.value.city = 'City is required'
+    isValid = false
+  }
+
+  return isValid
+}
+
 const handleSubmit = () => {
+  if (!validateForm()) {
+    return
+  }
   emit('continue')
 }
 </script>

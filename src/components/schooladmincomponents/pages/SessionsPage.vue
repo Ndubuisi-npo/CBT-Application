@@ -7,6 +7,16 @@
         </div>
       </template>
       <SkeletonRows v-if="sessionsStore.loading" :columns="5" />
+      <div v-else-if="sessionsStore.sessions.length === 0" class="rounded-[24px] border border-slate-200 bg-white p-12 text-center">
+        <div class="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-slate-100">
+          <Calendar class="h-12 w-12 text-slate-400" />
+        </div>
+        <h3 class="mt-6 text-xl font-semibold text-slate-900">No Academic Sessions</h3>
+        <p class="mt-2 text-slate-600">Get started by creating your first academic session to manage your school year timeline.</p>
+        <div class="mt-8">
+          <AppButton @click="openModal()" :icon="Plus" text="Create Your First Session" variant="primary" size="lg" />
+        </div>
+      </div>
       <div v-else class="overflow-hidden rounded-[24px] border border-slate-200">
         <div class="overflow-x-auto">
           <table class="min-w-full divide-y divide-slate-200 bg-white">
@@ -63,7 +73,7 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
-import { Plus } from 'lucide-vue-next'
+import { Calendar, Plus } from 'lucide-vue-next'
 import { useRoute, useRouter } from 'vue-router'
 import SectionCard from '../components/SectionCard.vue'
 import SkeletonRows from '../components/SkeletonRows.vue'

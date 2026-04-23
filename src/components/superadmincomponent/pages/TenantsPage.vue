@@ -35,18 +35,18 @@
               <tr v-for="tenant in paginatedTenants" :key="tenant.id" class="transition hover:bg-slate-50/80">
                 <td class="px-5 py-4">
                   <p class="font-semibold text-slate-900 text-nowrap">{{ tenant.name }}</p>
-                  <p class="text-sm text-slate-500">{{ tenant.slug }}</p>
+                  <p class="text-sm text-slate-500">{{ tenant.handle }}</p>
                 </td>
                 <td class="px-5 py-4 text-sm text-slate-600">
-                  <p>{{ tenant.email || 'No email' }}</p>
-                  <p class="text-xs text-slate-500">{{ tenant.phone || 'No phone' }}</p>
+                  <p>{{ tenant.contact?.email || 'No email' }}</p>
+                  <p class="text-xs text-slate-500">{{ tenant.contact?.phone || 'No phone' }}</p>
                 </td>
                 <td class="px-5 py-4 text-sm text-slate-600">
-                  <p>{{ tenant.address || 'No address' }}</p>
-                  <p class="text-xs text-slate-500">{{ tenant.city || 'No city' }}, {{ tenant.state || 'No state' }}</p>
+                  <p>{{ tenant.contact?.address || 'No address' }}</p>
+                  <p class="text-xs text-slate-500">{{ tenant.contact?.city || 'No city' }}, {{ tenant.contact?.state || 'No state' }}</p>
                 </td>
                 <td class="px-5 py-4">
-                  <StatusBadge :status="tenant.subscription_status || 'Not Active'" />
+                  <StatusBadge :status="tenant.subscription?.status || 'Not Active'" />
                 </td>
                 <td class="px-5 py-4">
                   <StatusBadge :status="tenant.is_active ? 'Active' : 'Suspended'" />

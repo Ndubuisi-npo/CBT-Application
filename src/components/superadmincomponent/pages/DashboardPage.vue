@@ -13,7 +13,7 @@
           <div v-for="tenant in tenants.slice(0, 4)" :key="tenant.id" class="flex flex-col gap-4 rounded-2xl border border-slate-100 bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p class="font-semibold text-slate-900">{{ tenant.name }}</p>
-              <p class="text-sm text-slate-500">{{ tenant.slug }} * {{ tenant.subscription_status }}</p>
+              <p class="text-sm text-slate-500">{{ tenant.slug }} {{ tenant.subscription_status }}</p>
             </div>
             <div class="flex items-center gap-3">
               <StatusBadge :status="tenant.is_active ? 'Active' : 'Suspended'" />

@@ -11,7 +11,7 @@
       </div>
     </div>
 
-    <form class="mt-10 space-y-7" @submit.prevent="emit('continue')">
+    <form class="mt-10 space-y-7" @submit.prevent="handleSubmit">
       <div class="space-y-3">
         <label for="full-name" class="block text-base font-semibold text-slate-700">Full Name</label>
         <input
@@ -19,8 +19,10 @@
           v-model="formData.fullName"
           type="text"
           placeholder="Ndubuisi Paul"
-          class="h-14 w-full rounded-xl border-2 border-[#0B1F3A] px-4 text-base text-slate-700 outline-none transition duration-300 placeholder:text-slate-400 focus:border-[#D4AF37] focus:shadow-sm"
+          class="h-14 w-full rounded-xl border-2 px-4 text-base text-slate-700 outline-none transition duration-300 placeholder:text-slate-400 focus:border-[#D4AF37] focus:shadow-sm"
+          :class="{ 'border-red-500 focus:border-red-500': errors.fullName }"
         />
+        <p v-if="errors.fullName" class="text-sm text-red-500">{{ errors.fullName }}</p>
       </div>
 
       <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -31,8 +33,10 @@
             v-model="formData.email"
             type="email"
             placeholder="paul@school.edu"
-            class="h-14 w-full rounded-xl border-2 border-[#0B1F3A] px-4 text-base text-slate-700 outline-none transition duration-300 placeholder:text-slate-400 focus:border-[#D4AF37] focus:shadow-sm"
+            class="h-14 w-full rounded-xl border-2 px-4 text-base text-slate-700 outline-none transition duration-300 placeholder:text-slate-400 focus:border-[#D4AF37] focus:shadow-sm"
+            :class="{ 'border-red-500 focus:border-red-500': errors.email }"
           />
+          <p v-if="errors.email" class="text-sm text-red-500">{{ errors.email }}</p>
         </div>
 
         <div class="space-y-3">
@@ -42,28 +46,12 @@
             v-model="formData.phone"
             type="tel"
             placeholder="+234 000 000 0000"
-            class="h-14 w-full rounded-xl border-2 border-[#0B1F3A] px-4 text-base text-slate-700 outline-none transition duration-300 placeholder:text-slate-400 focus:border-[#D4AF37] focus:shadow-sm"
+            class="h-14 w-full rounded-xl border-2 px-4 text-base text-slate-700 outline-none transition duration-300 placeholder:text-slate-400 focus:border-[#D4AF37] focus:shadow-sm"
+            :class="{ 'border-red-500 focus:border-red-500': errors.phone }"
           />
+          <p v-if="errors.phone" class="text-sm text-red-500">{{ errors.phone }}</p>
         </div>
       </div>
-        <div class="space-y-3">
-          <label for="role-title" class="block text-base font-semibold text-slate-700">Role / Title</label>
-          <div class="relative">
-            <select
-              id="role-title"
-              v-model="formData.jobTitle"
-              :class="formData.jobTitle ? 'text-slate-800' : 'text-slate-400'"
-              class="cursor-pointer h-14 w-full appearance-none rounded-xl border-2 border-[#0B1F3A] bg-white px-4 pr-12 text-base outline-none transition duration-300 focus:border-[#D4AF37] focus:shadow-sm"
-            >
-              <option value="" disabled>Select a role</option>
-              <option value="Principal">Principal</option>
-              <option value="Vice Principal">Vice Principal</option>
-              <option value="Administrator">Administrator</option>
-              <option value="IT Manager">IT Manager</option>
-            </select>
-            <ChevronDown class="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-700" />
-          </div>
-        </div>
 
       <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div class="space-y-3">
@@ -74,7 +62,8 @@
               v-model="formData.password"
               :type="showPassword ? 'text' : 'password'"
               placeholder="Create a strong password"
-              class="h-14 w-full rounded-xl border-2 border-[#0B1F3A] px-4 pr-12 text-base text-slate-700 outline-none transition duration-300 placeholder:text-slate-400 focus:border-[#D4AF37] focus:shadow-sm"
+              class="h-14 w-full rounded-xl border-2 px-4 pr-12 text-base text-slate-700 outline-none transition duration-300 placeholder:text-slate-400 focus:border-[#D4AF37] focus:shadow-sm"
+              :class="{ 'border-red-500 focus:border-red-500': errors.password }"
             />
             <button
               type="button"
@@ -84,6 +73,7 @@
               <component :is="showPassword ? EyeOff : Eye" class="h-5 w-5" />
             </button>
           </div>
+          <p v-if="errors.password" class="text-sm text-red-500">{{ errors.password }}</p>
         </div>
 
         <div class="space-y-3">
@@ -94,7 +84,8 @@
               v-model="formData.confirmPassword"
               :type="showConfirmPassword ? 'text' : 'password'"
               placeholder="Re-enter your password"
-              class="h-14 w-full rounded-xl border-2 border-[#0B1F3A] px-4 pr-12 text-base text-slate-700 outline-none transition duration-300 placeholder:text-slate-400 focus:border-[#D4AF37] focus:shadow-sm"
+              class="h-14 w-full rounded-xl border-2 px-4 pr-12 text-base text-slate-700 outline-none transition duration-300 placeholder:text-slate-400 focus:border-[#D4AF37] focus:shadow-sm"
+              :class="{ 'border-red-500 focus:border-red-500': errors.confirmPassword }"
             />
             <button
               type="button"
@@ -104,6 +95,7 @@
               <component :is="showConfirmPassword ? EyeOff : Eye" class="h-5 w-5" />
             </button>
           </div>
+          <p v-if="errors.confirmPassword" class="text-sm text-red-500">{{ errors.confirmPassword }}</p>
         </div>
       </div>
 
@@ -133,12 +125,11 @@
 import { ref } from 'vue'
 import { ArrowLeft, ArrowRight, ChevronDown, Eye, EyeOff, UserRound } from 'lucide-vue-next'
 
-defineProps<{
+const props = defineProps<{
   formData: {
     fullName: string
     email: string
     phone: string
-    jobTitle: string
     password: string
     confirmPassword: string
   }
@@ -149,6 +140,79 @@ const emit = defineEmits<{
   continue: []
 }>()
 
+// Form validation state
+const errors = ref({
+  fullName: '',
+  email: '',
+  phone: '',
+  password: '',
+  confirmPassword: ''
+})
+
 const showPassword = ref(false)
 const showConfirmPassword = ref(false)
+
+const validateForm = () => {
+  // Reset errors
+  errors.value = {
+    fullName: '',
+    email: '',
+    phone: '',
+    password: '',
+    confirmPassword: ''
+  }
+
+  let isValid = true
+
+  // Validate full name
+  if (!props.formData.fullName?.trim()) {
+    errors.value.fullName = 'Full name is required'
+    isValid = false
+  }
+
+  // Validate email
+  if (!props.formData.email?.trim()) {
+    errors.value.email = 'Email address is required'
+    isValid = false
+  } else if (!props.formData.email.includes('@')) {
+    errors.value.email = 'Please enter a valid email address'
+    isValid = false
+  }
+
+  // Validate phone
+  if (!props.formData.phone?.trim()) {
+    errors.value.phone = 'Phone number is required'
+    isValid = false
+  } else if (!/^\+?[\d\s\-\(\)]+$/.test(props.formData.phone.replace(/\s/g, ''))) {
+    errors.value.phone = 'Phone number must contain only numbers'
+    isValid = false
+  }
+
+  // Validate password
+  if (!props.formData.password?.trim()) {
+    errors.value.password = 'Password is required'
+    isValid = false
+  } else if (props.formData.password.length < 8) {
+    errors.value.password = 'Password must be at least 8 characters'
+    isValid = false
+  }
+
+  // Validate confirm password
+  if (!props.formData.confirmPassword?.trim()) {
+    errors.value.confirmPassword = 'Please confirm your password'
+    isValid = false
+  } else if (props.formData.password !== props.formData.confirmPassword) {
+    errors.value.confirmPassword = 'Passwords do not match'
+    isValid = false
+  }
+
+  return isValid
+}
+
+const handleSubmit = () => {
+  if (!validateForm()) {
+    return
+  }
+  emit('continue')
+}
 </script>

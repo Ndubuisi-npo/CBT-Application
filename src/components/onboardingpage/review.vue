@@ -15,9 +15,6 @@
       <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <div class="flex items-center justify-between">
           <h2 class="text-xl font-bold tracking-tight text-slate-800">School Info</h2>
-          <button type="button" class="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-400 shadow-sm">
-            <Pencil class="h-4 w-4" />
-          </button>
         </div>
 
         <div class="mt-6 space-y-4">
@@ -35,9 +32,6 @@
       <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <div class="flex items-center justify-between">
           <h2 class="text-xl font-bold tracking-tight text-slate-800">Administrator</h2>
-          <button type="button" class="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-400 shadow-sm">
-            <Pencil class="h-4 w-4" />
-          </button>
         </div>
 
         <div class="mt-6 space-y-4">
@@ -55,9 +49,6 @@
       <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-2">
         <div class="flex items-center justify-between">
           <h2 class="text-xl font-bold tracking-tight text-slate-800">Selected Plan</h2>
-          <button type="button" class="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-400 shadow-sm">
-            <Pencil class="h-4 w-4" />
-          </button>
         </div>
 
         <div class="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -86,9 +77,9 @@
       <button
         type="button"
         class="cursor-pointer inline-flex items-center gap-3 self-start rounded-xl border border-emerald-200 bg-emerald-50 px-7 py-3 text-base font-semibold text-emerald-700 shadow-sm transition duration-300 hover:-translate-y-0.5 hover:bg-emerald-100 hover:shadow-md sm:self-auto"
-        @click="emit('continue')"
+        @click="emit('submit-registration')"
       >
-        Looks Good, Continue
+        Finish Onboarding
         <ArrowRight class="h-5 w-5" />
       </button>
     </div>
@@ -96,8 +87,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { ArrowLeft, ArrowRight, BadgeCheck, Pencil } from 'lucide-vue-next'
+import { fetchPlans } from '../superadmincomponent/api/plans'
 
 const props = defineProps<{
   formData: {
@@ -120,9 +112,47 @@ const props = defineProps<{
 const emit = defineEmits<{
   back: []
   continue: []
+  'submit-registration': []
 }>()
 
+const plans = ref([])
+
+onMounted(async () => {
+  try {
+    const apiPlans = await fetchPlans()
+    plans.value = apiPlans.map(plan => ({
+      name: plan.name,
+      range: plan.max_students ? `Up to ${plan.max_students} students` : 'Unlimited students',
+      price: plan.price_monthly || plan.price || null,
+      features: plan.features || [],
+      id: plan.id
+    }))
+  } catch (error) {
+    // Fallback to basic plans if API fails
+    plans.value = [
+      {
+        name: 'Basic Plan',
+        range: 'Up to 100 students',
+        price: 29.99,
+        features: ['Up to 100 students', 'Basic grading', 'Email support'],
+        id: 'basic'
+      },
+      {
+        name: 'Premium Plan',
+        range: 'Unlimited students',
+        price: 99.99,
+        features: ['Unlimited students', 'Advanced grading', 'Priority support', 'Custom branding'],
+        id: 'premium'
+      }
+    ]
+  }
+})
+
 const display = (value: string) => value?.trim() || '-'
+const getPlanName = (planId: string) => {
+  const plan = plans.value.find(p => p.id === planId)
+  return plan ? plan.name : planId
+}
 const displayArray = (value: string[] | undefined) => (value && value.length ? value.join(', ') : 'None selected')
 const displayLocation = computed(() => {
   const pieces = [props.formData.address, props.formData.city, props.formData.state].filter(Boolean)
@@ -138,12 +168,11 @@ const schoolInfo = computed(() => [
 
 const administratorInfo = computed(() => [
   { label: 'Name', value: display(props.formData.fullName) },
-  { label: 'Job Title', value: display(props.formData.jobTitle) },
   { label: 'Email', value: display(props.formData.email) },
   { label: 'Phone', value: display(props.formData.phone) },
 ])
 
 const curriculumInfo = computed(() => [
-  { label: 'Plan ID', value: display(props.formData.plan_id) },
+  { label: 'Plan Chosen', value: getPlanName(props.formData.plan_id) },
 ])
 </script>

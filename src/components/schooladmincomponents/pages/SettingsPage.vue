@@ -23,15 +23,6 @@
           <input v-model.number="settingsStore.settings.examWeight" type="number" class="sa-input" min="0" max="100" />
         </FormField>
 
-        <div class="rounded-2xl border border-slate-100 bg-slate-50 p-5">
-          <div class="flex items-center justify-between text-sm font-medium text-slate-700">
-            <span>Total Allocation</span>
-            <span>{{ totalWeight }}%</span>
-          </div>
-          <div class="mt-3 h-3 rounded-full bg-white">
-            <div class="h-full rounded-full bg-gradient-to-r from-[#0B1F3A] to-[#D4AF37]" :style="{ width: `${Math.min(totalWeight, 100)}%` }"></div>
-          </div>
-        </div>
 
         <AppButton type="button" text="Save Settings" full-width variant="primary" :processing="settingsStore.loading" @click="submit" />
       </div>
