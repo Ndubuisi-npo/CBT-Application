@@ -53,7 +53,6 @@ const form = reactive({
   price_monthly: 0,
   price_yearly: 0,
   features: [],
-  interval: 'monthly',
 })
 
 const isEdit = computed(() => !!props.plan)
@@ -86,7 +85,6 @@ const loadPlan = () => {
     price_monthly: props.plan.price_monthly || 0,
     price_yearly: props.plan.price_yearly || 0,
     features: Array.isArray(props.plan.features) ? props.plan.features : [],
-    interval: props.plan.interval || 'monthly',
   })
 }
 

@@ -61,10 +61,14 @@ onMounted(() => {
 const metrics = computed(() => {
   const activeTenants = tenants.value.filter((tenant) => tenant.is_active)
   const totalRevenue = activeTenants.reduce((sum, tenant) => {
-    if (!tenant.plan_id) return sum
-    const plan = plans.value.find(p => p.id === tenant.plan_id)
+    // Check if tenant has an active subscription with a plan
+    if (!tenant.subscription?.plan?.id) return sum
+    
+    // Find the plan in the plans array using the plan_id from subscription
+    const plan = plans.value.find(p => p.id === tenant.subscription.plan.id)
     if (!plan) return sum
-    // Use monthly price for calculation - ensure it's converted to number
+    
+    // Get the monthly price from the plan details
     const monthlyPrice = parseFloat(plan.price_monthly) || 0
     return sum + monthlyPrice
   }, 0)

@@ -2,24 +2,10 @@
   <form class="space-y-6" @submit.prevent="handleSubmit">
     <!-- Basic Information -->
     <div class="space-y-4">
-      <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <div>
-          <label class="block text-sm font-medium text-slate-700">Plan Name</label>
-          <input v-model="localForm.name" type="text" class="w-full rounded-lg border-2 border-[#0B1F3A] bg-white px-4 py-2.5 text-slate-900 placeholder:text-slate-400 focus:border-[#D4AF37] focus:outline-none focus:ring-0 transition" placeholder="Premium Plan" />
-          <p v-if="errors.name" class="text-sm text-red-600 font-medium">{{ errors.name }}</p>
-        </div>
-        
-        <div>
-          <label class="block text-sm font-medium text-slate-700">Slug</label>
-          <input v-model="localForm.slug" type="text" class="w-full rounded-lg border-2 border-[#0B1F3A] bg-white px-4 py-2.5 text-slate-900 placeholder:text-slate-400 focus:border-[#D4AF37] focus:outline-none focus:ring-0 transition" placeholder="premium-plan" />
-          <p v-if="errors.slug" class="text-sm text-red-600 font-medium">{{ errors.slug }}</p>
-        </div>
-      </div>
-      
       <div>
-        <label class="block text-sm font-medium text-slate-700">Description</label>
-        <textarea v-model="localForm.description" rows="3" class="w-full rounded-lg border-2 border-[#0B1F3A] bg-white px-4 py-2.5 text-slate-900 placeholder:text-slate-400 focus:border-[#D4AF37] focus:outline-none focus:ring-0 transition" placeholder="A comprehensive plan for growing schools"></textarea>
-        <p v-if="errors.description" class="text-sm text-red-600 font-medium">{{ errors.description }}</p>
+        <label class="block text-sm font-medium text-slate-700">Plan Name</label>
+        <input v-model="localForm.name" type="text" class="w-full rounded-lg border-2 border-[#0B1F3A] bg-white px-4 py-2.5 text-slate-900 placeholder:text-slate-400 focus:border-[#D4AF37] focus:outline-none focus:ring-0 transition" placeholder="Premium Plan" />
+        <p v-if="errors.name" class="text-sm text-red-600 font-medium">{{ errors.name }}</p>
       </div>
     </div>
 
@@ -119,8 +105,6 @@ const emit = defineEmits(['submit'])
 
 const localForm = reactive({
   name: '',
-  slug: '',
-  description: '',
   max_students: 100,
   max_teachers: 10,
   max_exams_per_term: 50,
@@ -132,8 +116,6 @@ const localForm = reactive({
 
 const errors = reactive({
   name: '',
-  slug: '',
-  description: '',
   max_students: '',
   max_teachers: '',
   max_exams_per_term: '',
@@ -160,8 +142,6 @@ watch(
 
 const validate = () => {
   errors.name = localForm.name ? '' : 'Plan name is required.'
-  errors.slug = localForm.slug ? '' : 'Slug is required.'
-  errors.description = localForm.description ? '' : 'Description is required.'
   errors.max_students = localForm.max_students > 0 ? '' : 'Max students must be greater than 0.'
   errors.max_teachers = localForm.max_teachers > 0 ? '' : 'Max teachers must be greater than 0.'
   errors.max_exams_per_term = localForm.max_exams_per_term > 0 ? '' : 'Max exams per term must be greater than 0.'
@@ -175,6 +155,19 @@ const validate = () => {
 
 const handleSubmit = () => {
   if (!validate()) return
-  emit('submit', { ...localForm })
+  
+  // Only send API-required fields, exclude slug and description
+  const payload = {
+    name: localForm.name,
+    max_students: localForm.max_students,
+    max_teachers: localForm.max_teachers,
+    max_exams_per_term: localForm.max_exams_per_term,
+    price_monthly: localForm.price_monthly,
+    price_yearly: localForm.price_yearly,
+    features: localForm.features,
+    interval: localForm.interval
+  }
+  
+  emit('submit', payload)
 }
 </script>

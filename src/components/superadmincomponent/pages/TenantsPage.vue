@@ -21,6 +21,26 @@
 
       <SkeletonTable v-if="loading" />
 
+      <div v-else-if="paginatedTenants.length === 0" class="overflow-hidden rounded-[24px] border border-slate-200">
+        <div class="flex flex-col items-center justify-center py-12 px-4 text-center">
+          <div class="mb-4 rounded-full bg-slate-100 p-3">
+            <Building2 class="h-8 w-8 text-slate-400" />
+          </div>
+          <h3 class="mb-2 text-lg font-semibold text-slate-900">No tenants found</h3>
+          <p class="mb-6 text-sm text-slate-500">
+            {{ searchQuery || statusFilter !== 'All' ? 'Try adjusting your search or filters' : 'Get started by creating your first tenant workspace' }}
+          </p>
+          <ActionButton 
+            v-if="!searchQuery && statusFilter === 'All'"
+            tag="RouterLink" 
+            to="/super-admin/tenants/new" 
+            :icon="Plus" 
+            text="Create Tenant" 
+            variant="primary" 
+          />
+        </div>
+      </div>
+
       <div v-else class="overflow-hidden rounded-[24px] border border-slate-200">
         <div class="overflow-x-auto">
           <table class="min-w-full divide-y divide-slate-200 bg-white">
@@ -110,7 +130,7 @@
 
 <script setup>
 import { onMounted, watch, ref } from 'vue'
-import { Plus, Search } from 'lucide-vue-next'
+import { Plus, Search, Building2 } from 'lucide-vue-next'
 import PaginationControls from '../components/PaginationControls.vue'
 import SectionCard from '../components/SectionCard.vue'
 import SkeletonTable from '../components/SkeletonTable.vue'
