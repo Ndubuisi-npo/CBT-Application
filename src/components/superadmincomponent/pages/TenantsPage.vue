@@ -2,8 +2,37 @@
   <div class="space-y-6">
     <SectionCard title="Tenants" subtitle="Search, filter, and manage every school workspace from one place.">
       <template #header>
-        <div class="flex flex-wrap items-center gap-3">
-          <ActionButton tag="RouterLink" to="/super-admin/tenants/new" :icon="Plus" text="New Tenant" variant="primary" />
+        <div class="flex gap-3">
+          <ActionButton 
+            v-if="!isSelectMode" 
+            tag="RouterLink" 
+            to="/super-admin/tenants/new" 
+            :icon="Plus" 
+            variant="primary" 
+          >
+            New Tenant
+          </ActionButton>
+          <ActionButton 
+            v-if="isSelectMode" 
+            @click="cancelSelectMode()" 
+            variant="outline" 
+          >
+            Cancel Select
+          </ActionButton>
+          <ActionButton 
+            v-if="selectedTenants.size > 0" 
+            @click="deleteSelected()" 
+            variant="danger" 
+          >
+            Delete Selected
+          </ActionButton>
+          <ActionButton 
+            v-if="!isSelectMode" 
+            @click="startSelectMode()" 
+            variant="secondary" 
+          >
+            Select
+          </ActionButton>
         </div>
       </template>
 
@@ -46,6 +75,14 @@
           <table class="min-w-full divide-y divide-slate-200 bg-white">
             <thead class="bg-slate-50">
               <tr>
+                <th v-if="isSelectMode" class="px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                  <input 
+                    type="checkbox" 
+                    @change="toggleSelectAll($event.target.checked)"
+                    :checked="areAllSelected"
+                    class="rounded border-slate-300"
+                  />
+                </th>
                 <th v-for="heading in headings" :key="heading" class="px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
                   {{ heading }}
                 </th>
@@ -53,6 +90,14 @@
             </thead>
             <tbody class="divide-y divide-slate-100">
               <tr v-for="tenant in paginatedTenants" :key="tenant.id" class="transition hover:bg-slate-50/80">
+                <td v-if="isSelectMode" class="px-5 py-4">
+                  <input 
+                    type="checkbox" 
+                    :checked="selectedTenants.has(tenant.id)"
+                    @change="toggleItemSelection(tenant.id, $event.target.checked)"
+                    class="rounded border-slate-300"
+                  />
+                </td>
                 <td class="px-5 py-4">
                   <p class="font-semibold text-slate-900 text-nowrap">{{ tenant.name }}</p>
                   <p class="text-sm text-slate-500">{{ tenant.handle }}</p>
@@ -92,7 +137,7 @@
                       size="xs"
                       loadingText="Deleting..."
                       :processing="deleteLoading.has(tenant.id)"
-                      :disabled="deleteLoading.has(tenant.id)"
+                      :disabled="deleteLoading.has(tenant.id) || isSelectMode"
                     />
                   </div>
                 </td>
@@ -129,7 +174,7 @@
 </template>
 
 <script setup>
-import { onMounted, watch, ref } from 'vue'
+import { onMounted, watch, ref, computed } from 'vue'
 import { Plus, Search, Building2 } from 'lucide-vue-next'
 import PaginationControls from '../components/PaginationControls.vue'
 import SectionCard from '../components/SectionCard.vue'
@@ -160,6 +205,10 @@ const uiStore = useSuperAdminUiStore()
 
 const headings = ['Name', 'Contact', 'Location', 'Subscription', 'Status', 'Actions']
 
+// Multi-select state
+const isSelectMode = ref(false)
+const selectedTenants = ref(new Set())
+
 // Modal state
 const showViewModal = ref(false)
 const showEditModal = ref(false)
@@ -169,6 +218,14 @@ const currentlyViewing = ref(null);
 // Loading states
 const statusLoading = ref(new Set())
 const deleteLoading = ref(new Set())
+
+// Computed properties for multi-select
+const areAllSelected = computed(() => {
+  return filteredTenants.value.length > 0 && 
+         filteredTenants.value.every(tenant => selectedTenants.value.has(tenant.id))
+})
+
+const hasAnySelected = computed(() => selectedTenants.value.size > 0)
 
 onMounted(() => {
   fetchTenants()
@@ -190,6 +247,68 @@ const notify = (message) => {
 const formatDate = (dateString) => {
   if (!dateString) return '-'
   return new Date(dateString).toLocaleDateString()
+}
+
+// Multi-select functionality
+const startSelectMode = () => {
+  isSelectMode.value = true
+  selectedTenants.value.clear()
+}
+
+const cancelSelectMode = () => {
+  isSelectMode.value = false
+  selectedTenants.value.clear()
+}
+
+const toggleSelectAll = (checked) => {
+  if (checked) {
+    filteredTenants.value.forEach(tenant => {
+      selectedTenants.value.add(tenant.id)
+    })
+  } else {
+    selectedTenants.value.clear()
+  }
+}
+
+const toggleItemSelection = (id, checked) => {
+  if (checked) {
+    selectedTenants.value.add(id)
+  } else {
+    selectedTenants.value.delete(id)
+  }
+}
+
+const deleteSelected = async () => {
+  if (!confirm(`Are you sure you want to delete ${selectedTenants.value.size} selected tenant(s)? This action cannot be undone.`)) {
+    return
+  }
+
+  try {
+    for (const id of selectedTenants.value) {
+      deleteLoading.value.add(id)
+    }
+    
+    for (const id of selectedTenants.value) {
+      await deleteTenantApi(id)
+    }
+    
+    selectedTenants.value.clear()
+    isSelectMode.value = false
+    uiStore.addToast({
+      title: 'Tenants Deleted',
+      message: `${selectedTenants.value.size} tenant(s) have been deleted successfully.`,
+      variant: 'success',
+    })
+  } catch (error) {
+    uiStore.addToast({
+      title: 'Error',
+      message: 'Failed to delete selected tenants.',
+      variant: 'error',
+    })
+  } finally {
+    // Clear all loading states
+    deleteLoading.value.clear()
+  }
 }
 
 const toggleStatus = async (tenant) => {

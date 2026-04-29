@@ -2,7 +2,33 @@
   <div class="space-y-6">
     <SectionCard title="Subjects" subtitle="Manage subjects and teacher assignments.">
       <template #header>
-        <AppButton @click="openModal()" :icon="Plus" text="Create Subject" variant="primary" />
+        <div class="flex gap-3">
+          <AppButton 
+            v-if="!isSelectMode" 
+            @click="openModal()" 
+            :icon="Plus" 
+            text="Create Subject" 
+            variant="primary" 
+          />
+          <AppButton 
+            v-if="isSelectMode" 
+            @click="cancelSelectMode()" 
+            text="Cancel Select" 
+            variant="outline" 
+          />
+          <AppButton 
+            v-if="selectedSubjects.size > 0" 
+            @click="deleteSelected()" 
+            text="Delete Selected" 
+            variant="danger" 
+          />
+          <AppButton 
+            v-if="!isSelectMode" 
+            @click="startSelectMode()" 
+            text="Select" 
+            variant="secondary" 
+          />
+        </div>
       </template>
       <SkeletonRows v-if="subjectsStore.loading" :columns="5" />
       <div v-else class="overflow-hidden rounded-[24px] border border-slate-200">
@@ -10,11 +36,27 @@
           <table class="min-w-full divide-y divide-slate-200 bg-white">
             <thead class="bg-slate-50">
               <tr>
+                <th v-if="isSelectMode" class="px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                  <input 
+                    type="checkbox" 
+                    @change="toggleSelectAll($event.target.checked)"
+                    :checked="areAllSelected"
+                    class="rounded border-slate-300"
+                  />
+                </th>
                 <th v-for="heading in headings" :key="heading" class="px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">{{ heading }}</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
               <tr v-for="subject in paginatedSubjects" :key="subject.id" class="transition hover:bg-slate-50/80">
+                <td v-if="isSelectMode" class="px-5 py-4">
+                  <input 
+                    type="checkbox" 
+                    :checked="selectedSubjects.has(subject.id)"
+                    @change="toggleItemSelection(subject.id, $event.target.checked)"
+                    class="rounded border-slate-300"
+                  />
+                </td>
                 <td class="px-5 py-4 font-semibold text-slate-900">{{ subject.name }}</td>
                 <td class="px-5 py-4 text-sm text-slate-600">{{ subject.code || '-' }}</td>
                 <td class="px-5 py-4 text-sm text-slate-600">{{ formatClassLevels(subject) }}</td>
@@ -30,7 +72,7 @@
                       size="xs"
                       loadingText="Deleting..."
                       :processing="deleteLoading.has(subject.id)"
-                      :disabled="deleteLoading.has(subject.id)"
+                      :disabled="deleteLoading.has(subject.id) || isSelectMode"
                     />
                   </div>
                 </td>
@@ -102,12 +144,24 @@ const headings = ['Subject Name', 'Code', 'Class Levels', 'Assigned Teachers', '
 const subjectsStore = useSchoolAdminSubjectsStore()
 const uiStore = useSchoolAdminUiStore()
 
+// Multi-select state
+const isSelectMode = ref(false)
+const selectedSubjects = ref(new Set())
+
 // Modal state
 const showModal = ref(false)
 const selectedSubject = ref(null)
 
 // Loading states
 const deleteLoading = ref(new Set())
+
+// Computed properties for multi-select
+const areAllSelected = computed(() => {
+  return subjectsStore.subjects.length > 0 && 
+         subjectsStore.subjects.every(subject => selectedSubjects.value.has(subject.id))
+})
+
+const hasAnySelected = computed(() => selectedSubjects.value.size > 0)
 
 // Form state
 const form = reactive({ id: null, name: '', code: '', class_level_ids: [] })
@@ -187,7 +241,67 @@ const validate = () => {
   return !errors.name && !errors.code && !errors.class_level_ids
 }
 
-// Remove unused submit function - submitSubject handles modal submissions
+// Multi-select functionality
+const startSelectMode = () => {
+  isSelectMode.value = true
+  selectedSubjects.value.clear()
+}
+
+const cancelSelectMode = () => {
+  isSelectMode.value = false
+  selectedSubjects.value.clear()
+}
+
+const toggleSelectAll = (checked) => {
+  if (checked) {
+    subjectsStore.subjects.forEach(subject => {
+      selectedSubjects.value.add(subject.id)
+    })
+  } else {
+    selectedSubjects.value.clear()
+  }
+}
+
+const toggleItemSelection = (id, checked) => {
+  if (checked) {
+    selectedSubjects.value.add(id)
+  } else {
+    selectedSubjects.value.delete(id)
+  }
+}
+
+const deleteSelected = async () => {
+  if (!confirm(`Are you sure you want to delete ${selectedSubjects.value.size} selected subject(s)? This action cannot be undone.`)) {
+    return
+  }
+
+  try {
+    for (const id of selectedSubjects.value) {
+      deleteLoading.value.add(id)
+    }
+    
+    for (const id of selectedSubjects.value) {
+      await subjectsStore.deleteSubject(id)
+    }
+    
+    selectedSubjects.value.clear()
+    isSelectMode.value = false
+    uiStore.addToast({ 
+      title: 'Subjects Deleted', 
+      message: `${selectedSubjects.value.size} subject(s) have been deleted successfully.`, 
+      variant: 'success' 
+    })
+  } catch (error) {
+    uiStore.addToast({ 
+      title: 'Error', 
+      message: 'Failed to delete selected subjects.', 
+      variant: 'error' 
+    })
+  } finally {
+    // Clear all loading states
+    deleteLoading.value.clear()
+  }
+}
 
 const submitSubject = async (subjectData) => {
   try {

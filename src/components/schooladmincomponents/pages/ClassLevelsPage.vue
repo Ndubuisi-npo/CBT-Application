@@ -2,7 +2,33 @@
   <div class="space-y-6">
     <SectionCard title="Class Levels" subtitle="Manage class levels (e.g., JSS 1, SS 1).">
       <template #header>
-        <AppButton @click="openModal()" :icon="Plus" text="Create Class Level" variant="primary" />
+        <div class="flex gap-3">
+          <AppButton 
+            v-if="!isSelectMode" 
+            @click="openModal()" 
+            :icon="Plus" 
+            text="Create Class Level" 
+            variant="primary" 
+          />
+          <AppButton 
+            v-if="isSelectMode" 
+            @click="cancelSelectMode()" 
+            text="Cancel Select" 
+            variant="outline" 
+          />
+          <AppButton 
+            v-if="selectedItems.size > 0" 
+            @click="deleteSelected()" 
+            text="Delete Selected" 
+            variant="danger" 
+          />
+          <AppButton 
+            v-if="!isSelectMode" 
+            @click="startSelectMode()" 
+            text="Select" 
+            variant="secondary" 
+          />
+        </div>
       </template>
       <SkeletonRows v-if="classLevelsStore.loading" :columns="3" />
       <div v-else class="overflow-hidden rounded-[24px] border border-slate-200">
@@ -10,11 +36,27 @@
           <table class="min-w-full divide-y divide-slate-200 bg-white">
             <thead class="bg-slate-50">
               <tr>
+                <th v-if="isSelectMode" class="px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                  <input 
+                    type="checkbox" 
+                    @change="toggleSelectAll($event.target.checked)"
+                    :checked="areAllSelected"
+                    class="rounded border-slate-300"
+                  />
+                </th>
                 <th v-for="heading in headings" :key="heading" class="px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">{{ heading }}</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
               <tr v-for="classLevel in classLevelsStore.classLevels" :key="classLevel.id" class="transition hover:bg-slate-50/80">
+                <td v-if="isSelectMode" class="px-5 py-4">
+                  <input 
+                    type="checkbox" 
+                    :checked="selectedItems.has(classLevel.id)"
+                    @change="toggleItemSelection(classLevel.id, $event.target.checked)"
+                    class="rounded border-slate-300"
+                  />
+                </td>
                 <td class="px-5 py-4 font-semibold text-slate-900">{{ classLevel.name }}</td>
                 <td class="px-5 py-4 text-sm text-slate-600">{{ getArmsCount(classLevel) }} arms</td>
                 <td class="px-5 py-4">
@@ -28,7 +70,7 @@
                       size="xs"
                       loadingText="Deleting..."
                       :processing="deleteLoading.has(classLevel.id)"
-                      :disabled="deleteLoading.has(classLevel.id)"
+                      :disabled="deleteLoading.has(classLevel.id) || isSelectMode"
                     />
                   </div>
                 </td>
@@ -66,6 +108,10 @@ const classLevelsStore = useSchoolAdminClassLevelsStore()
 const classArmsStore = useSchoolAdminClassArmsStore()
 const uiStore = useSchoolAdminUiStore()
 
+// Multi-select state
+const isSelectMode = ref(false)
+const selectedItems = ref(new Set())
+
 // Modal state
 const showModal = ref(false)
 const selectedClassLevel = ref(null)
@@ -76,6 +122,14 @@ const deleteLoading = ref(new Set())
 // Form state
 const form = reactive({ id: null, name: '' })
 const errors = reactive({ name: '' })
+
+// Computed properties for multi-select
+const areAllSelected = computed(() => {
+  return classLevelsStore.classLevels.length > 0 && 
+         classLevelsStore.classLevels.every(level => selectedItems.value.has(level.id))
+})
+
+const hasAnySelected = computed(() => selectedItems.value.size > 0)
 
 onMounted(async () => {
   try {
@@ -93,6 +147,68 @@ const closeModal = () => {
 const openModal = (classLevel) => {
   selectedClassLevel.value = classLevel
   showModal.value = true
+}
+
+// Multi-select functionality
+const startSelectMode = () => {
+  isSelectMode.value = true
+  selectedItems.value.clear()
+}
+
+const cancelSelectMode = () => {
+  isSelectMode.value = false
+  selectedItems.value.clear()
+}
+
+const toggleSelectAll = (checked) => {
+  if (checked) {
+    classLevelsStore.classLevels.forEach(level => {
+      selectedItems.value.add(level.id)
+    })
+  } else {
+    selectedItems.value.clear()
+  }
+}
+
+const toggleItemSelection = (id, checked) => {
+  if (checked) {
+    selectedItems.value.add(id)
+  } else {
+    selectedItems.value.delete(id)
+  }
+}
+
+const deleteSelected = async () => {
+  if (!confirm(`Are you sure you want to delete ${selectedItems.value.size} selected class level(s)? This action cannot be undone.`)) {
+    return
+  }
+
+  try {
+    for (const id of selectedItems.value) {
+      deleteLoading.value.add(id)
+    }
+    
+    for (const id of selectedItems.value) {
+      await classLevelsStore.deleteClassLevel(id)
+    }
+    
+    selectedItems.value.clear()
+    isSelectMode.value = false
+    uiStore.addToast({ 
+      title: 'Class Levels Deleted', 
+      message: `${selectedItems.value.size} class level(s) have been deleted successfully.`, 
+      variant: 'success' 
+    })
+  } catch (error) {
+    uiStore.addToast({ 
+      title: 'Error', 
+      message: 'Failed to delete selected class levels.', 
+      variant: 'error' 
+    })
+  } finally {
+    // Clear all loading states
+    deleteLoading.value.clear()
+  }
 }
 
 const validate = () => {

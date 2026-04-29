@@ -25,18 +25,13 @@
           </h1>
 
           <p class="max-w-lg text-lg leading-8 text-white/78 xl:text-xl">
-            Sign in to access your admin dashboard. School admins manage academic operations, while super admins oversee platform-wide management.
+            Sign in to access your admin dashboard. School admins manage academic operations.
           </p>
 
           <div class="mt-10 grid max-w-lg gap-4">
             <div class="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/10 px-4 py-4 backdrop-blur-sm">
               <Sparkles class="h-5 w-5 text-[#D4AF37]" />
               <span class="text-base text-white/88">School Admin: Academic workflows, grading setup, and staff management.</span>
-            </div>
-
-            <div class="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/10 px-4 py-4 backdrop-blur-sm">
-              <Shield class="h-5 w-5 text-[#D4AF37]" />
-              <span class="text-base text-white/88">Super Admin: Platform-wide tenant and system management.</span>
             </div>
           </div>
         </div>

@@ -23,8 +23,8 @@ export function useSuperAdminTenants() {
       const matchesSearch =
         !query ||
         tenant.name.toLowerCase().includes(query) ||
-        tenant.slug.toLowerCase().includes(query) ||
-        tenant.email.toLowerCase().includes(query)
+        (tenant.handle && tenant.handle.toLowerCase().includes(query)) ||
+        (tenant.contact?.email && tenant.contact.email.toLowerCase().includes(query))
       const matchesStatus = statusFilter.value === 'All' || 
         (statusFilter.value === 'Active' && tenant.is_active) ||
         (statusFilter.value === 'Suspended' && !tenant.is_active)
