@@ -36,9 +36,9 @@
                 formData.schoolType ? 'text-slate-800' : 'text-slate-400',
                 errors.schoolType ? 'border-red-500 focus:border-red-500' : 'border-[#0B1F3A] focus:border-[#D4AF37]'
               ]"
-              class="cursor-pointer h-14 w-full appearance-none rounded-xl border-2 bg-white px-4 pr-12 text-base outline-none transition duration-300 focus:shadow-sm"
+              class="cursor-pointer h-14 w-full appearance-none rounded-xl border-2 bg-white px-4 pr-12 text-slate-700 text-base outline-none transition duration-300 focus:shadow-sm"
             >
-              <option value="" disabled>Select School Type</option>
+              <option value="" disabled class="text-slate-400">Select School Type</option>
               <option value="Secondary School">Secondary School</option>
               <option value="Primary School">Primary School</option>
               <option value="Mixed">Mixed</option>
@@ -98,25 +98,48 @@
 
       <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div class="space-y-3">
-          <label for="state" class="block text-base font-semibold text-slate-700">State / Province</label>
-          <input
-            id="state"
-            v-model="formData.state"
-            type="text"
-            class="h-14 w-full rounded-xl border-2 px-4 text-base text-slate-700 outline-none transition duration-300 placeholder:text-slate-400 focus:border-[#D4AF37] focus:shadow-sm"
-            :class="{ 'border-red-500 focus:border-red-500': errors.state }"
-          />
+          <label for="state" class="block text-base font-semibold text-slate-700">State</label>
+          <div class="relative">
+            <select
+              id="state"
+              v-model="formData.state"
+              :class="[
+                formData.state ? 'text-slate-800' : 'text-slate-800',
+                errors.state ? 'border-red-500 focus:border-red-500' : 'border-[#0B1F3A] focus:border-[#D4AF37]'
+              ]"
+              class="cursor-pointer h-14 w-full appearance-none rounded-xl border-2 bg-white px-4 pr-12 text-base outline-none transition duration-300 focus:shadow-sm"
+            >
+              <option value="" disabled class="text-slate-400">Select State</option>
+              <option v-for="state in states" :key="state.name" :value="state.name">
+                {{ state.name }}
+              </option>
+            </select>
+            <ChevronDown class="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-700" />
+          </div>
           <p v-if="errors.state" class="text-sm text-red-500">{{ errors.state }}</p>
         </div>
         <div class="space-y-3">
-          <label for="city" class="block text-base font-semibold text-slate-700">City</label>
-          <input
-            id="city"
-            v-model="formData.city"
-            type="text"
-            class="h-14 w-full rounded-xl border-2 px-4 text-base text-slate-700 outline-none transition duration-300 placeholder:text-slate-400 focus:border-[#D4AF37] focus:shadow-sm"
-            :class="{ 'border-red-500 focus:border-red-500': errors.city }"
-          />
+          <label for="city" class="block text-base font-semibold text-slate-700">City / LGA</label>
+          <div class="relative">
+            <select
+              id="city"
+              v-model="formData.city"
+              :class="[
+                formData.city ? 'text-slate-800' : 'text-slate-800',
+                errors.city ? 'border-red-500 focus:border-red-500' : 'border-[#0B1F3A] focus:border-[#D4AF37]'
+              ]"
+              class="cursor-pointer h-14 w-full appearance-none rounded-xl border-2 bg-white px-4 pr-12 text-base outline-none transition duration-300 focus:shadow-sm"
+              :disabled="!formData.state"
+            >
+              <option value="" disabled class="text-slate-400">
+                {{ formData.state ? 'Select City' : 'Select state first' }}
+              </option>
+              <option v-for="lga in selectedLGAs" :key="lga" :value="lga">
+                {{ lga }}
+              </option>
+            </select>
+            <ChevronDown class="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-700" />
+          </div>
           <p v-if="errors.city" class="text-sm text-red-500">{{ errors.city }}</p>
         </div>
       </div>
@@ -135,9 +158,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref, watch} from 'vue'
 import { ArrowRight, ChevronDown, School2, Check, X, Loader2 } from 'lucide-vue-next'
 import { checkHandle } from './api/onboarding'
+import nigerianStatesData from './data/nigerian-states.json'
 
 const props = defineProps<{
   formData: {
@@ -149,6 +173,16 @@ const props = defineProps<{
     city: string
   }
 }>()
+
+// Convert JSON object to array format for v-for
+const states = computed(() => {
+  return Object.entries(nigerianStatesData).map(([name, lgas]) => ({ name, lgas }))
+})
+const selectedLGAs = computed(() => {
+  const found = states.value.find(s => s.name === props.formData.state)
+  return found ? found.lgas : []
+})
+
 
 const emit = defineEmits<{
   continue: []
@@ -182,9 +216,9 @@ const checkHandleAvailability = async (handle: string) => {
   }
 
   // Only check handles with 3 or fewer characters
-  if (handle.length > 3) {
+  if (handle.length > 10) {
     handleStatus.value = 'idle'
-    handleError.value = 'Handle must be 3 characters or less'
+    handleError.value = 'Handle must be 10 characters or less'
     return
   }
 
@@ -205,32 +239,45 @@ const checkHandleAvailability = async (handle: string) => {
   }
 }
 
-// Watch for school name changes and update handle (only first 3 letters)
+// Watch for school name changes and update handle (stop on space, max 10 characters)
 watch(() => props.formData.schoolName, (newSchoolName) => {
   if (newSchoolName) {
-    const cleanName = newSchoolName.replace(/[^a-zA-Z]/g, '').toLowerCase()
-    const firstThreeLetters = cleanName.substring(0, 3)
+    // Check if space character is present in the current handle
+    const hasSpace = props.formData.schoolName.includes(' ')
     
-    // Update handle if it would be different (handles both addition and deletion)
-    if (props.formData.handle !== firstThreeLetters) {
-      props.formData.handle = firstThreeLetters
-      checkHandleAvailability(firstThreeLetters)
+    // Only auto-fill if no space is present and handle is less than 10 characters
+    if (!hasSpace && props.formData.handle.length < 11) {
+      const cleanName = newSchoolName.replace(/[^a-zA-Z]/g, '').toLowerCase()
+      const nextHandle = cleanName.substring(0, Math.min(10, cleanName.length))
+      
+      // Update handle if it would be different
+      if (props.formData.handle !== nextHandle) {
+        props.formData.handle = nextHandle
+        checkHandleAvailability(nextHandle)
+      }
     }
-  } else {
+  } else if (!newSchoolName) {
+    // Clear handle if school name is empty
     props.formData.handle = ''
     handleStatus.value = 'idle'
   }
 }, { immediate: true })
 
+// Watch for state changes and clear city when state changes
+watch(() => props.formData.state, () => {
+  // Clear city selection when state changes
+  props.formData.city = ''
+})
+
 // Watch for handle changes and check availability (only for manual edits)
 watch(() => props.formData.handle, (newHandle, oldHandle) => {
-  // Skip if this was triggered by school name change (handle length <= 3 and matches first 3 letters of school name)
+  // Skip if this was triggered by school name change (handle length <= 10 and matches first 10 letters of school name)
   if (newHandle && oldHandle && props.formData.schoolName) {
     const cleanSchoolName = props.formData.schoolName.replace(/[^a-zA-Z]/g, '').toLowerCase()
-    const expectedHandle = cleanSchoolName.substring(0, 3)
+    const expectedHandle = cleanSchoolName.substring(0, 10)
     
-    // If the new handle matches what would be generated from school name, skip checking
-    if (newHandle === expectedHandle && newHandle.length <= 3) {
+    // If new handle matches what would be generated from school name, skip checking
+    if (newHandle === expectedHandle && newHandle.length <= 10) {
       return
     }
   }
