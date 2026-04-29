@@ -7,10 +7,9 @@
       <OverviewCard title="Revenue" :value="metrics.revenue" change="+18% MRR expansion" progress="84%" :icon="Coins" />
     </section>
 
-    <section class="grid gap-6 xl:grid-cols-[1.35fr_0.65fr]">
-      <SectionCard title="Recent Tenant Activity" subtitle="Operational visibility across your school portfolio.">
+    <SectionCard title="Recent Tenant Activity" subtitle="Operational visibility across your school portfolio.">
         <div class="space-y-4">
-          <div v-for="tenant in tenants.slice(0, 4)" :key="tenant.id" class="flex flex-col gap-4 rounded-2xl border border-slate-100 bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div v-for="tenant in tenants.slice(0, 8)" :key="tenant.id" class="flex flex-col gap-4 rounded-2xl border border-slate-100 bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p class="font-semibold text-slate-900">{{ tenant.name }}</p>
               <p class="text-sm text-slate-500">{{ tenant.slug }} {{ tenant.subscription_status }}</p>
@@ -22,21 +21,6 @@
           </div>
         </div>
       </SectionCard>
-
-      <SectionCard title="System Health" subtitle="Current platform readiness and support metrics.">
-        <div class="space-y-4">
-          <div v-for="item in healthMetrics" :key="item.label" class="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-            <div class="flex items-center justify-between">
-              <p class="text-sm font-medium text-slate-500">{{ item.label }}</p>
-              <p class="text-sm font-semibold text-slate-900">{{ item.value }}</p>
-            </div>
-            <div class="mt-3 h-2 rounded-full bg-white">
-              <div class="h-full rounded-full bg-gradient-to-r from-[#0B1F3A] to-[#D4AF37]" :style="{ width: item.progress }"></div>
-            </div>
-          </div>
-        </div>
-      </SectionCard>
-    </section>
   </div>
 </template>
 
@@ -81,12 +65,6 @@ const metrics = computed(() => {
   }
 })
 
-const healthMetrics = [
-  { label: 'API uptime', value: '99.94%', progress: '94%' },
-  { label: 'Billing sync', value: 'Healthy', progress: '87%' },
-  { label: 'Open support cases', value: '12', progress: '31%' },
-  { label: 'Provisioning queue', value: '4 pending', progress: '45%' },
-]
 
 const formatDate = (dateString) => {
   if (!dateString) return 'Not set'

@@ -10,6 +10,7 @@ import {
     resetPassword,
     restoreTeacher,
 } from "../services/api/teachers";
+import { useActivities } from "../composables/useActivities";
 
 export const useSchoolAdminTeachersStore = defineStore(
     "school-admin-teachers",
@@ -68,10 +69,26 @@ export const useSchoolAdminTeachersStore = defineStore(
             },
 
             async saveTeacher(payload) {
+                const { addActivity } = useActivities();
+                const isNew = !payload.id;
                 const record = await saveTeacher(payload);
                 const exists = this.teachers.some(
                     (item) => item.id === record.id,
                 );
+
+                // Log activity
+                try {
+                    await addActivity({
+                        entity_type: 'teacher',
+                        action_type: isNew ? 'create' : 'update',
+                        details: {
+                            name: `${record.first_name || ''} ${record.last_name || ''}`.trim() || 'Unknown',
+                            id: record.id
+                        }
+                    });
+                } catch (error) {
+                    console.error('Failed to log activity:', error);
+                }
 
                 if (exists) {
                     // Update existing
@@ -101,9 +118,25 @@ export const useSchoolAdminTeachersStore = defineStore(
             },
 
             async revokeTeacher(id) {
+                const { addActivity } = useActivities();
                 const teacher = this.teachers.find((t) => t.id === id);
                 if (teacher) {
                     await revokeTeacher(id);
+                    
+                    // Log activity
+                    try {
+                        await addActivity({
+                            entity_type: 'teacher',
+                            action_type: 'revoke',
+                            details: {
+                                name: `${teacher.first_name || ''} ${teacher.last_name || ''}`.trim() || 'Unknown',
+                                id: id
+                            }
+                        });
+                    } catch (error) {
+                        console.error('Failed to log activity:', error);
+                    }
+                    
                     // Move teacher from active to archived
                     this.teachers = this.teachers.filter((item) => item.id !== id);
                     this.totalTeachers--;
@@ -133,7 +166,25 @@ export const useSchoolAdminTeachersStore = defineStore(
             },
 
             async deleteTeacherFromStore(id) {
+                const { addActivity } = useActivities();
+                const teacherToDelete = this.teachers.find(item => item.id === id);
+                
                 await deleteTeacher(id);
+                
+                // Log activity
+                try {
+                    await addActivity({
+                        entity_type: 'teacher',
+                        action_type: 'delete',
+                        details: {
+                            name: teacherToDelete ? `${teacherToDelete.first_name || ''} ${teacherToDelete.last_name || ''}`.trim() : 'Unknown',
+                            id: id
+                        }
+                    });
+                } catch (error) {
+                    console.error('Failed to log activity:', error);
+                }
+                
                 this.teachers = this.teachers.filter((item) => item.id !== id);
                 this.totalTeachers--;
             },
@@ -170,6 +221,7 @@ export const useSchoolAdminTeachersStore = defineStore(
                 }
             },
             async restoreTeacher(id) {
+                const { addActivity } = useActivities();
                 try {
                     await restoreTeacher(id);
                     // Move teacher from archived to active
@@ -179,6 +231,20 @@ export const useSchoolAdminTeachersStore = defineStore(
                         this.totalArchivedTeachers--;
                         this.teachers = [teacher, ...this.teachers];
                         this.totalTeachers++;
+                        
+                        // Log activity
+                        try {
+                            await addActivity({
+                                entity_type: 'teacher',
+                                action_type: 'activate',
+                                details: {
+                                    name: `${teacher.first_name || ''} ${teacher.last_name || ''}`.trim() || 'Unknown',
+                                    id: id
+                                }
+                            });
+                        } catch (error) {
+                            console.error('Failed to log activity:', error);
+                        }
                     }
                     uiStore.addToast({
                         title: "Teacher restored",

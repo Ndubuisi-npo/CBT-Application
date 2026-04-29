@@ -86,6 +86,7 @@ import SectionCard from '../components/SectionCard.vue'
 import AppButton from '../../shared/AppButton.vue'
 import { useSchoolAdminUiStore } from '../stores/ui'
 import { changePassword } from '../services/api/settings'
+import { useActivities } from '../composables/useActivities'
 
 const uiStore = useSchoolAdminUiStore()
 const loading = ref(false)
@@ -148,6 +149,7 @@ const handlePasswordChange = async () => {
   }
 
   loading.value = true
+  const { addActivity } = useActivities()
 
   try {
     await changePassword({
@@ -155,6 +157,19 @@ const handlePasswordChange = async () => {
       password: passwordForm.newPassword,
       password_confirmation: passwordForm.confirmPassword
     })
+    
+    // Log activity
+    try {
+      await addActivity({
+        entity_type: 'user',
+        action_type: 'password_change',
+        details: {
+          name: 'Current User'
+        }
+      })
+    } catch (error) {
+      console.error('Failed to log activity:', error)
+    }
     
     // Reset form
     Object.keys(passwordForm).forEach(key => {
