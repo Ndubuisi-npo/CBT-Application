@@ -143,6 +143,31 @@ export function isAuthenticated() {
   return true
 }
 
+export async function forgotPassword(email) {
+  return await apiFetch('/api/password/forgot', {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  })
+}
+
+export async function verifyOtp(email, otp) {
+  return await apiFetch('/api/password/verify-otp', {
+    method: 'POST',
+    body: JSON.stringify({ email, otp }),
+  })
+}
+
+export async function resetPassword(resetToken, password, passwordConfirmation) {
+  return await apiFetch('/api/password/reset', {
+    method: 'POST',
+    body: JSON.stringify({
+      reset_token: resetToken,
+      password,
+      password_confirmation: passwordConfirmation,
+    }),
+  })
+}
+
 export function getAuthState() {
   return { ...authState }
 }
