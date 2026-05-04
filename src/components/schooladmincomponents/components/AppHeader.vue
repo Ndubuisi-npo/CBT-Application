@@ -10,9 +10,6 @@
       </div>
 
       <div class="flex items-center gap-3">
-        <AppButton type="button" :icon="Bell" variant="ghost" class="relative">
-          <span class="absolute right-2 top-2 h-2.5 w-2.5 rounded-full bg-[#D4AF37]"></span>
-        </AppButton>
         <ProfileDropdown />
       </div>
     </div>
@@ -22,7 +19,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { Bell, PanelLeft } from 'lucide-vue-next'
+import {  PanelLeft } from 'lucide-vue-next'
 import AppButton from '../../shared/AppButton.vue'
 import ProfileDropdown from './ProfileDropdown.vue'
 import { useSchoolAdminUiStore } from '../stores/ui'

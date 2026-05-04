@@ -23,7 +23,7 @@
         :to="item.to"
         variant="ghost"
         class="group flex items-start justify-start gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition duration-200 w-full"
-        :class="isActive(item.to) ? 'bg-[#102946] text-white shadow-lg shadow-black/10' : 'text-slate-300 hover:bg-white/10 hover:text-white'"
+        :class="isActive(item.to) ? 'bg-[#102946] text-white shadow-lg shadow-black/10' : 'text-slate-100 hover:bg-white/10 hover:text-white'"
         @click="$emit('close-mobile')"
       >
         <component :is="item.icon" class="h-5 w-5 shrink-0" :class="isActive(item.to) ? 'text-[#D4AF37]' : 'text-slate-400 group-hover:text-[#D4AF37]'" />
@@ -32,7 +32,7 @@
     </nav>
 
     <div class="border-t border-white/10 p-4">
-      <AppButton type="button" :icon="PanelLeftClose" :text="collapsed ? '' : 'Collapse sidebar'" variant="ghost" full-width class="flex w-full items-center gap-3 rounded-2xl bg-white/10 px-4 py-3 text-sm font-medium text-slate-200 transition hover:bg-white/15" @click="$emit('toggle')" />
+      <AppButton type="button" :icon="PanelLeftClose" :text="collapsed ? '' : 'Collapse sidebar'" variant="ghost" full-width class="flex w-full items-center gap-3 rounded-2xl bg-white/10 px-4 py-3 text-sm font-medium text-white transition hover:bg-white/15" @click="$emit('toggle')" />
     </div>
   </aside>
 </template>
@@ -40,7 +40,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
-import { BookCopy, CalendarRange, Columns3, LayoutDashboard, PanelLeftClose, Settings, Shapes, School, Users, Building2 } from 'lucide-vue-next'
+import { BookCopy, CalendarRange, Columns3, LayoutDashboard, PanelLeftClose, Settings, Shapes, School, Users, GraduationCap, Building2 } from 'lucide-vue-next'
 import AppButton from '../../shared/AppButton.vue'
 import ActionButton from '../../shared/ActionButton.vue'
 import { useSchoolAdminProfileStore } from '../stores/profile'
@@ -62,6 +62,7 @@ const navItems = computed(() => [
   { label: 'Dashboard', to: '/school-admin/dashboard', icon: LayoutDashboard },
   { label: 'Academic Sessions', to: '/school-admin/sessions', icon: CalendarRange },
   { label: 'Teachers', to: '/school-admin/teachers', icon: Users },
+  { label: 'Students', to: '/school-admin/students', icon: GraduationCap },
   { label: 'Class Levels', to: '/school-admin/class-levels', icon: Columns3 },
     { label: 'Subjects', to: '/school-admin/subjects', icon: Shapes },
   { label: 'Settings', to: '/school-admin/settings', icon: Settings },

@@ -14,6 +14,7 @@ import SchoolAdminSessionTerms from '../components/schooladmincomponents/pages/S
 import SchoolAdminClassLevels from '../components/schooladmincomponents/pages/ClassLevelsPage.vue';
 import SchoolAdminClassArms from '../components/schooladmincomponents/pages/ClassArmsPage.vue';
 import SchoolAdminTeachers from '../components/schooladmincomponents/pages/TeachersPage.vue';
+import SchoolAdminStudents from '../components/schooladmincomponents/pages/StudentsPage.vue';
 import SchoolAdminSubjects from '../components/schooladmincomponents/pages/SubjectsPage.vue';
 import SchoolAdminSubjectAssignTeacher from '../components/schooladmincomponents/pages/SubjectAssignTeacherPage.vue';
 import SchoolAdminSettings from '../components/schooladmincomponents/pages/SettingsPage.vue';
@@ -50,6 +51,7 @@ const routes = [
           { path: 'class-levels', name: 'SchoolAdminClassLevels', component: SchoolAdminClassLevels },
           { path: 'class-arms/:id', name: 'SchoolAdminClassArms', component: SchoolAdminClassArms },
           { path: 'teachers', name: 'SchoolAdminTeachers', component: SchoolAdminTeachers },
+          { path: 'students', name: 'SchoolAdminStudents', component: SchoolAdminStudents },
           { path: 'subjects', name: 'SchoolAdminSubjects', component: SchoolAdminSubjects },
           { path: 'subjects/:id/assign-teacher', name: 'SchoolAdminSubjectAssignTeacher', component: SchoolAdminSubjectAssignTeacher },
           { path: 'settings', name: 'SchoolAdminSettings', component: SchoolAdminSettings },

@@ -63,6 +63,8 @@
                 v-model="formData.handle"
                 type="text"
                 placeholder="e.g. lekki"
+                maxlength="10"
+                @keydown.space.prevent
                 class="flex-1 bg-transparent py-4 outline-none placeholder:text-slate-400"
               />
               <span class="text-slate-500">.localhost:5173</span>
@@ -74,7 +76,7 @@
             </div>
           </div>
           <div class="space-y-1">
-            <p class="text-sm text-slate-500">Automatically generated from school name, but you can customize it</p>
+            <p class="text-sm text-slate-500">Choose a unique handle (max 10 characters)</p>
             <p v-if="errors.handle" class="text-sm text-red-500">{{ errors.handle }}</p>
             <p v-else-if="handleError" class="text-sm text-red-500">{{ handleError }}</p>
             <p v-else-if="handleStatus === 'available'" class="text-sm text-green-500">Handle is available!</p>
@@ -160,6 +162,7 @@
 <script setup lang="ts">
 import { computed, ref, watch} from 'vue'
 import { ArrowRight, ChevronDown, School2, Check, X, Loader2 } from 'lucide-vue-next'
+import { debounce } from 'lodash'
 import { checkHandle } from './api/onboarding'
 import nigerianStatesData from './data/nigerian-states.json'
 
@@ -215,7 +218,7 @@ const checkHandleAvailability = async (handle: string) => {
     return
   }
 
-  // Only check handles with 3 or fewer characters
+  // Only check handles with 10 or fewer characters
   if (handle.length > 10) {
     handleStatus.value = 'idle'
     handleError.value = 'Handle must be 10 characters or less'
@@ -239,29 +242,9 @@ const checkHandleAvailability = async (handle: string) => {
   }
 }
 
-// Watch for school name changes and update handle (stop on space, max 10 characters)
-watch(() => props.formData.schoolName, (newSchoolName) => {
-  if (newSchoolName) {
-    // Check if space character is present in the current handle
-    const hasSpace = props.formData.schoolName.includes(' ')
-    
-    // Only auto-fill if no space is present and handle is less than 10 characters
-    if (!hasSpace && props.formData.handle.length < 11) {
-      const cleanName = newSchoolName.replace(/[^a-zA-Z]/g, '').toLowerCase()
-      const nextHandle = cleanName.substring(0, Math.min(10, cleanName.length))
-      
-      // Update handle if it would be different
-      if (props.formData.handle !== nextHandle) {
-        props.formData.handle = nextHandle
-        checkHandleAvailability(nextHandle)
-      }
-    }
-  } else if (!newSchoolName) {
-    // Clear handle if school name is empty
-    props.formData.handle = ''
-    handleStatus.value = 'idle'
-  }
-}, { immediate: true })
+// Create debounced version of checkHandleAvailability
+const debouncedCheckHandle = debounce(checkHandleAvailability, 500)
+
 
 // Watch for state changes and clear city when state changes
 watch(() => props.formData.state, () => {
@@ -269,21 +252,11 @@ watch(() => props.formData.state, () => {
   props.formData.city = ''
 })
 
-// Watch for handle changes and check availability (only for manual edits)
+// Watch for handle changes and check availability
 watch(() => props.formData.handle, (newHandle, oldHandle) => {
-  // Skip if this was triggered by school name change (handle length <= 10 and matches first 10 letters of school name)
-  if (newHandle && oldHandle && props.formData.schoolName) {
-    const cleanSchoolName = props.formData.schoolName.replace(/[^a-zA-Z]/g, '').toLowerCase()
-    const expectedHandle = cleanSchoolName.substring(0, 10)
-    
-    // If new handle matches what would be generated from school name, skip checking
-    if (newHandle === expectedHandle && newHandle.length <= 10) {
-      return
-    }
-  }
-  
-  if (newHandle) {
-    checkHandleAvailability(newHandle)
+  // Check availability for handle changes using debounced function
+  if (newHandle !== oldHandle) {
+    debouncedCheckHandle(newHandle)
   } else {
     handleStatus.value = 'idle'
   }
