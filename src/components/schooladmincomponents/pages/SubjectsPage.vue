@@ -129,14 +129,12 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref, reactive } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { Plus } from 'lucide-vue-next'
-import FormField from '../components/FormField.vue'
 import SectionCard from '../components/SectionCard.vue'
 import SkeletonRows from '../components/SkeletonRows.vue'
 import AppButton from '../../shared/AppButton.vue'
 import SubjectModal from '../components/SubjectModal.vue'
-import TagMultiSelect from '../components/TagMultiSelect.vue'
 import { useSchoolAdminSubjectsStore } from '../stores/subjects'
 import { useSchoolAdminUiStore } from '../stores/ui'
 
@@ -160,12 +158,6 @@ const areAllSelected = computed(() => {
   return subjectsStore.subjects.length > 0 && 
          subjectsStore.subjects.every(subject => selectedSubjects.value.has(subject.id))
 })
-
-const hasAnySelected = computed(() => selectedSubjects.value.size > 0)
-
-// Form state
-const form = reactive({ id: null, name: '', code: '', class_level_ids: [] })
-const errors = reactive({ name: '', code: '', class_level_ids: '' })
 
 // Pagination state
 const currentPage = ref(1)
@@ -232,13 +224,6 @@ const closeModal = () => {
 const openModal = (subject) => {
   selectedSubject.value = subject
   showModal.value = true
-}
-
-const validate = () => {
-  errors.name = form.name ? '' : 'Subject name is required.'
-  errors.code = form.code ? '' : 'Subject code is required.'
-  errors.class_level_ids = form.class_level_ids.length === 0 ? 'At least one class level is required.' : ''
-  return !errors.name && !errors.code && !errors.class_level_ids
 }
 
 // Multi-select functionality
@@ -308,7 +293,8 @@ const submitSubject = async (subjectData) => {
     const payload = {
       name: subjectData.name,
       code: subjectData.code,
-      class_level_ids: subjectData.class_level_ids
+      class_level_ids: subjectData.class_level_ids,
+      class_arm_ids: subjectData.class_arm_ids
     }
     
     if (subjectData.id) {

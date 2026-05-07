@@ -84,7 +84,10 @@ function clearAuth() {
 export async function login(credentials) {
   const response = await apiFetch('/api/auth/login', {
     method: 'POST',
-    body: JSON.stringify(credentials),
+    body: JSON.stringify({
+      identifier: credentials.email || credentials.identifier,
+      password: credentials.password,
+    }),
   })
 
   const expiresAt = Date.now() + ((response.expires_in || 28800) * 1000)

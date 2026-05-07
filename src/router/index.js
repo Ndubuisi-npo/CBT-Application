@@ -15,6 +15,13 @@ import SchoolAdminClassLevels from '../components/schooladmincomponents/pages/Cl
 import SchoolAdminClassArms from '../components/schooladmincomponents/pages/ClassArmsPage.vue';
 import SchoolAdminTeachers from '../components/schooladmincomponents/pages/TeachersPage.vue';
 import SchoolAdminStudents from '../components/schooladmincomponents/pages/StudentsPage.vue';
+import TeachersDashboard from '../components/teacherscomponent/pages/TeachersDashboard.vue';
+import TeachersQuestionBank from '../components/teacherscomponent/pages/QuestionBank.vue';
+import TeachersExamWizard from '../components/teacherscomponent/pages/ExamWizard.vue';
+import TeachersExamList from '../components/teacherscomponent/pages/ExamList.vue';
+import TeachersTopicsPage from '../components/teacherscomponent/pages/TopicsPage.vue';
+import TeachersResultsPage from '../components/teacherscomponent/pages/ResultsPage.vue';
+import TeachersSettingsPage from '../components/teacherscomponent/pages/TeachersSettingsPage.vue';
 import SchoolAdminSubjects from '../components/schooladmincomponents/pages/SubjectsPage.vue';
 import SchoolAdminSubjectAssignTeacher from '../components/schooladmincomponents/pages/SubjectAssignTeacherPage.vue';
 import SchoolAdminSettings from '../components/schooladmincomponents/pages/SettingsPage.vue';
@@ -61,6 +68,27 @@ const routes = [
     ],
   },
   {
+    path: '/teachers',
+    component: SchoolAdminRoot,
+    children: [
+      { path: '', redirect: '/login' },
+      {
+        path: '',
+        component: SchoolAdminLayout,
+        children: [
+          { path: 'dashboard', name: 'TeachersDashboard', component: TeachersDashboard },
+          { path: 'questions', name: 'TeachersQuestionBank', component: TeachersQuestionBank },
+          { path: 'topics', name: 'TeachersTopicsPage', component: TeachersTopicsPage },
+          { path: 'exam-wizard', name: 'TeachersExamWizard', component: TeachersExamWizard },
+          { path: 'exams', name: 'TeachersExamList', component: TeachersExamList },
+          { path: 'results', name: 'TeachersResultsPage', component: TeachersResultsPage },
+          { path: 'settings', name: 'TeachersSettings', component: TeachersSettingsPage },
+          { path: 'profile', name: 'TeachersProfile', component: SchoolAdminProfile },
+        ],
+      },
+    ],
+  },
+  {
     path: '/super-admin',
     component: SuperAdminRoot,
     children: [
@@ -90,7 +118,7 @@ const router = createRouter({
 const roleRedirectMap = {
   super_admin: '/super-admin/dashboard',
   school_admin: '/school-admin/dashboard',
-  teacher: '/teacher/dashboard',
+  teacher: '/teachers/dashboard',
   student: '/student/dashboard',
 }
 
@@ -101,7 +129,7 @@ const buildRedirectUrl = (path) => {
 }
 
 router.beforeEach((to, from, next) => {
-  const requiresAuth = to.path.startsWith('/school-admin') || to.path.startsWith('/super-admin') || to.path.startsWith('/teacher') || to.path.startsWith('/student')
+  const requiresAuth = to.path.startsWith('/school-admin') || to.path.startsWith('/super-admin') || to.path.startsWith('/teachers')
   const isLoginPage = to.path === '/login'
 
   if (requiresAuth && !isLoginPage) {

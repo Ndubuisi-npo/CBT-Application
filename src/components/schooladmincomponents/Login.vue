@@ -25,20 +25,20 @@
           </h1>
 
           <p class="max-w-lg text-lg leading-8 text-white/78 xl:text-xl">
-            Sign in to access your admin dashboard. School admins manage academic operations.
+            Sign in to access your dashboard. Manage academic operations, create exams, and track student progress.
           </p>
 
           <div class="mt-10 grid max-w-lg gap-4">
             <div class="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/10 px-4 py-4 backdrop-blur-sm">
               <Sparkles class="h-5 w-5 text-[#D4AF37]" />
-              <span class="text-base text-white/88">School Admin: Academic workflows, grading setup, and staff management.</span>
+              <span class="text-base text-white/88">Unified access for admins and teachers with role-based permissions.</span>
             </div>
           </div>
         </div>
 
         <div class="flex items-center gap-3 text-sm text-white/60">
           <div class="h-2 w-2 rounded-full bg-emerald-400"></div>
-          Secure role-based access for all admin types
+          Secure role-based access for admins and teachers
         </div>
       </div>
     </div>
@@ -59,7 +59,7 @@
             <h2 class="mt-6 text-4xl font-semibold tracking-tight text-slate-900">Welcome back</h2>
 
             <p class="mt-3 text-base leading-7 text-slate-500 sm:text-lg">
-              Sign in to access the <span class="font-semibold text-slate-700">{{ branding.schoolName }}</span> admin workspace.
+              Sign in to access the <span class="font-semibold text-slate-700">{{ branding.schoolName }}</span> workspace.
             </p>
           </div>
 
@@ -69,7 +69,7 @@
 
               <div class="relative">
                 <Mail class="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
-                <input id="school-email" v-model="form.email" type="email" placeholder="admin@school.edu" class="w-full rounded-lg border-2 border-[#0B1F3A] bg-white px-4 py-3 pl-12 text-base text-slate-900 placeholder:text-slate-400 focus:border-[#D4AF37] focus:outline-none focus:ring-0 transition" />
+                <input id="school-email" v-model="form.email" type="email" placeholder="your.email@school.edu" class="w-full rounded-lg border-2 border-[#0B1F3A] bg-white px-4 py-3 pl-12 text-base text-slate-900 placeholder:text-slate-400 focus:border-[#D4AF37] focus:outline-none focus:ring-0 transition" />
               </div>
 
               <p v-if="errors.email" class="text-sm font-medium text-rose-600">{{ errors.email }}</p>
@@ -211,7 +211,7 @@ const authData = await unifiedLogin(form)
     const roleRedirectMap = {
       super_admin: '/super-admin/dashboard',
       school_admin: '/school-admin/dashboard',
-      teacher: '/teacher/dashboard',
+      teacher: '/teachers/dashboard',
       student: '/student/dashboard',
     }
 

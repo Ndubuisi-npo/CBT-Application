@@ -24,6 +24,7 @@ export async function saveSubject(payload) {
 
     if (payload.code !== undefined) body.code = payload.code
     if (payload.class_level_ids !== undefined) body.class_level_ids = payload.class_level_ids
+    if (payload.class_arm_ids !== undefined) body.class_arm_ids = payload.class_arm_ids
     if (payload.id !== undefined) body.id = payload.id
 
     if (payload.id) {
@@ -50,6 +51,7 @@ export async function updateSubject(id, payload) {
 
     if (payload.code !== undefined) body.code = payload.code
     if (payload.class_level_ids !== undefined) body.class_level_ids = payload.class_level_ids
+    if (payload.class_arm_ids !== undefined) body.class_arm_ids = payload.class_arm_ids
 
     return await apiFetch(`/api/subjects/${id}`, {
       method: 'PATCH',
@@ -68,6 +70,7 @@ export async function createSubject(payload) {
 
     if (payload.code !== undefined) body.code = payload.code
     if (payload.class_level_ids !== undefined) body.class_level_ids = payload.class_level_ids
+    if (payload.class_arm_ids !== undefined) body.class_arm_ids = payload.class_arm_ids
 
     return await apiFetch('/api/subjects', {
       method: 'POST',

@@ -13,7 +13,7 @@ export async function loginSchoolAdmin(payload) {
     const response = await apiFetch('/api/auth/login', {
       method: 'POST',
       body: JSON.stringify({
-        email: payload.email,
+        identifier: payload.email || payload.identifier,
         password: payload.password,
       }),
     })

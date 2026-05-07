@@ -18,8 +18,68 @@
             <input v-model="form.code" class="sa-input" placeholder="MATH" />
           </FormField>
           
-          <FormField label="Class Levels">
-            <TagMultiSelect v-model="form.class_level_ids" :options="classOptions" placeholder="Select class levels" />
+          <FormField label="Class Level" :error="errors.class_level_ids">
+            <select v-model="selectedClassLevelId" class="sa-input" @change="handleClassLevelSelect">
+              <option value="">Select a class level</option>
+              <option v-for="option in availableClassLevelOptions" :key="option.value" :value="option.value">
+                {{ option.label }}
+              </option>
+            </select>
+
+            <div v-if="selectedClassLevels.length" class="mt-3 flex flex-wrap gap-2">
+              <span
+                v-for="classLevel in selectedClassLevels"
+                :key="classLevel.id"
+                class="inline-flex items-center gap-2 rounded-full bg-[#0B1F3A]/8 px-3 py-1 text-sm font-medium text-[#0B1F3A]"
+              >
+                {{ classLevel.name }}
+                <button type="button" class="text-slate-500 transition hover:text-slate-700" @click="removeClassLevel(classLevel.id)">
+                  <X class="h-3.5 w-3.5" />
+                </button>
+              </span>
+            </div>
+          </FormField>
+
+          <FormField label="Class Arms">
+            <div v-if="!selectedClassLevels.length" class="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
+              Select a class level to load its arms.
+            </div>
+
+            <div v-else class="space-y-4">
+              <div
+                v-for="group in classArmGroups"
+                :key="group.classLevel.id"
+                class="rounded-2xl border border-slate-200 bg-slate-50 p-4"
+              >
+                <div class="mb-3 flex items-center justify-between gap-3">
+                  <div>
+                    <p class="text-sm font-semibold text-slate-900">{{ group.classLevel.name }}</p>
+                    <p class="text-xs text-slate-500">All available arms are selected automatically when you add a class level.</p>
+                  </div>
+                  <span v-if="loadingClassArmIds.has(group.classLevel.id)" class="text-xs text-slate-500">Loading arms...</span>
+                </div>
+
+                <div v-if="group.arms.length" class="grid gap-2 sm:grid-cols-2">
+                  <label
+                    v-for="arm in group.arms"
+                    :key="arm.id"
+                    class="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700"
+                  >
+                    <input
+                      :checked="form.class_arm_ids.includes(arm.id)"
+                      type="checkbox"
+                      class="h-4 w-4 rounded border-slate-300 text-[#0B1F3A] focus:ring-[#D4AF37]"
+                      @change="toggleClassArm(arm.id)"
+                    />
+                    <span>{{ arm.name }}</span>
+                  </label>
+                </div>
+
+                <div v-else-if="!loadingClassArmIds.has(group.classLevel.id)" class="rounded-2xl border border-dashed border-slate-200 bg-white px-4 py-3 text-sm text-slate-500">
+                  No class arms found for this class level.
+                </div>
+              </div>
+            </div>
           </FormField>
           
           <div class="flex gap-2">
@@ -46,8 +106,8 @@ import { reactive, watch, computed, ref, onMounted } from 'vue'
 import { X } from 'lucide-vue-next'
 import AppButton from '../../shared/AppButton.vue'
 import FormField from './FormField.vue'
-import TagMultiSelect from './TagMultiSelect.vue'
 import { useSchoolAdminClassesStore } from '../stores/classes'
+import { getClassArms } from '../services/api/classes'
 
 const props = defineProps({
   show: { type: Boolean, default: false },
@@ -61,7 +121,8 @@ const isEdit = computed(() => !!props.subject)
 const form = reactive({
   name: '',
   code: '',
-  class_level_ids: []
+  class_level_ids: [],
+  class_arm_ids: []
 })
 
 const errors = reactive({
@@ -71,47 +132,159 @@ const errors = reactive({
 })
 
 const loading = ref(false)
+const selectedClassLevelId = ref('')
+const loadingClassArmIds = ref(new Set())
+const classArmsByLevelId = ref({})
 
-// Use real class levels from store
 const classesStore = useSchoolAdminClassesStore()
 
-const classOptions = computed(() => {
-  const options = classesStore.classes.map(classLevel => classLevel.name)
-  return options
+const classLevelOptions = computed(() => {
+  return classesStore.classes.map(classLevel => ({
+    value: classLevel.id,
+    label: classLevel.name,
+  }))
+})
+
+const availableClassLevelOptions = computed(() => {
+  return classLevelOptions.value.filter(option => !form.class_level_ids.includes(option.value))
+})
+
+const selectedClassLevels = computed(() => {
+  return form.class_level_ids
+    .map(id => classesStore.classes.find(classLevel => classLevel.id === id))
+    .filter(Boolean)
+})
+
+const classArmGroups = computed(() => {
+  return selectedClassLevels.value.map(classLevel => ({
+    classLevel,
+    arms: classArmsByLevelId.value[classLevel.id] || [],
+  }))
 })
 
 const resetForm = () => {
-  Object.assign(form, { name: '', code: '', class_level_ids: [] })
+  Object.assign(form, { name: '', code: '', class_level_ids: [], class_arm_ids: [] })
   Object.assign(errors, { name: '', code: '', class_level_ids: '' })
+  selectedClassLevelId.value = ''
+  classArmsByLevelId.value = {}
+  loadingClassArmIds.value = new Set()
+}
+
+const ensureClassesLoaded = async () => {
+  if (classesStore.classes.length === 0 && !classesStore.loading) {
+    await classesStore.fetchClasses()
+  }
+}
+
+const selectAllArmsForLevel = (classLevelId) => {
+  const armIds = (classArmsByLevelId.value[classLevelId] || []).map(arm => arm.id)
+  form.class_arm_ids = Array.from(new Set([...form.class_arm_ids, ...armIds]))
+}
+
+const loadClassArmsForLevel = async (classLevelId, { autoSelectAll = false } = {}) => {
+  if (!classLevelId) return
+
+  if (classArmsByLevelId.value[classLevelId]) {
+    if (autoSelectAll) {
+      selectAllArmsForLevel(classLevelId)
+    }
+    return
+  }
+
+  loadingClassArmIds.value = new Set([...loadingClassArmIds.value, classLevelId])
+
+  try {
+    const arms = await getClassArms(classLevelId)
+    classArmsByLevelId.value = {
+      ...classArmsByLevelId.value,
+      [classLevelId]: Array.isArray(arms) ? arms : [],
+    }
+
+    if (autoSelectAll) {
+      selectAllArmsForLevel(classLevelId)
+    }
+  } catch (error) {
+    classArmsByLevelId.value = {
+      ...classArmsByLevelId.value,
+      [classLevelId]: [],
+    }
+  } finally {
+    loadingClassArmIds.value = new Set(
+      [...loadingClassArmIds.value].filter(id => id !== classLevelId)
+    )
+  }
+}
+
+const populateForm = async (subject) => {
+  resetForm()
+
+  if (!subject) return
+
+  form.name = subject.name || ''
+  form.code = subject.code || ''
+  form.class_level_ids = subject.class_levels?.map(level => level.id).filter(Boolean) || []
+  form.class_arm_ids = subject.class_arms?.map(arm => arm.id).filter(Boolean) || []
+
+  const shouldAutoSelectAllArms = form.class_arm_ids.length === 0
+  await Promise.all(
+    form.class_level_ids.map(classLevelId =>
+      loadClassArmsForLevel(classLevelId, { autoSelectAll: shouldAutoSelectAllArms })
+    )
+  )
+}
+
+const handleClassLevelSelect = async () => {
+  const classLevelId = selectedClassLevelId.value
+
+  if (!classLevelId || form.class_level_ids.includes(classLevelId)) {
+    selectedClassLevelId.value = ''
+    return
+  }
+
+  form.class_level_ids = [...form.class_level_ids, classLevelId]
+  errors.class_level_ids = ''
+  selectedClassLevelId.value = ''
+
+  await loadClassArmsForLevel(classLevelId, { autoSelectAll: true })
+}
+
+const removeClassLevel = (classLevelId) => {
+  form.class_level_ids = form.class_level_ids.filter(id => id !== classLevelId)
+
+  const armIdsForLevel = (classArmsByLevelId.value[classLevelId] || []).map(arm => arm.id)
+  form.class_arm_ids = form.class_arm_ids.filter(id => !armIdsForLevel.includes(id))
+}
+
+const toggleClassArm = (classArmId) => {
+  form.class_arm_ids = form.class_arm_ids.includes(classArmId)
+    ? form.class_arm_ids.filter(id => id !== classArmId)
+    : [...form.class_arm_ids, classArmId]
 }
 
 onMounted(async () => {
   try {
-    // Only fetch classes if not already loaded
-    if (classesStore.classes.length === 0 && !classesStore.loading) {
-      await classesStore.fetchClasses()
-    }
+    await ensureClassesLoaded()
   } catch (error) {
   }
 })
 
-// Watch for subject changes and update form
-watch(() => props.subject, (subject) => {
-  if (subject) {
-    form.name = subject.name || ''
-    form.code = subject.code || ''
-    form.class_level_ids = subject.class_levels?.map(level => level.name) || []
-  } else {
-    resetForm()
+watch(() => props.show, async (show) => {
+  if (show) {
+    await ensureClassesLoaded()
+    await populateForm(props.subject)
+    return
   }
-}, { immediate: true })
 
-// Watch for modal close to reset loading state
-watch(() => props.show, (show) => {
   if (!show) {
     loading.value = false
     resetForm()
   }
+}, { immediate: true })
+
+watch(() => props.subject, async (subject) => {
+  if (!props.show) return
+  await ensureClassesLoaded()
+  await populateForm(subject)
 })
 
 const validate = () => {
@@ -127,16 +300,11 @@ const submit = async () => {
   loading.value = true
   
   try {
-    // Convert class level names back to IDs for the API
-    const classLevelIds = form.class_level_ids.map(name => {
-      const classLevel = classesStore.classes.find(cl => cl.name === name)
-      return classLevel ? classLevel.id : null
-    }).filter(Boolean)
-    
     const payload = {
       name: form.name,
       code: form.code,
-      class_level_ids: classLevelIds
+      class_level_ids: form.class_level_ids,
+      class_arm_ids: form.class_arm_ids
     }
     
     await emit('submit', {

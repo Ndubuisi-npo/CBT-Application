@@ -7,11 +7,11 @@
   >
     <div class="flex h-20 items-center gap-4 border-b border-white/10 px-5" :class="collapsed ? 'justify-center' : ''">
       <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-lg font-bold text-[#D4AF37]">
-        <Building2 class="h-5 w-5" />
+        <component :is="route.path.startsWith('/teachers') ? FileQuestion : Building2" class="h-5 w-5" />
       </div>
       <div v-if="!collapsed">
-        <p class="text-xs uppercase tracking-[0.28em] text-[#D4AF37]">School Admin</p>
-        <p class="text-lg font-semibold">{{ profile.schoolName }}</p>
+        <p class="text-xs uppercase tracking-[0.28em] text-[#D4AF37]">{{ route.path.startsWith('/teachers') ? 'Teacher Portal' : 'School Admin' }}</p>
+        <p class="text-lg font-semibold">{{ route.path.startsWith('/teachers') ? 'Teacher Dashboard' : profile.schoolName }}</p>
       </div>
     </div>
 
@@ -40,7 +40,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
-import { BookCopy, CalendarRange, Columns3, LayoutDashboard, PanelLeftClose, Settings, Shapes, School, Users, GraduationCap, Building2 } from 'lucide-vue-next'
+import { BookCopy, CalendarRange, Columns3, LayoutDashboard, PanelLeftClose, Settings, Shapes, School, Users, GraduationCap, Building2, FileQuestion, ClipboardList, Tag, BarChart3 } from 'lucide-vue-next'
 import AppButton from '../../shared/AppButton.vue'
 import ActionButton from '../../shared/ActionButton.vue'
 import { useSchoolAdminProfileStore } from '../stores/profile'
@@ -58,16 +58,32 @@ const profileStore = useSchoolAdminProfileStore()
 const profile = computed(() => profileStore.profile)
 const initials = computed(() => profile.value.schoolName.split(' ').map((part) => part[0]).slice(0, 2).join(''))
 
-const navItems = computed(() => [
-  { label: 'Dashboard', to: '/school-admin/dashboard', icon: LayoutDashboard },
-  { label: 'Academic Sessions', to: '/school-admin/sessions', icon: CalendarRange },
-  { label: 'Teachers', to: '/school-admin/teachers', icon: Users },
-  { label: 'Students', to: '/school-admin/students', icon: GraduationCap },
-  { label: 'Class Levels', to: '/school-admin/class-levels', icon: Columns3 },
-    { label: 'Subjects', to: '/school-admin/subjects', icon: Shapes },
-  { label: 'Settings', to: '/school-admin/settings', icon: Settings },
-  { label: 'School Profile', to: '/school-admin/profile', icon: School },
-])
+const navItems = computed(() => {
+  const isTeachersSection = route.path.startsWith('/teachers')
+  
+  if (isTeachersSection) {
+    return [
+      { label: 'Dashboard', to: '/teachers/dashboard', icon: LayoutDashboard },
+      { label: 'Question Bank', to: '/teachers/questions', icon: FileQuestion },
+      { label: 'Exams', to: '/teachers/exams', icon: ClipboardList },
+      { label: 'Topics', to: '/teachers/topics', icon: Tag },
+      { label: 'Results', to: '/teachers/results', icon: BarChart3 },
+      { label: 'Settings', to: '/teachers/settings', icon: Settings },
+      { label: 'Profile', to: '/teachers/profile', icon: School },
+    ]
+  }
+  
+  return [
+    { label: 'Dashboard', to: '/school-admin/dashboard', icon: LayoutDashboard },
+    { label: 'Academic Sessions', to: '/school-admin/sessions', icon: CalendarRange },
+    { label: 'Teachers', to: '/school-admin/teachers', icon: Users },
+    { label: 'Students', to: '/school-admin/students', icon: GraduationCap },
+    { label: 'Class Levels', to: '/school-admin/class-levels', icon: Columns3 },
+      { label: 'Subjects', to: '/school-admin/subjects', icon: Shapes },
+    { label: 'Settings', to: '/school-admin/settings', icon: Settings },
+    { label: 'School Profile', to: '/school-admin/profile', icon: School },
+  ]
+})
 
 const isActive = (target) => route.path === target || route.path.startsWith(`${target}/`)
 </script>
