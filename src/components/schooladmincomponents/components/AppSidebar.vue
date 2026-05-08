@@ -64,6 +64,7 @@ const navItems = computed(() => {
   if (isTeachersSection) {
     return [
       { label: 'Dashboard', to: '/teachers/dashboard', icon: LayoutDashboard },
+      { label: 'My Classes', to: '/teachers/my-classes', icon: Users },
       { label: 'Question Bank', to: '/teachers/questions', icon: FileQuestion },
       { label: 'Exams', to: '/teachers/exams', icon: ClipboardList },
       { label: 'Topics', to: '/teachers/topics', icon: Tag },

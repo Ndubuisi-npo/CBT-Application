@@ -1,15 +1,72 @@
 <template>
-  <div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center">
-    <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" @click="$emit('close')"></div>
-    <div class="relative w-full max-w-2xl max-h-[80vh] transform overflow-y-auto rounded-lg bg-white shadow-xl transition-all">
-      <div class="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-6 h-full flex flex-col">
-        <div class="flex items-center justify-between mb-4">
-          <h3 class="text-lg font-semibold text-slate-900">{{ isEdit ? 'Edit Teacher' : 'Create Teacher' }}</h3>
+  <div v-if="show" class="fixed inset-0 z-50 overflow-y-auto">
+    <div class="flex min-h-screen items-center justify-center p-4">
+      <div class="fixed inset-0 bg-black opacity-25" @click="$emit('close')"></div>
+      
+      <div class="relative w-full max-w-2xl rounded-lg bg-white p-6 shadow-xl">
+        <div class="mb-4 flex items-center justify-between">
+          <h3 class="text-lg font-semibold text-slate-900">{{ isView ? 'Teacher Details' : (isEdit ? 'Edit Teacher' : 'Create Teacher') }}</h3>
           <AppButton @click="$emit('close')" :icon="X" variant="ghost" class="text-slate-400 hover:text-slate-600" />
         </div>
         
-        <div class="flex-1 overflow-y-auto">
-          <form class="space-y-4" @submit.prevent="submit">
+        <div v-if="isView && teacher" class="space-y-6">
+          <!-- Basic Information -->
+          <div>
+            <h4 class="text-sm font-medium text-slate-700 mb-3">Basic Information</h4>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm text-slate-500">Staff ID</label>
+                <p class="text-sm font-medium text-slate-900">{{ teacher.teacher_profile?.staff_id || 'Not specified' }}</p>
+              </div>
+              <div>
+                <label class="block text-sm text-slate-500">First Name</label>
+                <p class="text-sm font-medium text-slate-900">{{ teacher.first_name || 'Not specified' }}</p>
+              </div>
+              <div>
+                <label class="block text-sm text-slate-500">Last Name</label>
+                <p class="text-sm font-medium text-slate-900">{{ teacher.last_name || 'Not specified' }}</p>
+              </div>
+              <div>
+                <label class="block text-sm text-slate-500">Qualification</label>
+                <p class="text-sm font-medium text-slate-900">{{ teacher.teacher_profile?.qualification || 'Not specified' }}</p>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Contact Information -->
+          <div>
+            <h4 class="text-sm font-medium text-slate-700 mb-3">Contact Information</h4>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm text-slate-500">Email</label>
+                <p class="text-sm font-medium text-slate-900">{{ teacher.email || 'Not provided' }}</p>
+              </div>
+              <div>
+                <label class="block text-sm text-slate-500">Phone</label>
+                <p class="text-sm font-medium text-slate-900">{{ teacher.phone || 'Not provided' }}</p>
+              </div>
+            </div>
+          </div>
+          
+          <!-- System Information -->
+          <div>
+            <h4 class="text-sm font-medium text-slate-700 mb-3">System Information</h4>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm text-slate-500">Teacher ID</label>
+                <p class="text-sm font-medium text-slate-900">{{ teacher.id }}</p>
+              </div>
+              <div>
+                <label class="block text-sm text-slate-500">Status</label>
+                <p class="text-sm font-medium text-slate-900">Active</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Edit/Create Form -->
+        <div v-else class="space-y-4">
+          <form @submit.prevent="submit">
           <FormField label="First Name" :error="errors.firstName">
             <input v-model="form.firstName" class="sa-input" placeholder="John" required />
           </FormField>
@@ -48,6 +105,10 @@
           </div>
         </form>
         </div>
+        
+        <div v-if="isView" class="mt-6 flex justify-end">
+          <AppButton @click="$emit('close')" text="Close" variant="primary" />
+        </div>
       </div>
     </div>
   </div>
@@ -61,12 +122,14 @@ import FormField from './FormField.vue'
 
 const props = defineProps({
   show: { type: Boolean, default: false },
-  teacher: { type: Object, default: null }
+  teacher: { type: Object, default: null },
+  mode: { type: String, default: 'edit', validator: (value) => ['view', 'edit'].includes(value) }
 })
 
 const emit = defineEmits(['close', 'submit', 'submitted'])
 
-const isEdit = computed(() => !!props.teacher)
+const isEdit = computed(() => props.mode === 'edit' && !!props.teacher)
+const isView = computed(() => props.mode === 'view')
 
 const form = reactive({
   firstName: '',

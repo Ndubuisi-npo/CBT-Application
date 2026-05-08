@@ -1,6 +1,9 @@
 <template>
-  <div class="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+  <div class="space-y-6">
     <SectionCard :title="`Terms for ${session?.name || '...'}`" subtitle="Manage academic terms for this session.">
+      <template #header>
+        <AppButton @click="openModal()" :icon="Plus" text="Create" variant="primary" size="sm" />
+      </template>
       <SkeletonRows v-if="sessionsStore.loading" :columns="4" />
       <div v-else-if="currentTerms.length === 0" class="text-center py-12">
         <div class="mx-auto w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mb-4">
@@ -10,7 +13,6 @@
         </div>
         <h3 class="text-lg font-medium text-slate-900 mb-2">No terms found</h3>
         <p class="text-slate-600 mb-6">Get started by creating your first term for {{ session?.name || 'this session' }}.</p>
-        <AppButton type="button" text="Create First Term" variant="primary" @click="resetForm" />
       </div>
       <div v-else class="overflow-hidden rounded-[24px] border border-slate-200">
         <div class="overflow-x-auto">
@@ -27,7 +29,6 @@
                 <td class="px-5 py-4 text-sm text-slate-600 text-nowrap">{{ fmtDate(term.endDate || term.end_date || '-') }}</td>
                 <td class="px-5 py-4">
                   <div class="flex gap-2">
-                    <StatusBadge class="text-nowrap" :status="termStatus(term)" />
                     <AppButton text="Edit" @click="editTerm(term)" variant="outline" size="xs" />
                     <AppButton 
                       :text="termStatus(term) === 'Current' ? 'Deactivate' : 'Activate'" 
@@ -45,38 +46,23 @@
       </div>
     </SectionCard>
 
-    <SectionCard :title="form.id ? 'Edit Term' : 'Create Term'" subtitle="Create and manage academic terms for this session.">
-      <form class="space-y-5" @submit.prevent="submit">
-        <FormField label="Term name" :error="errors.name">
-          <input v-model="form.name" class="sa-input" placeholder="1st Term" />
-        </FormField>
-        <FormField label="Start date" :error="errors.startDate">
-          <input v-model="form.startDate" type="date" class="sa-input" />
-        </FormField>
-        <FormField label="End date" :error="errors.endDate">
-          <input v-model="form.endDate" type="date" class="sa-input" />
-        </FormField>
-        <div class="flex items-center gap-2">
-          <input v-model="form.isCurrent" type="checkbox" id="is-current-term" class="h-4 w-4 rounded border-slate-300 text-[#D4AF37] focus:ring-[#D4AF37]" />
-          <label for="is-current-term" class="text-sm font-medium text-slate-700">Set as current term</label>
-        </div>
-        <div class="flex gap-2">
-          <AppButton type="submit" :text="form.id ? 'Update Term' : 'Create Term'" variant="primary" class="flex-1" :processing="sessionsStore.loading" />
-          <AppButton type="button" text="Clear" variant="outline" @click="resetForm" />
-        </div>
-      </form>
-    </SectionCard>
+    <TermModal 
+      :show="showModal" 
+      :term="selectedTerm"
+      @close="closeModal"
+      @submit="submitTerm"
+    />
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, watch } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import FormField from '../components/FormField.vue'
+import { Plus } from 'lucide-vue-next'
 import SectionCard from '../components/SectionCard.vue'
 import SkeletonRows from '../components/SkeletonRows.vue'
-import StatusBadge from '../components/StatusBadge.vue'
 import AppButton from '../../shared/AppButton.vue'
+import TermModal from '../components/TermModal.vue'
 import { useSchoolAdminSessionsStore } from '../stores/sessions'
 import { useSchoolAdminUiStore } from '../stores/ui'
 import { fmtDate } from '@/lib/helpers'
@@ -86,8 +72,12 @@ const headings = ['Term Name', 'Start Date', 'End Date', 'Actions']
 const sessionsStore = useSchoolAdminSessionsStore()
 const uiStore = useSchoolAdminUiStore()
 
-const form = reactive({ name: '', startDate: '', endDate: '', isCurrent: false })
-const errors = reactive({ name: '', startDate: '', endDate: '' })
+// Modal state
+const showModal = ref(false)
+const selectedTerm = ref(null)
+
+// Loading states
+const deleteLoading = ref(new Set())
 
 const sessionId = computed(() => route.params.id)
 const session = computed(() => sessionsStore.sessions.find(s => s.id === sessionId.value))
@@ -110,23 +100,39 @@ watch(() => sessionId.value, async (newId) => {
   }
 })
 
-const resetForm = () => {
-  Object.assign(form, { name: '', startDate: '', endDate: '', isCurrent: false })
-  Object.assign(errors, { name: '', startDate: '', endDate: '' })
+// Modal functions
+const openModal = () => {
+  selectedTerm.value = null
+  showModal.value = true
 }
 
-const validate = () => {
-  errors.name = form.name ? '' : 'Term name is required.'
-  errors.startDate = form.startDate ? '' : 'Start date is required.'
-  errors.endDate = form.endDate ? '' : 'End date is required.'
-  return !errors.name && !errors.startDate && !errors.endDate
+const closeModal = () => {
+  showModal.value = false
+  selectedTerm.value = null
 }
 
 const editTerm = (term) => {
-  form.name = term.name || ''
-  form.startDate = term.startDate || term.start_date || ''
-  form.endDate = term.endDate || term.end_date || ''
-  form.isCurrent = term.current || term.is_current || term.status === 'Active'
+  selectedTerm.value = term
+  showModal.value = true
+}
+
+const submitTerm = async (termData) => {
+  try {
+    await sessionsStore.saveTerm(sessionId.value, termData)
+    uiStore.addToast({ title: 'Term saved', message: 'Academic term has been saved.', variant: 'success' })
+    
+    // Close modal after a short delay to ensure toast is visible
+    setTimeout(() => {
+      closeModal()
+    }, 100)
+    await sessionsStore.fetchTerms(sessionId.value) // Refresh to get updated list
+  } catch (error) {
+    uiStore.addToast({ title: 'Error', message: error.message || 'Failed to save term.', variant: 'error' })
+    // Close modal after error toast as well
+    setTimeout(() => {
+      closeModal()
+    }, 100)
+  }
 }
 
 const termStatus = (term) => (term.current ? 'Current' : 'Not current')
@@ -162,34 +168,15 @@ const deleteTerm = async (termId) => {
     return
   }
   
+  deleteLoading.value = new Set([...deleteLoading.value, termId])
+  
   try {
     await sessionsStore.deleteTerm(sessionId.value, termId)
     uiStore.addToast({ title: 'Term deleted', message: 'Academic term has been deleted.', variant: 'success' })
   } catch (error) {
     uiStore.addToast({ title: 'Error', message: 'Failed to delete term.', variant: 'error' })
-  }
-}
-
-const submit = async () => {
-  if (!validate() || !sessionId.value) return
-  
-  const payload = {
-    name: form.name,
-    start_date: form.startDate,
-    end_date: form.endDate,
-  }
-  
-  // Only include isCurrent if it's true, to avoid sending false
-  if (form.isCurrent) {
-    payload.is_current = true
-  }
-  
-  try {
-    await sessionsStore.saveTerm(sessionId.value, payload)
-    uiStore.addToast({ title: 'Term saved', message: 'Academic term changes were saved.', variant: 'success' })
-    resetForm()
-  } catch (error) {
-    uiStore.addToast({ title: 'Error', message: 'Failed to save term.', variant: 'error' })
+  } finally {
+    deleteLoading.value = new Set([...deleteLoading.value].filter(loadingId => loadingId !== termId))
   }
 }
 </script>

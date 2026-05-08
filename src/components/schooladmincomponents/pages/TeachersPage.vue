@@ -33,14 +33,13 @@
             </thead>
             <tbody class="divide-y divide-slate-100">
               <tr v-for="teacher in teachersStore.teachers" :key="teacher.id" class="transition hover:bg-slate-50/80">
-                <td class="px-5 py-4 text-sm text-slate-600">{{ teacher?.first_name || '-' }}</td>
-                <td class="px-5 py-4 text-sm text-slate-600">{{ teacher?.last_name || '-' }}</td>
+                <td class="px-5 py-4 text-sm text-slate-600">{{ teacher?.teacher_profile?.staff_id || '-' }}</td>
+                <td class="px-5 py-4 text-sm text-slate-600">{{ teacher?.first_name }} {{ teacher?.last_name || '-' }}</td>
                 <td class="px-5 py-4 text-sm text-slate-600">{{ teacher?.email || '-' }}</td>
                 <td class="px-5 py-4 text-sm text-slate-600">{{ teacher?.phone || '-' }}</td>
-                <td class="px-5 py-4 text-sm text-slate-600">{{ teacher.teacher_profile?.qualification || '-' }}</td>
-                <td class="px-5 py-4 text-sm text-slate-600">{{ teacher.teacher_profile?.staff_id || '-' }}</td>
                 <td class="px-5 py-4">
                   <div class="flex gap-2">
+                    <AppButton text="View" @click="viewTeacher(teacher)" variant="outline" size="xs" />
                     <AppButton text="Edit" @click="editTeacher(teacher)" variant="outline" size="xs" />
                     <AppButton 
                       text="Revoke" 
@@ -107,6 +106,7 @@
     <TeacherModal 
       :show="showModal" 
       :teacher="selectedTeacher"
+      :mode="modalMode"
       @close="closeModal"
       @submit="submitTeacher"
     />
@@ -125,12 +125,10 @@ import { useSchoolAdminTeachersStore } from "../stores/teachers";
 import { useSchoolAdminUiStore } from "../stores/ui";
 
 const headings = [
-    "First Name",
-    "Last Name",
+    "Staff ID",
+    "Full Name",
     "Email",
     "Phone",
-    "Qualification",
-    "Staff ID",
     "Actions",
 ];
 const teachersStore = useSchoolAdminTeachersStore();
@@ -139,6 +137,7 @@ const uiStore = useSchoolAdminUiStore();
 // Modal state
 const showModal = ref(false)
 const selectedTeacher = ref(null)
+const modalMode = ref('edit') // 'view' or 'edit'
 
 // Loading states
 const revokeLoading = ref(new Set())
@@ -158,10 +157,12 @@ const currentTeachers = computed(() => {
 const closeModal = () => {
   showModal.value = false
   selectedTeacher.value = null
+  modalMode.value = 'edit'
 }
 
 const openModal = (teacher) => {
   selectedTeacher.value = teacher
+  modalMode.value = 'edit'
   showModal.value = true
 }
 
@@ -184,6 +185,13 @@ const submit = async () => {
 
 const editTeacher = (teacher) => {
   selectedTeacher.value = teacher
+  modalMode.value = 'edit'
+  showModal.value = true
+}
+
+const viewTeacher = (teacher) => {
+  selectedTeacher.value = teacher
+  modalMode.value = 'view'
   showModal.value = true
 }
 

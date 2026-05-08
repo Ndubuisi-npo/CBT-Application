@@ -68,13 +68,14 @@
                   />
                 </td>
                 <td class="px-5 py-4 font-semibold text-slate-900">{{ session.name }}</td>
+                <td class="px-5 py-4 text-sm text-slate-600">{{ getTermsCount(session) }} terms</td>
                 <td class="px-5 py-4 text-nowrap"><StatusBadge :status="sessionStatus(session)" /></td>
                 <td class="px-5 py-4 text-sm text-nowrap text-slate-600">{{ fmtDate(session.startDate || session.start_date || '-') }}</td>
                 <td class="px-5 py-4 text-sm text-nowrap text-slate-600">{{ fmtDate(session.endDate || session.end_date || '-') }}</td>
                 <td class="px-5 py-4">
                   <div class="flex gap-2">
                     <AppButton text="Edit" @click="openModal(session)" variant="outline" size="xs" />
-                    <ActionButton tag="RouterLink" :to="`/school-admin/terms/${session.id}`" text="Terms" variant="primary" size="xs" />
+                    <ActionButton tag="RouterLink" :to="`/school-admin/terms/${session.id}`" text="View   Terms" variant="primary" size="xs" />
                     <AppButton 
                       :text="sessionStatus(session) === 'Current' ? 'Deactivate' : 'Activate'" 
                       @click="toggleSession(session.id)" 
@@ -119,12 +120,13 @@ import SectionCard from '../components/SectionCard.vue'
 import SkeletonRows from '../components/SkeletonRows.vue'
 import StatusBadge from '../components/StatusBadge.vue'
 import AppButton from '../../shared/AppButton.vue'
+import ActionButton from '../../shared/ActionButton.vue'
 import SessionModal from '../components/SessionModal.vue'
 import { useSchoolAdminSessionsStore } from '../stores/sessions'
 import { useSchoolAdminUiStore } from '../stores/ui'
 import { fmtDate } from '@/lib/helpers'
 
-const headings = ['Session Name', 'Status', 'Start Date', 'End Date', 'Actions']
+const headings = ['Session Name', 'Status', 'Start Date', 'End Date', 'Terms', 'Actions']
 const sessionsStore = useSchoolAdminSessionsStore()
 const uiStore = useSchoolAdminUiStore()
 
@@ -309,5 +311,9 @@ const submitSession = async (sessionData) => {
       closeModal()
     }, 100)
   }
+}
+
+const getTermsCount = (session) => {
+  return sessionsStore.terms[session.id]?.length || 0
 }
 </script>

@@ -49,6 +49,28 @@
           </div>
         </div>
       </div>
+
+      <div class="rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-slate-600">My Classes</p>
+            <p class="text-2xl font-bold text-slate-900">{{ classAssignments.length }}</p>
+          </div>
+          <div class="h-12 w-12 rounded-full bg-indigo-100 flex items-center justify-center">
+            <Users class="h-6 w-6 text-indigo-600" />
+          </div>
+        </div>
+        <div class="mt-4">
+          <AppButton 
+            @click="$router.push('/teachers/my-classes')" 
+            :icon="Users" 
+            text="View My Classes" 
+            variant="outline" 
+            size="sm" 
+            full-width 
+          />
+        </div>
+      </div>
     </div>
 
     <!-- Quick Actions -->
@@ -167,14 +189,16 @@
 
 <script setup>
 import { computed, onMounted } from 'vue'
-import { FileQuestion, ClipboardList, CheckCircle, Tag, Edit, Eye, BarChart3 } from 'lucide-vue-next'
+import { FileQuestion, ClipboardList, CheckCircle, Tag, Edit, Eye, BarChart3, Users } from 'lucide-vue-next'
 import SectionCard from '../components/SectionCard.vue'
 import AppButton from '../../shared/AppButton.vue'
 import { useTeachersQuestionsStore } from '../stores/questions'
 import { useTeachersExamsStore } from '../stores/exams'
+import { usePermissions } from '../composables/usePermissions'
 
 const questionsStore = useTeachersQuestionsStore()
 const examsStore = useTeachersExamsStore()
+const { classAssignments } = usePermissions()
 
 const recentQuestions = computed(() => 
   questionsStore.questions.slice(0, 5)

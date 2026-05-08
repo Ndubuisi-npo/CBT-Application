@@ -3,7 +3,27 @@
     <!-- Filters Section -->
     <SectionCard title="Question Bank" subtitle="Manage your question bank with advanced filtering.">
       <template #header>
-        <AppButton @click="openCreateModal()" :icon="Plus" text="Create Question" variant="primary" size="base" />
+        <div class="flex items-center gap-3">
+          <div v-if="isSubjectTeacher" class="text-sm text-slate-600">
+            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+              Subject Teacher
+            </span>
+          </div>
+          <div v-else-if="isClassTeacher" class="text-sm text-slate-600">
+            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+              Class Teacher
+            </span>
+          </div>
+          <AppButton 
+            @click="openCreateModal()" 
+            :icon="Plus" 
+            text="Create Question" 
+            variant="primary" 
+            size="base"
+            :disabled="!canCreateQuestionsForSubject(filters.subject)"
+            :title="!canCreateQuestionsForSubject(filters.subject) ? 'Select a subject you teach to create questions' : 'Create Question'"
+          />
+        </div>
       </template>
       
       <div v-if="questionsStore.loading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
@@ -102,8 +122,29 @@
               <td class="px-5 py-4 text-sm text-slate-600">
                 <div class="flex gap-2">
                   <AppButton @click="previewQuestion(question)" :icon="Eye" variant="ghost" size="xs" />
-                  <AppButton @click="editQuestion(question)" :icon="Edit" variant="ghost" size="xs" />
-                  <AppButton @click="deleteQuestion(question.id)" :icon="Trash2" variant="ghost" size="xs" />
+                  <AppButton 
+                    v-if="canEditSubject(question.subject?.name)"
+                    @click="editQuestion(question)" 
+                    :icon="Edit" 
+                    variant="ghost" 
+                    size="xs" 
+                    :title="canEditSubject(question.subject?.name) ? 'Edit Question' : 'Cannot edit: Subject has dedicated teacher'"
+                  />
+                  <AppButton 
+                    v-if="canEditSubject(question.subject?.name)"
+                    @click="deleteQuestion(question.id)" 
+                    :icon="Trash2" 
+                    variant="ghost" 
+                    size="xs"
+                    :title="canEditSubject(question.subject?.name) ? 'Delete Question' : 'Cannot delete: Subject has dedicated teacher'"
+                  />
+                  <div 
+                    v-if="!canEditSubject(question.subject?.name)"
+                    class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800"
+                    title="Subject has dedicated teacher"
+                  >
+                    <Lock class="h-3 w-3" />
+                  </div>
                 </div>
               </td>
             </tr>
@@ -123,15 +164,16 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
-import { Plus, FileQuestion, Eye, Edit, Trash2 } from 'lucide-vue-next'
+import { ref, computed, onMounted } from 'vue'
+import { Plus, Search, Filter, Eye, Edit, Trash2, Lock } from 'lucide-vue-next'
 import SectionCard from '../components/SectionCard.vue'
-import SkeletonRows from '../components/SkeletonRows.vue'
 import AppButton from '../../shared/AppButton.vue'
-import QuestionModal from '../components/QuestionModal.vue'
 import { useTeachersQuestionsStore } from '../stores/questions'
+import { usePermissions } from '../composables/usePermissions'
+import QuestionModal from '../components/QuestionModal.vue'
 
 const questionsStore = useTeachersQuestionsStore()
+const { canEditSubject, canCreateQuestionsForSubject, userType, isSubjectTeacher } = usePermissions()
 
 // Reactive state
 const showModal = ref(false)
@@ -150,6 +192,10 @@ const filters = ref({
 })
 
 const openCreateModal = () => {
+  if (!canCreateQuestionsForSubject(filters.value.subject)) {
+    alert('You can only create questions for subjects you are assigned to teach.')
+    return
+  }
   selectedQuestion.value = null
   showModal.value = true
 }

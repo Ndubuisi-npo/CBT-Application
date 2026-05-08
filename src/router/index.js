@@ -22,6 +22,7 @@ import TeachersExamList from '../components/teacherscomponent/pages/ExamList.vue
 import TeachersTopicsPage from '../components/teacherscomponent/pages/TopicsPage.vue';
 import TeachersResultsPage from '../components/teacherscomponent/pages/ResultsPage.vue';
 import TeachersSettingsPage from '../components/teacherscomponent/pages/TeachersSettingsPage.vue';
+import TeachersMyClasses from '../components/teacherscomponent/pages/MyClasses.vue';
 import SchoolAdminSubjects from '../components/schooladmincomponents/pages/SubjectsPage.vue';
 import SchoolAdminSubjectAssignTeacher from '../components/schooladmincomponents/pages/SubjectAssignTeacherPage.vue';
 import SchoolAdminSettings from '../components/schooladmincomponents/pages/SettingsPage.vue';
@@ -56,7 +57,7 @@ const routes = [
           { path: 'sessions', name: 'SchoolAdminSessions', component: SchoolAdminSessions },
           { path: 'terms/:id', name: 'SchoolAdminSessionTerms', component: SchoolAdminSessionTerms },
           { path: 'class-levels', name: 'SchoolAdminClassLevels', component: SchoolAdminClassLevels },
-          { path: 'class-arms/:id', name: 'SchoolAdminClassArms', component: SchoolAdminClassArms },
+          { path: 'classes/:id', name: 'SchoolAdminClasses', component: SchoolAdminClassArms },
           { path: 'teachers', name: 'SchoolAdminTeachers', component: SchoolAdminTeachers },
           { path: 'students', name: 'SchoolAdminStudents', component: SchoolAdminStudents },
           { path: 'subjects', name: 'SchoolAdminSubjects', component: SchoolAdminSubjects },
@@ -77,6 +78,7 @@ const routes = [
         component: SchoolAdminLayout,
         children: [
           { path: 'dashboard', name: 'TeachersDashboard', component: TeachersDashboard },
+          { path: 'my-classes', name: 'TeachersMyClasses', component: TeachersMyClasses },
           { path: 'questions', name: 'TeachersQuestionBank', component: TeachersQuestionBank },
           { path: 'topics', name: 'TeachersTopicsPage', component: TeachersTopicsPage },
           { path: 'exam-wizard', name: 'TeachersExamWizard', component: TeachersExamWizard },

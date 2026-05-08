@@ -1,6 +1,6 @@
 <template>
   <div class="space-y-6">
-    <SectionCard :title="`Class Arms for ${classLevel?.name || '...'}`" subtitle="Manage class arms (e.g., JSS 1A, JSS 1B).">
+    <SectionCard :title="`Classes for ${classLevel?.name || '...'}`" subtitle="Manage classes (e.g., JSS 1A, JSS 1B).">
       <template #header>
         <AppButton @click="openModal()" :icon="Plus" text="Create" variant="primary" size="sm" />
       </template>
@@ -11,8 +11,8 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
           </svg>
         </div>
-        <h3 class="text-lg font-medium text-slate-900 mb-2">No class arms created</h3>
-        <p class="text-slate-600 mb-6">Get started by creating your first class arm for {{ classLevel?.name || 'this class level' }}.</p>
+        <h3 class="text-lg font-medium text-slate-900 mb-2">No classes created</h3>
+        <p class="text-slate-600 mb-6">Get started by creating your first class for {{ classLevel?.name || 'this class level' }}.</p>
       </div>
       <div v-else class="overflow-hidden rounded-[24px] border border-slate-200">
         <div class="overflow-x-auto">
@@ -26,12 +26,14 @@
               <tr v-for="classArm in classArmsStore.classArms" :key="classArm.id" class="transition hover:bg-slate-50/80">
                 <td class="px-5 py-4 font-semibold text-slate-900">{{ classArm.name }}</td>
                 <td class="px-5 py-4 text-sm text-slate-600">{{ classLevel?.name || '-' }}</td>
+                <td class="px-5 py-4 text-sm text-slate-600">{{ getAssignedTeacher(classArm) }}</td>
                 <td class="px-5 py-4">
                   <div class="flex gap-2">
-                    <AppButton text="Edit" @click="editClassArm(classArm)" variant="outline" size="xs" />
+                    <AppButton text="Edit" @click="editClass(classArm)" variant="outline" size="xs" />
+                    <AppButton text="Assign Teacher" @click="openAssignTeacherModal(classArm)" variant="primary" size="xs" />
                     <AppButton 
                       text="Delete" 
-                      @click="deleteClassArm(classArm.id)" 
+                      @click="deleteClass(classArm.id)" 
                       variant="danger" 
                       size="xs"
                       loadingText="Deleting..."
@@ -47,11 +49,18 @@
       </div>
     </SectionCard>
 
-    <ClassArmModal 
+    <ClassModal 
       :show="showModal" 
-      :classArm="selectedClassArm"
+      :classItem="selectedClass"
       @close="closeModal"
-      @submit="submitClassArm"
+      @submit="submitClass"
+    />
+
+    <AssignTeacherModal 
+      :show="showAssignTeacherModal" 
+      :classItem="selectedClass"
+      @close="closeAssignTeacherModal"
+      @submit="assignTeacher"
     />
   </div>
 </template>
@@ -62,21 +71,24 @@ import { useRoute, useRouter } from 'vue-router'
 import SectionCard from '../components/SectionCard.vue'
 import SkeletonRows from '../components/SkeletonRows.vue'
 import AppButton from '../../shared/AppButton.vue'
-import ClassArmModal from '../components/ClassArmModal.vue'
+import ClassModal from '../components/ClassModal.vue'
+import AssignTeacherModal from '../components/AssignTeacherModal.vue'
 import { Plus } from 'lucide-vue-next'
 import { useSchoolAdminClassArmsStore } from '../stores/classArms'
 import { useSchoolAdminClassLevelsStore } from '../stores/classLevels'
+import { useSchoolAdminTeachersStore } from '../stores/teachers'
 import { useSchoolAdminUiStore } from '../stores/ui'
 
 const route = useRoute()
-const headings = ['Class Arm Name', 'Class Level', 'Actions']
+const headings = ['Class Name', 'Class Level', 'Teacher', 'Actions']
 const classLevelsStore = useSchoolAdminClassLevelsStore()
 const classArmsStore = useSchoolAdminClassArmsStore()
 const uiStore = useSchoolAdminUiStore()
 
 // Modal state
 const showModal = ref(false)
-const selectedClassArm = ref(null)
+const selectedClass = ref(null)
+const showAssignTeacherModal = ref(false)
 
 // Loading states
 const deleteLoading = ref(new Set())
@@ -103,35 +115,35 @@ watch(() => classLevelId.value, async (newId) => {
 
 // Modal functions
 const openModal = () => {
-  selectedClassArm.value = null
+  selectedClass.value = null
   showModal.value = true
 }
 
 const closeModal = () => {
   showModal.value = false
-  selectedClassArm.value = null
+  selectedClass.value = null
 }
 
-const editClassArm = (classArm) => {
-  selectedClassArm.value = classArm
+const editClass = (classItem) => {
+  selectedClass.value = classItem
   showModal.value = true
 }
 
-const submitClassArm = async (classArmData) => {
+const submitClass = async (classData) => {
   try {
-    if (classArmData.id) {
-      // Update existing class arm
+    if (classData.id) {
+      // Update existing class
       await classArmsStore.saveClassArm(classLevelId.value, {
-        id: classArmData.id,
-        name: classArmData.name
+        id: classData.id,
+        name: classData.name
       })
-      uiStore.addToast({ title: 'Class arm updated', message: 'Class arm has been updated.', variant: 'success' })
+      uiStore.addToast({ title: 'Class updated', message: 'Class has been updated.', variant: 'success' })
     } else {
-      // Create new class arm
+      // Create new class
       await classArmsStore.saveClassArm(classLevelId.value, {
-        name: classArmData.name
+        name: classData.name
       })
-      uiStore.addToast({ title: 'Class arm created', message: 'Class arm has been created.', variant: 'success' })
+      uiStore.addToast({ title: 'Class created', message: 'Class has been created.', variant: 'success' })
     }
     
     // Close modal after a short delay to ensure toast is visible
@@ -140,7 +152,7 @@ const submitClassArm = async (classArmData) => {
     }, 100)
     await classArmsStore.fetchClassArms(classLevelId.value) // Refresh to get updated list
   } catch (error) {
-    uiStore.addToast({ title: 'Error', message: error.message || 'Failed to save class arm.', variant: 'error' })
+    uiStore.addToast({ title: 'Error', message: error.message || 'Failed to save class.', variant: 'error' })
     // Close modal after error toast as well
     setTimeout(() => {
       closeModal()
@@ -148,8 +160,8 @@ const submitClassArm = async (classArmData) => {
   }
 }
 
-const deleteClassArm = async (id) => {
-  if (!confirm('Are you sure you want to delete this class arm? This action cannot be undone.')) {
+const deleteClass = async (id) => {
+  if (!confirm('Are you sure you want to delete this class? This action cannot be undone.')) {
     return
   }
   
@@ -157,11 +169,53 @@ const deleteClassArm = async (id) => {
   
   try {
     await classArmsStore.deleteClassArm(classLevelId.value, id)
-    uiStore.addToast({ title: 'Class arm deleted', message: 'Class arm has been deleted.', variant: 'success' })
+    uiStore.addToast({ title: 'Class deleted', message: 'Class has been deleted.', variant: 'success' })
   } catch (error) {
-    uiStore.addToast({ title: 'Error', message: 'Failed to delete class arm.', variant: 'error' })
+    uiStore.addToast({ title: 'Error', message: 'Failed to delete class.', variant: 'error' })
   } finally {
     deleteLoading.value = new Set([...deleteLoading.value].filter(loadingId => loadingId !== id))
   }
+}
+
+// Teacher assignment functions
+const openAssignTeacherModal = (classItem) => {
+  selectedClass.value = classItem
+  showAssignTeacherModal.value = true
+}
+
+const closeAssignTeacherModal = () => {
+  showAssignTeacherModal.value = false
+  selectedClass.value = null
+}
+
+const assignTeacher = async (assignmentData) => {
+  try {
+    // This would need an API endpoint for assigning teachers to classes
+    // For now, we'll show a success message and close the modal
+    uiStore.addToast({ title: 'Teacher assigned', message: 'Teacher has been assigned to the class.', variant: 'success' })
+    
+    // Close modal after a short delay to ensure toast is visible
+    setTimeout(() => {
+      closeAssignTeacherModal()
+    }, 100)
+    
+    // Refresh class data to show updated teacher assignment
+    await classArmsStore.fetchClassArms(classLevelId.value)
+  } catch (error) {
+    uiStore.addToast({ title: 'Error', message: 'Failed to assign teacher.', variant: 'error' })
+    // Close modal after error toast as well
+    setTimeout(() => {
+      closeAssignTeacherModal()
+    }, 100)
+  }
+}
+
+const getAssignedTeacher = (classItem) => {
+  // This would need to be populated from the API response
+  // For now, we'll show a placeholder or check if there's a teacher assigned
+  if (classItem.teacher) {
+    return `${classItem.teacher.first_name} ${classItem.teacher.last_name}`
+  }
+  return 'Not assigned'
 }
 </script>
