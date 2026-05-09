@@ -1,5 +1,6 @@
 <template>
-  <div class="max-w-2xl">
+  <div class="space-y-6">
+    <!-- Password Change Section -->
     <SectionCard title="Change Password" subtitle="Update your account password for security.">
       <form @submit.prevent="handlePasswordChange" class="space-y-5">
         <FormField label="Current Password" :error="errors.currentPassword">
@@ -65,16 +66,21 @@
           </div>
         </FormField>
 
-        <AppButton 
-          type="submit" 
-          text="Change Password" 
-          full-width 
-          variant="primary" 
-          :processing="loading" 
-          @click="handlePasswordChange" 
-        />
+        <div class="flex gap-2">
+          <AppButton 
+            type="submit" 
+            text="Change Password" 
+            variant="primary" 
+            :loadingText="'Changing...'"
+            :processing="loading"
+            :disabled="loading"
+          />
+        </div>
       </form>
     </SectionCard>
+
+    <!-- Grading System Section -->
+    <GradingSystemSettings />
   </div>
 </template>
 
@@ -84,9 +90,10 @@ import { Eye, EyeOff } from 'lucide-vue-next'
 import FormField from '../components/FormField.vue'
 import SectionCard from '../components/SectionCard.vue'
 import AppButton from '../../shared/AppButton.vue'
+import GradingSystemSettings from '../components/GradingSystemSettings.vue'
 import { useSchoolAdminUiStore } from '../stores/ui'
-import { changePassword } from '../services/api/settings'
 import { useActivities } from '../composables/useActivities'
+import { changePassword } from '../services/api/settings'
 
 const uiStore = useSchoolAdminUiStore()
 const loading = ref(false)
