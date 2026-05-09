@@ -3,6 +3,18 @@
     <SectionCard v-if="!showArchived" title="Teachers" subtitle="Manage staff records, contacts, department ownership, and class/subject assignments.">
       <template #header>
         <div class="flex flex-wrap items-center gap-3">
+          <div class="flex-1 min-w-[200px]">
+            <div class="relative">
+              <Search class="absolute left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <input 
+                v-model="searchQuery" 
+                type="text" 
+                class="sa-input pl-12" 
+                placeholder="Search teachers..."
+                style="padding-left: 2.5rem;"
+              />
+            </div>
+          </div>
           <AppButton @click="openModal()" :icon="Plus" text="Create Teacher" variant="primary" size="base" />
           <AppButton 
             @click="toggleView" 
@@ -13,14 +25,30 @@
         </div>
       </template>
       <SkeletonRows v-if="teachersStore.loading" :columns="5" />
-      <div v-else-if="teachersStore.teachers.length === 0" class="rounded-[24px] border border-slate-200 bg-white p-12 text-center">
+      <div v-else-if="filteredTeachers.length === 0" class="rounded-[24px] border border-slate-200 bg-white p-12 text-center">
         <div class="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-slate-100">
           <Users class="h-12 w-12 text-slate-400" />
         </div>
-        <h3 class="mt-6 text-xl font-semibold text-slate-900">No Teachers</h3>
-        <p class="mt-2 text-slate-600">Get started by adding your first teacher to manage your school staff.</p>
+        <h3 class="mt-6 text-xl font-semibold text-slate-900">No Teachers Found</h3>
+        <p class="mt-2 text-slate-600">
+          {{ searchQuery ? 'No teachers match your search criteria.' : 'Get started by adding your first teacher to manage your school staff.' }}
+        </p>
         <div class="mt-8">
-          <AppButton @click="openModal()" :icon="Plus" text="Add Your First Teacher" variant="primary" size="lg" />
+          <AppButton 
+            v-if="!searchQuery" 
+            @click="openModal()" 
+            :icon="Plus" 
+            text="Add Your First Teacher" 
+            variant="primary" 
+            size="lg" 
+          />
+          <AppButton 
+            v-else 
+            @click="clearSearch" 
+            text="Clear Search" 
+            variant="outline" 
+            size="lg" 
+          />
         </div>
       </div>
       <div v-else class="overflow-hidden rounded-[24px] border border-slate-200">
@@ -32,7 +60,7 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
-              <tr v-for="teacher in teachersStore.teachers" :key="teacher.id" class="transition hover:bg-slate-50/80">
+              <tr v-for="teacher in filteredTeachers" :key="teacher.id" class="transition hover:bg-slate-50/80">
                 <td class="px-5 py-4 text-sm text-slate-600">{{ teacher?.teacher_profile?.staff_id || '-' }}</td>
                 <td class="px-5 py-4 text-sm text-slate-600">{{ teacher?.first_name }} {{ teacher?.last_name || '-' }}</td>
                 <td class="px-5 py-4 text-sm text-slate-600">{{ teacher?.email || '-' }}</td>
@@ -115,7 +143,7 @@
 
 <script setup>
 import { onMounted, reactive, computed, ref } from "vue";
-import { Plus, Users } from 'lucide-vue-next';
+import { Plus, Users, Search } from 'lucide-vue-next';
 import FormField from "../components/FormField.vue";
 import SectionCard from "../components/SectionCard.vue";
 import SkeletonRows from "../components/SkeletonRows.vue";
@@ -149,10 +177,48 @@ const errors = reactive({ firstName: '', lastName: '', email: '', phone: '', qua
 // Toggle state for active/archived view
 const showArchived = ref(false);
 
+// Search state
+const searchQuery = ref('');
+
 // Computed property to determine which teachers to show
 const currentTeachers = computed(() => {
   return showArchived.value ? teachersStore.archivedTeachers : teachersStore.teachers;
 });
+
+// Computed property for filtered teachers
+const filteredTeachers = computed(() => {
+  if (!searchQuery.value.trim()) {
+    return currentTeachers.value;
+  }
+  
+  const query = searchQuery.value.toLowerCase().trim();
+  return currentTeachers.value.filter(teacher => {
+    // Search in staff ID
+    const staffId = teacher?.teacher_profile?.staff_id?.toLowerCase() || '';
+    
+    // Search in full name
+    const fullName = `${teacher?.first_name || ''} ${teacher?.last_name || ''}`.toLowerCase();
+    
+    // Search in email
+    const email = teacher?.email?.toLowerCase() || '';
+    
+    // Search in phone
+    const phone = teacher?.phone?.toLowerCase() || '';
+    
+    // Search in qualification
+    const qualification = teacher?.teacher_profile?.qualification?.toLowerCase() || '';
+    
+    return staffId.includes(query) || 
+           fullName.includes(query) || 
+           email.includes(query) || 
+           phone.includes(query) || 
+           qualification.includes(query);
+  });
+});
+
+const clearSearch = () => {
+  searchQuery.value = '';
+};
 
 const closeModal = () => {
   showModal.value = false

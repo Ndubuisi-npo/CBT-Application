@@ -1,7 +1,61 @@
 <template>
   <div class="space-y-6">
     <SectionCard title="Grading System" subtitle="Configure grade ranges and names for student assessments.">
-      <div class="space-y-6">
+      <!-- Loading Skeleton -->
+      <div v-if="isInitialLoading" class="space-y-6">
+        <div class="space-y-4">
+          <div class="flex items-center justify-between">
+            <h4 class="text-sm font-medium text-slate-700 bg-slate-200 rounded w-32 h-4"></h4>
+            <div class="bg-slate-200 rounded w-24 h-8"></div>
+          </div>
+          
+          <!-- Grade Skeleton Rows -->
+          <div class="space-y-3">
+            <div v-for="i in 1" :key="i" class="border border-slate-200 rounded-lg p-4 bg-white">
+              <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                <div class="space-y-2">
+                  <div class="bg-slate-200 rounded w-20 h-3"></div>
+                  <div class="bg-slate-200 rounded w-full h-8"></div>
+                </div>
+                <div class="space-y-2">
+                  <div class="bg-slate-200 rounded w-24 h-3"></div>
+                  <div class="flex items-center gap-2">
+                    <div class="bg-slate-200 rounded w-16 h-8"></div>
+                    <div class="bg-slate-200 rounded w-8 h-3"></div>
+                  </div>
+                </div>
+                <div class="space-y-2">
+                  <div class="bg-slate-200 rounded w-28 h-3"></div>
+                  <div class="flex items-center gap-2">
+                    <div class="bg-slate-200 rounded w-16 h-8"></div>
+                    <div class="bg-slate-200 rounded w-8 h-3"></div>
+                  </div>
+                </div>
+                <div class="flex gap-2">
+                  <div class="bg-slate-200 rounded w-16 h-6"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Preview Skeleton -->
+        <div class="border-t pt-6">
+          <h4 class="text-sm font-medium text-slate-700 bg-slate-200 rounded w-24 h-4 mb-4"></h4>
+          <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            <div v-for="i in 1" :key="i" class="text-center p-3 rounded-lg border bg-slate-200 h-16"></div>
+          </div>
+        </div>
+
+        <!-- Action Buttons Skeleton -->
+        <div class="flex gap-3 pt-4 border-t">
+          <div class="bg-slate-200 rounded w-40 h-8"></div>
+          <div class="bg-slate-200 rounded w-32 h-8"></div>
+        </div>
+      </div>
+
+      <!-- Actual Content -->
+      <div v-else class="space-y-6">
         <!-- Grade Range Configuration -->
         <div class="space-y-4">
           <div class="flex items-center justify-between">
@@ -126,28 +180,33 @@
 </template>
 
 <script setup>
-import { reactive, ref, onMounted } from 'vue'
+import { reactive, ref, onMounted, computed } from 'vue'
 import { Plus, X } from 'lucide-vue-next'
 import SectionCard from './SectionCard.vue'
 import AppButton from '../../shared/AppButton.vue'
 import { useSchoolAdminUiStore } from '../stores/ui'
+import { useSchoolAdminGradingStore } from '../stores/grading'
 
 const uiStore = useSchoolAdminUiStore()
+const gradingStore = useSchoolAdminGradingStore()
 
 const loading = ref(false)
+const isInitialLoading = ref(true)
 let nextGradeId = 1
 
+// Initialize with empty grading system
 const gradingSystem = reactive({
   grades: [
-    { id: 1, name: 'A', min: 90, max: 100 },
-    { id: 2, name: 'B', min: 80, max: 89 },
-    { id: 3, name: 'C', min: 70, max: 79 },
-    { id: 4, name: 'D', min: 60, max: 69 },
-    { id: 5, name: 'F', min: 0, max: 59 }
+    { id: 1, name: '', min: 0, max: 0 }
   ]
 })
 
 const errors = reactive({})
+
+// Computed property to check if we have an existing grading scale
+const hasExistingGradingScale = computed(() => {
+  return gradingStore.currentGradingScale !== null
+})
 
 const resetErrors = () => {
   Object.keys(errors).forEach(key => {
@@ -238,14 +297,49 @@ const validateGradingSystem = () => {
 
 const resetToDefaults = () => {
   gradingSystem.grades = [
-    { id: 1, name: 'A', min: 90, max: 100 },
-    { id: 2, name: 'B', min: 80, max: 89 },
-    { id: 3, name: 'C', min: 70, max: 79 },
-    { id: 4, name: 'D', min: 60, max: 69 },
-    { id: 5, name: 'F', min: 0, max: 59 }
+    { id: 1, name: '', min: 0, max: 0 }
   ]
-  nextGradeId = 5
+  nextGradeId = 1
   resetErrors()
+}
+
+const prepareGradesForAPI = () => {
+  return gradingSystem.grades.map(grade => ({
+    name: grade.name,
+    min_score: grade.min,
+    max_score: grade.max
+  }))
+}
+
+const loadGradingSystem = async () => {
+  try {
+    isInitialLoading.value = true
+    await gradingStore.fetchGradingScales()
+    
+    // If we have grading scales, use the first one to populate the form
+    if (gradingStore.gradingScales.length > 0) {
+      const scale = gradingStore.gradingScales[0] // Use first grading scale
+      
+      // Set the current grading scale for future operations
+      gradingStore.setCurrentGradingScale(scale)
+      
+      // Convert API data to component format
+      if (scale?.grades) {
+        gradingSystem.grades = scale.grades.map((grade, index) => ({
+          id: index + 1,
+          name: grade.name,
+          min: grade.min_score,
+          max: grade.max_score
+        }))
+        nextGradeId = gradingSystem.grades.length
+      }
+    }
+  } catch (error) {
+    console.error('Failed to load grading system:', error)
+    // Keep default values if API fails
+  } finally {
+    isInitialLoading.value = false
+  }
 }
 
 const saveGradingSystem = async () => {
@@ -256,15 +350,29 @@ const saveGradingSystem = async () => {
   loading.value = true
 
   try {
-    // This would need an API endpoint to save grading system
-    // For now, we'll simulate saving and show success message
-    await new Promise(resolve => setTimeout(resolve, 1000)) // Simulate API call
+    const gradesData = prepareGradesForAPI()
     
-    uiStore.addToast({ 
-      title: 'Grading System Saved', 
-      message: 'Grade ranges and names have been successfully updated.', 
-      variant: 'success' 
-    })
+    if (hasExistingGradingScale.value && gradingStore.currentGradingScale) {
+      // Update existing grading scale
+      await gradingStore.updateGradingScale(gradingStore.currentGradingScale.id, {
+        grades: gradesData
+      })
+      uiStore.addToast({ 
+        title: 'Grading System Updated', 
+        message: 'Grade ranges and names have been successfully updated.', 
+        variant: 'success' 
+      })
+    } else {
+      // Create new grading scale
+      await gradingStore.createGradingScale({
+        grades: gradesData
+      })
+      uiStore.addToast({ 
+        title: 'Grading System Created', 
+        message: 'Grade ranges and names have been successfully created.', 
+        variant: 'success' 
+      })
+    }
   } catch (error) {
     uiStore.addToast({ 
       title: 'Error', 
@@ -277,8 +385,6 @@ const saveGradingSystem = async () => {
 }
 
 onMounted(() => {
-  // Load existing grading system settings from API when component mounts
-  // For now, using default values
-  nextGradeId = 5
+  loadGradingSystem()
 })
 </script>
