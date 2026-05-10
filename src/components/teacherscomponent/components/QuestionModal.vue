@@ -15,12 +15,12 @@
               <label class="block text-sm font-medium text-slate-700">Question Type</label>
               <select v-model="form.type" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" @change="onTypeChange">
                 <option value="">Select Question Type</option>
-                <option value="Multiple Choice">Multiple Choice</option>
-                <option value="True/False">True/False</option>
-                <option value="Fill in the Blank">Fill in the Blank</option>
-                <option value="Essay">Essay</option>
-                <option value="Match Pairs">Match the Pairs</option>
-                <option value="Ordering">Ordering</option>
+                <option value="multiple_choice">Multiple Choice</option>
+                <option value="true_false">True/False</option>
+                <option value="fill_in_the_blank">Fill in the Blank</option>
+                <option value="essay">Essay</option>
+                <option value="match_pairs">Match the Pairs</option>
+                <option value="ordering">Ordering</option>
               </select>
             </div>
 
@@ -68,6 +68,15 @@
               </div>
             </div>
 
+            <div>
+              <label class="block text-sm font-medium text-slate-700">Explanation (Optional)</label>
+              <textarea 
+                v-model="form.explanation" 
+                class="w-full p-3 text-sm min-h-[100px]" 
+                placeholder="Provide an explanation or notes for this question"
+              ></textarea>
+            </div>
+
             <!-- Image Upload -->
             <div>
               <label class="block text-sm font-medium text-slate-700">Question Image (Optional)</label>
@@ -85,7 +94,7 @@
             </div>
 
             <!-- Dynamic Fields Based on Question Type -->
-            <div v-if="form.type === 'Multiple Choice'" class="space-y-4">
+<div v-if="form.type === 'multiple_choice'" class="space-y-4">
               <h4 class="font-medium text-slate-900">Answer Options</h4>
               <div v-for="(option, index) in form.options" :key="index" class="flex items-center gap-2">
                 <input 
@@ -112,7 +121,7 @@
               <AppButton @click="addOption" :icon="Plus" text="Add Option" variant="outline" size="sm" />
             </div>
 
-            <div v-if="form.type === 'True/False'" class="space-y-4">
+            <div v-if="form.type === 'true_false'" class="space-y-4">
               <h4 class="font-medium text-slate-900">Answer</h4>
               <div class="flex gap-4">
                 <label class="flex items-center gap-2">
@@ -126,7 +135,7 @@
               </div>
             </div>
 
-            <div v-if="form.type === 'Fill in the Blank'" class="space-y-4">
+            <div v-if="form.type === 'fill_in_the_blank'" class="space-y-4">
               <h4 class="font-medium text-slate-900">Acceptable Answers</h4>
               <div v-for="(answer, index) in form.acceptable_answers" :key="index" class="flex items-center gap-2">
                 <input 
@@ -146,7 +155,7 @@
               <AppButton @click="addAcceptableAnswer" :icon="Plus" text="Add Answer" variant="outline" size="sm" />
             </div>
 
-            <div v-if="form.type === 'Essay'" class="space-y-4">
+            <div v-if="form.type === 'essay'" class="space-y-4">
               <h4 class="font-medium text-slate-900">Essay Settings</h4>
               <div>
                 <label class="block text-sm font-medium text-slate-700">Word Limit (Optional)</label>
@@ -167,7 +176,7 @@
               </div>
             </div>
 
-            <div v-if="form.type === 'Match Pairs'" class="space-y-4">
+            <div v-if="form.type === 'match_pairs'" class="space-y-4">
               <h4 class="font-medium text-slate-900">Matching Pairs</h4>
               <div v-for="(pair, index) in form.matching_pairs" :key="index" class="grid grid-cols-2 gap-4">
                 <div>
@@ -192,7 +201,7 @@
               <AppButton @click="addMatchingPair" :icon="Plus" text="Add Pair" variant="outline" size="sm" />
             </div>
 
-            <div v-if="form.type === 'Ordering'" class="space-y-4">
+            <div v-if="form.type === 'ordering'" class="space-y-4">
               <h4 class="font-medium text-slate-900">Ordering Items</h4>
               <div v-for="(item, index) in form.ordering_items" :key="index" class="flex items-center gap-2">
                 <span class="w-8 text-center font-medium">{{ index + 1 }}.</span>
@@ -263,7 +272,8 @@ const form = reactive({
   word_limit: null,
   sample_answer: '',
   matching_pairs: [{ item: '', match: '' }],
-  ordering_items: ['', '']
+  ordering_items: ['', ''],
+  explanation: ''
 })
 
 const resetForm = () => {
@@ -384,11 +394,11 @@ const validate = () => {
   if (!form.class?.trim()) return false
   
   // Type-specific validation
-  if (form.type === 'Multiple Choice' && (!form.options.filter(opt => opt.trim()).length >= 2)) return false
-  if (form.type === 'True/False' && form.correct_answer === null) return false
-  if (form.type === 'Fill in the Blank' && !form.acceptable_answers.filter(ans => ans.trim()).length) return false
-  if (form.type === 'Match Pairs' && !form.matching_pairs.filter(pair => pair.item.trim() && pair.match.trim()).length) return false
-  if (form.type === 'Ordering' && !form.ordering_items.filter(item => item.trim()).length) return false
+  if (form.type === 'multiple_choice' && form.options.filter(opt => opt.trim()).length < 2) return false
+  if (form.type === 'true_false' && form.correct_answer === null) return false
+  if (form.type === 'fill_in_the_blank' && !form.acceptable_answers.filter(ans => ans.trim()).length) return false
+  if (form.type === 'match_pairs' && !form.matching_pairs.filter(pair => pair.item.trim() && pair.match.trim()).length) return false
+  if (form.type === 'ordering' && !form.ordering_items.filter(item => item.trim()).length) return false
   
   return true
 }
@@ -399,12 +409,21 @@ const submit = async () => {
   loading.value = true
   
   try {
-    const payload = { ...form }
-    
-    emit('submit', {
+    const payload = {
       id: props.question?.id,
-      ...payload
-    })
+      type: form.type,
+      text: form.question_text,
+      marks: Number(form.points),
+      difficulty: form.difficulty,
+      options: form.options.filter((opt) => opt.trim()),
+      correctAnswer: form.correct_answer,
+      explanation: form.explanation || '',
+      subject: form.subject,
+      topic: form.topic,
+      class: form.class,
+    }
+    
+    emit('submit', payload)
   } catch (error) {
     console.error('Failed to save question:', error)
   } finally {

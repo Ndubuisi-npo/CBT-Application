@@ -27,6 +27,10 @@ import SchoolAdminProfile from '../components/schooladmincomponents/pages/Profil
 import SchoolAdminExamApprovals from '../components/schooladmincomponents/pages/ExamApprovalsPage.vue'
 import StudentImportPage from '../components/schooladmincomponents/pages/StudentImportPage.vue'
 import TeacherImportPage from '../components/schooladmincomponents/pages/TeacherImportPage.vue'
+import AssessmentsPage from '../components/schooladmincomponents/pages/AssessmentsPage.vue'
+import AssessmentFormPage from '../components/schooladmincomponents/pages/AssessmentFormPage.vue'
+import AssessmentSubmissionsPage from '../components/schooladmincomponents/pages/AssessmentSubmissionsPage.vue'
+import AssessmentSubmissionDetailPage from '../components/schooladmincomponents/pages/AssessmentSubmissionDetailPage.vue'
 
 // ─── Teacher ──────────────────────────────────────────────────────────────────
 import TeachersDashboard from '../components/teacherscomponent/pages/TeachersDashboard.vue'
@@ -34,6 +38,8 @@ import TeachersExamList from '../components/teacherscomponent/pages/ExamList.vue
 import TeachersExamWizard from '../components/teacherscomponent/pages/ExamWizard.vue'
 import TeachersQuestionBank from '../components/teacherscomponent/pages/QuestionBank.vue'
 import TeachersQuestionCreatePage from '../components/teacherscomponent/pages/QuestionCreatePage.vue'
+import TeacherAssessmentsPage from '../components/teacherscomponent/pages/TeacherAssessmentsPage.vue'
+import TeacherAssessmentPage from '../components/teacherscomponent/pages/TeacherAssessmentPage.vue'
 import TeachersTopicsPage from '../components/teacherscomponent/pages/TopicsPage.vue'
 import TeachersResultsPage from '../components/teacherscomponent/pages/ResultsPage.vue'
 import TeachersSettingsPage from '../components/teacherscomponent/pages/TeachersSettingsPage.vue'
@@ -97,6 +103,11 @@ const routes = [
             name: 'SchoolAdminSubjectAssignTeacher',
             component: SchoolAdminSubjectAssignTeacher,
           },
+          { path: 'assessments', name: 'SchoolAdminAssessments', component: AssessmentsPage },
+          { path: 'assessments/new', name: 'SchoolAdminAssessmentCreate', component: AssessmentFormPage },
+          { path: 'assessments/:id/edit', name: 'SchoolAdminAssessmentEdit', component: AssessmentFormPage, props: true },
+          { path: 'assessments/:id/submissions', name: 'SchoolAdminAssessmentSubmissions', component: AssessmentSubmissionsPage, props: true },
+          { path: 'assessments/:assessmentId/submissions/:submissionId', name: 'SchoolAdminAssessmentSubmissionDetail', component: AssessmentSubmissionDetailPage, props: true },
           { path: 'settings', name: 'SchoolAdminSettings', component: SchoolAdminSettings },
           { path: 'profile', name: 'SchoolAdminProfile', component: SchoolAdminProfile },
           { path: 'notifications', name: 'SchoolAdminNotifications', component: NotificationsPage },
@@ -129,6 +140,8 @@ const routes = [
           { path: 'exams', name: 'TeachersExamList', component: TeachersExamList },
           { path: 'exam-wizard', name: 'TeachersExamWizard', component: TeachersExamWizard },
           { path: 'exam-wizard/:id', name: 'TeachersExamWizardEdit', component: TeachersExamWizard },
+          { path: 'assessments', name: 'TeachersAssessments', component: TeacherAssessmentsPage },
+          { path: 'assessments/:id', name: 'TeachersAssessmentDetail', component: TeacherAssessmentPage, props: true },
 
           // Students + Student Results (Features 2 & 3)
           { path: 'students', name: 'TeachersStudentsPage', component: TeachersStudentsPage },

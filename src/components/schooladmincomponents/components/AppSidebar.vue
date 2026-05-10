@@ -153,6 +153,7 @@ const navGroups = computed(() => {
         label: 'Exams',
         items: [
           { label: 'My Exams', to: '/teachers/exams', icon: ClipboardList, count: teacherExamNotifications.value, tour: 'nav-exams' },
+          { label: 'Assessments', to: '/teachers/assessments', icon: ClipboardList, tour: 'nav-assessments' },
           { label: 'Question Bank', to: '/teachers/questions', icon: FileQuestion, tour: 'nav-question-bank' },
         ],
       },
@@ -184,6 +185,7 @@ const navGroups = computed(() => {
         { label: 'Sessions', to: '/school-admin/sessions', icon: CalendarRange, count: adminSessionNotifications.value, tour: 'nav-sessions' },
         { label: 'Class Levels', to: '/school-admin/class-levels', icon: Columns3, tour: 'nav-class-levels' },
         { label: 'Subjects', to: '/school-admin/subjects', icon: Shapes, tour: 'nav-subjects' },
+        { label: 'Assessment Management', to: '/school-admin/assessments', icon: ClipboardList, tour: 'nav-assessments' },
       ],
     },
     {

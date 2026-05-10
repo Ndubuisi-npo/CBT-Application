@@ -38,3 +38,6 @@ storage/
 vendor/
 .env
 .env.backup
+
+
+.claude/
