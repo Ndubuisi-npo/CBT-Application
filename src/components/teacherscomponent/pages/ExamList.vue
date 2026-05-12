@@ -1,207 +1,321 @@
 <template>
   <div class="space-y-6">
-    <SectionCard title="Exams" subtitle="Manage and monitor all created exams.">
+    <SectionCard title="Exams" subtitle="Manage drafts, scheduled assessments, published results, and live monitoring from one place.">
       <template #header>
-        <AppButton @click="$router.push('/teachers/exam-wizard')" :icon="Plus" text="Create Exam" variant="primary" size="base" />
+        <div class="flex flex-wrap items-center gap-3">
+          <AppButton :icon="Plus" text="Create Exam" variant="primary" @click="$router.push('/teachers/exam-wizard')" />
+        </div>
       </template>
-      
-      <!-- Filters -->
-      <div v-if="examsStore.loading" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div v-for="i in 3" :key="i">
-          <div class="h-4 bg-slate-100 rounded animate-pulse mb-2"></div>
-          <div class="h-10 bg-slate-100 rounded animate-pulse"></div>
+
+      <div class="grid gap-4 pt-6 md:grid-cols-2 xl:grid-cols-4">
+        <div class="rounded-[24px] border border-slate-200 bg-slate-50 p-5">
+          <p class="text-sm text-slate-500">Draft Exams</p>
+          <p class="mt-3 text-3xl font-semibold text-slate-900">{{ examCounts.draft }}</p>
         </div>
-      </div>
-      <div v-else class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div>
-          <label class="block text-sm font-medium text-slate-700 mb-2">Status</label>
-          <select v-model="filters.status" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
-            <option value="">All Status</option>
-            <option v-for="status in examsStore.examStatuses" :key="status" :value="status">{{ status }}</option>
-          </select>
+        <div class="rounded-[24px] border border-slate-200 bg-slate-50 p-5">
+          <p class="text-sm text-slate-500">Scheduled</p>
+          <p class="mt-3 text-3xl font-semibold text-slate-900">{{ examCounts.scheduled }}</p>
         </div>
-        
-        <div>
-          <label class="block text-sm font-medium text-slate-700 mb-2">Subject</label>
-          <select v-model="filters.subject" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
-            <option value="">All Subjects</option>
-            <option v-for="subject in subjects" :key="subject" :value="subject">{{ subject }}</option>
-          </select>
+        <div class="rounded-[24px] border border-slate-200 bg-slate-50 p-5">
+          <p class="text-sm text-slate-500">Live Now</p>
+          <p class="mt-3 text-3xl font-semibold text-slate-900">{{ examCounts.live }}</p>
         </div>
-        
-        <div>
-          <label class="block text-sm font-medium text-slate-700 mb-2">Class</label>
-          <select v-model="filters.class" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
-            <option value="">All Classes</option>
-            <option v-for="classItem in classes" :key="classItem" :value="classItem">{{ classItem }}</option>
-          </select>
+        <div class="rounded-[24px] border border-slate-200 bg-slate-50 p-5">
+          <p class="text-sm text-slate-500">Completed</p>
+          <p class="mt-3 text-3xl font-semibold text-slate-900">{{ examCounts.completed }}</p>
         </div>
-      </div>
-      
-      <div class="flex justify-between items-center">
-        <AppButton @click="clearFilters" text="Clear Filters" variant="outline" size="sm" />
-        <AppButton @click="applyFilters" text="Apply Filters" variant="primary" size="sm" />
       </div>
     </SectionCard>
 
-    <!-- Exams List -->
-    <SkeletonRows v-if="examsStore.loading" :columns="6" />
-    <div v-else-if="examsStore.filteredExams.length === 0" class="rounded-[24px] border border-slate-200 bg-white p-12 text-center">
-      <div class="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-slate-100">
-        <ClipboardList class="h-12 w-12 text-slate-400" />
-      </div>
-      <h3 class="mt-6 text-xl font-semibold text-slate-900">No Exams Found</h3>
-      <p class="mt-2 text-slate-600">Try adjusting your filters or create your first exam.</p>
-      <div class="mt-8">
-        <AppButton @click="$router.push('/teachers/exam-wizard')" :icon="Plus" text="Create Exam" variant="primary" size="lg" />
-      </div>
-    </div>
-    
-    <div v-else class="overflow-hidden rounded-[24px] border border-slate-200">
-      <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-slate-200 bg-white">
-          <thead class="bg-slate-50">
-            <tr>
-              <th class="px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Title</th>
-              <th class="px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Subject</th>
-              <th class="px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Class</th>
-              <th class="px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Type</th>
-              <th class="px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Status</th>
-              <th class="px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Created</th>
-              <th class="px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Actions</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-slate-100">
-            <tr v-for="exam in examsStore.filteredExams" :key="exam.id" class="transition hover:bg-slate-50/80">
-              <td class="px-5 py-4 text-sm text-slate-600 font-medium">{{ exam.title }}</td>
-              <td class="px-5 py-4 text-sm text-slate-600">{{ exam.subject }}</td>
-              <td class="px-5 py-4 text-sm text-slate-600">{{ exam.class }}</td>
-              <td class="px-5 py-4 text-sm text-slate-600">{{ exam.type }}</td>
-              <td class="px-5 py-4 text-sm text-slate-600">
-                <span class="rounded-full px-2 py-1 text-xs font-medium" :class="getStatusClass(exam.status)">
-                  {{ exam.status }}
-                </span>
-              </td>
-              <td class="px-5 py-4 text-sm text-slate-600">{{ formatDate(exam.created_at) }}</td>
-              <td class="px-5 py-4 text-sm text-slate-600">
-                <div class="flex gap-2">
-                  <AppButton @click="viewExam(exam)" :icon="Eye" variant="ghost" size="xs" />
-                  <AppButton @click="editExam(exam)" :icon="Edit" variant="ghost" size="xs" />
-                  <AppButton @click="publishExam(exam)" v-if="exam.status === 'Draft'" :icon="Upload" variant="ghost" size="xs" />
-                  <AppButton @click="unpublishExam(exam)" v-if="exam.status === 'Published'" :icon="Download" variant="ghost" size="xs" />
-                  <AppButton @click="viewResults(exam)" v-if="exam.status === 'Completed'" :icon="BarChart3" variant="ghost" size="xs" />
-                  <AppButton @click="deleteExam(exam.id)" :icon="Trash2" variant="ghost" size="xs" />
+    <section ref="monitorAnchor">
+      <SectionCard title="Live Exam Monitoring" subtitle="Track in-progress student activity, attendance, and suspicious behaviour.">
+        <div class="space-y-5 pt-6">
+          <div class="grid gap-4 md:grid-cols-2">
+            <div class="rounded-[24px] border border-emerald-200 bg-emerald-50 p-5">
+              <p class="text-sm text-emerald-700">Live students</p>
+              <p class="mt-3 text-3xl font-semibold text-emerald-800">{{ liveMonitoring.summary.activeStudents }}</p>
+              <p class="mt-2 text-sm text-emerald-700">{{ liveMonitoring.summary.timeRemaining }}</p>
+            </div>
+            <div class="rounded-[24px] border border-amber-200 bg-amber-50 p-5">
+              <p class="text-sm text-amber-700">Warnings raised</p>
+              <p class="mt-3 text-3xl font-semibold text-amber-800">{{ liveMonitoring.summary.warnings }}</p>
+              <p class="mt-2 text-sm text-amber-700">{{ liveMonitoring.summary.refreshLabel }}</p>
+            </div>
+          </div>
+
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div class="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
+              <p class="text-xs uppercase tracking-[0.18em] text-slate-400">Submitted</p>
+              <p class="mt-2 text-xl font-semibold text-slate-900">{{ liveMonitoring.summary.submitted }}</p>
+            </div>
+            <div class="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
+              <p class="text-xs uppercase tracking-[0.18em] text-slate-400">Disconnected</p>
+              <p class="mt-2 text-xl font-semibold text-slate-900">{{ liveMonitoring.summary.disconnected }}</p>
+            </div>
+          </div>
+
+          <div class="space-y-4">
+            <article
+              v-for="student in liveMonitoring.students"
+              :key="student.id"
+              class="rounded-[24px] border border-slate-200 bg-white p-4"
+            >
+              <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                  <div class="flex flex-wrap items-center gap-2">
+                    <h3 class="text-base font-semibold text-slate-900">{{ student.name }}</h3>
+                    <span class="rounded-full px-3 py-1 text-xs font-semibold" :class="student.flag ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'">
+                      {{ student.flag ? 'Warning' : 'Normal' }}
+                    </span>
+                  </div>
+                  <p class="mt-2 text-sm text-slate-500">{{ student.className }} • {{ student.connection }} • {{ student.attendance }}</p>
                 </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+                <div class="min-w-[220px] space-y-2">
+                  <div class="flex items-center justify-between text-sm text-slate-500">
+                    <span>Exam progress</span>
+                    <span>{{ student.progress }}%</span>
+                  </div>
+                  <div class="h-2 rounded-full bg-slate-200">
+                    <div class="h-2 rounded-full bg-[#0B1F3A]" :style="{ width: `${student.progress}%` }"></div>
+                  </div>
+                  <p v-if="student.flag" class="text-sm font-medium text-amber-700">{{ student.flag }}</p>
+                </div>
+              </div>
+            </article>
+          </div>
+        </div>
+      </SectionCard>
+    </section>
+
+    <section class="space-y-6">
+      <SectionCard title="Exam Library" subtitle="Every assessment in your current teaching cycle.">
+        <template #header>
+          <div class="flex flex-wrap items-center gap-2">
+            <button
+              v-for="tab in tabs"
+              :key="tab"
+              type="button"
+              class="rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] transition"
+              :class="activeTab === tab ? 'bg-[#0B1F3A] text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
+              @click="activeTab = tab"
+            >
+              {{ tab }}
+            </button>
+          </div>
+        </template>
+
+        <div class="space-y-4 pt-6">
+          <article
+            v-for="exam in filteredExams"
+            :key="exam.id"
+            class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm transition hover:border-[#D4AF37]/70 hover:shadow-md"
+          >
+            <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+              <div class="space-y-3">
+                <div class="flex flex-wrap items-center gap-2">
+                  <h2 class="text-lg font-semibold text-slate-900">{{ exam.title }}</h2>
+                  <span class="rounded-full px-3 py-1 text-xs font-semibold" :class="statusClass(exam.status)">{{ exam.status }}</span>
+                </div>
+                <p class="text-sm text-slate-500">{{ exam.subject }} • {{ exam.className }} • {{ exam.type }}</p>
+                <div class="grid gap-3 md:grid-cols-4">
+                  <div class="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                    <p class="text-xs uppercase tracking-[0.18em] text-slate-400">Schedule</p>
+                    <p class="mt-2 font-medium text-slate-900">{{ exam.scheduleLabel }}</p>
+                  </div>
+                  <div class="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                    <p class="text-xs uppercase tracking-[0.18em] text-slate-400">Questions</p>
+                    <p class="mt-2 font-medium text-slate-900">{{ exam.questions.length }}</p>
+                  </div>
+                  <div class="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                    <p class="text-xs uppercase tracking-[0.18em] text-slate-400">Candidates</p>
+                    <p class="mt-2 font-medium text-slate-900">{{ exam.candidates }}</p>
+                  </div>
+                  <div class="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                    <p class="text-xs uppercase tracking-[0.18em] text-slate-400">Submitted</p>
+                    <p class="mt-2 font-medium text-slate-900">{{ exam.submitted }}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="flex flex-wrap items-center gap-2">
+                <AppButton :icon="Eye" text="Preview" variant="outline" size="sm" @click="previewExam(exam)" />
+                <AppButton :icon="Edit3" text="Edit" variant="secondary" size="sm" @click="$router.push('/teachers/exam-wizard')" />
+                <AppButton
+                  v-if="exam.status === 'Draft'"
+                  :icon="Send"
+                  text="Publish"
+                  variant="primary"
+                  size="sm"
+                  @click="confirmAction('publish', exam)"
+                />
+                <AppButton
+                  v-if="exam.status === 'Scheduled'"
+                  :icon="Clock4"
+                  text="Reschedule"
+                  variant="outline"
+                  size="sm"
+                  @click="confirmAction('schedule', exam)"
+                />
+                <AppButton
+                  v-if="exam.status === 'Live'"
+                  :icon="Activity"
+                  text="Monitor"
+                  variant="outline"
+                  size="sm"
+                  @click="scrollToMonitor"
+                />
+                <AppButton :icon="Trash2" variant="ghost" size="sm" @click="confirmAction('delete', exam)" />
+              </div>
+            </div>
+          </article>
+
+          <div v-if="!filteredExams.length" class="rounded-[24px] border border-dashed border-slate-300 bg-slate-50 px-5 py-12 text-center text-sm text-slate-500">
+            No exams match the current filter. Switch tabs or create a new assessment.
+          </div>
+        </div>
+      </SectionCard>
+
+      <SectionCard title="Exam Preview" subtitle="A quick summary of the selected assessment before students take it.">
+        <div v-if="selectedExamPreview" class="space-y-5 pt-6">
+          <div class="rounded-[24px] bg-[#0B1F3A] p-5 text-white">
+            <div class="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <p class="text-xs font-semibold uppercase tracking-[0.24em] text-[#D4AF37]">Assessment Preview</p>
+                <h2 class="mt-3 text-2xl font-semibold">{{ selectedExamPreview.title }}</h2>
+                <p class="mt-2 text-sm text-slate-300">{{ selectedExamPreview.subject }} • {{ selectedExamPreview.className }}</p>
+              </div>
+              <span class="rounded-full bg-white/10 px-4 py-2 text-sm font-semibold">{{ selectedExamPreview.status }}</span>
+            </div>
+          </div>
+
+          <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <div
+              v-for="question in selectedExamQuestions"
+              :key="question.id"
+              class="rounded-[24px] border border-slate-200 bg-slate-50 p-4"
+            >
+              <p class="text-xs uppercase tracking-[0.18em] text-slate-400">Multiple Choice</p>
+              <h3 class="mt-3 text-sm font-semibold text-slate-900">{{ question.content }}</h3>
+              <p class="mt-2 text-sm text-slate-500">{{ question.topic }}</p>
+            </div>
+          </div>
+        </div>
+      </SectionCard>
+    </section>
+
+    <div v-if="confirmModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 px-4">
+      <div class="w-full max-w-xl rounded-[28px] bg-white p-6 shadow-2xl">
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-[0.24em] text-[#D4AF37]">Confirm Action</p>
+            <h2 class="mt-2 text-2xl font-semibold text-slate-900">{{ confirmModal.title }}</h2>
+          </div>
+          <AppButton :icon="X" variant="ghost" @click="confirmModal = null" />
+        </div>
+        <p class="mt-4 text-sm leading-6 text-slate-500">{{ confirmModal.message }}</p>
+        <div class="mt-6 flex flex-wrap justify-end gap-2">
+          <AppButton text="Cancel" variant="ghost" @click="confirmModal = null" />
+          <AppButton :text="confirmModal.buttonLabel" :variant="confirmModal.variant" @click="runAction" />
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
-import { Plus, ClipboardList, Eye, Edit, Upload, Download, BarChart3, Trash2 } from 'lucide-vue-next'
-import SectionCard from '../components/SectionCard.vue'
-import SkeletonRows from '../components/SkeletonRows.vue'
+import { computed, ref } from 'vue'
+import { Activity, Clock4, Edit3, Eye, Plus, Send, Trash2, X } from 'lucide-vue-next'
 import AppButton from '../../shared/AppButton.vue'
-import { useTeachersExamsStore } from '../stores/exams'
+import { useSchoolAdminUiStore } from '../../schooladmincomponents/stores/ui'
+import SectionCard from '../components/SectionCard.vue'
+import { cloneMock, examLibrary, getQuestionBankForExam, liveMonitoring } from '../data/mockTeacherData'
 
-const examsStore = useTeachersExamsStore()
+const uiStore = useSchoolAdminUiStore()
 
-// Reactive state
-const filters = ref({
-  status: '',
-  subject: '',
-  class: ''
+const activeTab = ref('All')
+const exams = ref(cloneMock(examLibrary))
+const selectedExamPreview = ref(cloneMock(examLibrary[0]))
+const confirmModal = ref(null)
+const monitorAnchor = ref(null)
+
+const tabs = ['All', 'Draft', 'Scheduled', 'Live', 'Completed']
+
+const examCounts = computed(() => ({
+  draft: exams.value.filter((exam) => exam.status === 'Draft').length,
+  scheduled: exams.value.filter((exam) => exam.status === 'Scheduled').length,
+  live: exams.value.filter((exam) => exam.status === 'Live').length,
+  completed: exams.value.filter((exam) => exam.status === 'Completed').length,
+}))
+
+const filteredExams = computed(() => {
+  if (activeTab.value === 'All') return exams.value
+  return exams.value.filter((exam) => exam.status === activeTab.value)
 })
 
-// Sample data
-const subjects = computed(() => ['Mathematics', 'English', 'Physics', 'Chemistry', 'Biology'])
-const classes = computed(() => ['JSS1', 'JSS2', 'JSS3', 'SS1', 'SS2', 'SS3'])
+const selectedExamQuestions = computed(() => getQuestionBankForExam(selectedExamPreview.value?.questions || []))
 
-const applyFilters = () => {
-  examsStore.setFilters(filters.value)
-}
-
-const clearFilters = () => {
-  filters.value = {
-    status: '',
-    subject: '',
-    class: ''
+const statusClass = (status) => {
+  const classes = {
+    Draft: 'bg-slate-100 text-slate-700',
+    Scheduled: 'bg-blue-100 text-blue-700',
+    Live: 'bg-emerald-100 text-emerald-700',
+    Completed: 'bg-indigo-100 text-indigo-700',
   }
-  examsStore.clearFilters()
+  return classes[status] || 'bg-slate-100 text-slate-700'
 }
 
-const getStatusClass = (status) => {
-  const statusClasses = {
-    'Draft': 'bg-gray-100 text-gray-800',
-    'Published': 'bg-green-100 text-green-800',
-    'In Progress': 'bg-yellow-100 text-yellow-800',
-    'Completed': 'bg-blue-100 text-blue-800'
+const previewExam = (exam) => {
+  selectedExamPreview.value = cloneMock(exam)
+}
+
+const confirmAction = (action, exam) => {
+  const messages = {
+    publish: {
+      title: `Publish ${exam.title}?`,
+      message: 'Students in the selected class will see this exam immediately in their active assessment list.',
+      buttonLabel: 'Publish exam',
+      variant: 'primary',
+    },
+    schedule: {
+      title: `Reschedule ${exam.title}?`,
+      message: 'This keeps the exam published but lets you update the sitting window and invigilation plan.',
+      buttonLabel: 'Confirm schedule',
+      variant: 'outline',
+    },
+    delete: {
+      title: `Delete ${exam.title}?`,
+      message: 'This mock action removes the exam card from the showcase flow.',
+      buttonLabel: 'Delete exam',
+      variant: 'danger',
+    },
   }
-  return statusClasses[status] || 'bg-gray-100 text-gray-800'
+  confirmModal.value = { ...messages[action], action, examId: exam.id }
 }
 
-const formatDate = (dateString) => {
-  if (!dateString) return 'N/A'
-  return new Date(dateString).toLocaleDateString()
-}
+const runAction = () => {
+  if (!confirmModal.value) return
 
-const viewExam = (exam) => {
-  console.log('View exam:', exam)
-  // Navigate to exam detail/preview page
-}
+  const { action, examId } = confirmModal.value
+  const exam = exams.value.find((item) => item.id === examId)
 
-const editExam = (exam) => {
-  console.log('Edit exam:', exam)
-  // Navigate to exam edit page
-}
-
-const publishExam = async (exam) => {
-  if (!confirm(`Are you sure you want to publish "${exam.title}"?`)) {
+  if (!exam) {
+    confirmModal.value = null
     return
   }
-  
-  try {
-    await examsStore.publishExam(exam.id)
-  } catch (error) {
-    console.error('Failed to publish exam:', error)
-  }
+
+  if (action === 'publish') exam.status = 'Published'
+  if (action === 'schedule') exam.status = 'Scheduled'
+  if (action === 'delete') exams.value = exams.value.filter((item) => item.id !== examId)
+
+  uiStore.addToast({
+    title: 'Exam updated',
+    message: `${exam.title} has been ${action === 'delete' ? 'removed from the list' : action === 'publish' ? 'published successfully' : 'rescheduled successfully'}.`,
+    variant: 'success',
+  })
+  confirmModal.value = null
 }
 
-const unpublishExam = async (exam) => {
-  if (!confirm(`Are you sure you want to unpublish "${exam.title}"?`)) {
-    return
-  }
-  
-  try {
-    await examsStore.unpublishExam(exam.id)
-  } catch (error) {
-    console.error('Failed to unpublish exam:', error)
-  }
+const scrollToMonitor = () => {
+  monitorAnchor.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
-
-const viewResults = (exam) => {
-  console.log('View results:', exam)
-  // Navigate to results page
-}
-
-const deleteExam = async (id) => {
-  if (!confirm('Are you sure you want to delete this exam?')) {
-    return
-  }
-  
-  try {
-    await examsStore.deleteExam(id)
-  } catch (error) {
-    console.error('Failed to delete exam:', error)
-  }
-}
-
-onMounted(() => {
-  examsStore.fetchExams()
-})
 </script>

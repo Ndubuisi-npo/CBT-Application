@@ -1,245 +1,300 @@
 <template>
   <div class="space-y-6">
-    <!-- Dashboard Overview Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-      <div class="rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm">
-        <div class="flex items-center justify-between">
-          <div>
-            <p class="text-sm font-medium text-slate-600">Total Questions</p>
-            <p class="text-2xl font-bold text-slate-900">{{ questionsStore.totalQuestions }}</p>
-          </div>
-          <div class="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center">
-            <FileQuestion class="h-6 w-6 text-blue-600" />
-          </div>
-        </div>
-      </div>
+    <section>
+      <div class="overflow-hidden rounded-[28px] bg-[#0B1F3A] text-white shadow-xl shadow-slate-900/10">
+        <div class="grid gap-6 p-6 lg:grid-cols-[1.4fr_0.9fr] lg:p-8">
+          <div class="space-y-5">
+            <div>
+              <p class="text-xs font-semibold uppercase tracking-[0.32em] text-[#D4AF37]">Teacher Workspace</p>
+              <h1 class="mt-3 text-3xl font-semibold tracking-tight">Welcome back, {{ teacherProfile.name }}</h1>
+              <p class="mt-3 max-w-2xl text-sm leading-6 text-slate-200">
+                Your classes are on track for the week. Focus today: close attendance gaps, moderate theory scripts, and keep the
+                live revision exam stable for SS3 Science.
+              </p>
+            </div>
 
-      <div class="rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm">
-        <div class="flex items-center justify-between">
-          <div>
-            <p class="text-sm font-medium text-slate-600">Total Exams</p>
-            <p class="text-2xl font-bold text-slate-900">{{ examsStore.totalExams }}</p>
+            <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              <button
+                v-for="action in quickActions"
+                :key="action.label"
+                type="button"
+                class="rounded-2xl border border-white/10 bg-white/8 p-4 text-left transition hover:border-[#D4AF37]/70 hover:bg-white/12"
+                @click="goTo(action.to)"
+              >
+                <component :is="action.icon" class="h-5 w-5 text-[#D4AF37]" />
+                <p class="mt-3 text-sm font-semibold">{{ action.label }}</p>
+                <p class="mt-1 text-xs text-slate-300">{{ action.caption }}</p>
+              </button>
+            </div>
           </div>
-          <div class="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
-            <ClipboardList class="h-6 w-6 text-green-600" />
-          </div>
-        </div>
-      </div>
 
-      <div class="rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm">
-        <div class="flex items-center justify-between">
-          <div>
-            <p class="text-sm font-medium text-slate-600">Published Exams</p>
-            <p class="text-2xl font-bold text-slate-900">{{ publishedExamsCount }}</p>
-          </div>
-          <div class="h-12 w-12 rounded-full bg-purple-100 flex items-center justify-center">
-            <CheckCircle class="h-6 w-6 text-purple-600" />
-          </div>
-        </div>
-      </div>
-
-      <div class="rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm">
-        <div class="flex items-center justify-between">
-          <div>
-            <p class="text-sm font-medium text-slate-600">Total Topics</p>
-            <p class="text-2xl font-bold text-slate-900">{{ questionsStore.totalTopics }}</p>
-          </div>
-          <div class="h-12 w-12 rounded-full bg-orange-100 flex items-center justify-center">
-            <Tag class="h-6 w-6 text-orange-600" />
-          </div>
-        </div>
-      </div>
-
-      <div class="rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm">
-        <div class="flex items-center justify-between">
-          <div>
-            <p class="text-sm font-medium text-slate-600">My Classes</p>
-            <p class="text-2xl font-bold text-slate-900">{{ classAssignments.length }}</p>
-          </div>
-          <div class="h-12 w-12 rounded-full bg-indigo-100 flex items-center justify-center">
-            <Users class="h-6 w-6 text-indigo-600" />
-          </div>
-        </div>
-        <div class="mt-4">
-          <AppButton 
-            @click="$router.push('/teachers/my-classes')" 
-            :icon="Users" 
-            text="View My Classes" 
-            variant="outline" 
-            size="sm" 
-            full-width 
-          />
-        </div>
-      </div>
-    </div>
-
-    <!-- Quick Actions -->
-    <SectionCard title="Quick Actions" subtitle="Create and manage questions and exams quickly.">
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pt-6">
-        <AppButton 
-          @click="$router.push('/teachers/questions')" 
-          :icon="FileQuestion" 
-          text="Question Bank" 
-          variant="outline" 
-          size="base" 
-          full-width
-        />
-        <AppButton 
-          @click="$router.push('/teachers/exams')" 
-          :icon="ClipboardList" 
-          text="Create Exam" 
-          variant="outline" 
-          size="base" 
-          full-width
-        />
-        <AppButton 
-          @click="$router.push('/teachers/topics')" 
-          :icon="Tag" 
-          text="Manage Topics" 
-          variant="outline" 
-          size="base" 
-          full-width
-        />
-        <AppButton 
-          @click="$router.push('/teachers/results')" 
-          :icon="BarChart3" 
-          text="View Results" 
-          variant="outline" 
-          size="base" 
-          full-width
-        />
-      </div>
-    </SectionCard>
-
-    <!-- Recent Activity -->
-    <SectionCard title="Recent Questions" subtitle="Latest questions added to the question bank.">
-      <div v-if="questionsStore.loading" class="space-y-4">
-        <div v-for="i in 5" :key="i" class="h-20 bg-slate-100 rounded-lg animate-pulse"></div>
-      </div>
-      <div v-else-if="recentQuestions.length === 0" class="text-center py-8">
-        <p class="text-slate-500">No questions added yet. Start by creating your first question.</p>
-      </div>
-      <div v-else class="space-y-4 mt-6">
-        <div v-for="question in recentQuestions" :key="question.id" class="border border-slate-200 rounded-lg p-4">
-          <div class="flex items-start justify-between">
-            <div class="flex-1">
-              <h4 class="font-medium text-slate-900">{{ question.content?.substring(0, 100) }}...</h4>
-              <div class="mt-2 flex gap-2">
-                <span class="rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800">
-                  {{ question.type }}
-                </span>
-                <span class="rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-800">
-                  {{ question.difficulty }}
-                </span>
+          <div class="rounded-[24px] border border-white/10 bg-white/10 p-5 backdrop-blur">
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <p class="text-sm font-medium text-slate-200">Profile Summary</p>
+                <h2 class="mt-2 text-xl font-semibold">{{ teacherProfile.role }}</h2>
+                <p class="mt-1 text-sm text-slate-300">{{ teacherProfile.staffId }}</p>
+              </div>
+              <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#D4AF37] text-lg font-semibold text-[#0B1F3A]">
+                {{ teacherProfile.avatar }}
               </div>
             </div>
-            <AppButton 
-              @click="editQuestion(question)" 
-              :icon="Edit" 
-              variant="ghost" 
-              size="xs"
-            />
-          </div>
-        </div>
-      </div>
-    </SectionCard>
 
-    <!-- Recent Exams -->
-    <SectionCard title="Recent Exams" subtitle="Latest exams created or updated.">
-      <div v-if="examsStore.loading" class="space-y-4">
-        <div v-for="i in 3" :key="i" class="h-24 bg-slate-100 rounded-lg animate-pulse"></div>
-      </div>
-      <div v-else-if="recentExams.length === 0" class="text-center py-8">
-        <p class="text-slate-500">No exams created yet. Start by creating your first exam.</p>
-      </div>
-      <div v-else class="space-y-4">
-        <div v-for="exam in recentExams" :key="exam.id" class="border border-slate-200 rounded-lg p-4">
-          <div class="flex items-start justify-between">
-            <div class="flex-1">
-              <h4 class="font-medium text-slate-900">{{ exam.title }}</h4>
-              <div class="mt-2 flex gap-2">
-                <span class="rounded-full bg-purple-100 px-2 py-1 text-xs font-medium text-purple-800">
-                  {{ exam.subject }}
-                </span>
-                <span class="rounded-full" :class="getStatusClass(exam.status)">
-                  {{ exam.status }}
-                </span>
+            <div class="mt-5 space-y-3 text-sm text-slate-200">
+              <div class="flex items-center justify-between">
+                <span>School</span>
+                <span class="font-medium text-white">{{ teacherProfile.school }}</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span>Campus</span>
+                <span class="font-medium text-white">{{ teacherProfile.campus }}</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span>Class Teacher</span>
+                <span class="font-medium text-white">{{ teacherProfile.classTeacher }}</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span>Attendance capture</span>
+                <span class="font-medium text-white">{{ teacherStats[4].value }}</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span>Last login</span>
+                <span class="font-medium text-white">{{ lastLoginLabel }}</span>
               </div>
             </div>
-            <div class="flex gap-2">
-              <AppButton 
-                @click="editExam(exam)" 
-                :icon="Edit" 
-                variant="ghost" 
-                size="xs"
-              />
-              <AppButton 
-                @click="previewExam(exam)" 
-                :icon="Eye" 
-                variant="ghost" 
-                size="xs"
-              />
-            </div>
           </div>
         </div>
       </div>
-    </SectionCard>
+    </section>
+
+    <section>
+      <SectionCard title="Notifications" subtitle="Important actions to close out today.">
+        <div class="space-y-4 pt-6">
+          <div
+            v-for="notification in notifications"
+            :key="notification.id"
+            class="rounded-2xl border p-4"
+            :class="notification.priority === 'high' ? 'border-rose-200 bg-rose-50/60' : notification.priority === 'medium' ? 'border-amber-200 bg-amber-50/70' : 'border-slate-200 bg-slate-50/80'"
+          >
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <p class="text-sm font-semibold text-slate-900">{{ notification.title }}</p>
+                <p class="mt-1 text-sm leading-6 text-slate-600">{{ notification.body }}</p>
+              </div>
+              <span
+                class="rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em]"
+                :class="notification.priority === 'high' ? 'bg-rose-100 text-rose-700' : notification.priority === 'medium' ? 'bg-amber-100 text-amber-700' : 'bg-slate-200 text-slate-600'"
+              >
+                {{ notification.priority }}
+              </span>
+            </div>
+            <button type="button" class="mt-4 text-sm font-semibold text-[#0B1F3A] transition hover:text-[#D4AF37]" @click="handleNotification(notification)">
+              {{ notification.action }}
+            </button>
+          </div>
+        </div>
+      </SectionCard>
+    </section>
+
+    <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+      <div
+        v-for="card in teacherStats"
+        :key="card.label"
+        class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+      >
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-slate-500">{{ card.label }}</p>
+            <p class="mt-3 text-3xl font-semibold tracking-tight text-slate-900">{{ card.value }}</p>
+          </div>
+          <div class="h-12 w-12 rounded-2xl" :class="toneClass(card.tone)"></div>
+        </div>
+        <p class="mt-4 text-sm text-slate-500">{{ card.change }}</p>
+      </div>
+    </section>
+
+    <section class="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+      <SectionCard title="Assigned Subjects & Classes" subtitle="A quick view of your current teaching load.">
+        <div class="grid gap-4 pt-6 lg:grid-cols-2">
+          <div v-for="subject in assignedSubjects" :key="subject.name" class="rounded-[24px] border border-slate-200 bg-slate-50/90 p-5">
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <h3 class="text-lg font-semibold text-slate-900">{{ subject.name }}</h3>
+                <p class="mt-1 text-sm text-slate-500">{{ subject.weeklyPeriods }} periods this week</p>
+              </div>
+              <span class="rounded-full bg-[#0B1F3A] px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-white">
+                {{ subject.questionCount }} questions
+              </span>
+            </div>
+            <div class="mt-5 flex flex-wrap gap-2">
+              <span v-for="className in subject.classes" :key="className" class="rounded-full bg-white px-3 py-2 text-xs font-medium text-slate-700 shadow-sm">
+                {{ className }}
+              </span>
+            </div>
+            <div class="mt-5 rounded-2xl bg-white p-4">
+              <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Next assessment</p>
+              <p class="mt-2 text-sm font-medium text-slate-900">{{ subject.upcomingExam }}</p>
+            </div>
+          </div>
+        </div>
+      </SectionCard>
+
+      <SectionCard title="Recent Activities" subtitle="Everything you have touched most recently.">
+        <div class="space-y-5 pt-6">
+          <div v-for="activity in recentActivities" :key="activity.id" class="flex gap-4">
+            <div class="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#0B1F3A]/8 text-[#0B1F3A]">
+              <Clock3 class="h-5 w-5" />
+            </div>
+            <div class="flex-1 border-b border-slate-100 pb-5 last:border-b-0 last:pb-0">
+              <div class="flex items-center justify-between gap-3">
+                <p class="text-sm font-semibold text-slate-900">{{ activity.title }}</p>
+                <span class="text-xs font-medium uppercase tracking-[0.18em] text-slate-400">{{ activity.time }}</span>
+              </div>
+              <p class="mt-2 text-sm leading-6 text-slate-600">{{ activity.description }}</p>
+            </div>
+          </div>
+        </div>
+      </SectionCard>
+    </section>
+
+    <section class="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+      <SectionCard title="Upcoming Exams" subtitle="Scheduled, published, and draft exams in your queue.">
+        <div class="space-y-4 pt-6">
+          <div
+            v-for="exam in upcomingExams"
+            :key="exam.id"
+            class="rounded-[24px] border border-slate-200 p-5 transition hover:border-[#D4AF37]/70 hover:shadow-sm"
+          >
+            <div class="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <div class="flex flex-wrap items-center gap-2">
+                  <h3 class="text-lg font-semibold text-slate-900">{{ exam.title }}</h3>
+                  <span class="rounded-full px-3 py-1 text-xs font-semibold" :class="statusClass(exam.status)">{{ exam.status }}</span>
+                </div>
+                <p class="mt-2 text-sm text-slate-500">{{ exam.subject }} • {{ exam.className }} • {{ exam.questions }} questions</p>
+              </div>
+              <button type="button" class="text-sm font-semibold text-[#0B1F3A] hover:text-[#D4AF37]" @click="goTo('/teachers/exams')">
+                Open exam
+              </button>
+            </div>
+            <div class="mt-5 grid gap-3 sm:grid-cols-3">
+              <div class="rounded-2xl bg-slate-50 p-4">
+                <p class="text-xs uppercase tracking-[0.18em] text-slate-400">Schedule</p>
+                <p class="mt-2 text-sm font-medium text-slate-900">{{ formatDateTime(exam.date) }}</p>
+              </div>
+              <div class="rounded-2xl bg-slate-50 p-4">
+                <p class="text-xs uppercase tracking-[0.18em] text-slate-400">Duration</p>
+                <p class="mt-2 text-sm font-medium text-slate-900">{{ exam.duration }} minutes</p>
+              </div>
+              <div class="rounded-2xl bg-slate-50 p-4">
+                <p class="text-xs uppercase tracking-[0.18em] text-slate-400">Candidates</p>
+                <p class="mt-2 text-sm font-medium text-slate-900">{{ exam.candidates }} students</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </SectionCard>
+
+      <SectionCard title="Class Snapshot" subtitle="Quick visibility into each assigned class.">
+        <div class="space-y-4 pt-6">
+          <div v-for="classItem in classOverview" :key="classItem.id" class="rounded-[24px] border border-slate-200 bg-slate-50/80 p-5">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <h3 class="text-lg font-semibold text-slate-900">{{ classItem.name }}</h3>
+                <p class="mt-1 text-sm text-slate-500">{{ classItem.homeroom }} • Prefect: {{ classItem.prefect }}</p>
+              </div>
+              <button type="button" class="rounded-full bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm" @click="goTo('/teachers/my-classes')">
+                View class
+              </button>
+            </div>
+            <div class="mt-4 grid grid-cols-3 gap-3 text-sm">
+              <div class="rounded-2xl bg-white p-3">
+                <p class="text-slate-400">Students</p>
+                <p class="mt-2 font-semibold text-slate-900">{{ classItem.studentCount }}</p>
+              </div>
+              <div class="rounded-2xl bg-white p-3">
+                <p class="text-slate-400">Present today</p>
+                <p class="mt-2 font-semibold text-slate-900">{{ classItem.attendanceToday }}</p>
+              </div>
+              <div class="rounded-2xl bg-white p-3">
+                <p class="text-slate-400">Average score</p>
+                <p class="mt-2 font-semibold text-slate-900">{{ classItem.averageScore }}%</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </SectionCard>
+    </section>
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue'
-import { FileQuestion, ClipboardList, CheckCircle, Tag, Edit, Eye, BarChart3, Users } from 'lucide-vue-next'
+import { computed } from 'vue'
+import { useRouter } from 'vue-router'
+import { BookOpen, ClipboardCheck, Clock3, FilePenLine, GraduationCap } from 'lucide-vue-next'
+import { useSchoolAdminUiStore } from '../../schooladmincomponents/stores/ui'
 import SectionCard from '../components/SectionCard.vue'
-import AppButton from '../../shared/AppButton.vue'
-import { useTeachersQuestionsStore } from '../stores/questions'
-import { useTeachersExamsStore } from '../stores/exams'
-import { usePermissions } from '../composables/usePermissions'
+import {
+  assignedSubjects,
+  classOverview,
+  notifications,
+  recentActivities,
+  teacherProfile,
+  teacherStats,
+  upcomingExams,
+  formatHumanDate,
+} from '../data/mockTeacherData'
 
-const questionsStore = useTeachersQuestionsStore()
-const examsStore = useTeachersExamsStore()
-const { classAssignments } = usePermissions()
+const router = useRouter()
+const uiStore = useSchoolAdminUiStore()
 
-const recentQuestions = computed(() => 
-  questionsStore.questions.slice(0, 5)
+const quickActions = [
+  { label: 'Create Exam', caption: 'Build and schedule a new CBT exam', to: '/teachers/exam-wizard', icon: ClipboardCheck },
+  { label: 'Add Questions', caption: 'Expand your question bank', to: '/teachers/questions', icon: FilePenLine },
+  { label: 'Grade Scripts', caption: 'Continue pending theory marking', to: '/teachers/grading', icon: BookOpen },
+  { label: 'Take Attendance', caption: 'Capture today’s class register', to: '/teachers/attendance', icon: GraduationCap },
+]
+
+const lastLoginLabel = computed(() =>
+  formatHumanDate(teacherProfile.lastLogin, { hour: 'numeric', minute: '2-digit' }),
 )
 
-const recentExams = computed(() => 
-  examsStore.exams.slice(0, 3)
-)
+const goTo = (to) => router.push(to)
 
-const publishedExamsCount = computed(() => 
-  examsStore.exams.filter(exam => exam.status === 'Published').length
-)
-
-const getStatusClass = (status) => {
-  const statusClasses = {
-    'Draft': 'bg-gray-100 px-2 py-1 text-xs font-medium text-gray-800',
-    'Published': 'bg-green-100 px-2 py-1 text-xs font-medium text-green-800',
-    'In Progress': 'bg-yellow-100 px-2 py-1 text-xs font-medium text-yellow-800',
-    'Completed': 'bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800'
+const toneClass = (tone) => {
+  const tones = {
+    blue: 'bg-blue-100',
+    emerald: 'bg-emerald-100',
+    amber: 'bg-amber-100',
+    rose: 'bg-rose-100',
+    indigo: 'bg-indigo-100',
   }
-  return statusClasses[status] || 'bg-gray-100 px-2 py-1 text-xs font-medium text-gray-800'
+  return tones[tone] || 'bg-slate-100'
 }
 
-const editQuestion = (question) => {
-  // Navigate to question edit page
-  console.log('Edit question:', question)
+const statusClass = (status) => {
+  const classes = {
+    Scheduled: 'bg-blue-100 text-blue-700',
+    Draft: 'bg-slate-200 text-slate-700',
+    Published: 'bg-emerald-100 text-emerald-700',
+  }
+  return classes[status] || 'bg-slate-100 text-slate-700'
 }
 
-const editExam = (exam) => {
-  // Navigate to exam edit page
-  console.log('Edit exam:', exam)
-}
+const formatDateTime = (value) =>
+  formatHumanDate(value, { hour: 'numeric', minute: '2-digit' })
 
-const previewExam = (exam) => {
-  // Navigate to exam preview page
-  console.log('Preview exam:', exam)
+const handleNotification = (notification) => {
+  const routeMap = {
+    'Open Grading': '/teachers/grading',
+    'Monitor Exam': '/teachers/exams',
+    'Take Attendance': '/teachers/attendance',
+  }
+  uiStore.addToast({
+    title: notification.title,
+    message: 'Opening the related workspace for follow-up.',
+    variant: notification.priority === 'high' ? 'error' : 'success',
+  })
+  goTo(routeMap[notification.action] || '/teachers/dashboard')
 }
-
-onMounted(() => {
-  questionsStore.fetchQuestions()
-  examsStore.fetchExams()
-  questionsStore.fetchTopics()
-})
 </script>

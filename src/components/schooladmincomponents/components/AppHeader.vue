@@ -40,7 +40,19 @@ const titles = {
   '/school-admin/subjects': 'Subjects',
   '/school-admin/settings': 'School Settings',
   '/school-admin/profile': 'School Profile',
+  '/teachers/dashboard': 'Teacher Dashboard',
+  '/teachers/my-classes': 'Assigned Classes',
+  '/teachers/questions': 'Question Bank',
+  '/teachers/exam-wizard': 'Exam Creation Wizard',
+  '/teachers/exams': 'Exams & Monitoring',
+  '/teachers/students': 'Students',
+  '/teachers/attendance': 'Attendance',
+  '/teachers/grading': 'Theory Grading',
+  '/teachers/results': 'Results',
+  '/teachers/timetable': 'Timetable',
+  '/teachers/settings': 'Teacher Settings',
+  '/teachers/profile': 'Teacher Profile',
 }
 
-const pageTitle = computed(() => titles[route.path] || 'School Admin')
+const pageTitle = computed(() => titles[route.path] || (route.path.startsWith('/teachers') ? 'Teacher Dashboard' : 'School Admin'))
 </script>

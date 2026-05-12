@@ -40,7 +40,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
-import { BookCopy, CalendarRange, Columns3, LayoutDashboard, PanelLeftClose, Settings, Shapes, School, Users, GraduationCap, Building2, FileQuestion, ClipboardList, Tag, BarChart3 } from 'lucide-vue-next'
+import { CalendarCheck2, CalendarRange, Columns3, LayoutDashboard, PanelLeftClose, Settings, Shapes, School, Users, GraduationCap, Building2, FileQuestion, ClipboardList, Tag, BarChart3, BookOpenCheck, ScrollText, AlarmClockCheck } from 'lucide-vue-next'
 import AppButton from '../../shared/AppButton.vue'
 import ActionButton from '../../shared/ActionButton.vue'
 import { useSchoolAdminProfileStore } from '../stores/profile'
@@ -64,11 +64,13 @@ const navItems = computed(() => {
   if (isTeachersSection) {
     return [
       { label: 'Dashboard', to: '/teachers/dashboard', icon: LayoutDashboard },
-      { label: 'My Classes', to: '/teachers/my-classes', icon: Users },
       { label: 'Question Bank', to: '/teachers/questions', icon: FileQuestion },
       { label: 'Exams', to: '/teachers/exams', icon: ClipboardList },
-      { label: 'Topics', to: '/teachers/topics', icon: Tag },
+      { label: 'Students', to: '/teachers/students', icon: Users },
+      { label: 'Attendance', to: '/teachers/attendance', icon: CalendarCheck2 },
+      { label: 'Grading', to: '/teachers/grading', icon: ScrollText },
       { label: 'Results', to: '/teachers/results', icon: BarChart3 },
+      { label: 'Timetable', to: '/teachers/timetable', icon: AlarmClockCheck },
       { label: 'Settings', to: '/teachers/settings', icon: Settings },
       { label: 'Profile', to: '/teachers/profile', icon: School },
     ]

@@ -23,6 +23,10 @@ import TeachersTopicsPage from '../components/teacherscomponent/pages/TopicsPage
 import TeachersResultsPage from '../components/teacherscomponent/pages/ResultsPage.vue';
 import TeachersSettingsPage from '../components/teacherscomponent/pages/TeachersSettingsPage.vue';
 import TeachersMyClasses from '../components/teacherscomponent/pages/MyClasses.vue';
+import TeachersStudentsPage from '../components/teacherscomponent/pages/StudentsPage.vue';
+import TeachersAttendancePage from '../components/teacherscomponent/pages/AttendancePage.vue';
+import TeachersGradingPage from '../components/teacherscomponent/pages/GradingPage.vue';
+import TeachersTimetablePage from '../components/teacherscomponent/pages/TimetablePage.vue';
 import SchoolAdminSubjects from '../components/schooladmincomponents/pages/SubjectsPage.vue';
 import SchoolAdminSubjectAssignTeacher from '../components/schooladmincomponents/pages/SubjectAssignTeacherPage.vue';
 import SchoolAdminSettings from '../components/schooladmincomponents/pages/SettingsPage.vue';
@@ -83,7 +87,11 @@ const routes = [
           { path: 'topics', name: 'TeachersTopicsPage', component: TeachersTopicsPage },
           { path: 'exam-wizard', name: 'TeachersExamWizard', component: TeachersExamWizard },
           { path: 'exams', name: 'TeachersExamList', component: TeachersExamList },
+          { path: 'students', name: 'TeachersStudentsPage', component: TeachersStudentsPage },
+          { path: 'attendance', name: 'TeachersAttendancePage', component: TeachersAttendancePage },
+          { path: 'grading', name: 'TeachersGradingPage', component: TeachersGradingPage },
           { path: 'results', name: 'TeachersResultsPage', component: TeachersResultsPage },
+          { path: 'timetable', name: 'TeachersTimetablePage', component: TeachersTimetablePage },
           { path: 'settings', name: 'TeachersSettings', component: TeachersSettingsPage },
           { path: 'profile', name: 'TeachersProfile', component: SchoolAdminProfile },
         ],

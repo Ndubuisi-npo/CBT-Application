@@ -43,8 +43,8 @@
         <Tag class="h-12 w-12 text-slate-400" />
       </div>
       <h3 class="text-lg font-medium text-slate-900 mb-2">No topics found</h3>
-      <p class="text-slate-500 mb-6">{{ searchQuery ? 'Try adjusting your search terms' : 'Get started by creating your first topic' }}</p>
-      <AppButton v-if="!searchQuery" @click="openCreateModal()" :icon="Plus" text="Create Topic" variant="primary" size="base" />
+      <p class="text-slate-500 mb-6">{{ searchQuery ? 'Try adjusting your search terms' : 'Get started by organizing your content with topic management' }}</p>
+      <AppButton v-if="!searchQuery" @click="openCreateModal()" :icon="Plus" text="Add Your First Topic" variant="primary" size="base" />
     </div>
 
     <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
