@@ -62,23 +62,11 @@
         </div>
       </SectionCard>
 
-      <SectionCard title="Class Action Queue" subtitle="What each class still needs from you this week.">
+      <SectionCard title="Class Action Queue" subtitle="What your SS2 Gold class needs from you this week.">
         <div class="space-y-4 pt-6">
-          <div class="rounded-[24px] border border-amber-200 bg-amber-50 p-5">
-            <p class="text-sm font-semibold text-amber-800">SS1 Gold</p>
-            <p class="mt-2 text-sm leading-6 text-amber-700">Wednesday attendance still pending. 3 students also need follow-up on low algebra quiz scores.</p>
-          </div>
           <div class="rounded-[24px] border border-blue-200 bg-blue-50 p-5">
             <p class="text-sm font-semibold text-blue-800">SS2 Gold</p>
-            <p class="mt-2 text-sm leading-6 text-blue-700">Mid-term CBT is scheduled. Confirm invigilation note and lock final question order.</p>
-          </div>
-          <div class="rounded-[24px] border border-rose-200 bg-rose-50 p-5">
-            <p class="text-sm font-semibold text-rose-800">SS3 Science</p>
-            <p class="mt-2 text-sm leading-6 text-rose-700">Live revision exam triggered 2 tab-switch warnings and 1 unstable connection alert.</p>
-          </div>
-          <div class="rounded-[24px] border border-emerald-200 bg-emerald-50 p-5">
-            <p class="text-sm font-semibold text-emerald-800">SS2 Science</p>
-            <p class="mt-2 text-sm leading-6 text-emerald-700">Theory grading queue is ready for moderation after you score remaining probability responses.</p>
+            <p class="mt-2 text-sm leading-6 text-blue-700">Mid-term CBT is scheduled. Confirm invigilation note, lock final question order, and ensure all students have exam access confirmation.</p>
           </div>
         </div>
       </SectionCard>

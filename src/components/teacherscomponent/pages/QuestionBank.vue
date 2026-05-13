@@ -11,7 +11,7 @@
       </template>
 
       <div class="space-y-5 pt-6">
-        <div class="grid gap-4 xl:grid-cols-[1.6fr_repeat(3,minmax(0,1fr))]">
+        <div class="grid gap-4 xl:grid-cols-[1.6fr_repeat(2,minmax(0,1fr))]">
           <label class="relative block">
             <Search class="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
@@ -29,10 +29,6 @@
           <select v-model="filters.topic" class="question-filter">
             <option value="">All Topics</option>
             <option v-for="topic in questionTopics" :key="topic" :value="topic">{{ topic }}</option>
-          </select>
-          <select v-model="filters.className" class="question-filter">
-            <option value="">All Classes</option>
-            <option v-for="className in classNames" :key="className" :value="className">{{ className }}</option>
           </select>
         </div>
 

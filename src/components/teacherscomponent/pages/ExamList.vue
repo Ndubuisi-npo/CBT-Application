@@ -30,16 +30,11 @@
     <section ref="monitorAnchor">
       <SectionCard title="Live Exam Monitoring" subtitle="Track in-progress student activity, attendance, and suspicious behaviour.">
         <div class="space-y-5 pt-6">
-          <div class="grid gap-4 md:grid-cols-2">
+          <div class="">
             <div class="rounded-[24px] border border-emerald-200 bg-emerald-50 p-5">
               <p class="text-sm text-emerald-700">Live students</p>
               <p class="mt-3 text-3xl font-semibold text-emerald-800">{{ liveMonitoring.summary.activeStudents }}</p>
               <p class="mt-2 text-sm text-emerald-700">{{ liveMonitoring.summary.timeRemaining }}</p>
-            </div>
-            <div class="rounded-[24px] border border-amber-200 bg-amber-50 p-5">
-              <p class="text-sm text-amber-700">Warnings raised</p>
-              <p class="mt-3 text-3xl font-semibold text-amber-800">{{ liveMonitoring.summary.warnings }}</p>
-              <p class="mt-2 text-sm text-amber-700">{{ liveMonitoring.summary.refreshLabel }}</p>
             </div>
           </div>
 
@@ -64,9 +59,6 @@
                 <div>
                   <div class="flex flex-wrap items-center gap-2">
                     <h3 class="text-base font-semibold text-slate-900">{{ student.name }}</h3>
-                    <span class="rounded-full px-3 py-1 text-xs font-semibold" :class="student.flag ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'">
-                      {{ student.flag ? 'Warning' : 'Normal' }}
-                    </span>
                   </div>
                   <p class="mt-2 text-sm text-slate-500">{{ student.className }} • {{ student.connection }} • {{ student.attendance }}</p>
                 </div>
@@ -78,7 +70,6 @@
                   <div class="h-2 rounded-full bg-slate-200">
                     <div class="h-2 rounded-full bg-[#0B1F3A]" :style="{ width: `${student.progress}%` }"></div>
                   </div>
-                  <p v-if="student.flag" class="text-sm font-medium text-amber-700">{{ student.flag }}</p>
                 </div>
               </div>
             </article>
@@ -171,33 +162,6 @@
 
           <div v-if="!filteredExams.length" class="rounded-[24px] border border-dashed border-slate-300 bg-slate-50 px-5 py-12 text-center text-sm text-slate-500">
             No exams match the current filter. Switch tabs or create a new assessment.
-          </div>
-        </div>
-      </SectionCard>
-
-      <SectionCard title="Exam Preview" subtitle="A quick summary of the selected assessment before students take it.">
-        <div v-if="selectedExamPreview" class="space-y-5 pt-6">
-          <div class="rounded-[24px] bg-[#0B1F3A] p-5 text-white">
-            <div class="flex flex-wrap items-start justify-between gap-4">
-              <div>
-                <p class="text-xs font-semibold uppercase tracking-[0.24em] text-[#D4AF37]">Assessment Preview</p>
-                <h2 class="mt-3 text-2xl font-semibold">{{ selectedExamPreview.title }}</h2>
-                <p class="mt-2 text-sm text-slate-300">{{ selectedExamPreview.subject }} • {{ selectedExamPreview.className }}</p>
-              </div>
-              <span class="rounded-full bg-white/10 px-4 py-2 text-sm font-semibold">{{ selectedExamPreview.status }}</span>
-            </div>
-          </div>
-
-          <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            <div
-              v-for="question in selectedExamQuestions"
-              :key="question.id"
-              class="rounded-[24px] border border-slate-200 bg-slate-50 p-4"
-            >
-              <p class="text-xs uppercase tracking-[0.18em] text-slate-400">Multiple Choice</p>
-              <h3 class="mt-3 text-sm font-semibold text-slate-900">{{ question.content }}</h3>
-              <p class="mt-2 text-sm text-slate-500">{{ question.topic }}</p>
-            </div>
           </div>
         </div>
       </SectionCard>

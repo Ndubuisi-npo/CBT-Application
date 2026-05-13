@@ -62,8 +62,12 @@ export async function apiFetch(path, options = {}) {
 
   const headers = {
     'Accept': 'application/json',
-    'Content-Type': 'application/json',
     ...(options.headers || {}),
+  }
+
+  const isFormData = options.body instanceof FormData
+  if (!isFormData) {
+    headers['Content-Type'] = headers['Content-Type'] || 'application/json'
   }
 
   if (authToken) {

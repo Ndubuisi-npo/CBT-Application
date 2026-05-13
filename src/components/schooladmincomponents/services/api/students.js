@@ -79,6 +79,17 @@ export async function toggleActive(id) {
   }
 }
 
+export async function importStudents(formData) {
+  try {
+    return await apiFetch('/api/students/import', {
+      method: 'POST',
+      body: formData,
+    })
+  } catch (error) {
+    throw new Error(extractErrorMessage(error, 'Unable to import students.'))
+  }
+}
+
 export async function resetPassword(id) {
   try {
     return await apiFetch(`/api/students/${id}/reset-password`, { method: 'POST' })

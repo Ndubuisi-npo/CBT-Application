@@ -67,35 +67,6 @@
       </div>
     </section>
 
-    <section>
-      <SectionCard title="Notifications" subtitle="Important actions to close out today.">
-        <div class="space-y-4 pt-6">
-          <div
-            v-for="notification in notifications"
-            :key="notification.id"
-            class="rounded-2xl border p-4"
-            :class="notification.priority === 'high' ? 'border-rose-200 bg-rose-50/60' : notification.priority === 'medium' ? 'border-amber-200 bg-amber-50/70' : 'border-slate-200 bg-slate-50/80'"
-          >
-            <div class="flex items-start justify-between gap-4">
-              <div>
-                <p class="text-sm font-semibold text-slate-900">{{ notification.title }}</p>
-                <p class="mt-1 text-sm leading-6 text-slate-600">{{ notification.body }}</p>
-              </div>
-              <span
-                class="rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em]"
-                :class="notification.priority === 'high' ? 'bg-rose-100 text-rose-700' : notification.priority === 'medium' ? 'bg-amber-100 text-amber-700' : 'bg-slate-200 text-slate-600'"
-              >
-                {{ notification.priority }}
-              </span>
-            </div>
-            <button type="button" class="mt-4 text-sm font-semibold text-[#0B1F3A] transition hover:text-[#D4AF37]" @click="handleNotification(notification)">
-              {{ notification.action }}
-            </button>
-          </div>
-        </div>
-      </SectionCard>
-    </section>
-
     <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
       <div
         v-for="card in teacherStats"
@@ -107,7 +78,9 @@
             <p class="text-sm font-medium text-slate-500">{{ card.label }}</p>
             <p class="mt-3 text-3xl font-semibold tracking-tight text-slate-900">{{ card.value }}</p>
           </div>
-          <div class="h-12 w-12 rounded-2xl" :class="toneClass(card.tone)"></div>
+          <div class="flex h-12 w-12 items-center justify-center rounded-2xl" :class="toneClass(card.tone)">
+            <component :is="iconForCard(card.label)" :class="['h-6 w-6', iconColorClass(card.tone)]" />
+          </div>
         </div>
         <p class="mt-4 text-sm text-slate-500">{{ card.change }}</p>
       </div>
@@ -127,8 +100,8 @@
               </span>
             </div>
             <div class="mt-5 flex flex-wrap gap-2">
-              <span v-for="className in subject.classes" :key="className" class="rounded-full bg-white px-3 py-2 text-xs font-medium text-slate-700 shadow-sm">
-                {{ className }}
+              <span class="rounded-full bg-white px-3 py-2 text-xs font-medium text-slate-700 shadow-sm">
+                {{ teacherProfile.classTeacher }}
               </span>
             </div>
             <div class="mt-5 rounded-2xl bg-white p-4">
@@ -157,7 +130,7 @@
       </SectionCard>
     </section>
 
-    <section class="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+    <section class=gap-6>
       <SectionCard title="Upcoming Exams" subtitle="Scheduled, published, and draft exams in your queue.">
         <div class="space-y-4 pt-6">
           <div
@@ -194,36 +167,6 @@
           </div>
         </div>
       </SectionCard>
-
-      <SectionCard title="Class Snapshot" subtitle="Quick visibility into each assigned class.">
-        <div class="space-y-4 pt-6">
-          <div v-for="classItem in classOverview" :key="classItem.id" class="rounded-[24px] border border-slate-200 bg-slate-50/80 p-5">
-            <div class="flex items-start justify-between gap-3">
-              <div>
-                <h3 class="text-lg font-semibold text-slate-900">{{ classItem.name }}</h3>
-                <p class="mt-1 text-sm text-slate-500">{{ classItem.homeroom }} • Prefect: {{ classItem.prefect }}</p>
-              </div>
-              <button type="button" class="rounded-full bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm" @click="goTo('/teachers/my-classes')">
-                View class
-              </button>
-            </div>
-            <div class="mt-4 grid grid-cols-3 gap-3 text-sm">
-              <div class="rounded-2xl bg-white p-3">
-                <p class="text-slate-400">Students</p>
-                <p class="mt-2 font-semibold text-slate-900">{{ classItem.studentCount }}</p>
-              </div>
-              <div class="rounded-2xl bg-white p-3">
-                <p class="text-slate-400">Present today</p>
-                <p class="mt-2 font-semibold text-slate-900">{{ classItem.attendanceToday }}</p>
-              </div>
-              <div class="rounded-2xl bg-white p-3">
-                <p class="text-slate-400">Average score</p>
-                <p class="mt-2 font-semibold text-slate-900">{{ classItem.averageScore }}%</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </SectionCard>
     </section>
   </div>
 </template>
@@ -231,7 +174,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { BookOpen, ClipboardCheck, Clock3, FilePenLine, GraduationCap } from 'lucide-vue-next'
+import { BookOpen, ClipboardCheck, Clock3, FilePenLine, GraduationCap, Users, Zap, Library, AlertCircle, CheckCircle2 } from 'lucide-vue-next'
 import { useSchoolAdminUiStore } from '../../schooladmincomponents/stores/ui'
 import SectionCard from '../components/SectionCard.vue'
 import {
@@ -270,6 +213,28 @@ const toneClass = (tone) => {
     indigo: 'bg-indigo-100',
   }
   return tones[tone] || 'bg-slate-100'
+}
+
+const iconColorClass = (tone) => {
+  const colors = {
+    blue: 'text-blue-600',
+    emerald: 'text-emerald-600',
+    amber: 'text-amber-600',
+    rose: 'text-rose-600',
+    indigo: 'text-indigo-600',
+  }
+  return colors[tone] || 'text-slate-600'
+}
+
+const iconForCard = (label) => {
+  const icons = {
+    'Total Students': Users,
+    'Active Exams': Zap,
+    'Question Bank Count': Library,
+    'Pending Auto-Graded Scripts': AlertCircle,
+    'Attendance Completion': CheckCircle2,
+  }
+  return icons[label]
 }
 
 const statusClass = (status) => {

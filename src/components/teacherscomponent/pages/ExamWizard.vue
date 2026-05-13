@@ -188,24 +188,11 @@
                 </label>
               </div>
 
-              <div class="grid gap-4 lg:grid-cols-2">
+              <div class="">
                 <div class="rounded-[24px] border border-slate-200 bg-slate-50 p-5">
                   <h3 class="text-lg font-semibold text-slate-900">Student Experience</h3>
                   <div class="mt-4 space-y-4">
                     <label v-for="toggle in studentToggles" :key="toggle.key" class="flex items-start justify-between gap-4 rounded-2xl bg-white px-4 py-3">
-                      <div>
-                        <p class="text-sm font-semibold text-slate-900">{{ toggle.label }}</p>
-                        <p class="mt-1 text-sm text-slate-500">{{ toggle.help }}</p>
-                      </div>
-                      <input v-model="wizard[toggle.key]" type="checkbox" class="mt-1 h-4 w-4 rounded border-slate-300 text-[#0B1F3A] focus:ring-[#D4AF37]" />
-                    </label>
-                  </div>
-                </div>
-
-                <div class="rounded-[24px] border border-slate-200 bg-slate-50 p-5">
-                  <h3 class="text-lg font-semibold text-slate-900">Anti-Cheat Controls</h3>
-                  <div class="mt-4 space-y-4">
-                    <label v-for="toggle in securityToggles" :key="toggle.key" class="flex items-start justify-between gap-4 rounded-2xl bg-white px-4 py-3">
                       <div>
                         <p class="text-sm font-semibold text-slate-900">{{ toggle.label }}</p>
                         <p class="mt-1 text-sm text-slate-500">{{ toggle.help }}</p>
@@ -479,14 +466,6 @@ const studentToggles = [
   { key: 'allowReview', label: 'Allow review before submission', help: 'Students can return to earlier questions before final submit.' },
   { key: 'showResultsInstantly', label: 'Show results instantly', help: 'Release objective scores immediately after submission where appropriate.' },
 ]
-
-const securityToggles = [
-  { key: 'fullscreenMode', label: 'Require fullscreen mode', help: 'Prompt learners to stay inside the test shell.' },
-  { key: 'tabSwitchWarnings', label: 'Tab-switch warnings', help: 'Flag repeated app switching during the exam.' },
-  { key: 'captureDisconnects', label: 'Track connection drops', help: 'Surface unstable sessions in live monitoring.' },
-  { key: 'webcamPrompt', label: 'Webcam prompt', help: 'Show a readiness reminder where devices support camera checks.' },
-]
-
 const isSelected = (id) => wizard.selectedQuestionIds.includes(id)
 
 const toggleQuestion = (question) => {

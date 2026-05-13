@@ -11,7 +11,7 @@ export const teacherProfile = {
   school: 'EduCBT Demonstration College',
   campus: 'Ikeja Senior Campus',
   location: 'Ikeja, Lagos',
-  bio: 'Coordinates senior secondary mathematics assessments and supports WAEC preparation across SS1 to SS3.',
+  bio: 'Coordinates senior secondary mathematics assessments and supports WAEC preparation across SS2 to SS2 .',
   completionRate: 96,
   lastLogin: '2026-05-12T07:42:00+01:00',
   classTeacher: 'SS2 Gold',
@@ -28,14 +28,14 @@ export const teacherStats = [
 ]
 
 export const assignedSubjects = [
-  { name: 'Mathematics', classes: ['SS1 Gold', 'SS2 Gold', 'SS3 Science'], weeklyPeriods: 18, questionCount: 142, upcomingExam: 'SS2 Mid-Term CBT' },
-  { name: 'Further Mathematics', classes: ['SS2 Science', 'SS3 Science'], weeklyPeriods: 8, questionCount: 58, upcomingExam: 'Further Maths Drill Test' },
+  { name: 'Mathematics', classes: ['SS2 Gold'], weeklyPeriods: 18, questionCount: 142, upcomingExam: 'SS2 Mid-Term CBT' },
+  { name: 'Further Mathematics', classes: ['SS2 Gold'], weeklyPeriods: 8, questionCount: 58, upcomingExam: 'Further Maths Drill Test' },
 ]
 
 export const classOverview = [
   {
-    id: 'CLS-SS1-GOLD',
-    name: 'SS1 Gold',
+    id: 'CLS-SS2-GOLD',
+    name: 'SS2 Gold',
     level: 'Senior Secondary 1',
     arm: 'Gold',
     homeroom: 'Block C, Room 4',
@@ -60,10 +60,10 @@ export const classOverview = [
     subjects: ['Mathematics', 'Physics', 'Chemistry', 'Economics'],
   },
   {
-    id: 'CLS-SS3-SCI',
-    name: 'SS3 Science',
+    id: 'CLS-SS2-GOL',
+    name: 'SS2 Gold',
     level: 'Senior Secondary 3',
-    arm: 'Science',
+    arm: 'Gold',
     homeroom: 'Block A, Room 1',
     studentCount: 51,
     attendanceToday: 49,
@@ -73,10 +73,10 @@ export const classOverview = [
     subjects: ['Mathematics', 'Further Mathematics', 'Physics', 'Chemistry'],
   },
   {
-    id: 'CLS-SS2-SCI',
-    name: 'SS2 Science',
+    id: 'CLS-SS2-GOL',
+    name: 'SS2 Gold',
     level: 'Senior Secondary 2',
-    arm: 'Science',
+    arm: 'Gold',
     homeroom: 'Block B, Room 5',
     studentCount: 46,
     attendanceToday: 43,
@@ -104,7 +104,7 @@ export const upcomingExams = [
     id: 'EX-102',
     title: 'Further Mathematics Drill Test',
     subject: 'Further Mathematics',
-    className: 'SS3 Science',
+    className: 'SS2  Gold',
     type: 'Multiple Choice',
     status: 'Draft',
     date: '2026-05-18T11:30:00+01:00',
@@ -114,9 +114,9 @@ export const upcomingExams = [
   },
   {
     id: 'EX-103',
-    title: 'SS1 Algebra Mastery Quiz',
+    title: 'SS2 Algebra Mastery Quiz',
     subject: 'Mathematics',
-    className: 'SS1 Gold',
+    className: 'SS2 Gold',
     type: 'Quiz',
     status: 'Published',
     date: '2026-05-13T08:15:00+01:00',
@@ -128,15 +128,15 @@ export const upcomingExams = [
 
 export const recentActivities = [
   { id: 1, time: '08:10 AM', title: 'Attendance submitted', description: 'SS2 Gold attendance saved with 45 present students.' },
-  { id: 2, time: 'Yesterday', title: 'Results auto-graded', description: 'SS3 Science revision exam answers were compared and scored automatically.' },
-  { id: 3, time: 'Yesterday', title: 'Question published', description: 'Published a new quadratic equations multiple choice set for SS1 Gold.' },
+  { id: 2, time: 'Yesterday', title: 'Results auto-graded', description: 'SS2  Gold revision exam answers were compared and scored automatically.' },
+  { id: 3, time: 'Yesterday', title: 'Question published', description: 'Published a new quadratic equations multiple choice set for SS2 Gold.' },
   { id: 4, time: 'Monday', title: 'Exam scheduled', description: 'SS2 Mid-Term Mathematics CBT scheduled for Thursday, 15 May 2026.' },
 ]
 
 export const notifications = [
   { id: 1, title: 'Objective results ready', body: '27 recently submitted scripts have been auto-graded and are ready for review.', priority: 'high', action: 'Open Grading' },
-  { id: 2, title: 'Live exam alert', body: '2 students in SS3 Science triggered repeated tab-switch warnings.', priority: 'medium', action: 'Monitor Exam' },
-  { id: 3, title: 'Attendance reminder', body: 'SS1 Gold attendance has not been captured for Wednesday, 14 May 2026.', priority: 'low', action: 'Take Attendance' },
+  { id: 2, title: 'Live exam alert', body: '2 students in SS2  Gold triggered repeated tab-switch warnings.', priority: 'medium', action: 'Monitor Exam' },
+  { id: 3, title: 'Attendance reminder', body: 'SS2 Gold attendance has not been captured for Wednesday, 14 May 2026.', priority: 'low', action: 'Take Attendance' },
 ]
 
 export const questionBank = [
@@ -160,7 +160,7 @@ export const questionBank = [
     type: 'Multiple Choice',
     subject: 'Mathematics',
     topic: 'Indices',
-    className: 'SS1 Gold',
+    className: 'SS2 Gold',
     status: 'Draft',
     usageCount: 0,
     marks: 1,
@@ -175,7 +175,7 @@ export const questionBank = [
     type: 'Multiple Choice',
     subject: 'Further Mathematics',
     topic: 'Matrices',
-    className: 'SS3 Science',
+    className: 'SS2  Gold',
     status: 'Published',
     usageCount: 3,
     marks: 2,
@@ -190,7 +190,7 @@ export const questionBank = [
     type: 'Multiple Choice',
     subject: 'Mathematics',
     topic: 'Statistics',
-    className: 'SS2 Science',
+    className: 'SS2 Gold',
     status: 'Published',
     usageCount: 2,
     marks: 3,
@@ -205,7 +205,7 @@ export const questionBank = [
     type: 'Multiple Choice',
     subject: 'Mathematics',
     topic: 'Set Theory',
-    className: 'SS1 Gold',
+    className: 'SS2 Gold',
     status: 'Published',
     usageCount: 6,
     marks: 3,
@@ -220,7 +220,7 @@ export const questionBank = [
     type: 'Multiple Choice',
     subject: 'Further Mathematics',
     topic: 'Probability',
-    className: 'SS2 Science',
+    className: 'SS2 Gold',
     status: 'Draft',
     usageCount: 1,
     marks: 4,
@@ -281,7 +281,7 @@ export const examLibrary = [
     id: 'EX-202',
     title: 'Further Mathematics Drill Test',
     subject: 'Further Mathematics',
-    className: 'SS3 Science',
+    className: 'SS2  Gold',
     type: 'Multiple Choice',
     status: 'Draft',
     scheduleLabel: 'Not scheduled',
@@ -297,7 +297,7 @@ export const examLibrary = [
     id: 'EX-203',
     title: 'Live WAEC Revision CBT',
     subject: 'Mathematics',
-    className: 'SS3 Science',
+    className: 'SS2  Gold',
     type: 'Multiple Choice',
     status: 'Live',
     scheduleLabel: 'In progress now',
@@ -311,9 +311,9 @@ export const examLibrary = [
   },
   {
     id: 'EX-204',
-    title: 'SS1 Algebra Mastery Quiz',
+    title: 'SS2 Algebra Mastery Quiz',
     subject: 'Mathematics',
-    className: 'SS1 Gold',
+    className: 'SS2 Gold',
     type: 'Multiple Choice',
     status: 'Completed',
     scheduleLabel: 'Completed on Mon 11 May',
@@ -338,17 +338,17 @@ export const liveMonitoring = {
     timeRemaining: '24 mins left',
   },
   students: [
-    { id: 'MON-1', name: 'Ifeanyi Nwosu', className: 'SS3 Science', progress: 88, remaining: '11 mins', connection: 'Stable', attendance: 'Present', flag: null },
-    { id: 'MON-2', name: 'Mubarak Bello', className: 'SS3 Science', progress: 72, remaining: '18 mins', connection: 'Unstable', attendance: 'Present', flag: 'Weak connection' },
-    { id: 'MON-3', name: 'Chinonso Eke', className: 'SS3 Science', progress: 65, remaining: '20 mins', connection: 'Stable', attendance: 'Present', flag: 'Tab switch x2' },
-    { id: 'MON-4', name: 'Aisha Sani', className: 'SS3 Science', progress: 43, remaining: '24 mins', connection: 'Disconnected', attendance: 'Present', flag: 'Offline 3 mins' },
+    { id: 'MON-1', name: 'Ifeanyi Nwosu', className: 'SS2  Gold', progress: 88, remaining: '11 mins', connection: 'Stable', attendance: 'Present', flag: null },
+    { id: 'MON-2', name: 'Mubarak Bello', className: 'SS2  Gold', progress: 72, remaining: '18 mins', connection: 'Unstable', attendance: 'Present', flag: 'Weak connection' },
+    { id: 'MON-3', name: 'Chinonso Eke', className: 'SS2  Gold', progress: 65, remaining: '20 mins', connection: 'Stable', attendance: 'Present', flag: 'Tab switch x2' },
+    { id: 'MON-4', name: 'Aisha Sani', className: 'SS2  Gold', progress: 43, remaining: '24 mins', connection: 'Disconnected', attendance: 'Present', flag: 'Offline 3 mins' },
   ],
 }
 
 export const gradingQueue = [
   { id: 'GR-001', studentName: 'Maryann Eze', className: 'SS2 Gold', examTitle: 'SS2 Mid-Term Mathematics CBT', submittedAt: '2026-05-11T14:00:00+01:00', score: 16, totalQuestions: 20, correctCount: 16, status: 'Auto-Graded' },
-  { id: 'GR-002', studentName: 'Rita Okoye', className: 'SS2 Science', examTitle: 'Probability Drill CBT', submittedAt: '2026-05-11T15:15:00+01:00', score: 11, totalQuestions: 20, correctCount: 11, status: 'Auto-Graded' },
-  { id: 'GR-003', studentName: 'Mubarak Bello', className: 'SS3 Science', examTitle: 'Live WAEC Revision CBT', submittedAt: '2026-05-10T10:40:00+01:00', score: 18, totalQuestions: 25, correctCount: 18, status: 'Flagged Review' },
+  { id: 'GR-002', studentName: 'Rita Okoye', className: 'SS2 Gold', examTitle: 'Probability Drill CBT', submittedAt: '2026-05-11T15:15:00+01:00', score: 11, totalQuestions: 20, correctCount: 11, status: 'Auto-Graded' },
+  { id: 'GR-003', studentName: 'Mubarak Bello', className: 'SS2  Gold', examTitle: 'Live WAEC Revision CBT', submittedAt: '2026-05-10T10:40:00+01:00', score: 18, totalQuestions: 25, correctCount: 18, status: 'Flagged Review' },
 ]
 
 export const gradingDetail = {
@@ -379,9 +379,9 @@ export const resultsAnalytics = {
     { topic: 'Set Theory', score: 58 },
   ],
   topStudents: [
-    { name: 'Ifeanyi Nwosu', className: 'SS3 Science', score: 94 },
+    { name: 'Ifeanyi Nwosu', className: 'SS2  Gold', score: 94 },
     { name: 'Maryann Eze', className: 'SS2 Gold', score: 91 },
-    { name: 'Temiloluwa Bakare', className: 'SS1 Gold', score: 89 },
+    { name: 'Temiloluwa Bakare', className: 'SS2 Gold', score: 89 },
   ],
   gradeDistribution: [
     { grade: 'A', count: 26 },
@@ -405,21 +405,21 @@ export const resultsAnalytics = {
 }
 
 export const resultRecords = [
-  { id: 'RS-1', examTitle: 'SS1 Algebra Mastery Quiz', className: 'SS1 Gold', submitted: 42, average: 73, highest: 96, lowest: 41, passRate: 86, publishedAt: '2026-05-11T13:45:00+01:00' },
+  { id: 'RS-1', examTitle: 'SS2 Algebra Mastery Quiz', className: 'SS2 Gold', submitted: 42, average: 73, highest: 96, lowest: 41, passRate: 86, publishedAt: '2026-05-11T13:45:00+01:00' },
   { id: 'RS-2', examTitle: 'SS2 Mid-Term Mathematics CBT', className: 'SS2 Gold', submitted: 47, average: 68, highest: 91, lowest: 33, passRate: 78, publishedAt: '2026-05-10T16:20:00+01:00' },
-  { id: 'RS-3', examTitle: 'Probability Drill CBT', className: 'SS2 Science', submitted: 46, average: 64, highest: 88, lowest: 29, passRate: 72, publishedAt: '2026-05-08T11:00:00+01:00' },
+  { id: 'RS-3', examTitle: 'Probability Drill CBT', className: 'SS2 Gold', submitted: 46, average: 64, highest: 88, lowest: 29, passRate: 72, publishedAt: '2026-05-08T11:00:00+01:00' },
 ]
 
 export const timetable = {
   weekly: [
-    { day: 'Monday', entries: [{ time: '8:00 - 8:40', subject: 'Mathematics', className: 'SS1 Gold', room: 'Block C4' }, { time: '10:20 - 11:00', subject: 'Further Mathematics', className: 'SS3 Science', room: 'Block A1' }] },
-    { day: 'Tuesday', entries: [{ time: '9:40 - 10:20', subject: 'Mathematics', className: 'SS2 Gold', room: 'Block B2' }, { time: '12:00 - 12:40', subject: 'Mathematics', className: 'SS3 Science', room: 'Block A1' }] },
-    { day: 'Wednesday', entries: [{ time: '8:40 - 9:20', subject: 'Mathematics', className: 'SS1 Gold', room: 'Block C4' }, { time: '1:20 - 2:00', subject: 'Further Mathematics', className: 'SS2 Science', room: 'Block B5' }] },
-    { day: 'Thursday', entries: [{ time: '9:00 - 10:00', subject: 'Exam Invigilation', className: 'SS2 Gold', room: 'CBT Lab 1' }, { time: '12:40 - 1:20', subject: 'Mathematics Clinic', className: 'SS3 Science', room: 'Maths Lab' }] },
-    { day: 'Friday', entries: [{ time: '8:00 - 8:40', subject: 'Mathematics', className: 'SS2 Gold', room: 'Block B2' }, { time: '11:00 - 11:40', subject: 'Remedial Session', className: 'SS1 Gold', room: 'Maths Lab' }] },
+    { day: 'Monday', entries: [{ time: '8:00 - 8:40', subject: 'Mathematics', className: 'SS2 Gold', room: 'Block C4' }, { time: '10:20 - 11:00', subject: 'Further Mathematics', className: 'SS2  Gold', room: 'Block A1' }] },
+    { day: 'Tuesday', entries: [{ time: '9:40 - 10:20', subject: 'Mathematics', className: 'SS2 Gold', room: 'Block B2' }, { time: '12:00 - 12:40', subject: 'Mathematics', className: 'SS2  Gold', room: 'Block A1' }] },
+    { day: 'Wednesday', entries: [{ time: '8:40 - 9:20', subject: 'Mathematics', className: 'SS2 Gold', room: 'Block C4' }, { time: '1:20 - 2:00', subject: 'Further Mathematics', className: 'SS2 Gold', room: 'Block B5' }] },
+    { day: 'Thursday', entries: [{ time: '9:00 - 10:00', subject: 'Exam Invigilation', className: 'SS2 Gold', room: 'CBT Lab 1' }, { time: '12:40 - 1:20', subject: 'Mathematics Clinic', className: 'SS2  Gold', room: 'Maths Lab' }] },
+    { day: 'Friday', entries: [{ time: '8:00 - 8:40', subject: 'Mathematics', className: 'SS2 Gold', room: 'Block B2' }, { time: '11:00 - 11:40', subject: 'Remedial Session', className: 'SS2 Gold', room: 'Maths Lab' }] },
   ],
   calendar: [
-    { date: '2026-05-13', label: 'SS1 Algebra Quiz', tone: 'blue' },
+    { date: '2026-05-13', label: 'SS2 Algebra Quiz', tone: 'blue' },
     { date: '2026-05-15', label: 'SS2 Mid-Term CBT', tone: 'emerald' },
     { date: '2026-05-16', label: 'Parent feedback follow-up', tone: 'amber' },
     { date: '2026-05-19', label: 'Theory grading moderation', tone: 'rose' },
