@@ -1,4 +1,4 @@
-import { apiFetch, extractErrorMessage } from '../../../../js/lib/api'
+import { apiFetch, extractErrorMessage, getTenantHandle } from '../../../../js/lib/api'
 
 export async function getStudents() {
   try {
@@ -95,11 +95,18 @@ export async function importStudents(file, { dryRun = true, overwriteExisting = 
       formData.append('overwrite_existing', overwriteExisting)
     }
 
+    const headers = {
+      ...authHeaders(),
+    }
+
+    const tenantHandle = getTenantHandle()
+    if (tenantHandle) {
+      headers['X-Tenant'] = tenantHandle
+    }
+
     const response = await fetch('/api/students/import', {
       method: 'POST',
-      headers: {
-        ...authHeaders(),
-      },
+      headers,
       body: formData,
     })
 
@@ -118,11 +125,18 @@ export async function importStudents(file, { dryRun = true, overwriteExisting = 
 
 export async function getImportTemplate() {
   try {
+    const headers = {
+      ...authHeaders(),
+    }
+
+    const tenantHandle = getTenantHandle()
+    if (tenantHandle) {
+      headers['X-Tenant'] = tenantHandle
+    }
+
     const response = await fetch('/api/students/import-template', {
       method: 'GET',
-      headers: {
-        ...authHeaders(),
-      },
+      headers,
     })
 
     if (!response.ok) {
