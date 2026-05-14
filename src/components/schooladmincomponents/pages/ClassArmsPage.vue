@@ -1,6 +1,6 @@
 <template>
   <div class="space-y-6">
-    <SectionCard :title="`Classes for ${classLevel?.name || '...'}`" subtitle="Manage classes (e.g., JSS 1A, JSS 1B).">
+    <SectionCard title="Classes" subtitle="Manage classes (e.g., JSS 1A, JSS 1B).">
       <template #header>
         <AppButton @click="openModal()" :icon="Plus" text="Create" variant="primary" size="sm" />
       </template>
@@ -12,7 +12,7 @@
           </svg>
         </div>
         <h3 class="text-lg font-medium text-slate-900 mb-2">No classes created</h3>
-        <p class="text-slate-600 mb-6">Get started by creating your first class for {{ classLevel?.name || 'this class level' }}.</p>
+        <p class="text-slate-600 mb-6">Get started by creating your first class.</p>
       </div>
       <div v-else class="overflow-hidden rounded-[24px] border border-slate-200">
         <div class="overflow-x-auto">
@@ -25,7 +25,6 @@
             <tbody class="divide-y divide-slate-100">
               <tr v-for="classArm in classArmsStore.classArms" :key="classArm.id" class="transition hover:bg-slate-50/80">
                 <td class="px-5 py-4 font-semibold text-slate-900">{{ classArm.name }}</td>
-                <td class="px-5 py-4 text-sm text-slate-600">{{ classLevel?.name || '-' }}</td>
                 <td class="px-5 py-4 text-sm text-slate-600">{{ getAssignedTeacher(classArm) }}</td>
                 <td class="px-5 py-4">
                   <div class="flex gap-2">
@@ -75,13 +74,11 @@ import ClassModal from '../components/ClassModal.vue'
 import AssignTeacherModal from '../components/AssignTeacherModal.vue'
 import { Plus } from 'lucide-vue-next'
 import { useSchoolAdminClassArmsStore } from '../stores/classArms'
-import { useSchoolAdminClassLevelsStore } from '../stores/classLevels'
 import { useSchoolAdminTeachersStore } from '../stores/teachers'
 import { useSchoolAdminUiStore } from '../stores/ui'
 
 const route = useRoute()
-const headings = ['Class Name', 'Class Level', 'Teacher', 'Actions']
-const classLevelsStore = useSchoolAdminClassLevelsStore()
+const headings = ['Class Name', 'Teacher', 'Actions']
 const classArmsStore = useSchoolAdminClassArmsStore()
 const uiStore = useSchoolAdminUiStore()
 
@@ -94,11 +91,9 @@ const showAssignTeacherModal = ref(false)
 const deleteLoading = ref(new Set())
 
 const classLevelId = computed(() => route.params.id)
-const classLevel = computed(() => classLevelsStore.classLevels.find(cl => cl.id === classLevelId.value))
 
 onMounted(async () => {
   try {
-    await classLevelsStore.fetchClassLevels()
     if (classLevelId.value) {
       await classArmsStore.fetchClassArms(classLevelId.value)
     }
