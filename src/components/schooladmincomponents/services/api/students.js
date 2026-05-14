@@ -79,14 +79,61 @@ export async function toggleActive(id) {
   }
 }
 
-export async function importStudents(formData) {
+const authHeaders = () => {
+  if (typeof window === 'undefined') return {}
+  const token = localStorage.getItem('authToken')
+  return token ? { Authorization: `Bearer ${token}` } : {}
+}
+
+export async function importStudents(file, { dryRun = true, overwriteExisting = null } = {}) {
   try {
-    return await apiFetch('/api/students/import', {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('dry_run', dryRun ? 'true' : 'false')
+
+    if (overwriteExisting !== null) {
+      formData.append('overwrite_existing', overwriteExisting)
+    }
+
+    const response = await fetch('/api/students/import', {
       method: 'POST',
+      headers: {
+        ...authHeaders(),
+      },
       body: formData,
     })
+
+    const contentType = response.headers.get('content-type') || ''
+    const body = contentType.includes('application/json') ? await response.json() : await response.text()
+
+    return {
+      ok: response.ok,
+      status: response.status,
+      body,
+    }
   } catch (error) {
     throw new Error(extractErrorMessage(error, 'Unable to import students.'))
+  }
+}
+
+export async function getImportTemplate() {
+  try {
+    const response = await fetch('/api/students/import-template', {
+      method: 'GET',
+      headers: {
+        ...authHeaders(),
+      },
+    })
+
+    if (!response.ok) {
+      const contentType = response.headers.get('content-type') || ''
+      const body = contentType.includes('application/json') ? await response.json() : await response.text()
+      throw new Error(extractErrorMessage(body, 'Unable to download import template.'))
+    }
+
+    return await response.blob()
+  } catch (error) {
+    throw new Error(extractErrorMessage(error, 'Unable to download import template.'))
   }
 }
 

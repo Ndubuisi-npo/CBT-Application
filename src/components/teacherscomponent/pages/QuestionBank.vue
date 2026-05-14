@@ -112,7 +112,7 @@
                   v-for="option in question.options.slice(0, 4)"
                   :key="option"
                   class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm"
-                  :class="question.correctAnswer === option ? 'text-emerald-700 border-emerald-200' : 'text-slate-600'"
+                  :class="question.correctAnswer === option ? 'bg-emerald-50 text-emerald-700 font-semibold shadow-sm' : 'text-slate-600'"
                 >
                   {{ option }}
                 </div>
@@ -262,7 +262,7 @@
                     v-for="(option, index) in form.options.filter(Boolean)"
                     :key="`${option}-${index}`"
                     class="rounded-2xl border px-4 py-3 text-sm"
-                    :class="form.correctAnswer === option ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-slate-50 text-slate-600'"
+                    :class="form.correctAnswer === option ? 'border-emerald-300 bg-emerald-50 text-emerald-900 font-semibold shadow-sm' : 'border-slate-200 bg-slate-50 text-slate-600'"
                   >
                     {{ String.fromCharCode(65 + index) }}. {{ option }}
                   </div>
@@ -329,7 +329,7 @@
               v-for="(option, index) in previewItem.options"
               :key="`${option}-${index}`"
               class="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm"
-              :class="previewItem.correctAnswer === option ? 'text-emerald-700 border-emerald-200' : 'text-slate-700'"
+              :class="previewItem.correctAnswer === option ? 'border-emerald-300 bg-emerald-100 text-emerald-900 font-semibold shadow-sm' : 'text-slate-700'"
             >
               {{ String.fromCharCode(65 + index) }}. {{ option }}
             </div>

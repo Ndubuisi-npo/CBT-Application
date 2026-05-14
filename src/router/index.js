@@ -40,6 +40,7 @@ import SuperAdminTenantEdit from '../components/superadmincomponent/pages/Tenant
 import SuperAdminPlans from '../components/superadmincomponent/pages/PlansPage.vue';
 import SuperAdminAuditLogs from '../components/superadmincomponent/pages/AuditLogsPage.vue';
 import SuperAdminSettings from '../components/superadmincomponent/pages/SettingsPage.vue';
+import StudentImportPage from '../components/schooladmincomponents/pages/StudentImportPage.vue';
 
 const routes = [
   { path: '/', name: 'LandingPage', component: LandingPage },
@@ -64,6 +65,7 @@ const routes = [
           { path: 'classes/:id', name: 'SchoolAdminClasses', component: SchoolAdminClassArms },
           { path: 'teachers', name: 'SchoolAdminTeachers', component: SchoolAdminTeachers },
           { path: 'students', name: 'SchoolAdminStudents', component: SchoolAdminStudents },
+          { path: 'students/import', name: 'SchoolAdminStudentImport', component: StudentImportPage },
           { path: 'subjects', name: 'SchoolAdminSubjects', component: SchoolAdminSubjects },
           { path: 'subjects/:id/assign-teacher', name: 'SchoolAdminSubjectAssignTeacher', component: SchoolAdminSubjectAssignTeacher },
           { path: 'settings', name: 'SchoolAdminSettings', component: SchoolAdminSettings },

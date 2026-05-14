@@ -4,7 +4,7 @@
       <template #header>
         <div class="flex flex-wrap items-center gap-3">
           <AppButton @click="openModal()" :icon="Plus" text="Create Student" variant="primary" size="base" />
-          <AppButton @click="triggerImportPicker" :icon="UploadCloud" text="Import Students" variant="outline" size="base" :processing="importLoading" />
+          <AppButton @click="goToImport" :icon="UploadCloud" text="Import Students" variant="outline" size="base" />
           <AppButton 
             @click="toggleView" 
             text="Show Archived"
@@ -12,7 +12,6 @@
             size="base"
           />
         </div>
-        <input ref="fileInput" type="file" accept=".csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" class="hidden" @change="handleImportFile" />
       </template>
       <SkeletonRows v-if="studentsStore.loading" :columns="5" />
       <div v-else-if="studentsStore.students.length === 0" class="rounded-[24px] border border-slate-200 bg-white p-12 text-center">
@@ -117,16 +116,17 @@
 
 <script setup>
 import { onMounted, reactive, computed, ref } from "vue";
+import { useRouter } from "vue-router";
 import { Plus, GraduationCap, UploadCloud } from 'lucide-vue-next';
 import FormField from "../components/FormField.vue";
 import SectionCard from "../components/SectionCard.vue";
 import SkeletonRows from "../components/SkeletonRows.vue";
 import AppButton from '../../shared/AppButton.vue';
 import StudentModal from '../components/StudentModal.vue'
-import { importStudents } from "../services/api/students";
 import { useSchoolAdminStudentsStore } from "../stores/students";
 import { useSchoolAdminUiStore } from "../stores/ui";
 
+const router = useRouter();
 const headings = [
     "First Name",
     "Last Name",
@@ -152,8 +152,6 @@ const errors = reactive({ firstName: '', lastName: '', email: '', phone: '', adm
 
 // Toggle state for active/archived view
 const showArchived = ref(false);
-const fileInput = ref(null);
-const importLoading = ref(false);
 
 // Computed property to determine which students to show
 const currentStudents = computed(() => {
@@ -170,39 +168,8 @@ const openModal = (student) => {
   showModal.value = true
 }
 
-const triggerImportPicker = () => {
-  fileInput.value?.click()
-}
-
-const handleImportFile = async (event) => {
-  const files = event.target.files
-  if (!files?.length) return
-
-  const file = files[0]
-  const formData = new FormData()
-  formData.append('file', file)
-
-  importLoading.value = true
-
-  try {
-    await importStudents(formData)
-    uiStore.addToast({
-      title: 'Students imported',
-      message: 'Student records have been imported successfully.',
-      variant: 'success',
-    })
-    showArchived.value = false
-    await studentsStore.fetchStudents()
-  } catch (error) {
-    uiStore.addToast({
-      title: 'Import failed',
-      message: error.message || 'Unable to import students.',
-      variant: 'error',
-    })
-  } finally {
-    importLoading.value = false
-    event.target.value = ''
-  }
+const goToImport = () => {
+  router.push('/school-admin/students/import')
 }
 
 const validate = () => {
