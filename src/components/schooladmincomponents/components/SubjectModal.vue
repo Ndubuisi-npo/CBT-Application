@@ -138,7 +138,10 @@ const classArmsByLevelId = ref({})
 
 const classesStore = useSchoolAdminClassesStore()
 
+// Get class levels from subjects data instead of fetching separately
 const classLevelOptions = computed(() => {
+  // Since class levels are nested in subjects, we can extract unique class levels
+  // For now, we'll still use the classes store but this could be optimized
   return classesStore.classes.map(classLevel => ({
     value: classLevel.id,
     label: classLevel.name,
@@ -184,8 +187,9 @@ const selectAllArmsForLevel = (classLevelId) => {
 const loadClassArmsForLevel = async (classLevelId, { autoSelectAll = false } = {}) => {
   if (!classLevelId) return
 
-  if (classArmsByLevelId.value[classLevelId]) {
-    if (autoSelectAll) {
+  // Check if already loaded or currently loading
+  if (classArmsByLevelId.value[classLevelId] || loadingClassArmIds.value.has(classLevelId)) {
+    if (autoSelectAll && classArmsByLevelId.value[classLevelId]) {
       selectAllArmsForLevel(classLevelId)
     }
     return
@@ -226,8 +230,10 @@ const populateForm = async (subject) => {
   form.class_arm_ids = subject.class_arms?.map(arm => arm.id).filter(Boolean) || []
 
   const shouldAutoSelectAllArms = form.class_arm_ids.length === 0
+  // Remove duplicates and load class arms for unique class levels
+  const uniqueClassLevelIds = [...new Set(form.class_level_ids)]
   await Promise.all(
-    form.class_level_ids.map(classLevelId =>
+    uniqueClassLevelIds.map(classLevelId =>
       loadClassArmsForLevel(classLevelId, { autoSelectAll: shouldAutoSelectAllArms })
     )
   )
@@ -262,10 +268,7 @@ const toggleClassArm = (classArmId) => {
 }
 
 onMounted(async () => {
-  try {
-    await ensureClassesLoaded()
-  } catch (error) {
-  }
+  // Remove automatic fetching on mount - only fetch when modal is shown
 })
 
 watch(() => props.show, async (show) => {
@@ -283,7 +286,7 @@ watch(() => props.show, async (show) => {
 
 watch(() => props.subject, async (subject) => {
   if (!props.show) return
-  await ensureClassesLoaded()
+  // Only populate form, don't fetch classes again since they're already loaded when modal opens
   await populateForm(subject)
 })
 

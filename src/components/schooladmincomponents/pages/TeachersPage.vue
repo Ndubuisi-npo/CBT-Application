@@ -56,7 +56,7 @@
           <table class="min-w-full divide-y divide-slate-200 bg-white">
             <thead class="bg-slate-50">
               <tr>
-                <th v-for="heading in headings" :key="heading" class="px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">{{ heading }}</th>
+                <th v-for="heading in activeHeadings" :key="heading" class="px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">{{ heading }}</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
@@ -108,21 +108,18 @@
           <table class="min-w-full divide-y divide-slate-200 bg-white">
             <thead class="bg-slate-50">
               <tr>
-                <th v-for="heading in headings" :key="heading" class="px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">{{ heading }}</th>
+                <th v-for="heading in archivedHeadings" :key="heading" class="px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">{{ heading }}</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
               <tr v-for="teacher in teachersStore.archivedTeachers" :key="teacher.id" class="transition hover:bg-slate-50/80 opacity-60">
-                <td class="px-5 py-4 text-sm text-slate-600">{{ teacher?.first_name || '-' }}</td>
-                <td class="px-5 py-4 text-sm text-slate-600">{{ teacher?.last_name || '-' }}</td>
+                <td class="px-5 py-4 text-sm text-slate-600">{{ teacher?.teacher_profile?.staff_id || '-' }}</td>
+                <td class="px-5 py-4 text-sm text-slate-600">{{ teacher?.first_name || '-' }} {{ teacher?.last_name || '' }}</td>
                 <td class="px-5 py-4 text-sm text-slate-600">{{ teacher?.email || '-' }}</td>
                 <td class="px-5 py-4 text-sm text-slate-600">{{ teacher?.phone || '-' }}</td>
                 <td class="px-5 py-4 text-sm text-slate-600">{{ teacher.teacher_profile?.qualification || '-' }}</td>
-                <td class="px-5 py-4 text-sm text-slate-600">{{ teacher.teacher_profile?.staff_id || '-' }}</td>
                 <td class="px-5 py-4">
-                  <div class="flex gap-2">
-                    <span class="rounded-lg bg-slate-100 px-3 py-2 text-xs font-medium text-slate-600">Archived</span>
-                  </div>
+                  <span class="rounded-lg bg-slate-100 px-3 py-2 text-xs font-medium text-slate-600">Archived</span>
                 </td>
               </tr>
             </tbody>
@@ -152,12 +149,20 @@ import TeacherModal from '../components/TeacherModal.vue'
 import { useSchoolAdminTeachersStore } from "../stores/teachers";
 import { useSchoolAdminUiStore } from "../stores/ui";
 
-const headings = [
-    "Staff ID",
-    "Full Name",
-    "Email",
-    "Phone",
-    "Actions",
+const activeHeadings = [
+  "Staff ID",
+  "Full Name",
+  "Email",
+  "Phone",
+  "Actions",
+];
+const archivedHeadings = [
+  "Staff ID",
+  "Full Name",
+  "Email",
+  "Phone",
+  "Qualification",
+  "Status",
 ];
 const teachersStore = useSchoolAdminTeachersStore();
 const uiStore = useSchoolAdminUiStore();

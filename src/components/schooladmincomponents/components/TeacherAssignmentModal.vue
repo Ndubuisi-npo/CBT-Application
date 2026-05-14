@@ -57,7 +57,7 @@
 </template>
 
 <script setup>
-import { reactive, watch, computed, ref, onMounted } from 'vue'
+import { reactive, watch, computed, ref } from 'vue'
 import { X } from 'lucide-vue-next'
 import AppButton from '../../shared/AppButton.vue'
 import FormField from './FormField.vue'
@@ -120,25 +120,30 @@ const resetForm = () => {
   Object.assign(errors, { user_id: '', class_level_id: '', academic_session_id: '' })
 }
 
-onMounted(async () => {
+// Fetch related data only when the modal is opened
+// This prevents duplicate requests when the page already loaded teachers/classes/sessions.
+watch(() => props.show, async (show) => {
+  if (!show) {
+    loading.value = false
+    resetForm()
+    return
+  }
+
   try {
     const fetchPromises = []
-    
-    // Only fetch classes if not already loaded
+
     if (classesStore.classes.length === 0 && !classesStore.loading) {
       fetchPromises.push(classesStore.fetchClasses())
     }
-    
-    // Only fetch sessions if not already loaded
+
     if (sessionsStore.sessions.length === 0 && !sessionsStore.loading) {
       fetchPromises.push(sessionsStore.fetchSessions())
     }
-    
-    // Only fetch teachers if not already loaded
+
     if (teachersStore.teachers.length === 0 && !teachersStore.loading) {
       fetchPromises.push(teachersStore.fetchTeachers())
     }
-    
+
     if (fetchPromises.length > 0) {
       await Promise.all(fetchPromises)
     }
@@ -156,14 +161,6 @@ watch(() => props.assignment, (assignment) => {
     resetForm()
   }
 }, { immediate: true })
-
-// Watch for modal close to reset loading state
-watch(() => props.show, (show) => {
-  if (!show) {
-    loading.value = false
-    resetForm()
-  }
-})
 
 const validate = () => {
   errors.user_id = form.user_id ? '' : 'Teacher is required.'

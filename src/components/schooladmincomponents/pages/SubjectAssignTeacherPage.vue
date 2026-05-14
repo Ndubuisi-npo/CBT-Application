@@ -192,10 +192,19 @@ const deleteAssignment = async (id) => {
 
 onMounted(async () => {
   try {
-    await subjectsStore.fetchSubjects()
-    await classesStore.fetchClasses()
-    await teachersStore.fetchTeachers()
-    await sessionsStore.fetchSessions()
+    // Only fetch data that's not already available
+    if (subjectsStore.subjects.length === 0) {
+      await subjectsStore.fetchSubjects()
+    }
+    if (classesStore.classes.length === 0) {
+      await classesStore.fetchClasses()
+    }
+    if (teachersStore.teachers.length === 0) {
+      await teachersStore.fetchTeachers()
+    }
+    if (sessionsStore.sessions.length === 0) {
+      await sessionsStore.fetchSessions()
+    }
   } catch (error) {
     uiStore.addToast({ title: 'Error', message: 'Failed to load data. Please check your connection.', variant: 'error' })
   }
