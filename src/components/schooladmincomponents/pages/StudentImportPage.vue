@@ -96,7 +96,7 @@ async function handleFileSelected(file) {
     const response = await importStudents(file, { dryRun: true })
 
     if (response.ok) {
-      state.dryRunResult = response.body.data
+      state.dryRunResult = response.body?.data ?? response.body
       state.conflictErrors = []
       state.errorMessage = null
       state.page = 'previewing'

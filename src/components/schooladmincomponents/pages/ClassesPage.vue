@@ -11,7 +11,7 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
-              <tr v-for="item in classesStore.classes" :key="item.id" class="transition hover:bg-slate-50/80">
+              <tr v-for="item in paginatedClasses" :key="item.id" class="transition hover:bg-slate-50/80">
                 <td class="px-5 py-4 font-semibold text-slate-900">{{ item.name }}</td>
                 <td class="px-5 py-4 text-sm text-slate-600">{{ item.level }}</td>
                 <td class="px-5 py-4">
@@ -20,6 +20,26 @@
               </tr>
             </tbody>
           </table>
+        </div>
+        <div class="flex items-center justify-between border-t border-slate-200 bg-white px-5 py-4">
+          <div class="text-sm text-slate-600">Showing {{ startIndex }} to {{ endIndex }} of {{ classesStore.classes.length }} classes</div>
+          <div class="flex gap-2">
+            <AppButton 
+              text="Previous" 
+              @click="previousPage" 
+              variant="outline" 
+              size="xs"
+              :disabled="currentPage === 1"
+            />
+            <div class="flex items-center gap-2 px-3 py-2 text-sm text-slate-600">Page {{ currentPage }} of {{ totalPages }}</div>
+            <AppButton 
+              text="Next" 
+              @click="nextPage" 
+              variant="outline" 
+              size="xs"
+              :disabled="currentPage === totalPages"
+            />
+          </div>
         </div>
       </div>
     </SectionCard>
@@ -65,6 +85,18 @@ const uiStore = useSchoolAdminUiStore()
 const form = reactive({ id: null, name: '', level: '' })
 const errors = reactive({ name: '', level: '' })
 
+// Pagination state
+const itemsPerPage = 10
+const currentPage = ref(1)
+const totalPages = computed(() => Math.ceil(classesStore.classes.length / itemsPerPage))
+const startIndex = computed(() => (currentPage.value - 1) * itemsPerPage + 1)
+const endIndex = computed(() => Math.min(currentPage.value * itemsPerPage, classesStore.classes.length))
+const paginatedClasses = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage
+  const end = start + itemsPerPage
+  return classesStore.classes.slice(start, end)
+})
+
 onMounted(async () => {
   try {
     await classesStore.fetchClasses()
@@ -86,5 +118,17 @@ const submit = async () => {
   await classesStore.saveClass({ ...form })
   uiStore.addToast({ title: 'Class saved', message: 'Class configuration was updated.', variant: 'success' })
   Object.assign(form, { id: null, name: '', level: '' })
+}
+
+const nextPage = () => {
+  if (currentPage.value < totalPages.value) {
+    currentPage.value++
+  }
+}
+
+const previousPage = () => {
+  if (currentPage.value > 1) {
+    currentPage.value--
+  }
 }
 </script>

@@ -48,7 +48,7 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
-              <tr v-for="classLevel in classLevelsStore.classLevels" :key="classLevel.id" class="transition hover:bg-slate-50/80">
+              <tr v-for="classLevel in paginatedClassLevels" :key="classLevel.id" class="transition hover:bg-slate-50/80">
                 <td v-if="isSelectMode" class="px-5 py-4">
                   <input 
                     type="checkbox" 
@@ -77,6 +77,26 @@
               </tr>
             </tbody>
           </table>
+        </div>
+        <div class="flex items-center justify-between border-t border-slate-200 bg-white px-5 py-4">
+          <div class="text-sm text-slate-600">Showing {{ startIndex }} to {{ endIndex }} of {{ classLevelsStore.classLevels.length }} class levels</div>
+          <div class="flex gap-2">
+            <AppButton 
+              text="Previous" 
+              @click="previousPage" 
+              variant="outline" 
+              size="xs"
+              :disabled="currentPage === 1"
+            />
+            <div class="flex items-center gap-2 px-3 py-2 text-sm text-slate-600">Page {{ currentPage }} of {{ totalPages }}</div>
+            <AppButton 
+              text="Next" 
+              @click="nextPage" 
+              variant="outline" 
+              size="xs"
+              :disabled="currentPage === totalPages"
+            />
+          </div>
         </div>
       </div>
     </SectionCard>
@@ -123,6 +143,10 @@ const deleteLoading = ref(new Set())
 const form = reactive({ id: null, name: '' })
 const errors = reactive({ name: '' })
 
+// Pagination state
+const itemsPerPage = 10
+const currentPage = ref(1)
+
 // Computed properties for multi-select
 const areAllSelected = computed(() => {
   return classLevelsStore.classLevels.length > 0 && 
@@ -130,6 +154,16 @@ const areAllSelected = computed(() => {
 })
 
 const hasAnySelected = computed(() => selectedItems.value.size > 0)
+
+// Pagination computed properties
+const totalPages = computed(() => Math.ceil(classLevelsStore.classLevels.length / itemsPerPage))
+const startIndex = computed(() => (currentPage.value - 1) * itemsPerPage + 1)
+const endIndex = computed(() => Math.min(currentPage.value * itemsPerPage, classLevelsStore.classLevels.length))
+const paginatedClassLevels = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage
+  const end = start + itemsPerPage
+  return classLevelsStore.classLevels.slice(start, end)
+})
 
 onMounted(async () => {
   try {
@@ -247,7 +281,17 @@ const deleteClassLevel = async (id) => {
     deleteLoading.value = new Set([...deleteLoading.value].filter(loadingId => loadingId !== id))
   }
 }
+const nextPage = () => {
+  if (currentPage.value < totalPages.value) {
+    currentPage.value++
+  }
+}
 
+const previousPage = () => {
+  if (currentPage.value > 1) {
+    currentPage.value--
+  }
+}
 const submitClassLevel = async (classLevelData) => {
   try {
     const payload = {

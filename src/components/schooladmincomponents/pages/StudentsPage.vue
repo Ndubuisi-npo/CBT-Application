@@ -3,14 +3,40 @@
     <SectionCard v-if="!showArchived" title="Students" subtitle="Manage student records, enrollment, academic progress, and class assignments.">
       <template #header>
         <div class="flex flex-wrap items-center gap-3">
-          <AppButton @click="openModal()" :icon="Plus" text="Create Student" variant="primary" size="base" />
-          <AppButton @click="goToImport" :icon="UploadCloud" text="Import Students" variant="outline" size="base" />
+          <AppButton v-if="!isSelectMode" @click="openModal()" :icon="Plus" text="Create Student" variant="primary" size="base" />
+          <AppButton v-if="!isSelectMode" @click="goToImport" :icon="UploadCloud" text="Import Students" variant="outline" size="base" />
           <AppButton 
+            v-if="!isSelectMode"
             @click="toggleView" 
             text="Show Archived"
             variant="outline"
             size="base"
           />
+          <AppButton
+            v-if="!isSelectMode"
+            @click="startSelectMode"
+            text="Select"
+            variant="secondary"
+            size="base"
+          />
+          <AppButton
+            v-if="isSelectMode"
+            @click="cancelSelectMode"
+            text="Cancel Select"
+            variant="outline"
+            size="base"
+          />
+          <AppButton
+            v-if="selectedStudents.size > 0"
+            @click="deleteSelectedStudents"
+            text="Delete Selected"
+            variant="danger"
+            size="base"
+            loadingText="Deleting..."
+            :processing="isDeletingSelected"
+            :disabled="isDeletingSelected"
+          />
+          
         </div>
       </template>
       <SkeletonRows v-if="studentsStore.loading" :columns="5" />
@@ -29,11 +55,27 @@
           <table class="min-w-full divide-y divide-slate-200 bg-white">
             <thead class="bg-slate-50">
               <tr>
+                <th v-if="isSelectMode" class="px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                  <input
+                    type="checkbox"
+                    :checked="areAllVisibleStudentsSelected"
+                    class="rounded border-slate-300"
+                    @change="toggleVisibleStudents($event.target.checked)"
+                  />
+                </th>
                 <th v-for="heading in headings" :key="heading" class="px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">{{ heading }}</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
-              <tr v-for="student in studentsStore.students" :key="student.id" class="transition hover:bg-slate-50/80">
+              <tr v-for="student in paginatedStudents" :key="student.id" class="transition hover:bg-slate-50/80">
+                <td v-if="isSelectMode" class="px-5 py-4">
+                  <input
+                    type="checkbox"
+                    :checked="selectedStudents.has(student.id)"
+                    class="rounded border-slate-300"
+                    @change="toggleStudentSelection(student.id, $event.target.checked)"
+                  />
+                </td>
                 <td class="px-5 py-4 text-sm text-slate-600">{{ student?.first_name || '-' }}</td>
                 <td class="px-5 py-4 text-sm text-slate-600">{{ student?.last_name || '-' }}</td>
                 <td class="px-5 py-4 text-sm text-slate-600">{{ student?.email || '-' }}</td>
@@ -50,13 +92,35 @@
                       size="xs"
                       loadingText="Revoking..."
                       :processing="revokeLoading.has(student.id)"
-                      :disabled="revokeLoading.has(student.id)"
+                      :disabled="revokeLoading.has(student.id) || isSelectMode"
                     />
                   </div>
                 </td>
               </tr>
             </tbody>
           </table>
+        </div>
+        <div class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 bg-white px-5 py-4">
+          <div class="text-sm text-slate-600">
+            Showing {{ studentsStartIndex }} to {{ studentsEndIndex }} of {{ studentsStore.students.length }} students
+          </div>
+          <div class="flex items-center gap-2">
+            <AppButton
+              text="Previous"
+              @click="previousStudentsPage"
+              variant="outline"
+              size="xs"
+              :disabled="studentsPage === 1"
+            />
+            <div class="px-3 py-2 text-sm text-slate-600">Page {{ studentsPage }} of {{ studentsTotalPages }}</div>
+            <AppButton
+              text="Next"
+              @click="nextStudentsPage"
+              variant="outline"
+              size="xs"
+              :disabled="studentsPage === studentsTotalPages"
+            />
+          </div>
         </div>
       </div>
     </SectionCard>
@@ -86,7 +150,7 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
-              <tr v-for="student in studentsStore.archivedStudents" :key="student.id" class="transition hover:bg-slate-50/80 opacity-60">
+              <tr v-for="student in paginatedArchivedStudents" :key="student.id" class="transition hover:bg-slate-50/80 opacity-60">
                 <td class="px-5 py-4 text-sm text-slate-600">{{ student?.first_name || '-' }}</td>
                 <td class="px-5 py-4 text-sm text-slate-600">{{ student?.last_name || '-' }}</td>
                 <td class="px-5 py-4 text-sm text-slate-600">{{ student?.email || '-' }}</td>
@@ -102,6 +166,30 @@
             </tbody>
           </table>
         </div>
+        <div class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 bg-white px-5 py-4">
+          <div class="text-sm text-slate-600">
+            Showing {{ archivedStudentsStartIndex }} to {{ archivedStudentsEndIndex }} of {{ studentsStore.archivedStudents.length }} archived students
+          </div>
+          <div class="flex items-center gap-2">
+            <AppButton
+              text="Previous"
+              @click="previousArchivedStudentsPage"
+              variant="outline"
+              size="xs"
+              :disabled="archivedStudentsPage === 1"
+            />
+            <div class="px-3 py-2 text-sm text-slate-600">
+              Page {{ archivedStudentsPage }} of {{ archivedStudentsTotalPages }}
+            </div>
+            <AppButton
+              text="Next"
+              @click="nextArchivedStudentsPage"
+              variant="outline"
+              size="xs"
+              :disabled="archivedStudentsPage === archivedStudentsTotalPages"
+            />
+          </div>
+        </div>
       </div>
     </SectionCard>
 
@@ -115,7 +203,7 @@
 </template>
 
 <script setup>
-import { onMounted, reactive, computed, ref } from "vue";
+import { onMounted, reactive, computed, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { Plus, GraduationCap, UploadCloud } from 'lucide-vue-next';
 import FormField from "../components/FormField.vue";
@@ -145,6 +233,17 @@ const selectedStudent = ref(null)
 
 // Loading states
 const revokeLoading = ref(new Set())
+const deleteLoading = ref(new Set())
+const isDeletingSelected = ref(false)
+
+// Multi-select state
+const isSelectMode = ref(false)
+const selectedStudents = ref(new Set())
+
+// Pagination state
+const itemsPerPage = 10
+const studentsPage = ref(1)
+const archivedStudentsPage = ref(1)
 
 // Form state
 const form = reactive({ id: null, firstName: '', lastName: '', email: '', phone: '', admissionNumber: '', className: '' })
@@ -157,6 +256,128 @@ const showArchived = ref(false);
 const currentStudents = computed(() => {
   return showArchived.value ? studentsStore.archivedStudents : studentsStore.students;
 });
+
+const studentsTotalPages = computed(() => Math.max(1, Math.ceil(studentsStore.students.length / itemsPerPage)))
+const archivedStudentsTotalPages = computed(() => Math.max(1, Math.ceil(studentsStore.archivedStudents.length / itemsPerPage)))
+
+const studentsStartIndex = computed(() => getStartIndex(studentsPage.value, studentsStore.students.length))
+const studentsEndIndex = computed(() => getEndIndex(studentsPage.value, studentsStore.students.length))
+const archivedStudentsStartIndex = computed(() => getStartIndex(archivedStudentsPage.value, studentsStore.archivedStudents.length))
+const archivedStudentsEndIndex = computed(() => getEndIndex(archivedStudentsPage.value, studentsStore.archivedStudents.length))
+
+const paginatedStudents = computed(() => paginate(studentsStore.students, studentsPage.value))
+const paginatedArchivedStudents = computed(() => paginate(studentsStore.archivedStudents, archivedStudentsPage.value))
+const areAllVisibleStudentsSelected = computed(() => {
+  return paginatedStudents.value.length > 0 && paginatedStudents.value.every((student) => selectedStudents.value.has(student.id))
+})
+
+const getStartIndex = (page, total) => {
+  if (total === 0) return 0
+  return (page - 1) * itemsPerPage + 1
+}
+
+const getEndIndex = (page, total) => Math.min(page * itemsPerPage, total)
+
+const paginate = (items, page) => {
+  const start = (page - 1) * itemsPerPage
+  return items.slice(start, start + itemsPerPage)
+}
+
+const nextStudentsPage = () => {
+  if (studentsPage.value < studentsTotalPages.value) studentsPage.value++
+}
+
+const previousStudentsPage = () => {
+  if (studentsPage.value > 1) studentsPage.value--
+}
+
+const nextArchivedStudentsPage = () => {
+  if (archivedStudentsPage.value < archivedStudentsTotalPages.value) archivedStudentsPage.value++
+}
+
+const previousArchivedStudentsPage = () => {
+  if (archivedStudentsPage.value > 1) archivedStudentsPage.value--
+}
+
+watch(studentsTotalPages, (totalPages) => {
+  if (studentsPage.value > totalPages) studentsPage.value = totalPages
+})
+
+watch(archivedStudentsTotalPages, (totalPages) => {
+  if (archivedStudentsPage.value > totalPages) archivedStudentsPage.value = totalPages
+})
+
+const startSelectMode = () => {
+  isSelectMode.value = true
+  selectedStudents.value = new Set()
+}
+
+const cancelSelectMode = () => {
+  isSelectMode.value = false
+  selectedStudents.value = new Set()
+}
+
+const toggleVisibleStudents = (checked) => {
+  const nextSelection = new Set(selectedStudents.value)
+
+  paginatedStudents.value.forEach((student) => {
+    if (checked) {
+      nextSelection.add(student.id)
+    } else {
+      nextSelection.delete(student.id)
+    }
+  })
+
+  selectedStudents.value = nextSelection
+}
+
+const toggleStudentSelection = (id, checked) => {
+  const nextSelection = new Set(selectedStudents.value)
+
+  if (checked) {
+    nextSelection.add(id)
+  } else {
+    nextSelection.delete(id)
+  }
+
+  selectedStudents.value = nextSelection
+}
+
+const deleteSelectedStudents = async () => {
+  const selectedCount = selectedStudents.value.size
+
+  if (!confirm(`Are you sure you want to delete ${selectedCount} selected student(s)? This action cannot be undone.`)) {
+    return
+  }
+
+  isDeletingSelected.value = true
+  deleteLoading.value = new Set(selectedStudents.value)
+
+  try {
+    const selectedIds = Array.from(selectedStudents.value)
+
+    for (const id of selectedIds) {
+      await studentsStore.deleteStudentFromStore(id)
+    }
+
+    selectedStudents.value = new Set()
+    isSelectMode.value = false
+    uiStore.addToast({
+      title: 'Students deleted',
+      message: `${selectedCount} student(s) have been deleted successfully.`,
+      variant: 'success',
+    })
+  } catch (error) {
+    uiStore.addToast({
+      title: 'Error',
+      message: error.message || 'Failed to delete selected students.',
+      variant: 'error',
+    })
+  } finally {
+    deleteLoading.value = new Set()
+    isDeletingSelected.value = false
+  }
+}
 
 const closeModal = () => {
   showModal.value = false
@@ -227,6 +448,9 @@ const submitStudent = async (studentData) => {
 
 const toggleView = () => {
   showArchived.value = !showArchived.value;
+  studentsPage.value = 1
+  archivedStudentsPage.value = 1
+  cancelSelectMode()
   if (showArchived.value) {
     studentsStore.fetchArchivedStudents();
   }

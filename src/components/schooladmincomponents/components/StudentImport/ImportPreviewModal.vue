@@ -1,6 +1,6 @@
 <template>
   <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 px-4 py-8">
-    <div class="w-full max-w-2xl rounded-[28px] bg-white p-6 shadow-2xl">
+    <div class="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-[28px] bg-white p-6 shadow-2xl">
       <!-- Header -->
       <div class="mb-6 flex items-center justify-between border-b border-slate-200 pb-6">
         <div>
@@ -18,10 +18,11 @@
       </div>
 
       <!-- Error state: Validation errors -->
-      <div v-if="conflictErrors.length > 0" class="space-y-4">
+      <div v-if="normalizedConflictErrors.length > 0" class="space-y-4">
         <div class="rounded-2xl border border-rose-200 bg-rose-50 p-4">
           <p class="font-semibold text-rose-900">
-            {{ conflictErrors.length }} row{{ conflictErrors.length !== 1 ? 's' : '' }} have validation errors
+            {{ normalizedConflictErrors.length }} row{{ normalizedConflictErrors.length !== 1 ? 's' : '' }} have
+            validation errors
           </p>
           <p class="mt-1 text-sm text-rose-700">Please fix these issues and re-upload your file.</p>
         </div>
@@ -36,13 +37,13 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
-              <tr v-for="(err, idx) in conflictErrors" :key="idx" class="hover:bg-slate-50">
+              <tr v-for="(err, idx) in normalizedConflictErrors" :key="idx" class="hover:bg-slate-50">
                 <td class="px-4 py-3 text-sm font-semibold text-slate-900">{{ err.row }}</td>
                 <td class="px-4 py-3 text-sm text-slate-600">
-                  {{ Object.keys(err.errors)[0] || 'unknown' }}
+                  {{ firstErrorField(err) }}
                 </td>
                 <td class="px-4 py-3 text-sm text-rose-600">
-                  {{ Object.values(err.errors)[0]?.[0] || 'Validation failed' }}
+                  {{ firstErrorMessage(err) }}
                 </td>
               </tr>
             </tbody>
@@ -51,12 +52,35 @@
       </div>
 
       <!-- Success state: No errors, no duplicates -->
-      <div v-else-if="dryRunResult && dryRunResult.duplicates?.length === 0" class="space-y-4">
+      <div v-else-if="dryRunResult && duplicateRows.length === 0" class="space-y-4">
         <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
           <p class="font-semibold text-emerald-900">Ready to import</p>
           <p class="mt-1 text-sm text-emerald-700">
-            {{ dryRunResult.total_rows }} student{{ dryRunResult.total_rows !== 1 ? 's' : '' }} will be added
+            {{ totalRows }} student{{ totalRows !== 1 ? 's' : '' }} will be added
           </p>
+        </div>
+
+        <div v-if="previewRows.length > 0" class="overflow-x-auto rounded-[24px] border border-slate-200">
+          <table class="min-w-full divide-y divide-slate-200 bg-white">
+            <thead class="bg-slate-50">
+              <tr>
+                <th
+                  v-for="column in previewColumns"
+                  :key="column"
+                  class="px-4 py-3 text-left text-xs font-semibold capitalize text-slate-600"
+                >
+                  {{ formatColumnLabel(column) }}
+                </th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              <tr v-for="(row, idx) in previewRows" :key="idx" class="hover:bg-slate-50">
+                <td v-for="column in previewColumns" :key="column" class="px-4 py-3 text-sm text-slate-600">
+                  {{ formatCell(row[column]) }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
 
         <div class="flex gap-3">
@@ -89,12 +113,11 @@
       </div>
 
       <!-- Success state: No errors, but duplicates exist -->
-      <div v-else-if="dryRunResult && dryRunResult.duplicates?.length > 0" class="space-y-4">
+      <div v-else-if="dryRunResult && duplicateRows.length > 0" class="space-y-4">
         <div class="rounded-2xl border border-amber-200 bg-amber-50 p-4">
           <p class="font-semibold text-amber-900">Duplicate records found</p>
           <p class="mt-1 text-sm text-amber-700">
-            {{ dryRunResult.duplicates.length }} student{{ dryRunResult.duplicates.length !== 1 ? 's' : '' }} already
-            exist in the system.
+            {{ duplicateRows.length }} student{{ duplicateRows.length !== 1 ? 's' : '' }} already exist in the system.
           </p>
         </div>
 
@@ -108,10 +131,10 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
-              <tr v-for="(dup, idx) in dryRunResult.duplicates" :key="idx" class="hover:bg-slate-50">
+              <tr v-for="(dup, idx) in duplicateRows" :key="idx" class="hover:bg-slate-50">
                 <td class="px-4 py-3 text-sm font-semibold text-slate-900">{{ dup.row }}</td>
-                <td class="px-4 py-3 text-sm text-slate-600">{{ dup.email || '—' }}</td>
-                <td class="px-4 py-3 text-sm text-slate-600">{{ dup.admission_number || '—' }}</td>
+                <td class="px-4 py-3 text-sm text-slate-600">{{ dup.email || '-' }}</td>
+                <td class="px-4 py-3 text-sm text-slate-600">{{ dup.admission_number || '-' }}</td>
               </tr>
             </tbody>
           </table>
@@ -148,16 +171,33 @@
           </button>
         </div>
       </div>
+
+      <div v-else class="space-y-4">
+        <div class="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+          <p class="font-semibold text-amber-900">Preview unavailable</p>
+          <p class="mt-1 text-sm text-amber-700">
+            The file was accepted, but the preview data was empty. Please try the upload again.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          class="rounded-2xl border border-slate-300 px-6 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+          @click="$emit('cancel')"
+        >
+          Upload Another File
+        </button>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { X } from 'lucide-vue-next'
 import DuplicateResolution from './DuplicateResolution.vue'
 
-defineProps({
+const props = defineProps({
   dryRunResult: {
     type: Object,
     default: null,
@@ -179,6 +219,65 @@ defineProps({
 const emit = defineEmits(['confirm', 'cancel', 'policy-changed'])
 
 const selectedPolicy = ref(null)
+
+const normalizedConflictErrors = computed(() => {
+  return Array.isArray(props.conflictErrors) ? props.conflictErrors : []
+})
+
+const duplicateRows = computed(() => {
+  const duplicates = props.dryRunResult?.duplicates ?? props.dryRunResult?.duplicate_rows ?? []
+  return Array.isArray(duplicates) ? duplicates : []
+})
+
+const previewRows = computed(() => {
+  const rows =
+    props.dryRunResult?.rows ??
+    props.dryRunResult?.preview_rows ??
+    props.dryRunResult?.students ??
+    props.dryRunResult?.valid_rows ??
+    []
+
+  return Array.isArray(rows) ? rows.slice(0, 10) : []
+})
+
+const previewColumns = computed(() => {
+  const preferredColumns = ['row', 'first_name', 'last_name', 'email', 'admission_number', 'class', 'class_arm']
+  const availableColumns = new Set(previewRows.value.flatMap((row) => Object.keys(row ?? {})))
+  const orderedColumns = preferredColumns.filter((column) => availableColumns.has(column))
+
+  if (orderedColumns.length > 0) return orderedColumns
+
+  return Array.from(availableColumns).slice(0, 7)
+})
+
+const totalRows = computed(() => {
+  return (
+    props.dryRunResult?.total_rows ??
+    props.dryRunResult?.total ??
+    props.dryRunResult?.valid_count ??
+    props.dryRunResult?.students_count ??
+    previewRows.value.length
+  )
+})
+
+function firstErrorField(error) {
+  return Object.keys(error?.errors ?? {})[0] || error?.field || 'unknown'
+}
+
+function firstErrorMessage(error) {
+  const firstMessage = Object.values(error?.errors ?? {})[0]
+  if (Array.isArray(firstMessage)) return firstMessage[0] || 'Validation failed'
+  return firstMessage || error?.message || 'Validation failed'
+}
+
+function formatColumnLabel(column) {
+  return String(column).replaceAll('_', ' ')
+}
+
+function formatCell(value) {
+  if (value === null || value === undefined || value === '') return '-'
+  return Array.isArray(value) ? value.join(', ') : value
+}
 
 watch(selectedPolicy, (newPolicy) => {
   emit('policy-changed', newPolicy)

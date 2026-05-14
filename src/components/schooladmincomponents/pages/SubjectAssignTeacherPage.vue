@@ -192,10 +192,6 @@ const deleteAssignment = async (id) => {
 
 onMounted(async () => {
   try {
-    // Only fetch data that's not already available
-    if (subjectsStore.subjects.length === 0) {
-      await subjectsStore.fetchSubjects()
-    }
     if (classesStore.classes.length === 0) {
       await classesStore.fetchClasses()
     }

@@ -58,7 +58,7 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
-              <tr v-for="session in sessionsStore.sessions" :key="session.id" class="transition hover:bg-slate-50/80">
+              <tr v-for="session in paginatedSessions" :key="session.id" class="transition hover:bg-slate-50/80">
                 <td v-if="isSelectMode" class="px-5 py-4">
                   <input 
                     type="checkbox" 
@@ -99,6 +99,26 @@
               </tr>
             </tbody>
           </table>
+        </div>
+        <div class="flex items-center justify-between border-t border-slate-200 bg-white px-5 py-4">
+          <div class="text-sm text-slate-600">Showing {{ startIndex }} to {{ endIndex }} of {{ sessionsStore.sessions.length }} sessions</div>
+          <div class="flex gap-2">
+            <AppButton 
+              text="Previous" 
+              @click="previousPage" 
+              variant="outline" 
+              size="xs"
+              :disabled="currentPage === 1"
+            />
+            <div class="flex items-center gap-2 px-3 py-2 text-sm text-slate-600">Page {{ currentPage }} of {{ totalPages }}</div>
+            <AppButton 
+              text="Next" 
+              @click="nextPage" 
+              variant="outline" 
+              size="xs"
+              :disabled="currentPage === totalPages"
+            />
+          </div>
         </div>
       </div>
     </SectionCard>
@@ -142,6 +162,10 @@ const selectedSession = ref(null)
 const toggleLoading = ref(new Set())
 const deleteLoading = ref(new Set())
 
+// Pagination state
+const itemsPerPage = 10
+const currentPage = ref(1)
+
 // Computed properties for multi-select
 const areAllSelected = computed(() => {
   return sessionsStore.sessions.length > 0 && 
@@ -149,6 +173,16 @@ const areAllSelected = computed(() => {
 })
 
 const hasAnySelected = computed(() => selectedSessions.value.size > 0)
+
+// Pagination computed properties
+const totalPages = computed(() => Math.ceil(sessionsStore.sessions.length / itemsPerPage))
+const startIndex = computed(() => (currentPage.value - 1) * itemsPerPage + 1)
+const endIndex = computed(() => Math.min(currentPage.value * itemsPerPage, sessionsStore.sessions.length))
+const paginatedSessions = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage
+  const end = start + itemsPerPage
+  return sessionsStore.sessions.slice(start, end)
+})
 
 onMounted(async () => {
   try {
@@ -315,5 +349,17 @@ const submitSession = async (sessionData) => {
 
 const getTermsCount = (session) => {
   return sessionsStore.terms[session.id]?.length || 0
+}
+
+const nextPage = () => {
+  if (currentPage.value < totalPages.value) {
+    currentPage.value++
+  }
+}
+
+const previousPage = () => {
+  if (currentPage.value > 1) {
+    currentPage.value--
+  }
 }
 </script>
