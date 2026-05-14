@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-6">
     <section class="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-      <OverviewCard title="Total Students" value="1,284" helper="Current enrolled learners" :icon="GraduationCap" />
+      <OverviewCard title="Total Students" :value="totalStudentsLabel" helper="Current enrolled learners" :icon="GraduationCap" />
       <OverviewCard title="Total Teachers" :value="`${teachersStore.teachers?.length || 0} Teachers`" helper="Teaching staff across levels" :icon="Users" />
       <OverviewCard title="Active Session" :value="activeSession" helper="Current academic cycle" :icon="CalendarClock" />
       <OverviewCard title="Total Classes" :value="`${classesStore.classes?.length || 0} Classes`" helper="Active classes configured" :icon="School" />
@@ -54,17 +54,20 @@ import AppButton from '../../shared/AppButton.vue'
 import SectionCard from '../components/SectionCard.vue'
 import { useSchoolAdminClassesStore } from '../stores/classes'
 import { useSchoolAdminSessionsStore } from '../stores/sessions'
+import { useSchoolAdminStudentsStore } from '../stores/students'
 import { useSchoolAdminTeachersStore } from '../stores/teachers'
 import { useActivities } from '../composables/useActivities'
 
 const sessionsStore = useSchoolAdminSessionsStore()
 const classesStore = useSchoolAdminClassesStore()
+const studentsStore = useSchoolAdminStudentsStore()
 const teachersStore = useSchoolAdminTeachersStore()
 const { recentActivities, fetchAllActivities, getActivityIcon, formatActivityDescription, loading: activitiesLoading } = useActivities()
 
 onMounted(async () => {
   if (!sessionsStore.sessions?.length) sessionsStore.fetchSessions()
   if (!classesStore.classes?.length) classesStore.fetchClasses()
+  if (!studentsStore.students?.length && !studentsStore.totalStudents) studentsStore.fetchStudents()
   if (!teachersStore.teachers?.length) teachersStore.fetchTeachers()
   
   // Fetch recent activities
@@ -76,6 +79,7 @@ onMounted(async () => {
 })
 
 const activeSession = computed(() => sessionsStore.sessions?.find((session) => session.current ?? session.status === 'Active')?.name || 'Not set')
+const totalStudentsLabel = computed(() => studentsStore.totalStudents.toLocaleString())
 
 // Icon mapping for activities
 const iconMap = {

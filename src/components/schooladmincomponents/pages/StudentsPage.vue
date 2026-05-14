@@ -81,7 +81,7 @@
                 <td class="px-5 py-4 text-sm text-slate-600">{{ student?.email || '-' }}</td>
                 <td class="px-5 py-4 text-sm text-slate-600">{{ student?.phone || '-' }}</td>
                 <td class="px-5 py-4 text-sm text-slate-600">{{ student.student_profile?.admission_number || '-' }}</td>
-                <td class="px-5 py-4 text-sm text-slate-600">{{ student.student_profile?.class_name || '-' }}</td>
+                <td class="px-5 py-4 text-sm text-slate-600">{{ student.student_profile?.class_arm?.name || '-' }}</td>
                 <td class="px-5 py-4">
                   <div class="flex gap-2">
                     <AppButton text="Edit" @click="editStudent(student)" variant="outline" size="xs" />
