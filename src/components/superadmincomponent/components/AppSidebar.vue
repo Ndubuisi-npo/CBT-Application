@@ -70,7 +70,7 @@ const navItems = computed(() => [
   { label: 'Dashboard', to: '/super-admin/dashboard', icon: LayoutDashboard },
   { label: 'Tenants', to: '/super-admin/tenants', icon: School },
   { label: 'Subscription Plans', to: '/super-admin/plans', icon: CreditCard },
-  { label: 'Audit Logs', to: '/super-admin/audit-logs', icon: ClipboardList },
+  // { label: 'Audit Logs', to: '/super-admin/audit-logs', icon: ClipboardList },
   { label: 'Settings', to: '/super-admin/settings', icon: Settings },
 ])
 

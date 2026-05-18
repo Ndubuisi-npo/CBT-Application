@@ -206,11 +206,20 @@ const assignTeacher = async (assignmentData) => {
 }
 
 const getAssignedTeacher = (classItem) => {
-  // This would need to be populated from the API response
-  // For now, we'll show a placeholder or check if there's a teacher assigned
-  if (classItem.teacher) {
-    return `${classItem.teacher.first_name} ${classItem.teacher.last_name}`
+  const teacher = classItem.assigned_teacher || classItem.teacher
+
+  if (teacher?.first_name || teacher?.last_name) {
+    return `${teacher.first_name || ''} ${teacher.last_name || ''}`.trim()
   }
+
+  if (classItem.assigned_teacher_id) {
+    return `Assigned (${classItem.assigned_teacher_id})`
+  }
+
+  if (classItem.class_teacher_id) {
+    return `Assigned (${classItem.class_teacher_id})`
+  }
+
   return 'Not assigned'
 }
 </script>

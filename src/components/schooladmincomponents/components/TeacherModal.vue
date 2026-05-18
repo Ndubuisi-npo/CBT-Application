@@ -31,6 +31,22 @@
                 <p class="text-sm font-medium text-slate-900">{{ teacher.teacher_profile?.qualification || 'Not specified' }}</p>
               </div>
             </div>
+
+            <!-- Assigned Classes (under Basic Information) -->
+            <div class="mt-4">
+              <label class="block text-sm text-slate-500">Assigned Classes</label>
+              <div class="mt-2">
+                <div v-if="teacher.assigned_classes && teacher.assigned_classes.length">
+                  <ul class="space-y-2">
+                    <li v-for="cls in teacher.assigned_classes" :key="cls.id" class="rounded-2xl bg-slate-50 px-4 py-3 text-sm">
+                      <div class="font-semibold text-slate-900">{{ cls.name }}</div>
+                      <div class="text-xs text-slate-500">{{ (cls.student_count || cls.studentCount) ? (cls.student_count || cls.studentCount) + ' students' : '' }}</div>
+                    </li>
+                  </ul>
+                </div>
+                <p v-else class="text-sm text-slate-600">No assigned classes</p>
+              </div>
+            </div>
           </div>
           
           <!-- Contact Information -->
