@@ -47,7 +47,7 @@ const titles = {
   '/teachers/my-classes': 'Assigned Classes',
   '/teachers/questions': 'Question Bank',
   '/teachers/exam-wizard': 'Exam Creation Wizard',
-  '/teachers/exams': 'Exams & Monitoring',
+  '/teachers/exams': 'Assessments & Monitoring',
   '/teachers/students': 'Students',
   '/teachers/attendance': 'Attendance',
   '/teachers/grading': 'Theory Grading',

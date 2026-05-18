@@ -149,9 +149,10 @@
                 <td class="px-5 py-4 text-sm text-slate-600">{{ student?.email || '-' }}</td>
                 <td class="px-5 py-4 text-sm text-slate-600">{{ student?.phone || '-' }}</td>
                 <td class="px-5 py-4 text-sm text-slate-600">{{ student.student_profile?.admission_number || '-' }}</td>
-                <td class="px-5 py-4 text-sm text-slate-600">{{ student.student_profile?.class_arm?.name || '-' }}</td>
+                <td class="px-5 py-4 text-sm text-slate-600">{{ student.student_profile?.class_arm?.name || student.student_profile?.class_name || '-' }}</td>
                 <td class="px-5 py-4">
-                  <div class="flex gap-2">
+                  <div class="flex flex-wrap gap-2">
+                    <AppButton text="View" @click="viewStudent(student)" variant="outline" size="xs" />
                     <AppButton text="Edit" @click="editStudent(student)" variant="outline" size="xs" />
                     <AppButton 
                       text="Revoke" 
@@ -279,9 +280,10 @@
                 <td class="px-5 py-4 text-sm text-slate-600">{{ student?.email || '-' }}</td>
                 <td class="px-5 py-4 text-sm text-slate-600">{{ student?.phone || '-' }}</td>
                 <td class="px-5 py-4 text-sm text-slate-600">{{ student.student_profile?.admission_number || '-' }}</td>
-                <td class="px-5 py-4 text-sm text-slate-600">{{ student.student_profile?.class_name || '-' }}</td>
+                <td class="px-5 py-4 text-sm text-slate-600">{{ student.student_profile?.class_arm?.name || student.student_profile?.class_name || '-' }}</td>
                 <td class="px-5 py-4">
-                  <div class="flex gap-2">
+                  <div class="flex flex-wrap gap-2">
+                    <AppButton text="View" @click="viewStudent(student)" variant="outline" size="xs" />
                     <AppButton
                       text="Restore"
                       @click="restoreArchivedStudent(student.id)"
@@ -336,6 +338,7 @@
     <StudentModal 
       :show="showModal" 
       :student="selectedStudent"
+      :mode="modalMode"
       @close="closeModal"
       @submit="submitStudent"
     />
@@ -370,6 +373,7 @@ const uiStore = useSchoolAdminUiStore();
 // Modal state
 const showModal = ref(false)
 const selectedStudent = ref(null)
+const modalMode = ref('edit')
 
 // Loading states
 const revokeLoading = ref(new Set())
@@ -695,10 +699,18 @@ const deleteSelectedArchivedStudents = async () => {
 const closeModal = () => {
   showModal.value = false
   selectedStudent.value = null
+  modalMode.value = 'edit'
 }
 
 const openModal = (student) => {
   selectedStudent.value = student
+  modalMode.value = 'edit'
+  showModal.value = true
+}
+
+const viewStudent = (student) => {
+  selectedStudent.value = student
+  modalMode.value = 'view'
   showModal.value = true
 }
 
@@ -740,6 +752,8 @@ const submitStudent = async (studentData) => {
       email: studentData.email,
       phone: studentData.phone,
       admission_number: studentData.admission_number,
+      class_level_id: studentData.class_level_id,
+      class_arm_id: studentData.class_arm_id,
       class_name: studentData.class_name
     }
     

@@ -65,8 +65,8 @@ const navItems = computed(() => {
     return [
       { label: 'Dashboard', to: '/teachers/dashboard', icon: LayoutDashboard },
       { label: 'Question Bank', to: '/teachers/questions', icon: FileQuestion },
-      { label: 'Exams', to: '/teachers/exams', icon: ClipboardList },
-      { label: 'Students', to: '/teachers/students', icon: Users },
+      { label: 'Assessments', to: '/teachers/exams', icon: ClipboardList },
+      { label: 'Students', to: '/teachers/students', icon: GraduationCap },
       { label: 'Attendance', to: '/teachers/attendance', icon: CalendarCheck2 },
       { label: 'Grading', to: '/teachers/grading', icon: ScrollText },
       { label: 'Results', to: '/teachers/results', icon: BarChart3 },
@@ -81,8 +81,9 @@ const navItems = computed(() => {
     { label: 'Academic Sessions', to: '/school-admin/sessions', icon: CalendarRange },
     { label: 'Teachers', to: '/school-admin/teachers', icon: Users },
     { label: 'Students', to: '/school-admin/students', icon: GraduationCap },
+    { label: 'Assessments', to: '/school-admin/assessments', icon: ClipboardList },
     { label: 'Class Levels', to: '/school-admin/class-levels', icon: Columns3 },
-      { label: 'Subjects', to: '/school-admin/subjects', icon: Shapes },
+    { label: 'Subjects', to: '/school-admin/subjects', icon: Shapes },
     { label: 'Settings', to: '/school-admin/settings', icon: Settings },
     { label: 'School Profile', to: '/school-admin/profile', icon: School },
   ]

@@ -439,7 +439,7 @@ export const loadingMoments = {
 export const teacherNavigationGroups = [
   { label: 'Dashboard', to: '/teachers/dashboard' },
   { label: 'Question Bank', to: '/teachers/questions' },
-  { label: 'Exams', to: '/teachers/exams' },
+  { label: 'Assessments', to: '/teachers/exams' },
   { label: 'Students', to: '/teachers/students' },
   { label: 'Attendance', to: '/teachers/attendance' },
   { label: 'Grading', to: '/teachers/grading' },

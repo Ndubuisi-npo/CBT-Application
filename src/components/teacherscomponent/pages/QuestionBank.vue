@@ -47,6 +47,7 @@
             <AppButton text="Bulk Publish" variant="secondary" size="sm" :disabled="!selectedIds.length" @click="bulkAction('publish')" />
             <AppButton text="Mark Draft" variant="secondary" size="sm" :disabled="!selectedIds.length" @click="bulkAction('draft')" />
             <AppButton text="Delete" variant="danger" size="sm" :disabled="!selectedIds.length" @click="bulkAction('delete')" />
+            <AppButton text="Add selected to assessment" variant="primary" size="sm" :disabled="!selectedIds.length || !assessmentId" @click="addSelectedToAssessment" />
           </div>
         </div>
       </div>
@@ -345,13 +346,16 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { Eye, FilePenLine, FileQuestion, ImagePlus, PencilLine, Plus, Search, Send, Trash2, X } from 'lucide-vue-next'
 import AppButton from '../../shared/AppButton.vue'
 import { useSchoolAdminUiStore } from '../../schooladmincomponents/stores/ui'
+import { useSchoolAdminAssessmentsStore } from '../../schooladmincomponents/stores/assessments'
 import SectionCard from '../components/SectionCard.vue'
 import { cloneMock, loadingMoments, questionBank, questionTopics } from '../data/mockTeacherData'
 
 const uiStore = useSchoolAdminUiStore()
+const assessmentsStore = useSchoolAdminAssessmentsStore()
 
 const isLoading = ref(true)
 const showEditor = ref(false)
@@ -373,6 +377,9 @@ const filters = reactive({
 const subjects = computed(() => [...new Set(questions.value.map((question) => question.subject))])
 const classNames = computed(() => [...new Set(questions.value.map((question) => question.className))])
 const totalQuestions = computed(() => questions.value.length)
+
+const route = useRoute()
+const assessmentId = computed(() => route.query.examId || route.query.assessmentId || null)
 
 const filteredQuestions = computed(() =>
   questions.value.filter((question) => {
@@ -545,6 +552,27 @@ const bulkAction = (action) => {
   selectedIds.value = []
 }
 
+const addSelectedToAssessment = async () => {
+  const selectedSet = new Set(selectedIds.value)
+  if (!selectedSet.size || !assessmentId.value) return
+
+  try {
+    await assessmentsStore.addQuestionsToAssessment(assessmentId.value, [...selectedSet])
+    uiStore.addToast({
+      title: 'Questions added',
+      message: `${selectedSet.size} question${selectedSet.size > 1 ? 's were' : ' was'} added to assessment ${assessmentId.value}.`,
+      variant: 'success',
+    })
+    selectedIds.value = []
+  } catch (error) {
+    uiStore.addToast({
+      title: 'Assessment not found',
+      message: error.message || 'Open an assessment from the teacher assessment list before adding questions.',
+      variant: 'error',
+    })
+  }
+}
+
 const showUploadToast = () => {
   uiStore.addToast({
     title: 'Placeholder added',
@@ -554,6 +582,7 @@ const showUploadToast = () => {
 }
 
 onMounted(() => {
+  assessmentsStore.fetchAssessments()
   window.setTimeout(() => {
     isLoading.value = false
   }, loadingMoments.questionBank)

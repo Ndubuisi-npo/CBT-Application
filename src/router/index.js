@@ -15,6 +15,7 @@ import SchoolAdminClassLevels from '../components/schooladmincomponents/pages/Cl
 import SchoolAdminClassArms from '../components/schooladmincomponents/pages/ClassArmsPage.vue';
 import SchoolAdminTeachers from '../components/schooladmincomponents/pages/TeachersPage.vue';
 import SchoolAdminStudents from '../components/schooladmincomponents/pages/StudentsPage.vue';
+import SchoolAdminAssessments from '../components/schooladmincomponents/pages/AssessmentsPage.vue';
 import TeachersDashboard from '../components/teacherscomponent/pages/TeachersDashboard.vue';
 import TeachersQuestionBank from '../components/teacherscomponent/pages/QuestionBank.vue';
 import TeachersExamWizard from '../components/teacherscomponent/pages/ExamWizard.vue';
@@ -68,6 +69,7 @@ const routes = [
           { path: 'teachers/import', name: 'SchoolAdminTeacherImport', component: TeacherImportPage },
           { path: 'students', name: 'SchoolAdminStudents', component: SchoolAdminStudents },
           { path: 'students/import', name: 'SchoolAdminStudentImport', component: StudentImportPage },
+          { path: 'assessments', name: 'SchoolAdminAssessments', component: SchoolAdminAssessments },
           { path: 'subjects', name: 'SchoolAdminSubjects', component: SchoolAdminSubjects },
           { path: 'subjects/:id/assign-teacher', name: 'SchoolAdminSubjectAssignTeacher', component: SchoolAdminSubjectAssignTeacher },
           { path: 'settings', name: 'SchoolAdminSettings', component: SchoolAdminSettings },

@@ -72,7 +72,8 @@ export const useSchoolAdminStudentsStore = defineStore(
             async saveStudent(payload) {
                 const { addActivity } = useActivities();
                 const isNew = !payload.id;
-                const record = await saveStudent(payload);
+                const response = await saveStudent(payload);
+                const record = response?.student || response;
                 const exists = this.students.some(
                     (item) => item.id === record.id,
                 );
@@ -101,10 +102,12 @@ export const useSchoolAdminStudentsStore = defineStore(
                     this.students = [record, ...this.students];
                     this.totalStudents++;
                 }
+                return record;
             },
 
             async updateStudent(id, payload) {
-                const record = await updateStudent(id, payload);
+                const response = await updateStudent(id, payload);
+                const record = response?.student || response;
                 this.students = this.students.map((item) =>
                     item.id === record.id ? record : item,
                 );
@@ -112,7 +115,8 @@ export const useSchoolAdminStudentsStore = defineStore(
             },
 
             async createStudent(payload) {
-                const record = await createStudent(payload);
+                const response = await createStudent(payload);
+                const record = response?.student || response;
                 this.students = [record, ...this.students];
                 this.totalStudents++;
                 return record;

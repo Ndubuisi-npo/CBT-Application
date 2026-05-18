@@ -106,7 +106,7 @@ import { reactive, watch, computed, ref, onMounted } from 'vue'
 import { X } from 'lucide-vue-next'
 import AppButton from '../../shared/AppButton.vue'
 import FormField from './FormField.vue'
-import { useSchoolAdminClassesStore } from '../stores/classes'
+import { useSchoolAdminSubjectsStore } from '../stores/subjects'
 import { getClassArms } from '../services/api/classes'
 
 const props = defineProps({
@@ -136,16 +136,24 @@ const selectedClassLevelId = ref('')
 const loadingClassArmIds = ref(new Set())
 const classArmsByLevelId = ref({})
 
-const classesStore = useSchoolAdminClassesStore()
+const subjectsStore = useSchoolAdminSubjectsStore()
 
-// Get class levels from subjects data instead of fetching separately
+// Extract unique class levels from all subjects
 const classLevelOptions = computed(() => {
-  // Since class levels are nested in subjects, we can extract unique class levels
-  // For now, we'll still use the classes store but this could be optimized
-  return classesStore.classes.map(classLevel => ({
-    value: classLevel.id,
-    label: classLevel.name,
-  }))
+  const classLevelsMap = new Map()
+  subjectsStore.subjects.forEach(subject => {
+    if (subject.class_levels && Array.isArray(subject.class_levels)) {
+      subject.class_levels.forEach(classLevel => {
+        if (!classLevelsMap.has(classLevel.id)) {
+          classLevelsMap.set(classLevel.id, {
+            value: classLevel.id,
+            label: classLevel.name,
+          })
+        }
+      })
+    }
+  })
+  return Array.from(classLevelsMap.values())
 })
 
 const availableClassLevelOptions = computed(() => {
@@ -153,8 +161,20 @@ const availableClassLevelOptions = computed(() => {
 })
 
 const selectedClassLevels = computed(() => {
+  const classLevelsMap = new Map()
+  subjectsStore.subjects.forEach(subject => {
+    if (subject.class_levels && Array.isArray(subject.class_levels)) {
+      subject.class_levels.forEach(classLevel => {
+        if (!classLevelsMap.has(classLevel.id)) {
+          classLevelsMap.set(classLevel.id, classLevel)
+        }
+      })
+    }
+  })
+  const allClassLevels = Array.from(classLevelsMap.values())
+  
   return form.class_level_ids
-    .map(id => classesStore.classes.find(classLevel => classLevel.id === id))
+    .map(id => allClassLevels.find(classLevel => classLevel.id === id))
     .filter(Boolean)
 })
 
@@ -173,9 +193,9 @@ const resetForm = () => {
   loadingClassArmIds.value = new Set()
 }
 
-const ensureClassesLoaded = async () => {
-  if (classesStore.classes.length === 0 && !classesStore.loading) {
-    await classesStore.fetchClasses()
+const ensureSubjectsLoaded = async () => {
+  if (subjectsStore.subjects.length === 0 && !subjectsStore.loading) {
+    await subjectsStore.fetchSubjects()
   }
 }
 
@@ -273,7 +293,7 @@ onMounted(async () => {
 
 watch(() => props.show, async (show) => {
   if (show) {
-    await ensureClassesLoaded()
+    await ensureSubjectsLoaded()
     await populateForm(props.subject)
     return
   }
@@ -286,8 +306,8 @@ watch(() => props.show, async (show) => {
 
 watch(() => props.subject, async (subject) => {
   if (!props.show) return
-  // Only populate form, don't fetch classes again since they're already loaded when modal opens
-  await populateForm(subject)
+  // populateForm is already called in the props.show watch, so we don't need to call it here
+  // This watch is kept for future use if needed
 })
 
 const validate = () => {

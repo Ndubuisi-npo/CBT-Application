@@ -131,7 +131,7 @@
     </section>
 
     <section class=gap-6>
-      <SectionCard title="Upcoming Exams" subtitle="Scheduled, published, and draft exams in your queue.">
+      <SectionCard title="Upcoming Assessments" subtitle="Scheduled, published, and draft assessments in your queue.">
         <div class="space-y-4 pt-6">
           <div
             v-for="exam in upcomingExams"
@@ -147,7 +147,7 @@
                 <p class="mt-2 text-sm text-slate-500">{{ exam.subject }} • {{ exam.className }} • {{ exam.questions }} questions</p>
               </div>
               <button type="button" class="text-sm font-semibold text-[#0B1F3A] hover:text-[#D4AF37]" @click="goTo('/teachers/exams')">
-                Open exam
+                Open assessment
               </button>
             </div>
             <div class="mt-5 grid gap-3 sm:grid-cols-3">
@@ -192,7 +192,7 @@ const router = useRouter()
 const uiStore = useSchoolAdminUiStore()
 
 const quickActions = [
-  { label: 'Create Exam', caption: 'Build and schedule a new CBT exam', to: '/teachers/exam-wizard', icon: ClipboardCheck },
+  { label: 'Assessments', caption: 'Browse admin-created assessments', to: '/teachers/exams', icon: ClipboardCheck },
   { label: 'Add Questions', caption: 'Expand your question bank', to: '/teachers/questions', icon: FilePenLine },
   { label: 'Grade Scripts', caption: 'Continue pending theory marking', to: '/teachers/grading', icon: BookOpen },
   { label: 'Take Attendance', caption: 'Capture today’s class register', to: '/teachers/attendance', icon: GraduationCap },

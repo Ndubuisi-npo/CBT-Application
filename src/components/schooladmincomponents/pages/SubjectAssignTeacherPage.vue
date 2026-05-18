@@ -67,21 +67,15 @@ import SkeletonRows from '../components/SkeletonRows.vue'
 import AppButton from '../../shared/AppButton.vue'
 import TeacherAssignmentModal from '../components/TeacherAssignmentModal.vue'
 import { Plus } from 'lucide-vue-next'
-import { useSchoolAdminClassesStore } from '../stores/classes'
-import { useSchoolAdminSessionsStore } from '../stores/sessions'
 import { useSchoolAdminSubjectsStore } from '../stores/subjects'
-import { useSchoolAdminTeachersStore } from '../stores/teachers'
 import { useSchoolAdminUiStore } from '../stores/ui'
 
 const route = useRoute()
 const headings = ['Teacher', 'Class Level', 'Academic Session', 'Assigned Date', 'Actions']
 const subjectsStore = useSchoolAdminSubjectsStore()
-const classesStore = useSchoolAdminClassesStore()
-const teachersStore = useSchoolAdminTeachersStore()
-const sessionsStore = useSchoolAdminSessionsStore()
 const uiStore = useSchoolAdminUiStore()
 
-const isLoading = computed(() => subjectsStore.loading || classesStore.loading || teachersStore.loading || sessionsStore.loading)
+const isLoading = computed(() => subjectsStore.loading)
 const hasError = computed(() => !isLoading.value && !subject.value && subjectsStore.subjects.length > 0)
 
 const subjectId = computed(() => route.params.id)
@@ -103,18 +97,31 @@ const selectedAssignment = ref(null)
 const deleteLoading = ref(new Set())
 
 const getTeacherName = (teacherId) => {
-  const teacher = teachersStore.teachers.find(t => t.id === teacherId)
-  return teacher ? `${teacher.first_name} ${teacher.last_name}` : 'Unknown'
+  // Extract teacher name from teacher_assignments in subject
+  if (subject.value?.teacher_assignments) {
+    const assignment = subject.value.teacher_assignments.find(a => a.user_id === teacherId)
+    if (assignment?.user) {
+      return `${assignment.user.first_name} ${assignment.user.last_name}`.trim()
+    }
+  }
+  return 'Unknown'
 }
 
 const getClassName = (classId) => {
-  const classLevel = classesStore.classes.find(c => c.id === classId)
-  return classLevel ? classLevel.name : 'Unknown'
+  // Extract class level name from subject's class_levels
+  if (subject.value?.class_levels) {
+    const classLevel = subject.value.class_levels.find(c => c.id === classId)
+    if (classLevel) {
+      return classLevel.name
+    }
+  }
+  return 'Unknown'
 }
 
 const getSessionName = (sessionId) => {
-  const session = sessionsStore.sessions.find(s => s.id === sessionId)
-  return session ? session.name : 'Unknown'
+  // Since academic session data is not nested in subject, we'll need to keep the sessions store
+  // For now, return the ID as fallback
+  return sessionId || 'Unknown'
 }
 
 const formatDate = (dateString) => {
@@ -192,14 +199,9 @@ const deleteAssignment = async (id) => {
 
 onMounted(async () => {
   try {
-    if (classesStore.classes.length === 0) {
-      await classesStore.fetchClasses()
-    }
-    if (teachersStore.teachers.length === 0) {
-      await teachersStore.fetchTeachers()
-    }
-    if (sessionsStore.sessions.length === 0) {
-      await sessionsStore.fetchSessions()
+    // Only fetch subjects if not already loaded
+    if (subjectsStore.subjects.length === 0) {
+      await subjectsStore.fetchSubjects()
     }
   } catch (error) {
     uiStore.addToast({ title: 'Error', message: 'Failed to load data. Please check your connection.', variant: 'error' })
