@@ -2,33 +2,85 @@
   <div class="space-y-6">
     <SectionCard v-if="!showArchived" title="Teachers" subtitle="Manage staff records, contacts, department ownership, and class/subject assignments.">
       <template #header>
-        <div class="flex flex-wrap items-center gap-3">
-          <div class="flex-1 min-w-[150px]">
-            <div class="relative">
-              <Search class="absolute left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+        <div class="flex w-full min-w-0 flex-nowrap items-center justify-end gap-2 overflow-x-auto pb-1">
+          <div
+            class="overflow-hidden transition-all duration-300 ease-out"
+            :class="isSearchExpanded ? 'min-w-[180px] flex-1' : 'w-11 flex-none'"
+          >
+            <button
+              v-if="!isSearchExpanded"
+              type="button"
+              class="inline-flex h-11 w-11 items-center justify-center rounded-lg bg-slate-100 text-slate-700 transition hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:ring-offset-2"
+              title="Search teachers"
+              aria-label="Search teachers"
+              @click="expandSearch"
+            >
+              <Search class="h-4 w-4" />
+            </button>
+            <div v-else class="relative">
+              <Search class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input 
+                ref="searchInput"
                 v-model="searchQuery" 
                 type="text" 
-                class="sa-input pl-12" 
+                class="h-11 w-full rounded-lg border-2 border-[#0B1F3A] bg-white py-2 pl-12 pr-11 text-sm text-slate-900 placeholder:text-slate-500 transition-colors duration-200 focus:border-[#D4AF37] focus:outline-none focus:ring-0" 
                 placeholder="Search teachers..."
-                style="padding-left: 2.5rem;"
+                @keydown.esc="collapseSearch"
               />
+              <button
+                type="button"
+                class="absolute right-3 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
+                title="Close search"
+                aria-label="Close search"
+                @click="collapseSearch"
+              >
+                <X class="h-4 w-4" />
+              </button>
             </div>
           </div>
-          <AppButton v-if="!isSelectMode" @click="openModal()" :icon="Plus" text="Create Teacher" variant="primary" size="base" />
+          <AppButton
+            v-if="!isSelectMode"
+            @click="openModal()"
+            :icon="Plus"
+            :text="isSearchExpanded ? '' : 'Create Teacher'"
+            variant="primary"
+            size="base"
+            class="shrink-0 whitespace-nowrap"
+            title="Create teacher"
+            aria-label="Create teacher"
+          />
+          <AppButton
+            v-if="!isSelectMode"
+            @click="goToImport"
+            :icon="UploadCloud"
+            :text="isSearchExpanded ? '' : 'Import Teachers'"
+            variant="outline"
+            size="base"
+            class="shrink-0 whitespace-nowrap"
+            title="Import teachers"
+            aria-label="Import teachers"
+          />
           <AppButton 
             v-if="!isSelectMode"
             @click="toggleView" 
-            text="Show Archived"
+            :icon="Archive"
+            :text="isSearchExpanded ? '' : 'Show Archived'"
             variant="outline"
             size="base"
+            class="shrink-0 whitespace-nowrap"
+            title="Show archived"
+            aria-label="Show archived"
           />
           <AppButton
             v-if="!isSelectMode"
             @click="startSelectMode"
-            text="Select"
+            :icon="CheckSquare"
+            :text="isSearchExpanded ? '' : 'Select'"
             variant="secondary"
             size="base"
+            class="shrink-0 whitespace-nowrap"
+            title="Select teachers"
+            aria-label="Select teachers"
           />
           <AppButton
             v-if="isSelectMode"
@@ -36,16 +88,18 @@
             text="Cancel Select"
             variant="outline"
             size="base"
+            class="shrink-0 whitespace-nowrap"
           />
           <AppButton
             v-if="selectedTeachers.size > 0"
-            @click="deleteSelectedTeachers"
-            text="Delete Selected"
-            variant="danger"
+            @click="revokeSelectedTeachers"
+            text="Revoke Selected"
+            variant="warning"
             size="base"
-            loadingText="Deleting..."
-            :processing="isDeletingSelected"
-            :disabled="isDeletingSelected"
+            loadingText="Revoking..."
+            :processing="isRevokingSelected"
+            :disabled="isRevokingSelected"
+            class="shrink-0 whitespace-nowrap"
           />
           
         </div>
@@ -153,7 +207,46 @@
 
     <SectionCard v-if="showArchived" title="Archived Teachers" subtitle="View and manage revoked teachers.">
       <template #header>
-        <div class="flex flex-wrap items-center gap-3">
+        <div class="flex w-full flex-wrap items-center justify-end gap-3">
+          <AppButton
+            v-if="!isArchivedSelectMode"
+            @click="startArchivedSelectMode"
+            :icon="CheckSquare"
+            text="Select"
+            variant="secondary"
+            size="base"
+            class="shrink-0 whitespace-nowrap"
+          />
+          <AppButton
+            v-if="isArchivedSelectMode"
+            @click="cancelArchivedSelectMode"
+            text="Cancel Select"
+            variant="outline"
+            size="base"
+            class="shrink-0 whitespace-nowrap"
+          />
+          <AppButton
+            v-if="selectedArchivedTeachers.size > 0"
+            @click="restoreSelectedArchivedTeachers"
+            text="Restore Selected"
+            variant="success"
+            size="base"
+            loadingText="Restoring..."
+            :processing="isRestoringArchivedSelected"
+            :disabled="isRestoringArchivedSelected || isDeletingArchivedSelected"
+            class="shrink-0 whitespace-nowrap"
+          />
+          <AppButton
+            v-if="selectedArchivedTeachers.size > 0"
+            @click="deleteSelectedArchivedTeachers"
+            text="Delete Selected"
+            variant="danger"
+            size="base"
+            loadingText="Deleting..."
+            :processing="isDeletingArchivedSelected"
+            :disabled="isRestoringArchivedSelected || isDeletingArchivedSelected"
+            class="shrink-0 whitespace-nowrap"
+          />
           <AppButton 
             @click="toggleView" 
             text="Show Active"
@@ -172,11 +265,27 @@
           <table class="min-w-full divide-y divide-slate-200 bg-white">
             <thead class="bg-slate-50">
               <tr>
+                <th v-if="isArchivedSelectMode" class="px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                  <input
+                    type="checkbox"
+                    :checked="areAllVisibleArchivedTeachersSelected"
+                    class="rounded border-slate-300"
+                    @change="toggleVisibleArchivedTeachers($event.target.checked)"
+                  />
+                </th>
                 <th v-for="heading in archivedHeadings" :key="heading" class="px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">{{ heading }}</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
               <tr v-for="teacher in paginatedArchivedTeachers" :key="teacher.id" class="transition hover:bg-slate-50/80 opacity-60">
+                <td v-if="isArchivedSelectMode" class="px-5 py-4">
+                  <input
+                    type="checkbox"
+                    :checked="selectedArchivedTeachers.has(teacher.id)"
+                    class="rounded border-slate-300"
+                    @change="toggleArchivedTeacherSelection(teacher.id, $event.target.checked)"
+                  />
+                </td>
                 <td class="px-5 py-4 text-sm text-slate-600">{{ teacher?.teacher_profile?.staff_id || '-' }}</td>
                 <td class="px-5 py-4 text-sm text-slate-600">{{ teacher?.first_name || '-' }} {{ teacher?.last_name || '' }}</td>
                 <td class="px-5 py-4 text-sm text-slate-600">{{ teacher?.email || '-' }}</td>
@@ -184,6 +293,28 @@
                 <td class="px-5 py-4 text-sm text-slate-600">{{ teacher.teacher_profile?.qualification || '-' }}</td>
                 <td class="px-5 py-4">
                   <span class="rounded-lg bg-slate-100 px-3 py-2 text-xs font-medium text-slate-600">Archived</span>
+                </td>
+                <td class="px-5 py-4">
+                  <div class="flex gap-2">
+                    <AppButton
+                      text="Restore"
+                      @click="restoreArchivedTeacher(teacher.id)"
+                      variant="success"
+                      size="xs"
+                      loadingText="Restoring..."
+                      :processing="restoreLoading.has(teacher.id)"
+                      :disabled="restoreLoading.has(teacher.id) || deleteLoading.has(teacher.id) || isArchivedSelectMode"
+                    />
+                    <AppButton
+                      text="Delete"
+                      @click="deleteArchivedTeacher(teacher.id)"
+                      variant="danger"
+                      size="xs"
+                      loadingText="Deleting..."
+                      :processing="deleteLoading.has(teacher.id)"
+                      :disabled="restoreLoading.has(teacher.id) || deleteLoading.has(teacher.id) || isArchivedSelectMode"
+                    />
+                  </div>
                 </td>
               </tr>
             </tbody>
@@ -227,8 +358,9 @@
 </template>
 
 <script setup>
-import { onMounted, reactive, computed, ref, watch } from "vue";
-import { Plus, Users, Search } from 'lucide-vue-next';
+import { nextTick, onMounted, reactive, computed, ref, watch } from "vue";
+import { useRouter } from "vue-router";
+import { Archive, CheckSquare, Plus, Users, Search, UploadCloud, X } from 'lucide-vue-next';
 import FormField from "../components/FormField.vue";
 import SectionCard from "../components/SectionCard.vue";
 import SkeletonRows from "../components/SkeletonRows.vue";
@@ -251,9 +383,11 @@ const archivedHeadings = [
   "Phone",
   "Qualification",
   "Status",
+  "Actions",
 ];
 const teachersStore = useSchoolAdminTeachersStore();
 const uiStore = useSchoolAdminUiStore();
+const router = useRouter();
 
 // Modal state
 const showModal = ref(false)
@@ -262,12 +396,17 @@ const modalMode = ref('edit') // 'view' or 'edit'
 
 // Loading states
 const revokeLoading = ref(new Set())
+const restoreLoading = ref(new Set())
 const deleteLoading = ref(new Set())
-const isDeletingSelected = ref(false)
+const isRevokingSelected = ref(false)
+const isRestoringArchivedSelected = ref(false)
+const isDeletingArchivedSelected = ref(false)
 
 // Multi-select state
 const isSelectMode = ref(false)
 const selectedTeachers = ref(new Set())
+const isArchivedSelectMode = ref(false)
+const selectedArchivedTeachers = ref(new Set())
 
 // Pagination state
 const itemsPerPage = 10
@@ -283,6 +422,8 @@ const showArchived = ref(false);
 
 // Search state
 const searchQuery = ref('');
+const isSearchExpanded = ref(false)
+const searchInput = ref(null)
 
 // Computed property to determine which teachers to show
 const currentTeachers = computed(() => {
@@ -333,6 +474,9 @@ const paginatedArchivedTeachers = computed(() => paginate(teachersStore.archived
 const areAllVisibleTeachersSelected = computed(() => {
   return paginatedTeachers.value.length > 0 && paginatedTeachers.value.every((teacher) => selectedTeachers.value.has(teacher.id))
 })
+const areAllVisibleArchivedTeachersSelected = computed(() => {
+  return paginatedArchivedTeachers.value.length > 0 && paginatedArchivedTeachers.value.every((teacher) => selectedArchivedTeachers.value.has(teacher.id))
+})
 
 const getStartIndex = (page, total) => {
   if (total === 0) return 0
@@ -362,9 +506,25 @@ const previousArchivedTeachersPage = () => {
   if (archivedTeachersPage.value > 1) archivedTeachersPage.value--
 }
 
+const expandSearch = async () => {
+  isSearchExpanded.value = true
+  await nextTick()
+  searchInput.value?.focus()
+}
+
+const collapseSearch = () => {
+  if (searchQuery.value) {
+    searchQuery.value = ''
+    return
+  }
+
+  isSearchExpanded.value = false
+}
+
 watch(searchQuery, () => {
   teachersPage.value = 1
   selectedTeachers.value = new Set()
+  selectedArchivedTeachers.value = new Set()
 })
 
 watch(teachersTotalPages, (totalPages) => {
@@ -375,6 +535,11 @@ watch(archivedTeachersTotalPages, (totalPages) => {
   if (archivedTeachersPage.value > totalPages) archivedTeachersPage.value = totalPages
 })
 
+watch(showArchived, () => {
+  cancelSelectMode()
+  cancelArchivedSelectMode()
+})
+
 const startSelectMode = () => {
   isSelectMode.value = true
   selectedTeachers.value = new Set()
@@ -383,6 +548,16 @@ const startSelectMode = () => {
 const cancelSelectMode = () => {
   isSelectMode.value = false
   selectedTeachers.value = new Set()
+}
+
+const startArchivedSelectMode = () => {
+  isArchivedSelectMode.value = true
+  selectedArchivedTeachers.value = new Set()
+}
+
+const cancelArchivedSelectMode = () => {
+  isArchivedSelectMode.value = false
+  selectedArchivedTeachers.value = new Set()
 }
 
 const toggleVisibleTeachers = (checked) => {
@@ -411,28 +586,123 @@ const toggleTeacherSelection = (id, checked) => {
   selectedTeachers.value = nextSelection
 }
 
-const deleteSelectedTeachers = async () => {
-  const selectedCount = selectedTeachers.value.size
+const toggleVisibleArchivedTeachers = (checked) => {
+  const nextSelection = new Set(selectedArchivedTeachers.value)
 
-  if (!confirm(`Are you sure you want to delete ${selectedCount} selected teacher(s)? This action cannot be undone.`)) {
+  paginatedArchivedTeachers.value.forEach((teacher) => {
+    if (checked) {
+      nextSelection.add(teacher.id)
+    } else {
+      nextSelection.delete(teacher.id)
+    }
+  })
+
+  selectedArchivedTeachers.value = nextSelection
+}
+
+const toggleArchivedTeacherSelection = (id, checked) => {
+  const nextSelection = new Set(selectedArchivedTeachers.value)
+
+  if (checked) {
+    nextSelection.add(id)
+  } else {
+    nextSelection.delete(id)
+  }
+
+  selectedArchivedTeachers.value = nextSelection
+}
+
+const revokeSelectedTeachers = async () => {
+  const selectedCount = selectedTeachers.value.size
+  const selectedIds = Array.from(selectedTeachers.value)
+
+  if (!confirm(`Are you sure you want to revoke ${selectedCount} selected teacher(s)? This will move them to the archived section.`)) {
     return
   }
 
-  isDeletingSelected.value = true
-  deleteLoading.value = new Set(selectedTeachers.value)
+  isRevokingSelected.value = true
+  revokeLoading.value = new Set([...revokeLoading.value, ...selectedIds])
 
   try {
-    const selectedIds = Array.from(selectedTeachers.value)
-
     for (const id of selectedIds) {
-      await teachersStore.deleteTeacherFromStore(id)
+      await teachersStore.revokeTeacher(id)
     }
 
     selectedTeachers.value = new Set()
     isSelectMode.value = false
     uiStore.addToast({
+      title: 'Teachers revoked',
+      message: `${selectedCount} teacher(s) have been revoked and moved to archive.`,
+      variant: 'success',
+    })
+  } catch (error) {
+    uiStore.addToast({
+      title: 'Error',
+      message: error.message || 'Failed to revoke selected teachers.',
+      variant: 'error',
+    })
+  } finally {
+    revokeLoading.value = new Set([...revokeLoading.value].filter((loadingId) => !selectedIds.includes(loadingId)))
+    isRevokingSelected.value = false
+  }
+}
+
+const restoreSelectedArchivedTeachers = async () => {
+  const selectedCount = selectedArchivedTeachers.value.size
+  const selectedIds = Array.from(selectedArchivedTeachers.value)
+
+  if (!confirm(`Are you sure you want to restore ${selectedCount} selected teacher(s)?`)) {
+    return
+  }
+
+  isRestoringArchivedSelected.value = true
+  restoreLoading.value = new Set([...restoreLoading.value, ...selectedIds])
+
+  try {
+    for (const id of selectedIds) {
+      await teachersStore.restoreTeacher(id)
+    }
+
+    selectedArchivedTeachers.value = new Set()
+    isArchivedSelectMode.value = false
+    uiStore.addToast({
+      title: 'Teachers restored',
+      message: `${selectedCount} teacher(s) have been restored successfully.`,
+      variant: 'success',
+    })
+  } catch (error) {
+    uiStore.addToast({
+      title: 'Error',
+      message: error.message || 'Failed to restore selected teachers.',
+      variant: 'error',
+    })
+  } finally {
+    restoreLoading.value = new Set([...restoreLoading.value].filter((loadingId) => !selectedIds.includes(loadingId)))
+    isRestoringArchivedSelected.value = false
+  }
+}
+
+const deleteSelectedArchivedTeachers = async () => {
+  const selectedCount = selectedArchivedTeachers.value.size
+  const selectedIds = Array.from(selectedArchivedTeachers.value)
+
+  if (!confirm(`Are you sure you want to permanently delete ${selectedCount} selected teacher(s)? This action cannot be undone.`)) {
+    return
+  }
+
+  isDeletingArchivedSelected.value = true
+  deleteLoading.value = new Set([...deleteLoading.value, ...selectedIds])
+
+  try {
+    for (const id of selectedIds) {
+      await teachersStore.deleteTeacherFromStore(id)
+    }
+
+    selectedArchivedTeachers.value = new Set()
+    isArchivedSelectMode.value = false
+    uiStore.addToast({
       title: 'Teachers deleted',
-      message: `${selectedCount} teacher(s) have been deleted successfully.`,
+      message: `${selectedCount} teacher(s) have been permanently deleted.`,
       variant: 'success',
     })
   } catch (error) {
@@ -442,8 +712,8 @@ const deleteSelectedTeachers = async () => {
       variant: 'error',
     })
   } finally {
-    deleteLoading.value = new Set()
-    isDeletingSelected.value = false
+    deleteLoading.value = new Set([...deleteLoading.value].filter((loadingId) => !selectedIds.includes(loadingId)))
+    isDeletingArchivedSelected.value = false
   }
 }
 
@@ -461,6 +731,10 @@ const openModal = (teacher) => {
   selectedTeacher.value = teacher
   modalMode.value = 'edit'
   showModal.value = true
+}
+
+const goToImport = () => {
+  router.push('/school-admin/teachers/import')
 }
 
 const validate = () => {
@@ -559,6 +833,56 @@ const revokeTeacher = async (id) => {
         });
     } finally {
         revokeLoading.value = new Set([...revokeLoading.value].filter(loadingId => loadingId !== id))
+    }
+};
+
+const restoreArchivedTeacher = async (id) => {
+    if (!confirm("Are you sure you want to restore this teacher?")) {
+        return;
+    }
+
+    restoreLoading.value = new Set([...restoreLoading.value, id])
+
+    try {
+        await teachersStore.restoreTeacher(id);
+        uiStore.addToast({
+            title: "Teacher restored",
+            message: "Teacher has been restored successfully.",
+            variant: "success",
+        });
+    } catch (error) {
+        uiStore.addToast({
+            title: "Error",
+            message: error.message || "Failed to restore teacher.",
+            variant: "error",
+        });
+    } finally {
+        restoreLoading.value = new Set([...restoreLoading.value].filter(loadingId => loadingId !== id))
+    }
+};
+
+const deleteArchivedTeacher = async (id) => {
+    if (!confirm("Are you sure you want to permanently delete this teacher? This action cannot be undone.")) {
+        return;
+    }
+
+    deleteLoading.value = new Set([...deleteLoading.value, id])
+
+    try {
+        await teachersStore.deleteTeacherFromStore(id);
+        uiStore.addToast({
+            title: "Teacher deleted",
+            message: "Teacher has been permanently deleted.",
+            variant: "success",
+        });
+    } catch (error) {
+        uiStore.addToast({
+            title: "Error",
+            message: error.message || "Failed to delete teacher.",
+            variant: "error",
+        });
+    } finally {
+        deleteLoading.value = new Set([...deleteLoading.value].filter(loadingId => loadingId !== id))
     }
 };
 

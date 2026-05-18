@@ -24,7 +24,7 @@
               E
             </div>
             <p class="text-base text-slate-500">
-              (c) 2026 EduBoard. All rights reserved.
+              (c) 2026 EduCBT. All rights reserved.
             </p>
           </div>
 

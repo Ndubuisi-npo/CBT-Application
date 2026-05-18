@@ -56,7 +56,7 @@
         <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
           <p class="font-semibold text-emerald-900">Ready to import</p>
           <p class="mt-1 text-sm text-emerald-700">
-            {{ totalRows }} student{{ totalRows !== 1 ? 's' : '' }} will be added
+            {{ totalRows }} {{ entityLabel }}{{ totalRows !== 1 ? 's' : '' }} will be added
           </p>
         </div>
 
@@ -117,7 +117,7 @@
         <div class="rounded-2xl border border-amber-200 bg-amber-50 p-4">
           <p class="font-semibold text-amber-900">Duplicate records found</p>
           <p class="mt-1 text-sm text-amber-700">
-            {{ duplicateRows.length }} student{{ duplicateRows.length !== 1 ? 's' : '' }} already exist in the system.
+            {{ duplicateRows.length }} {{ entityLabel }}{{ duplicateRows.length !== 1 ? 's' : '' }} already exist in the system.
           </p>
         </div>
 
@@ -126,15 +126,21 @@
             <thead class="bg-slate-50">
               <tr>
                 <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600">Row</th>
-                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600">Email</th>
-                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600">Admission #</th>
+                <th
+                  v-for="column in duplicateColumns"
+                  :key="column.key"
+                  class="px-4 py-3 text-left text-xs font-semibold text-slate-600"
+                >
+                  {{ column.label }}
+                </th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
               <tr v-for="(dup, idx) in duplicateRows" :key="idx" class="hover:bg-slate-50">
                 <td class="px-4 py-3 text-sm font-semibold text-slate-900">{{ dup.row }}</td>
-                <td class="px-4 py-3 text-sm text-slate-600">{{ dup.email || '-' }}</td>
-                <td class="px-4 py-3 text-sm text-slate-600">{{ dup.admission_number || '-' }}</td>
+                <td v-for="column in duplicateColumns" :key="column.key" class="px-4 py-3 text-sm text-slate-600">
+                  {{ formatCell(dup[column.key]) }}
+                </td>
               </tr>
             </tbody>
           </table>
@@ -214,6 +220,21 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  entityLabel: {
+    type: String,
+    default: 'student',
+  },
+  duplicateColumns: {
+    type: Array,
+    default: () => [
+      { key: 'email', label: 'Email' },
+      { key: 'admission_number', label: 'Admission #' },
+    ],
+  },
+  preferredColumns: {
+    type: Array,
+    default: () => ['row', 'first_name', 'last_name', 'email', 'admission_number', 'class', 'class_arm'],
+  },
 })
 
 const emit = defineEmits(['confirm', 'cancel', 'policy-changed'])
@@ -234,6 +255,7 @@ const previewRows = computed(() => {
     props.dryRunResult?.rows ??
     props.dryRunResult?.preview_rows ??
     props.dryRunResult?.students ??
+    props.dryRunResult?.teachers ??
     props.dryRunResult?.valid_rows ??
     []
 
@@ -241,9 +263,8 @@ const previewRows = computed(() => {
 })
 
 const previewColumns = computed(() => {
-  const preferredColumns = ['row', 'first_name', 'last_name', 'email', 'admission_number', 'class', 'class_arm']
   const availableColumns = new Set(previewRows.value.flatMap((row) => Object.keys(row ?? {})))
-  const orderedColumns = preferredColumns.filter((column) => availableColumns.has(column))
+  const orderedColumns = props.preferredColumns.filter((column) => availableColumns.has(column))
 
   if (orderedColumns.length > 0) return orderedColumns
 
@@ -256,6 +277,7 @@ const totalRows = computed(() => {
     props.dryRunResult?.total ??
     props.dryRunResult?.valid_count ??
     props.dryRunResult?.students_count ??
+    props.dryRunResult?.teachers_count ??
     previewRows.value.length
   )
 })

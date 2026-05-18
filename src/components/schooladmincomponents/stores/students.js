@@ -45,7 +45,7 @@ export const useSchoolAdminStudentsStore = defineStore(
             async fetchStudents(params = {}) {
                 this.loading = true;
                 try {
-                    const response = await getStudents(params);
+                    const response = await getStudents({ status: 'active', ...params });
 
                     // Support either an array response (legacy/simple) or an object with `data` and `total`
                     if (Array.isArray(response)) {
@@ -139,17 +139,20 @@ export const useSchoolAdminStudentsStore = defineStore(
                     }
                     
                     // Move student from active to archived
+                    const wasArchived = this.archivedStudents.some((item) => item.id === id);
                     this.students = this.students.filter((item) => item.id !== id);
-                    this.totalStudents--;
-                    this.archivedStudents = [student, ...this.archivedStudents];
-                    this.totalArchivedStudents++;
+                    this.totalStudents = Math.max(0, this.totalStudents - 1);
+                    this.archivedStudents = [student, ...this.archivedStudents.filter((item) => item.id !== id)];
+                    if (!wasArchived) {
+                        this.totalArchivedStudents++;
+                    }
                 }
             },
 
             async fetchArchivedStudents(params = {}) {
                 this.loading = true;
                 try {
-                    const response = await getStudents({ ...params, archived: true });
+                    const response = await getStudents({ ...params, status: 'archived' });
                     
                     if (Array.isArray(response)) {
                         this.archivedStudents = response || [];
@@ -168,7 +171,7 @@ export const useSchoolAdminStudentsStore = defineStore(
 
             async deleteStudentFromStore(id) {
                 const { addActivity } = useActivities();
-                const studentToDelete = this.students.find(item => item.id === id);
+                const studentToDelete = this.students.find(item => item.id === id) || this.archivedStudents.find(item => item.id === id);
                 
                 await deleteStudent(id);
                 
@@ -186,8 +189,15 @@ export const useSchoolAdminStudentsStore = defineStore(
                     console.error('Failed to log activity:', error);
                 }
                 
-                this.students = this.students.filter((item) => item.id !== id);
-                this.totalStudents--;
+                if (this.students.some((item) => item.id === id)) {
+                    this.students = this.students.filter((item) => item.id !== id);
+                    this.totalStudents--;
+                }
+
+                if (this.archivedStudents.some((item) => item.id === id)) {
+                    this.archivedStudents = this.archivedStudents.filter((item) => item.id !== id);
+                    this.totalArchivedStudents--;
+                }
             },
             async toggleActive(id) {
                 const uiStore = useSchoolAdminUiStore();
@@ -225,16 +235,18 @@ export const useSchoolAdminStudentsStore = defineStore(
             },
             async restoreStudent(id) {
                 const { addActivity } = useActivities();
-                const uiStore = useSchoolAdminUiStore();
                 try {
                     await restoreStudent(id);
                     // Move student from archived to active
                     const student = this.archivedStudents.find(s => s.id === id);
                     if (student) {
                         this.archivedStudents = this.archivedStudents.filter(item => item.id !== id);
-                        this.totalArchivedStudents--;
-                        this.students = [student, ...this.students];
-                        this.totalStudents++;
+                        this.totalArchivedStudents = Math.max(0, this.totalArchivedStudents - 1);
+                        const wasActive = this.students.some(item => item.id === id);
+                        this.students = [student, ...this.students.filter(item => item.id !== id)];
+                        if (!wasActive) {
+                            this.totalStudents++;
+                        }
                         
                         // Log activity
                         try {
@@ -250,17 +262,8 @@ export const useSchoolAdminStudentsStore = defineStore(
                             console.error('Failed to log activity:', error);
                         }
                     }
-                    uiStore.addToast({
-                        title: "Student restored",
-                        message: "Student has been restored successfully.",
-                        variant: "success",
-                    });
                 } catch (error) {
-                    uiStore.addToast({
-                        title: "Error",
-                        message: error.message || "Failed to restore student.",
-                        variant: "error",
-                    });
+                    throw error;
                 }
             },
         },

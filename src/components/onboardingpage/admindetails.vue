@@ -7,7 +7,7 @@
 
       <div>
         <h1 class="text-2xl font-bold tracking-tight text-slate-800">Administrator Details</h1>
-        <p class="mt-2 text-base text-slate-500">Who will be managing the EduBoard account?</p>
+        <p class="mt-2 text-base text-slate-500">Who will be managing the EduCBT account?</p>
       </div>
     </div>
 
@@ -123,7 +123,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { ArrowLeft, ArrowRight, ChevronDown, Eye, EyeOff, UserRound } from 'lucide-vue-next'
+import { ArrowLeft, ArrowRight, Eye, EyeOff, UserRound } from 'lucide-vue-next'
 
 const props = defineProps<{
   formData: {

@@ -102,6 +102,17 @@ export async function deleteClassArm(classLevelId, id) {
   }
 }
 
+export async function assignClassArmTeacher(classLevelId, id, payload) {
+  try {
+    return await apiFetch(`/api/class-levels/${classLevelId}/arms/${id}/assign-teacher`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    })
+  } catch (error) {
+    throw new Error(extractErrorMessage(error, 'Unable to assign class teacher.'))
+  }
+}
+
 // Legacy functions for backward compatibility
 export async function getClasses() {
   return await getClassLevels()

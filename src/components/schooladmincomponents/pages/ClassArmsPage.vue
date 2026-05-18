@@ -66,7 +66,7 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import SectionCard from '../components/SectionCard.vue'
 import SkeletonRows from '../components/SkeletonRows.vue'
 import AppButton from '../../shared/AppButton.vue'
@@ -74,7 +74,6 @@ import ClassModal from '../components/ClassModal.vue'
 import AssignTeacherModal from '../components/AssignTeacherModal.vue'
 import { Plus } from 'lucide-vue-next'
 import { useSchoolAdminClassArmsStore } from '../stores/classArms'
-import { useSchoolAdminTeachersStore } from '../stores/teachers'
 import { useSchoolAdminUiStore } from '../stores/ui'
 
 const route = useRoute()
@@ -185,8 +184,10 @@ const closeAssignTeacherModal = () => {
 
 const assignTeacher = async (assignmentData) => {
   try {
-    // This would need an API endpoint for assigning teachers to classes
-    // For now, we'll show a success message and close the modal
+    await classArmsStore.assignTeacher(classLevelId.value, assignmentData.classId, {
+      assigned_teacher_id: assignmentData.teacherId,
+    })
+
     uiStore.addToast({ title: 'Teacher assigned', message: 'Teacher has been assigned to the class.', variant: 'success' })
     
     // Close modal after a short delay to ensure toast is visible
@@ -194,10 +195,9 @@ const assignTeacher = async (assignmentData) => {
       closeAssignTeacherModal()
     }, 100)
     
-    // Refresh class data to show updated teacher assignment
     await classArmsStore.fetchClassArms(classLevelId.value)
   } catch (error) {
-    uiStore.addToast({ title: 'Error', message: 'Failed to assign teacher.', variant: 'error' })
+    uiStore.addToast({ title: 'Error', message: error.message || 'Failed to assign teacher.', variant: 'error' })
     // Close modal after error toast as well
     setTimeout(() => {
       closeAssignTeacherModal()

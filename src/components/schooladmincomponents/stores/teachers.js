@@ -11,6 +11,7 @@ import {
     restoreTeacher,
 } from "../services/api/teachers";
 import { useActivities } from "../composables/useActivities";
+import { useSchoolAdminUiStore } from "./ui";
 
 export const useSchoolAdminTeachersStore = defineStore(
     "school-admin-teachers",
@@ -44,7 +45,7 @@ export const useSchoolAdminTeachersStore = defineStore(
             async fetchTeachers(params = {}) {
                 this.loading = true;
                 try {
-                    const response = await getTeachers(params);
+                    const response = await getTeachers({ status: 'active', ...params });
 
                     // Support either an array response (legacy/simple) or an object with `data` and `total`
                     if (Array.isArray(response)) {
@@ -138,17 +139,20 @@ export const useSchoolAdminTeachersStore = defineStore(
                     }
                     
                     // Move teacher from active to archived
+                    const wasArchived = this.archivedTeachers.some((item) => item.id === id);
                     this.teachers = this.teachers.filter((item) => item.id !== id);
-                    this.totalTeachers--;
-                    this.archivedTeachers = [teacher, ...this.archivedTeachers];
-                    this.totalArchivedTeachers++;
+                    this.totalTeachers = Math.max(0, this.totalTeachers - 1);
+                    this.archivedTeachers = [teacher, ...this.archivedTeachers.filter((item) => item.id !== id)];
+                    if (!wasArchived) {
+                        this.totalArchivedTeachers++;
+                    }
                 }
             },
 
             async fetchArchivedTeachers(params = {}) {
                 this.loading = true;
                 try {
-                    const response = await getTeachers({ ...params, archived: true });
+                    const response = await getTeachers({ ...params, status: 'archived' });
                     
                     if (Array.isArray(response)) {
                         this.archivedTeachers = response || [];
@@ -167,7 +171,7 @@ export const useSchoolAdminTeachersStore = defineStore(
 
             async deleteTeacherFromStore(id) {
                 const { addActivity } = useActivities();
-                const teacherToDelete = this.teachers.find(item => item.id === id);
+                const teacherToDelete = this.teachers.find(item => item.id === id) || this.archivedTeachers.find(item => item.id === id);
                 
                 await deleteTeacher(id);
                 
@@ -185,10 +189,18 @@ export const useSchoolAdminTeachersStore = defineStore(
                     console.error('Failed to log activity:', error);
                 }
                 
-                this.teachers = this.teachers.filter((item) => item.id !== id);
-                this.totalTeachers--;
+                if (this.teachers.some((item) => item.id === id)) {
+                    this.teachers = this.teachers.filter((item) => item.id !== id);
+                    this.totalTeachers--;
+                }
+
+                if (this.archivedTeachers.some((item) => item.id === id)) {
+                    this.archivedTeachers = this.archivedTeachers.filter((item) => item.id !== id);
+                    this.totalArchivedTeachers--;
+                }
             },
             async toggleActive(id) {
+                const uiStore = useSchoolAdminUiStore();
                 try {
                     await toggleActive(id);
                     uiStore.addToast({
@@ -205,6 +217,7 @@ export const useSchoolAdminTeachersStore = defineStore(
                 }
             },
             async resetPassword(id) {
+                const uiStore = useSchoolAdminUiStore();
                 try {
                     await resetPassword(id);
                     uiStore.addToast({
@@ -228,9 +241,12 @@ export const useSchoolAdminTeachersStore = defineStore(
                     const teacher = this.archivedTeachers.find(t => t.id === id);
                     if (teacher) {
                         this.archivedTeachers = this.archivedTeachers.filter(item => item.id !== id);
-                        this.totalArchivedTeachers--;
-                        this.teachers = [teacher, ...this.teachers];
-                        this.totalTeachers++;
+                        this.totalArchivedTeachers = Math.max(0, this.totalArchivedTeachers - 1);
+                        const wasActive = this.teachers.some(item => item.id === id);
+                        this.teachers = [teacher, ...this.teachers.filter(item => item.id !== id)];
+                        if (!wasActive) {
+                            this.totalTeachers++;
+                        }
                         
                         // Log activity
                         try {
@@ -246,17 +262,8 @@ export const useSchoolAdminTeachersStore = defineStore(
                             console.error('Failed to log activity:', error);
                         }
                     }
-                    uiStore.addToast({
-                        title: "Teacher restored",
-                        message: "Teacher has been restored successfully.",
-                        variant: "success",
-                    });
                 } catch (error) {
-                    uiStore.addToast({
-                        title: "Error",
-                        message: error.message || "Failed to restore teacher.",
-                        variant: "error",
-                    });
+                    throw error;
                 }
             },
         },

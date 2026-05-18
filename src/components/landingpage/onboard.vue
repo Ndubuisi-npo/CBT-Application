@@ -7,7 +7,7 @@
         </h2>
 
         <p class="mx-auto mt-8 max-w-4xl text-lg leading-relaxed text-slate-600">
-          Join hundreds of innovative schools already using EduBoard to simplify their daily
+          Join hundreds of innovative schools already using EduCBT to simplify their daily
           operations.
         </p>
 

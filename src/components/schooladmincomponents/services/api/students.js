@@ -60,7 +60,7 @@ export async function createStudent(payload) {
 
 export async function revokeStudent(id) {
   try {
-    return await apiFetch(`/api/students/${id}/revoke`, { method: 'PATCH' })
+    return await apiFetch(`/api/students/${id}/revoke`, { method: 'POST' })
   } catch (error) {
     throw new Error(extractErrorMessage(error, 'Unable to revoke student.'))
   }

@@ -4,7 +4,7 @@
       <div>
         <h3 class="text-lg font-semibold text-emerald-900">Import successful!</h3>
         <p class="mt-2 text-sm text-emerald-700">
-          {{ importResult.imported }} student{{ importResult.imported !== 1 ? 's' : '' }} imported
+          {{ importResult.imported }} {{ entityLabel }}{{ importResult.imported !== 1 ? 's' : '' }} imported
           <span v-if="importResult.skipped > 0">, {{ importResult.skipped }} skipped</span>
           <span v-if="importResult.updated > 0">, {{ importResult.updated }} updated</span>
         </p>
@@ -21,10 +21,10 @@
         Import Another File
       </button>
       <router-link
-        to="/school-admin/students"
+        :to="listPath"
         class="rounded-2xl border border-emerald-300 px-6 py-3 text-sm font-semibold text-emerald-700 hover:bg-emerald-50"
       >
-        View Students
+        {{ listLabel }}
       </router-link>
     </div>
   </div>
@@ -37,6 +37,18 @@ defineProps({
   importResult: {
     type: Object,
     required: true,
+  },
+  entityLabel: {
+    type: String,
+    default: 'student',
+  },
+  listPath: {
+    type: String,
+    default: '/school-admin/students',
+  },
+  listLabel: {
+    type: String,
+    default: 'View Students',
   },
 })
 

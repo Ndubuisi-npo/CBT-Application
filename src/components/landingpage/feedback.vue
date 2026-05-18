@@ -50,7 +50,7 @@ import { Star, UserRound } from 'lucide-vue-next'
 const testimonials = [
   {
     quote:
-      'EduBoard completely transformed how we manage our high school. The interface is so friendly that even our least tech teachers adopted it immediately.',
+      'EduCBT completely transformed how we manage our high school. The interface is so friendly that even our least tech teachers adopted it immediately.',
     name: 'David Daniel',
     role: 'Principal, Wonderful Secondary School',
     avatarClass: 'text-amber-500',

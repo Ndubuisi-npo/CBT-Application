@@ -15,7 +15,7 @@
         </h1>
 
         <p class="mt-5 max-w-xl text-lg leading-relaxed text-slate-600">
-          EduBoard simplifies administration, engages students, and empowers teachers. All in one
+          EduCBT simplifies administration, engages students, and empowers teachers. All in one
           beautiful, easy-to-use platform.
         </p>
 

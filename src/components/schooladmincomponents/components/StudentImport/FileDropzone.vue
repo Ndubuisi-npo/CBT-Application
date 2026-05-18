@@ -1,6 +1,6 @@
 <template>
   <div class="space-y-6">
-    <SectionCard title="Import Students" subtitle="Upload a CSV file to import student records in bulk.">
+    <SectionCard :title="title" :subtitle="subtitle">
       <template #header>
         <AppButton text="Download Template" variant="outline" size="base" @click="downloadTemplate" />
       </template>
@@ -45,7 +45,24 @@ import { ref } from 'vue'
 import { Upload } from 'lucide-vue-next'
 import AppButton from '../../../shared/AppButton.vue'
 import SectionCard from '../../components/SectionCard.vue'
-import { getImportTemplate } from '../../services/api/students'
+const props = defineProps({
+  title: {
+    type: String,
+    default: 'Import Students',
+  },
+  subtitle: {
+    type: String,
+    default: 'Upload a CSV file to import student records in bulk.',
+  },
+  templateFilename: {
+    type: String,
+    default: 'student_import_template.csv',
+  },
+  getTemplate: {
+    type: Function,
+    required: true,
+  },
+})
 
 const emit = defineEmits(['file-selected'])
 
@@ -117,11 +134,11 @@ function handleDrop(event) {
 
 async function downloadTemplate() {
   try {
-    const blob = await getImportTemplate()
+    const blob = await props.getTemplate()
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = 'student_import_template.csv'
+    a.download = props.templateFilename
     a.click()
     URL.revokeObjectURL(url)
   } catch (err) {
