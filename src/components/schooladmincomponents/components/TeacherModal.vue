@@ -47,6 +47,21 @@
                 <p v-else class="text-sm text-slate-600">No assigned classes</p>
               </div>
             </div>
+
+            <div class="mt-4">
+              <label class="block text-sm text-slate-500">Assigned Subjects</label>
+              <div class="mt-2">
+                <div v-if="assignedSubjects.length">
+                  <ul class="space-y-2">
+                    <li v-for="subject in assignedSubjects" :key="subject.id || subject.name" class="rounded-2xl bg-slate-50 px-4 py-3 text-sm">
+                      <div class="font-semibold text-slate-900">{{ subject.name }}</div>
+                      <div v-if="subject.meta" class="text-xs text-slate-500">{{ subject.meta }}</div>
+                    </li>
+                  </ul>
+                </div>
+                <p v-else class="text-sm text-slate-600">No assigned subjects</p>
+              </div>
+            </div>
           </div>
           
           <!-- Contact Information -->
@@ -146,6 +161,23 @@ const emit = defineEmits(['close', 'submit', 'submitted'])
 
 const isEdit = computed(() => props.mode === 'edit' && !!props.teacher)
 const isView = computed(() => props.mode === 'view')
+
+const assignedSubjects = computed(() => {
+  const subjects = props.teacher?.assigned_subjects || []
+
+  return subjects.map((item) => {
+    const source = item?.subject && typeof item.subject === 'object' ? item.subject : item
+    const name = source?.name || source?.title || item?.subject_name || 'Unnamed subject'
+    const code = source?.code || item?.subject_code || ''
+    const className = item?.class_level?.name || item?.class?.name || item?.class_name || ''
+
+    return {
+      id: source?.id || item?.subject_id || item?.id || name,
+      name,
+      meta: [code, className].filter(Boolean).join(' - '),
+    }
+  })
+})
 
 const form = reactive({
   firstName: '',

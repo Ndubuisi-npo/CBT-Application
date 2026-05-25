@@ -23,57 +23,6 @@
       </div>
     </SectionCard>
 
-    <section ref="monitorAnchor">
-      <SectionCard title="Live Assessment Monitoring" subtitle="Track in-progress student activity, attendance, and suspicious behaviour.">
-        <div class="space-y-5 pt-6">
-          <div class="">
-            <div class="rounded-[24px] border border-emerald-200 bg-emerald-50 p-5">
-              <p class="text-sm text-emerald-700">Live students</p>
-              <p class="mt-3 text-3xl font-semibold text-emerald-800">{{ liveMonitoring.summary.activeStudents }}</p>
-              <p class="mt-2 text-sm text-emerald-700">{{ liveMonitoring.summary.timeRemaining }}</p>
-            </div>
-          </div>
-
-          <div class="grid gap-4 sm:grid-cols-2">
-            <div class="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
-              <p class="text-xs uppercase tracking-[0.18em] text-slate-400">Submitted</p>
-              <p class="mt-2 text-xl font-semibold text-slate-900">{{ liveMonitoring.summary.submitted }}</p>
-            </div>
-            <div class="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
-              <p class="text-xs uppercase tracking-[0.18em] text-slate-400">Disconnected</p>
-              <p class="mt-2 text-xl font-semibold text-slate-900">{{ liveMonitoring.summary.disconnected }}</p>
-            </div>
-          </div>
-
-          <div class="space-y-4">
-            <article
-              v-for="student in liveMonitoring.students"
-              :key="student.id"
-              class="rounded-[24px] border border-slate-200 bg-white p-4"
-            >
-              <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                <div>
-                  <div class="flex flex-wrap items-center gap-2">
-                    <h3 class="text-base font-semibold text-slate-900">{{ student.name }}</h3>
-                  </div>
-                  <p class="mt-2 text-sm text-slate-500">{{ student.className }} | {{ student.connection }} | {{ student.attendance }}</p>
-                </div>
-                <div class="min-w-[220px] space-y-2">
-                    <div class="flex items-center justify-between text-sm text-slate-500">
-                    <span>Assessment progress</span>
-                    <span>{{ student.progress }}%</span>
-                  </div>
-                  <div class="h-2 rounded-full bg-slate-200">
-                    <div class="h-2 rounded-full bg-[#0B1F3A]" :style="{ width: `${student.progress}%` }"></div>
-                  </div>
-                </div>
-              </div>
-            </article>
-          </div>
-        </div>
-      </SectionCard>
-    </section>
-
     <section class="space-y-6">
       <SectionCard title="Assessment Library" subtitle="Every assessment in your current teaching cycle.">
         <template #header>

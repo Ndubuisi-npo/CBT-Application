@@ -62,14 +62,10 @@
               :disabled="currentPage === totalPages"
             />
           </div>
-        </div> 
-      :show="showModal" 
-      :term="selectedTerm"
-      @close="closeModal"
-      @submit="submitTerm"
-    />
-  </div>
-  </SectionCard>
+        </div>
+        <TermModal :show="showModal" :term="selectedTerm" @close="closeModal" @submit="submitTerm" />
+      </div>
+    </SectionCard>
   </div>
 </template>
 

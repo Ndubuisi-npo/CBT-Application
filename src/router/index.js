@@ -124,6 +124,12 @@ const routes = [
       },
     ],
   }
+  ,
+  { path: '/student/dashboard', name: 'StudentDashboard', component: () => import('../components/studentscomponent/pages/StudentDashboard.vue') },
+  { path: '/student/instructions/:id', name: 'StudentExamInstructions', component: () => import('../components/studentscomponent/pages/StudentExamInstructions.vue'), props: true },
+  { path: '/student/exam/:id', name: 'StudentExam', component: () => import('../components/studentscomponent/pages/StudentExam.vue'), props: true },
+  { path: '/student/instructions/:id', name: 'StudentExamInstructions', component: () => import('../components/studentscomponent/pages/StudentExamInstructions.vue'), props: true },
+  { path: '/student/exam/:id', name: 'StudentExam', component: () => import('../components/studentscomponent/pages/StudentExam.vue'), props: true },
 ]
 
 const router = createRouter({
@@ -133,7 +139,7 @@ const router = createRouter({
 
 const roleRedirectMap = {
   super_admin: '/super-admin/dashboard',
-  school_admin: '/school-admin/dashboard',
+  school_admin: '/school-admin/assessments',
   teacher: '/teachers/dashboard',
   student: '/student/dashboard',
 }
@@ -145,7 +151,7 @@ const buildRedirectUrl = (path) => {
 }
 
 router.beforeEach((to, from, next) => {
-  const requiresAuth = to.path.startsWith('/school-admin') || to.path.startsWith('/super-admin') || to.path.startsWith('/teachers')
+  const requiresAuth = to.path.startsWith('/school-admin') || to.path.startsWith('/super-admin') || to.path.startsWith('/teachers') || to.path.startsWith('/student')
   const isLoginPage = to.path === '/login'
 
   if (requiresAuth && !isLoginPage) {
@@ -164,6 +170,18 @@ router.beforeEach((to, from, next) => {
 
     if (to.path.startsWith('/school-admin') && userRole !== 'school_admin') {
       const redirectPath = roleRedirectMap[userRole] || '/super-admin/dashboard'
+      next(buildRedirectUrl(redirectPath))
+      return
+    }
+
+    if (to.path.startsWith('/teachers') && userRole !== 'teacher') {
+      const redirectPath = roleRedirectMap[userRole] || '/school-admin/dashboard'
+      next(buildRedirectUrl(redirectPath))
+      return
+    }
+
+    if (to.path.startsWith('/student') && userRole !== 'student') {
+      const redirectPath = roleRedirectMap[userRole] || '/school-admin/dashboard'
       next(buildRedirectUrl(redirectPath))
       return
     }

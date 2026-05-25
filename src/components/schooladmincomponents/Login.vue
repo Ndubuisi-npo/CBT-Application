@@ -65,14 +65,14 @@
 
           <form class="space-y-6" @submit.prevent="submitLogin">
             <div class="space-y-2">
-              <label class="block text-base font-semibold text-slate-700" for="school-email">Email address</label>
+              <label class="block text-base font-semibold text-slate-700" for="school-identifier">Identifier</label>
 
               <div class="relative">
                 <Mail class="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
-                <input id="school-email" v-model="form.email" type="email" placeholder="your.email@school.edu" class="w-full rounded-lg border-2 border-[#0B1F3A] bg-white px-4 py-3 pl-12 text-base text-slate-900 placeholder:text-slate-400 focus:border-[#D4AF37] focus:outline-none focus:ring-0 transition" />
+                <input id="school-identifier" v-model="form.identifier" type="text" placeholder="Email address or admission number" class="w-full rounded-lg border-2 border-[#0B1F3A] bg-white px-4 py-3 pl-12 text-base text-slate-900 placeholder:text-slate-400 focus:border-[#D4AF37] focus:outline-none focus:ring-0 transition" />
               </div>
 
-              <p v-if="errors.email" class="text-sm font-medium text-rose-600">{{ errors.email }}</p>
+              <p v-if="errors.identifier" class="text-sm font-medium text-rose-600">{{ errors.identifier }}</p>
             </div>
 
             <div class="space-y-2">
@@ -162,13 +162,13 @@ const branding = computed(() => ({
 }))
 
 const form = reactive({
-  email: '',
+  identifier: '',
   password: '',
   remember: false,
 })
 
 const errors = reactive({
-  email: '',
+  identifier: '',
   password: '',
   general: '',
 })
@@ -178,17 +178,18 @@ const isLoading = ref(false)
 const showForgotPassword = ref(false)
 
 const validate = () => {
-  errors.email = ''
+  errors.identifier = ''
   errors.password = ''
   errors.general = ''
 
-  if (!form.email.trim()) errors.email = 'Email is required.'
-  else if (!/\S+@\S+\.\S+/.test(form.email)) errors.email = 'Enter a valid email address.'
+  if (!form.identifier.trim()) {
+    errors.identifier = 'Identifier is required.'
+  }
 
   if (!form.password.trim()) errors.password = 'Password is required.'
   else if (form.password.length < 6) errors.password = 'Password must be at least 6 characters.'
 
-  return !errors.email && !errors.password
+  return !errors.identifier && !errors.password
 }
 
 

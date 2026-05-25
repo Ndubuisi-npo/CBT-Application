@@ -18,9 +18,54 @@ export async function getQuestion(id) {
 
 export async function createQuestion(payload) {
   try {
+    // Normalize/validate payload according to API contract
+    const body = {}
+
+    // class_level_id (required)
+    body.class_level_id = payload.class_level_id || payload.className || payload.class || ''
+    if (!body.class_level_id) throw new Error('class_level_id is required')
+
+    // content (required)
+    body.content = (payload.content || payload.question_text || '').trim()
+    if (!body.content) throw new Error('content is required')
+
+    // default_marks (required)
+    body.default_marks = Number(payload.default_marks ?? payload.marks ?? payload.points ?? 0)
+    if (Number.isNaN(body.default_marks) || body.default_marks < 0.5 || body.default_marks > 100) {
+      throw new Error('default_marks must be a number between 0.5 and 100')
+    }
+
+    // options (required) - expect array of objects { content, is_correct, label?, order? }
+    if (Array.isArray(payload.options)) {
+      if (payload.options.length < 2) throw new Error('options must have at least 2 items')
+      body.options = payload.options.map((opt, idx) => {
+        if (typeof opt === 'string') {
+          // backward compatibility: convert string to object
+          return { content: String(opt), is_correct: false, label: null, order: idx + 1 }
+        }
+
+        const content = String(opt.content || opt.text || '').trim()
+        if (!content) throw new Error('each option must have content')
+
+        const is_correct = Boolean(opt.is_correct === true || opt.is_correct === 'true')
+
+        const label = opt.label != null ? String(opt.label).slice(0, 10) : null
+
+        const order = Number.isFinite(opt.order) ? Number(opt.order) : idx + 1
+
+        return { content, is_correct, label, order }
+      })
+    }
+
+    // optional fields
+    if (payload.subject_id) body.subject_id = payload.subject_id
+    else if (payload.subject) body.subject_id = payload.subject
+
+    if (payload.image_url) body.image_url = payload.image_url
+
     return await apiFetch('/api/questions', {
       method: 'POST',
-      body: JSON.stringify(payload),
+      body: JSON.stringify(body),
     })
   } catch (error) {
     throw new Error(extractErrorMessage(error, 'Unable to create question.'))
@@ -29,12 +74,54 @@ export async function createQuestion(payload) {
 
 export async function updateQuestion(id, payload) {
   try {
+    // Use PUT per API spec; accept partial fields
+    const body = {}
+    if (payload.content !== undefined) body.content = payload.content
+    if (payload.default_marks !== undefined) body.default_marks = payload.default_marks
+    else if (payload.marks !== undefined) body.default_marks = payload.marks
+    if (payload.image_url !== undefined) body.image_url = payload.image_url
+    if (payload.is_active !== undefined) body.is_active = payload.is_active
+    if (payload.status !== undefined) body.status = payload.status
+    if (payload.subject_id !== undefined) body.subject_id = payload.subject_id
+    else if (payload.subject !== undefined) body.subject_id = payload.subject
+    if (payload.topic_id !== undefined) body.topic_id = payload.topic_id
+    else if (payload.topic !== undefined) body.topic = payload.topic
+    if (payload.class_level_id !== undefined) body.class_level_id = payload.class_level_id
+    else if (payload.className !== undefined) body.class_level_id = payload.className
+
     return await apiFetch(`/api/questions/${id}`, {
-      method: 'PATCH',
-      body: JSON.stringify(payload),
+      method: 'PUT',
+      body: JSON.stringify(body),
     })
   } catch (error) {
     throw new Error(extractErrorMessage(error, 'Unable to update question.'))
+  }
+}
+
+export async function addQuestionToExam(examId, payload) {
+  try {
+    // payload: { question_id: string, marks_override?: number|null }
+    const body = { question_id: payload.question_id }
+    if (payload.marks_override !== undefined) body.marks_override = payload.marks_override
+    return await apiFetch(`/api/exams/${examId}/questions`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    })
+  } catch (error) {
+    throw new Error(extractErrorMessage(error, 'Unable to add question to exam.'))
+  }
+}
+
+export async function updateExamQuestion(examId, questionId, payload) {
+  try {
+    const body = {}
+    if (payload.marks_override !== undefined) body.marks_override = payload.marks_override
+    return await apiFetch(`/api/exams/${examId}/questions/${questionId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    })
+  } catch (error) {
+    throw new Error(extractErrorMessage(error, 'Unable to update exam question.'))
   }
 }
 
@@ -46,6 +133,17 @@ export async function deleteQuestion(id) {
   }
 }
 
+export async function cloneQuestionsFromTerm(payload) {
+  try {
+    return await apiFetch('/api/questions/clone-from-term', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
+  } catch (error) {
+    throw new Error(extractErrorMessage(error, 'Unable to clone questions from term.'))
+  }
+}
+
 export async function restoreQuestion(id) {
   try {
     return await apiFetch(`/api/questions/${id}/restore`, { method: 'POST' })
@@ -54,3 +152,18 @@ export async function restoreQuestion(id) {
   }
 }
 
+export async function getTeacherSubjects(teacherId) {
+  try {
+    return await apiFetch(`/api/teachers/${teacherId}/subjects`)
+  } catch (error) {
+    throw new Error(extractErrorMessage(error, 'Unable to fetch teacher subjects.'))
+  }
+}
+
+export async function getTeacherClasses(teacherId) {
+  try {
+    return await apiFetch(`/api/teachers/${teacherId}/classes`)
+  } catch (error) {
+    throw new Error(extractErrorMessage(error, 'Unable to fetch teacher classes.'))
+  }
+}

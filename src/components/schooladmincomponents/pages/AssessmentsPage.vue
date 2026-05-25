@@ -50,7 +50,7 @@
               <tr v-for="assessment in assessmentsStore.assessments" :key="assessment.id" class="transition hover:bg-slate-50/80">
                 <td class="px-5 py-4">
                   <p class="font-semibold text-slate-900">{{ assessment.title }}</p>
-                  <p class="mt-1 text-xs text-slate-500">{{ assessment.purpose || 'Assessment' }}</p>
+                  <p class="mt-1 text-xs text-slate-500">{{ assessment.type ? (assessment.type === 'exam' ? 'Exam' : 'Assessment') : 'Assessment' }}</p>
                 </td>
                 <td class="px-5 py-4 text-sm text-slate-600">{{ assessment.subject || '-' }}</td>
                 <td class="px-5 py-4 text-sm text-slate-600">{{ assessment.className || '-' }}</td>
@@ -94,35 +94,45 @@
             </label>
             <label class="form-field">
               <span>Subject</span>
-              <select v-model="form.subject" class="form-input" required>
+              <select v-model="form.subject_id" class="form-input" required>
                 <option value="">Select subject</option>
-                <option v-for="subject in subjectOptions" :key="subject" :value="subject">{{ subject }}</option>
+                <option v-for="option in subjectOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
+              </select>
+            </label>
+            <label class="form-field">
+              <span>Session</span>
+              <select v-model="form.session_id" class="form-input" required>
+                <option value="">Select session</option>
+                <option v-for="option in sessionOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
               </select>
             </label>
             <label class="form-field">
               <span>Class</span>
-              <select v-model="form.className" class="form-input" required>
+              <select v-model="form.class_level_id" class="form-input" required>
                 <option value="">Select class</option>
-                <option v-for="className in classOptions" :key="className" :value="className">{{ className }}</option>
+                <option v-for="option in classOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
+              </select>
+            </label>
+            <label class="form-field">
+              <span>Arm</span>
+              <select v-model="form.class_arm_id" class="form-input" required>
+                <option value="">Select arm</option>
+                <option v-for="option in classArmOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
               </select>
             </label>
             <label class="form-field">
               <span>Term</span>
-              <select v-model="form.term" class="form-input" required>
+              <select v-model="form.term_id" class="form-input" required>
                 <option value="">Select term</option>
-                <option>First Term</option>
-                <option>Second Term</option>
-                <option>Third Term</option>
+                <option v-for="option in termOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
               </select>
             </label>
             <label class="form-field">
-              <span>Purpose</span>
-              <select v-model="form.purpose" class="form-input" required>
-                <option value="">Select purpose</option>
-                <option>Continuous Assessment</option>
-                <option>Mid-Term</option>
-                <option>Mock Revision</option>
-                <option>Promotion Exam</option>
+              <span>Type</span>
+              <select v-model="form.type" class="form-input" required>
+                <option value="">Select type</option>
+                <option value="exam">Exam</option>
+                <option value="assessment">Assessment</option>
               </select>
             </label>
             <label class="form-field">
@@ -158,59 +168,6 @@
               <textarea v-model="form.instructions" rows="4" class="form-input" placeholder="Add instructions teachers and students should follow."></textarea>
             </label>
 
-            <div class="md:col-span-2 rounded-[24px] border border-slate-200 bg-slate-50 p-5 text-sm text-slate-700">
-              <div class="flex flex-wrap items-center gap-2">
-                <BookOpen class="h-5 w-5 text-slate-700" />
-                <p class="font-semibold text-slate-900">Standard exam instructions</p>
-              </div>
-              <div class="mt-4 space-y-3">
-                <p>Number of questions: 50</p>
-                <p>Duration: 60 minutes</p>
-                <div class="rounded-2xl bg-white p-4 shadow-sm">
-                  <div class="flex items-center gap-2 text-slate-900">
-                    <Clock class="h-4 w-4 text-[#0B1F3A]" />
-                    <span class="font-semibold">General Instructions</span>
-                  </div>
-                  <ul class="mt-3 list-disc space-y-2 pl-5 text-slate-600">
-                    <li>The examination contains 50 multiple-choice questions.</li>
-                    <li>Each question carries 1 mark. There is no negative marking.</li>
-                    <li>Total duration of the examination is 60 minutes.</li>
-                    <li>The timer will start as soon as you begin the exam.</li>
-                    <li>You can navigate between questions using the question palette.</li>
-                  </ul>
-                </div>
-                <div class="rounded-2xl bg-white p-4 shadow-sm">
-                  <div class="flex items-center gap-2 text-slate-900">
-                    <ArrowRightCircle class="h-4 w-4 text-[#0B1F3A]" />
-                    <span class="font-semibold">Question Navigation</span>
-                  </div>
-                  <ul class="mt-3 list-disc space-y-2 pl-5 text-slate-600">
-                    <li>Click on a question number to navigate to that question.</li>
-                    <li>You can mark questions for review and come back to them later.</li>
-                    <li>Answered questions will be highlighted in green.</li>
-                    <li>Questions marked for review will be highlighted in yellow.</li>
-                    <li>Unanswered questions will remain white.</li>
-                  </ul>
-                </div>
-                <div class="rounded-2xl bg-white p-4 shadow-sm">
-                  <div class="flex items-center gap-2 text-slate-900">
-                    <AlertTriangle class="h-4 w-4 text-[#0B1F3A]" />
-                    <span class="font-semibold">Important Notes</span>
-                  </div>
-                  <ul class="mt-3 list-disc space-y-2 pl-5 text-slate-600">
-                    <li>Once submitted, you cannot change your answers.</li>
-                    <li>The exam will auto-submit when the time expires.</li>
-                    <li>Ensure stable internet connection throughout the exam.</li>
-                    <li>Do not refresh the browser during the exam.</li>
-                    <li>Do not use the browser back button.</li>
-                  </ul>
-                </div>
-                <p class="text-slate-600">I have read and understood all the instructions. I am ready to begin the examination.</p>
-                <button type="button" class="text-sm font-semibold text-[#0B1F3A] hover:text-[#D4AF37]" @click="fillStandardInstructions">
-                  Use standard exam instructions
-                </button>
-              </div>
-            </div>
           </div>
 
           <div class="flex flex-col gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:items-center sm:justify-between">
@@ -227,13 +184,15 @@
 </template>
 
 <script setup>
-import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
-import { Plus, X, BookOpen, ArrowRightCircle, AlertTriangle, Clock } from 'lucide-vue-next'
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
+import { Plus, X } from 'lucide-vue-next'
 import SectionCard from '../components/SectionCard.vue'
 import SkeletonRows from '../components/SkeletonRows.vue'
 import AppButton from '../../shared/AppButton.vue'
 import { useSchoolAdminAssessmentsStore } from '../stores/assessments'
 import { useSchoolAdminClassLevelsStore } from '../stores/classLevels'
+import { useSchoolAdminClassArmsStore } from '../stores/classArms'
+import { useSchoolAdminSessionsStore } from '../stores/sessions'
 import { useSchoolAdminSubjectsStore } from '../stores/subjects'
 import { useSchoolAdminUiStore } from '../stores/ui'
 
@@ -242,6 +201,8 @@ const headings = ['Title', 'Subject', 'Class', 'Term', 'Schedule', 'Status', 'Qu
 const assessmentsStore = useSchoolAdminAssessmentsStore()
 const subjectsStore = useSchoolAdminSubjectsStore()
 const classLevelsStore = useSchoolAdminClassLevelsStore()
+const classArmsStore = useSchoolAdminClassArmsStore()
+const sessionsStore = useSchoolAdminSessionsStore()
 const uiStore = useSchoolAdminUiStore()
 
 const showModal = ref(false)
@@ -249,46 +210,62 @@ const saving = ref(false)
 const form = reactive(createDefaultForm())
 
 const subjectOptions = computed(() => {
-  const subjects = subjectsStore.subjects.map((subject) => subject.name).filter(Boolean)
-  return subjects.length ? subjects : ['Mathematics', 'English Language', 'Basic Science']
+  const subjects = subjectsStore.subjects
+    .filter((subject) => subject && (subject.name || subject.title || subject.code))
+    .map((subject) => ({
+      value: subject.id,
+      label: subject.name || subject.title || subject.code,
+    }))
+  return subjects.length
+    ? subjects
+    : [{ value: 'Mathematics', label: 'Mathematics' }, { value: 'English Language', label: 'English Language' }, { value: 'Basic Science', label: 'Basic Science' }]
 })
 
 const classOptions = computed(() => {
-  const classNames = classLevelsStore.classLevels.map((classLevel) => classLevel.name).filter(Boolean)
-  return classNames.length ? classNames : ['JSS 1', 'JSS 2', 'SS 1', 'SS 2']
+  const classNames = classLevelsStore.classLevels
+    .filter((classLevel) => classLevel && classLevel.name)
+    .map((classLevel) => ({
+      value: classLevel.id,
+      label: classLevel.name,
+    }))
+  return classNames.length
+    ? classNames
+    : [{ value: 'JSS 1', label: 'JSS 1' }, { value: 'JSS 2', label: 'JSS 2' }, { value: 'SS 1', label: 'SS 1' }, { value: 'SS 2', label: 'SS 2' }]
 })
+
+const sessionOptions = computed(() =>
+  sessionsStore.sessions.map((session) => ({
+    value: session.id,
+    label: session.name || session.title || session.id,
+  })),
+)
+
+const currentSession = computed(
+  () =>
+    sessionsStore.sessions.find((session) => session.id === form.session_id) ||
+    sessionsStore.sessions.find((session) => session.current) ||
+    sessionsStore.sessions[0] ||
+    null,
+)
+
+const termOptions = computed(() => {
+  const terms = currentSession.value ? sessionsStore.terms[currentSession.value.id] || [] : []
+  return terms.map((term) => ({
+    value: term.id,
+    label: term.name || term.title || term.code || term.id,
+  }))
+})
+
+const classArmOptions = computed(() =>
+  classArmsStore.classArms.map((arm) => ({
+    value: arm.id,
+    label: arm.name || arm.code || arm.id,
+  })),
+)
 
 const awaitingQuestionsCount = computed(() =>
   assessmentsStore.assessments.filter((assessment) => !assessment.questions?.length).length,
 )
-
-const standardInstructions = `Exam Instructions
-Number of questions: 50
-
-Duration: 60 minutes
-
-General Instructions
-The examination contains 50 multiple-choice questions.
-Each question carries 1 mark. There is no negative marking.
-Total duration of the examination is 60 minutes.
-The timer will start as soon as you begin the exam.
-You can navigate between questions using the question palette.
-
-Question Navigation
-Click on a question number to navigate to that question.
-You can mark questions for review and come back to them later.
-Answered questions will be highlighted in green.
-Questions marked for review will be highlighted in yellow.
-Unanswered questions will remain white.
-
-Important Notes
-Once submitted, you cannot change your answers.
-The exam will auto-submit when the time expires.
-Ensure stable internet connection throughout the exam.
-Do not refresh the browser during the exam.
-Do not use the browser back button.
-
-I have read and understood all the instructions. I am ready to begin the examination.`
 
 let statusRefreshTimer = null
 
@@ -296,11 +273,15 @@ function createDefaultForm() {
   return {
     id: '',
     title: '',
+    session_id: '',
+    subject_id: '',
+    class_level_id: '',
+    class_arm_id: '',
+    term_id: '',
     subject: '',
     className: '',
     term: '',
-    type: 'Multiple Choice',
-    purpose: '',
+    type: 'assessment',
     duration: 60,
     passMark: 50,
     startTime: '',
@@ -315,10 +296,41 @@ const resetForm = () => {
   Object.assign(form, createDefaultForm())
 }
 
-const openModal = (assessment = null) => {
+const openModal = async (assessment = null) => {
   resetForm()
   if (assessment) {
     Object.assign(form, { ...assessment })
+    if (assessment.class_level_id) {
+      await classArmsStore.fetchClassArms(assessment.class_level_id)
+    }
+  }
+  else {
+    // Creating a new assessment — fetch latest reference data so the
+    // form options are up-to-date when the modal opens.
+    await Promise.allSettled([
+      subjectsStore.fetchSubjects(),
+      classLevelsStore.fetchClassLevels(),
+      sessionsStore.fetchSessions(),
+    ])
+
+    // Ensure terms are fetched for the current session if missing
+    const sessionCandidate =
+      sessionsStore.sessions.find((s) => s.id === form.session_id) ||
+      sessionsStore.sessions.find((s) => s.current) ||
+      sessionsStore.sessions[0]
+
+    if (
+      sessionCandidate &&
+      (!sessionsStore.terms || !sessionsStore.terms[sessionCandidate.id] || !sessionsStore.terms[sessionCandidate.id].length)
+    ) {
+      await sessionsStore.fetchTerms(sessionCandidate.id)
+    }
+
+    // Prefetch class arms for the first class level to populate arm options
+    const firstClass = classLevelsStore.classLevels[0]
+    if (firstClass && (!classArmsStore.classArms || !classArmsStore.classArms.length)) {
+      await classArmsStore.fetchClassArms(firstClass.id)
+    }
   }
   showModal.value = true
 }
@@ -331,7 +343,15 @@ const closeModal = () => {
 const submitAssessment = async () => {
   saving.value = true
   try {
-    await assessmentsStore.saveAssessment({ ...form })
+    const payload = { ...form }
+    const selectedSubject = subjectOptions.value.find((option) => option.value === form.subject_id)
+    if (selectedSubject) payload.subject = selectedSubject.label
+    const selectedClass = classOptions.value.find((option) => option.value === form.class_level_id)
+    if (selectedClass) payload.className = selectedClass.label
+    const selectedTerm = termOptions.value.find((option) => option.value === form.term_id)
+    if (selectedTerm) payload.term = selectedTerm.label
+
+    await assessmentsStore.saveAssessment(payload)
     uiStore.addToast({
       title: 'Assessment saved',
       message: 'Teachers can now see this assessment and add questions from their dashboard.',
@@ -356,10 +376,6 @@ const deleteAssessment = async (assessment) => {
   }
 }
 
-const fillStandardInstructions = () => {
-  form.instructions = standardInstructions
-}
-
 const publishAssessment = async (assessment) => {
   try {
     await assessmentsStore.publishAssessment(assessment.id)
@@ -376,6 +392,31 @@ const formatSchedule = (assessment) => {
   return `${start} - ${end}`
 }
 
+watch(
+  () => form.class_level_id,
+  async (classLevelId) => {
+    form.class_arm_id = ''
+    if (classLevelId) {
+      await classArmsStore.fetchClassArms(classLevelId)
+    } else {
+      classArmsStore.classArms = []
+    }
+  },
+)
+
+watch(
+  currentSession,
+  async (session) => {
+    if (
+      session &&
+      (!sessionsStore.terms || !sessionsStore.terms[session.id] || !sessionsStore.terms[session.id].length)
+    ) {
+      await sessionsStore.fetchTerms(session.id)
+    }
+  },
+  { immediate: true },
+)
+
 const statusClass = (status) => {
   const classes = {
     Draft: 'bg-slate-100 text-slate-700',
@@ -388,11 +429,16 @@ const statusClass = (status) => {
 }
 
 onMounted(async () => {
-  await Promise.allSettled([
-    assessmentsStore.fetchAssessments(),
-    subjectsStore.fetchSubjects(),
-    classLevelsStore.fetchClassLevels(),
-  ])
+  // Fetch assessments first; if exams response included related entities,
+  // the stores may already be populated by the assessments store.
+  await assessmentsStore.fetchAssessments()
+
+  const tasks = []
+  if (!subjectsStore.subjects?.length) tasks.push(subjectsStore.fetchSubjects())
+  if (!classLevelsStore.classLevels?.length) tasks.push(classLevelsStore.fetchClassLevels())
+  if (!sessionsStore.sessions?.length) tasks.push(sessionsStore.fetchSessions())
+
+  if (tasks.length) await Promise.allSettled(tasks)
 
   assessmentsStore.refreshStatuses()
   statusRefreshTimer = window.setInterval(() => {

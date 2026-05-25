@@ -1,10 +1,12 @@
 import { defineStore } from "pinia";
 import {
     getQuestions,
+    getQuestion,
     createQuestion,
     updateQuestion,
     deleteQuestion,
     restoreQuestion,
+    cloneQuestionsFromTerm,
 } from "../services/api/questions";
 import {
     getTopics,
@@ -82,7 +84,7 @@ export const useTeachersQuestionsStore = defineStore(
             async saveQuestion(payload) {
                 const { addActivity } = useActivities();
                 const isNew = !payload.id;
-                const record = await createQuestion(payload);
+                const record = isNew ? await createQuestion(payload) : await updateQuestion(payload.id, payload);
                 const exists = this.questions.some(
                     (item) => item.id === record.id,
                 );
@@ -305,7 +307,17 @@ export const useTeachersQuestionsStore = defineStore(
                 }
                 
                 return result;
+            },
+
+            async cloneFromTerm(payload) {
+                const result = await cloneQuestionsFromTerm(payload);
+                if (Array.isArray(result)) {
+                    this.questions = [...result, ...this.questions];
+                    this.totalQuestions = this.questions.length;
+                }
+                return result;
             }
         },
     },
 );
+
