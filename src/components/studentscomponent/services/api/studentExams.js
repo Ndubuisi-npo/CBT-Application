@@ -21,22 +21,29 @@ export async function getAvailableExams(params = {}) {
 }
 
 export async function getStudentExam(examId) {
-  const response = await apiFetch(`/api/student/exams/${examId}`)
-  return normalizeExam(response)
+  // Spec has no dedicated single-exam endpoint for students; get from available list
+  const response = await apiFetch('/api/student/exams/available')
+  const exams = Array.isArray(response) ? response : response?.data || []
+  const found = exams.find((e) => String(e.id) === String(examId))
+  if (!found) throw new Error('Exam not found or not available.')
+  return normalizeExam(found)
 }
 
 export async function startStudentExam(examId) {
+  // spec: POST /api/student/exams/{examId}/start
   return await apiFetch(`/api/student/exams/${examId}/start`, {
     method: 'POST',
   })
 }
 
 export async function getStudentExamAttempt(examId) {
+  // spec: GET /api/student/exams/{examId}/attempt — returns 404 if no attempt
   return await apiFetch(`/api/student/exams/${examId}/attempt`)
 }
 
-export async function getStudentExamQuestions(examId) {
-  const response = await apiFetch(`/api/student/exams/${examId}/questions`)
+export async function getStudentExamQuestions(attemptId) {
+  // spec: GET /api/student/exams/attempts/{attemptId}/questions
+  const response = await apiFetch(`/api/student/exams/attempts/${attemptId}/questions`)
   return Array.isArray(response) ? response : response?.data || []
 }
 

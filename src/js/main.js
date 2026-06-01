@@ -7,9 +7,9 @@ import { initializeApiState } from './lib/api';
 import { initializeAuthState } from './lib/auth';
 import '../css/app.css';
 
-// Initialize API and auth state from localStorage
-initializeApiState();
+// Initialize auth state first, then API state (auth sets the token)
 initializeAuthState();
+initializeApiState();
 
 const app = createApp(App);
 const pinia = createPinia();

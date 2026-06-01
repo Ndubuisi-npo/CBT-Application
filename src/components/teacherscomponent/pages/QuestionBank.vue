@@ -102,6 +102,7 @@
                 <span class="rounded-full bg-slate-100 px-3 py-2">{{ getQuestionSubject(question) || 'No subject' }}</span>
                 <!-- topic removed -->
                 <span class="rounded-full bg-slate-100 px-3 py-2">{{ getQuestionClassName(question) || 'No class' }}</span>
+                <span v-if="getQuestionClassArm(question)" class="rounded-full bg-slate-100 px-3 py-2">{{ getQuestionClassArm(question) }}</span>
                 <span class="rounded-full bg-slate-100 px-3 py-2">{{ getQuestionMarks(question) }} marks</span>
                 <span class="rounded-full bg-slate-100 px-3 py-2">Used {{ question.usageCount || question.usage_count || 0 }} times</span>
               </div>
@@ -158,27 +159,33 @@
 
         <div class="grid gap-6 p-6 xl:grid-cols-[1.2fr_0.8fr]">
           <div class="space-y-6">
-            <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
               <div class="space-y-2 text-sm font-medium text-slate-700">
                 <span>Question Type</span>
                 <div class="question-filter !py-3 flex items-center font-semibold text-slate-600">Multiple Choice</div>
               </div>
               <label class="space-y-2 text-sm font-medium text-slate-700">
                 <span>Subject</span>
-                <select v-model="form.subject" class="question-filter !py-3">
+                <select v-model="form.subject_id" class="question-filter !py-3" @change="onSubjectChange">
                   <option value="">Select subject</option>
-                  <option v-for="subject in modalSubjects" :key="subject.id || subject" :value="subject.id || subject">{{ subject.name || subject }}</option>
+                  <option v-for="subject in examsStore.subjects" :key="subject.id" :value="subject.id">{{ subject.name }}</option>
                 </select>
               </label>
               <label class="space-y-2 text-sm font-medium text-slate-700">
-                <span>Class</span>
-                <select v-model="form.class_level_id" class="question-filter !py-3">
+                <span>Class Level</span>
+                <select v-model="form.class_level_id" class="question-filter !py-3" @change="onClassLevelChange">
                   <option value="">Select class</option>
-                  <option v-for="classItem in modalClassLevels" :key="classItem.id || classItem" :value="classItem.id || classItem">{{ classItem.name || classItem }}</option>
+                  <option v-for="classItem in examsStore.classLevels" :key="classItem.id" :value="classItem.id">{{ classItem.name }}</option>
                 </select>
               </label>
-              <!-- Topic removed from create modal per API change -->
-              <label class="space-y-2 text-sm font-medium text-slate-700 md:col-span-2 xl:col-span-1">
+              <label class="space-y-2 text-sm font-medium text-slate-700">
+                <span>Class Arm</span>
+                <select v-model="form.class_arm_id" class="question-filter !py-3">
+                  <option value="">Select arm</option>
+                  <option v-for="arm in examsStore.classArms" :key="arm.id" :value="arm.id">{{ arm.name }}</option>
+                </select>
+              </label>
+              <label class="space-y-2 text-sm font-medium text-slate-700">
                 <span>Marks</span>
                 <input v-model.number="form.marks" type="number" min="0.5" step="0.5" class="question-input" />
               </label>
@@ -252,6 +259,7 @@
                   <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">Multiple Choice</span>
                   <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{{ selectedSubjectName || 'Subject' }}</span>
                   <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{{ selectedClassName || 'Class' }}</span>
+                  <span v-if="selectedArmName" class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{{ selectedArmName }}</span>
                 </div>
                 <p class="mt-4 text-sm leading-6 text-slate-800">{{ form.content || 'Your question preview will appear here once you start typing.' }}</p>
                 <div class="mt-4 space-y-2">
@@ -271,7 +279,7 @@
               <h3 class="text-lg font-semibold text-slate-900">Validation</h3>
               <ul class="mt-4 space-y-3 text-sm text-slate-600">
                 <li class="flex items-center gap-3">
-                  <span class="h-2.5 w-2.5 rounded-full" :class="form.subject ? 'bg-emerald-500' : 'bg-rose-400'"></span>
+                  <span class="h-2.5 w-2.5 rounded-full" :class="form.subject_id ? 'bg-emerald-500' : 'bg-rose-400'"></span>
                   Subject assigned
                 </li>
                 <li class="flex items-center gap-3">
@@ -346,14 +354,14 @@ import { useRoute } from 'vue-router'
 import { Eye, FilePenLine, FileQuestion, ImagePlus, PencilLine, Plus, Search, Send, Trash2, X } from 'lucide-vue-next'
 import AppButton from '../../shared/AppButton.vue'
 import { useSchoolAdminUiStore } from '../../schooladmincomponents/stores/ui'
-import { useSchoolAdminAssessmentsStore } from '../../schooladmincomponents/stores/assessments'
+import { useTeacherExamsStore } from '../stores/exams'
 import SectionCard from '../components/SectionCard.vue'
 import { useTeachersQuestionsStore } from '../stores/questions'
 import { getTeacherClasses, getTeacherSubjects } from '../services/api/questions'
 import { getAuthUser } from '../../../js/lib/auth'
 
 const uiStore = useSchoolAdminUiStore()
-const assessmentsStore = useSchoolAdminAssessmentsStore()
+const examsStore = useTeacherExamsStore()
 const questionsStore = useTeachersQuestionsStore()
 
 const showEditor = ref(false)
@@ -444,6 +452,7 @@ const getQuestionText = (question) => question.content || question.question_text
 const getQuestionSubject = (question) => questionStringValue(question.subject) || question.subject_name || ''
 const getQuestionTopic = (question) => questionStringValue(question.topic) || question.topic_name || ''
 const getQuestionClassName = (question) => questionStringValue(question.className) || questionStringValue(question.class) || questionStringValue(question.class_level) || ''
+const getQuestionClassArm = (question) => questionStringValue(question.class_arm) || question.class_arm_name || ''
 const getQuestionMarks = (question) => question.marks ?? question.default_marks ?? question.points ?? 0
 const getQuestionCorrectAnswer = (question) => question.correctAnswer ?? question.correct_answer ?? ''
 
@@ -497,17 +506,21 @@ const totalQuestions = computed(() => questionsStore.questions.length)
 const isLoading = computed(() => questionsStore.loading)
 
 const selectedSubjectName = computed(() => {
-  if (!form.subject) return ''
-  const found = modalSubjects.value.find(s => (s && (s.id || s) === form.subject || (s.id && String(s.id) === String(form.subject))))
-  if (found) return found.name || String(found)
-  return String(form.subject || '')
+  if (!form.subject_id) return ''
+  const found = examsStore.subjects.find(s => s.id === form.subject_id)
+  return found?.name || ''
 })
 
 const selectedClassName = computed(() => {
   if (!form.class_level_id) return ''
-  const found = modalClassLevels.value.find(c => (c && (c.id || c) === form.class_level_id || (c.id && String(c.id) === String(form.class_level_id))))
-  if (found) return found.name || String(found)
-  return String(form.class_level_id || '')
+  const found = examsStore.classLevels.find(c => c.id === form.class_level_id)
+  return found?.name || ''
+})
+
+const selectedArmName = computed(() => {
+  if (!form.class_arm_id) return ''
+  const found = examsStore.classArms.find(a => a.id === form.class_arm_id)
+  return found?.name || ''
 })
 
 const filteredQuestions = computed(() =>
@@ -547,9 +560,11 @@ function createDefaultForm() {
     id: '',
     type: 'Multiple Choice',
     subject: '',
+    subject_id: '',
     topic: '',
     className: '',
     class_level_id: '',
+    class_arm_id: '',
     status: 'Draft',
     marks: 2,
     content: '',
@@ -657,7 +672,7 @@ const markCorrect = (index) => {
 
 const validateForm = () => {
   errors.content = form.content.trim().length < 15 ? 'Add a clearer question stem before saving.' : ''
-  if (!form.subject || !form.class_level_id) {
+  if (!form.subject_id || !form.class_level_id) {
     uiStore.addToast({
       title: 'Validation required',
       message: 'Subject and class must be selected before you can save this question.',
@@ -700,9 +715,10 @@ const submitQuestion = async (status) => {
   const payload = {
     id: form.id || undefined,
     type: 'Multiple Choice',
-    subject_id: form.subject,
+    subject_id: form.subject_id,
     // topic intentionally omitted per request
     class_level_id: form.class_level_id || form.className,
+    class_arm_id: form.class_arm_id,
     status,
     default_marks: form.marks,
     content: form.content.trim(),
@@ -800,17 +816,31 @@ const addSelectedToAssessment = async () => {
   if (!selectedSet.size || !assessmentId.value) return
 
   try {
-    await assessmentsStore.addQuestionsToAssessment(assessmentId.value, [...selectedSet])
+    // Add each selected question to the exam via teacher exams store
+    const questions = [...selectedSet]
+    let added = 0
+    for (let i = 0; i < questions.length; i++) {
+      try {
+        await examsStore.addQuestion(assessmentId.value, {
+          question_id: questions[i],
+          marks: 1,
+          order: i + 1,
+        })
+        added++
+      } catch {
+        // ignore individual failures
+      }
+    }
     uiStore.addToast({
       title: 'Questions added',
-      message: `${selectedSet.size} question${selectedSet.size > 1 ? 's were' : ' was'} added to assessment ${assessmentId.value}.`,
+      message: `${added} question${added !== 1 ? 's' : ''} added to exam.`,
       variant: 'success',
     })
     selectedIds.value = []
   } catch (error) {
     uiStore.addToast({
-      title: 'Assessment not found',
-      message: error.message || 'Open an assessment from the teacher assessment list before adding questions.',
+      title: 'Failed to add questions',
+      message: error.message || 'Open an exam from the Exams list and try again.',
       variant: 'error',
     })
   }
@@ -824,11 +854,26 @@ const showUploadToast = () => {
   })
 }
 
+const onSubjectChange = async () => {
+  // Update subject name for display
+  const selected = examsStore.subjects.find(s => s.id === form.subject_id)
+  form.subject = selected?.name || ''
+}
+
+const onClassLevelChange = async () => {
+  // Load class arms for this level
+  if (form.class_level_id) {
+    await examsStore.loadClassArms(form.class_level_id)
+  }
+  form.class_arm_id = '' // Reset arm selection
+}
+
 onMounted(async () => {
-  await Promise.all([
-    assessmentsStore.fetchAssessments(),
-    questionsStore.fetchQuestions(),
-  ])
+  await questionsStore.fetchQuestions()
+  // Load form metadata if not already loaded
+  if (!examsStore.subjects.length) {
+    await examsStore.loadFormMetadata()
+  }
 })
 </script>
 

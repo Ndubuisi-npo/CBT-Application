@@ -22,7 +22,12 @@ const readPersistedAuth = () => {
   }
 
   try {
-    return JSON.parse(raw)
+    const auth = JSON.parse(raw)
+    // Ensure the API token is set from the persisted auth
+    if (auth.token) {
+      setApiToken(auth.token)
+    }
+    return auth
   } catch {
     window.localStorage.removeItem(STORAGE_KEY)
     return {

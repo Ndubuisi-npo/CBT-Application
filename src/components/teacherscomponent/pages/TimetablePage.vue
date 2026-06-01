@@ -41,8 +41,14 @@
 </template>
 
 <script setup>
+import { ref } from 'vue'
 import SectionCard from '../components/SectionCard.vue'
-import { timetable } from '../data/mockTeacherData'
+
+const timetable = ref({
+  weekly: [],
+  calendar: [],
+  conflicts: []
+})
 
 const toneClass = (tone) => {
   const classes = {

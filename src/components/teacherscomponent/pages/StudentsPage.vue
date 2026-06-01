@@ -12,7 +12,14 @@
         </div>
       </template>
 
-      <div v-if="filteredStudents.length === 0" class="rounded-[24px] border border-slate-200 bg-white p-12 text-center mt-6">
+      <div v-if="loading" class="rounded-[24px] border border-slate-200 bg-white p-12 text-center mt-6">
+        <div class="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-slate-100 animate-pulse">
+          <Users class="h-12 w-12 text-slate-400" />
+        </div>
+        <h3 class="mt-6 text-xl font-semibold text-slate-900">Loading Students...</h3>
+      </div>
+
+      <div v-else-if="filteredStudents.length === 0" class="rounded-[24px] border border-slate-200 bg-white p-12 text-center mt-6">
         <div class="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-slate-100">
           <Users class="h-12 w-12 text-slate-400" />
         </div>
@@ -32,19 +39,19 @@
             </thead>
             <tbody class="divide-y divide-slate-100">
               <tr v-for="student in filteredStudents" :key="student.id" class="transition hover:bg-slate-50/80">
-                <td class="px-5 py-4 text-sm text-slate-600">{{ student.admissionNo }}</td>
+                <td class="px-5 py-4 text-sm text-slate-600">{{ student.student_profile?.admission_number || student.admission_number || student.admissionNo || '—' }}</td>
                 <td class="px-5 py-4 text-sm text-slate-600">
-                  <p class="font-semibold text-slate-900">{{ student.name }}</p>
-                  <p class="text-xs text-slate-500">{{ student.gender }}</p>
+                  <p class="font-semibold text-slate-900">{{ student.first_name }} {{ student.last_name }}</p>
                 </td>
-                <td class="px-5 py-4 text-sm text-slate-600">{{ student.className }}</td>
-                <td class="px-5 py-4 text-sm text-slate-600">{{ student.email }}</td>
-                <td class="px-5 py-4 text-sm text-slate-600">{{ student.phone }}</td>
+                <td class="px-5 py-4 text-sm text-slate-600">{{ student.student_profile?.gender || student.gender || '—' }}</td>
+                <td class="px-5 py-4 text-sm text-slate-600">{{ student.student_profile?.class_arm?.name || student.class_arm?.name || student.student_profile?.class_level?.name || student.class_level?.name || student.className || '—' }}</td>
+                <td class="px-5 py-4 text-sm text-slate-600">{{ student.email || '—' }}</td>
+                <td class="px-5 py-4 text-sm text-slate-600">{{ student.phone || '—' }}</td>
                 <td class="px-5 py-4">
                   <div class="flex gap-2">
-                    <AppButton text="View" variant="outline" size="xs" @click="notify(`Viewing ${student.name}'s profile card.`)" />
-                    <AppButton text="Results" variant="outline" size="xs" @click="notify(`Opening ${student.name}'s objective results.`)" />
-                    <AppButton text="Attendance" variant="outline" size="xs" @click="notify(`Opening ${student.name}'s attendance record.`)" />
+                    <AppButton text="View" variant="outline" size="xs" @click="notify(`Viewing ${student.first_name} ${student.last_name}'s profile card.`)" />
+                    <AppButton text="Results" variant="outline" size="xs" @click="notify(`Opening ${student.first_name} ${student.last_name}'s objective results.`)" />
+                    <AppButton text="Attendance" variant="outline" size="xs" @click="notify(`Opening ${student.first_name} ${student.last_name}'s attendance record.`)" />
                   </div>
                 </td>
               </tr>
@@ -57,21 +64,30 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { Search, Users } from 'lucide-vue-next'
 import AppButton from '../../shared/AppButton.vue'
 import { useSchoolAdminUiStore } from '../../schooladmincomponents/stores/ui'
 import SectionCard from '../components/SectionCard.vue'
-import { teacherStudents, teacherProfile } from '../data/mockTeacherData'
+import { getStudents } from '../../schooladmincomponents/services/api/students'
+import { getAuthUser } from '../../../js/lib/auth'
 
 const uiStore = useSchoolAdminUiStore()
-const headings = ['Admission No', 'Student', 'Class', 'Email', 'Phone', 'Actions']
+const headings = ['Admission No', 'Student', 'Gender', 'Class', 'Email', 'Phone', 'Actions']
 const searchQuery = ref('')
+const teacherStudents = ref([])
+const teacherProfile = ref({ assignedClasses: [] })
+const loading = ref(false)
 
 const filteredStudents = computed(() =>
-  teacherStudents.filter((student) => {
-    const haystack = `${student.name} ${student.admissionNo} ${student.className} ${student.email}`.toLowerCase()
-    const isInAssignedClass = teacherProfile.assignedClasses.includes(student.className)
+  teacherStudents.value.filter((student) => {
+    const fullName = `${student.first_name || ''} ${student.last_name || ''}`.trim()
+    const admissionNo = student.student_profile?.admission_number || student.admission_number || student.admissionNo || ''
+    const className = student.student_profile?.class_arm?.name || student.class_arm?.name || student.student_profile?.class_level?.name || student.class_level?.name || student.className || student.class_name || ''
+    const email = student.email || ''
+    const haystack = `${fullName} ${admissionNo} ${className} ${email}`.toLowerCase()
+    const isInAssignedClass = teacherProfile.value.assignedClasses.length === 0 || 
+      teacherProfile.value.assignedClasses.includes(className)
     return (
       isInAssignedClass &&
       (!searchQuery.value || haystack.includes(searchQuery.value.toLowerCase()))
@@ -86,6 +102,34 @@ const notify = (message) => {
     variant: 'success',
   })
 }
+
+const loadStudents = async () => {
+  loading.value = true
+  try {
+    const user = getAuthUser()
+    if (user?.id) {
+      const response = await getStudents({ teacher_id: user.id })
+      teacherStudents.value = Array.isArray(response) ? response : (response?.data || [])
+      
+      if (user.assigned_classes && Array.isArray(user.assigned_classes)) {
+        teacherProfile.value.assignedClasses = user.assigned_classes
+      }
+    } else {
+      const response = await getStudents()
+      teacherStudents.value = Array.isArray(response) ? response : (response?.data || [])
+    }
+  } catch (error) {
+    uiStore.addToast({
+      title: 'Error',
+      message: error.message || 'Failed to load students.',
+      variant: 'error',
+    })
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(loadStudents)
 </script>
 
 <style scoped>

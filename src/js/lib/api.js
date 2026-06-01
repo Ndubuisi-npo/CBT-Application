@@ -60,6 +60,15 @@ export async function apiFetch(path, options = {}) {
   const tenantHandle = getTenantHandle()
   const baseUrl = tenantHandle ? window.location.origin : API_BASE_URL
 
+  // Serialize query params if provided
+  let fullPath = path
+  if (options.params && typeof options.params === 'object') {
+    const qs = new URLSearchParams(
+      Object.entries(options.params).filter(([, v]) => v !== undefined && v !== null && v !== '')
+    ).toString()
+    if (qs) fullPath = `${path}?${qs}`
+  }
+
   const headers = {
     'Accept': 'application/json',
     ...(options.headers || {}),
@@ -75,24 +84,23 @@ export async function apiFetch(path, options = {}) {
   }
   
   if (tenantHandle) {
-    headers['X-Tenant'] = tenantHandle // Fallback for central domain
+    headers['X-Tenant'] = tenantHandle
   }
 
-  const response = await fetch(`${baseUrl}${path}`, {
-    ...options,
+  const { params: _params, ...fetchOptions } = options
+  const response = await fetch(`${baseUrl}${fullPath}`, {
+    ...fetchOptions,
     headers,
   })
 
-  // // Auto-logout on 401
-  // if (response.status === 401) {
-  //   clearApiState()
-  //   const handle = getTenantHandle()
-  //   const loginPath = handle ? `/${handle}/login` : '/super-admin/login'
-  //   if (typeof window !== 'undefined') {
-  //     window.location.href = loginPath
-  //   }
-  //   return
-  // }
+  // Auto-logout on 401
+  if (response.status === 401) {
+    clearApiState()
+    if (typeof window !== 'undefined') {
+      window.location.href = '/login'
+    }
+    throw new Error('Session expired. Please log in again.')
+  }
 
   const contentType = response.headers.get('content-type') || ''
   const isJson = contentType.includes('application/json')

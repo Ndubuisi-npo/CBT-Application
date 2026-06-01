@@ -1,138 +1,159 @@
 <template>
   <div class="space-y-6">
-    <div class="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
-      <SectionCard title="Auto-Graded Queue" subtitle="Submitted objective scripts reviewed by comparing teacher answers with student selections.">
-        <div class="space-y-4 pt-6">
-          <article
-            v-for="item in gradingQueue"
-            :key="item.id"
-            class="cursor-pointer rounded-[24px] border p-5 transition"
-            :class="selectedScript.id === item.id ? 'border-[#0B1F3A] bg-slate-50' : 'border-slate-200 bg-white hover:border-[#D4AF37]/70'"
-            @click="selectScript(item)"
-          >
-            <div class="flex items-start justify-between gap-4">
-              <div>
-                <h2 class="text-lg font-semibold text-slate-900">{{ item.studentName }}</h2>
-                <p class="mt-2 text-sm text-slate-500">{{ item.className }} • {{ item.examTitle }}</p>
-              </div>
-              <span class="rounded-full px-3 py-1 text-xs font-semibold" :class="item.status === 'Flagged Review' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'">
-                {{ item.status }}
-              </span>
-            </div>
-            <div class="mt-4 grid grid-cols-3 gap-3">
-              <div class="rounded-2xl bg-slate-50 p-3 text-sm">
-                <p class="text-slate-400">Correct</p>
-                <p class="mt-2 font-semibold text-slate-900">{{ item.correctCount }}</p>
-              </div>
-              <div class="rounded-2xl bg-slate-50 p-3 text-sm">
-                <p class="text-slate-400">Questions</p>
-                <p class="mt-2 font-semibold text-slate-900">{{ item.totalQuestions }}</p>
-              </div>
-              <div class="rounded-2xl bg-slate-50 p-3 text-sm">
-                <p class="text-slate-400">Score</p>
-                <p class="mt-2 font-semibold text-slate-900">{{ percentage(item) }}%</p>
-              </div>
-            </div>
-          </article>
-        </div>
-      </SectionCard>
+    <!-- Exam selector -->
+    <SectionCard title="Grading" subtitle="Review auto-graded submissions and publish results.">
+      <template #header>
+        <select
+          v-model="selectedExamId"
+          class="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:border-[#0B1F3A]"
+          @change="loadAttempts"
+        >
+          <option value="">Select an exam…</option>
+          <option v-for="e in gradableExams" :key="e.id" :value="e.id">{{ e.title }}</option>
+        </select>
+      </template>
 
-      <SectionCard title="Comparison Viewer" subtitle="See how the system matched each student answer against the teacher-selected correct option.">
-        <template #header>
-          <div class="text-sm font-medium text-emerald-700">{{ activeDetail.autosave }}</div>
-        </template>
-        <div class="space-y-6 pt-6">
-          <div class="rounded-[24px] bg-[#0B1F3A] p-5 text-white">
-            <p class="text-xs font-semibold uppercase tracking-[0.24em] text-[#D4AF37]">{{ activeDetail.examTitle }}</p>
-            <h2 class="mt-3 text-2xl font-semibold">{{ activeDetail.studentName }}</h2>
-            <p class="mt-2 text-sm text-slate-300">{{ activeDetail.className }} • {{ activeDetail.progress }}</p>
+      <div v-if="!selectedExamId" class="py-8 text-center text-sm text-slate-400">Select an exam above to view submissions.</div>
+      <div v-else-if="loadingAttempts" class="py-8 text-center text-sm text-slate-500">Loading submissions…</div>
+      <div v-else-if="!attempts.length" class="py-8 text-center text-sm text-slate-500 border border-dashed border-slate-300 rounded-2xl mt-4">
+        No submissions yet for this exam.
+      </div>
+      <div v-else class="space-y-4 pt-6">
+        <!-- Stats -->
+        <div class="grid gap-4 md:grid-cols-4">
+          <div class="rounded-2xl bg-slate-50 p-4 text-sm">
+            <p class="text-xs uppercase tracking-wider text-slate-400">Submissions</p>
+            <p class="mt-2 text-2xl font-semibold text-slate-900">{{ attempts.length }}</p>
           </div>
-
-          <div class="grid gap-4 md:grid-cols-3">
-            <div class="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
-              <p class="text-sm text-slate-500">Correct Answers</p>
-              <p class="mt-3 text-3xl font-semibold text-slate-900">{{ activeDetail.score }}</p>
-            </div>
-            <div class="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
-              <p class="text-sm text-slate-500">Total Questions</p>
-              <p class="mt-3 text-3xl font-semibold text-slate-900">{{ activeDetail.totalQuestions }}</p>
-            </div>
-            <div class="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
-              <p class="text-sm text-slate-500">Auto Score</p>
-              <p class="mt-3 text-3xl font-semibold text-slate-900">{{ Math.round((activeDetail.score / activeDetail.totalQuestions) * 100) }}%</p>
-            </div>
+          <div class="rounded-2xl bg-slate-50 p-4 text-sm">
+            <p class="text-xs uppercase tracking-wider text-slate-400">Average Score</p>
+            <p class="mt-2 text-2xl font-semibold text-slate-900">{{ avgScore }}%</p>
           </div>
-
-          <div class="space-y-4">
-            <article v-for="comparison in activeDetail.comparisons" :key="comparison.id" class="rounded-[24px] border border-slate-200 bg-white p-5">
-              <div class="flex items-start justify-between gap-4">
-                <div>
-                  <h3 class="text-base font-semibold text-slate-900">{{ comparison.question }}</h3>
-                  <p class="mt-3 text-sm text-slate-500">Teacher answer: <span class="font-semibold text-slate-900">{{ comparison.correctAnswer }}</span></p>
-                  <p class="mt-1 text-sm text-slate-500">Student answer: <span class="font-semibold text-slate-900">{{ comparison.studentAnswer }}</span></p>
-                </div>
-                <span class="rounded-full px-3 py-1 text-xs font-semibold" :class="comparison.status === 'Correct' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'">
-                  {{ comparison.status }}
-                </span>
-              </div>
-            </article>
+          <div class="rounded-2xl bg-slate-50 p-4 text-sm">
+            <p class="text-xs uppercase tracking-wider text-slate-400">Pass Rate</p>
+            <p class="mt-2 text-2xl font-semibold text-emerald-700">{{ passRate }}%</p>
           </div>
-
-          <div class="rounded-[24px] border border-amber-200 bg-amber-50 p-5 text-sm text-amber-800">
-            {{ activeDetail.flaggedReason }}
-          </div>
-
-          <div class="flex flex-wrap items-center justify-between gap-3">
-            <div class="flex gap-2">
-              <AppButton text="Previous Student" variant="outline" @click="moveSelection(-1)" />
-              <AppButton text="Next Student" variant="outline" @click="moveSelection(1)" />
-            </div>
-            <AppButton text="Confirm Auto Score" variant="primary" @click="confirmScores" />
+          <div class="rounded-2xl bg-slate-50 p-4 text-sm">
+            <p class="text-xs uppercase tracking-wider text-slate-400">Status</p>
+            <p class="mt-2 text-sm font-semibold" :class="selectedExam?.status === 'published' ? 'text-emerald-700' : 'text-amber-600'">
+              {{ (selectedExam?.status || '').toUpperCase() }}
+            </p>
           </div>
         </div>
-      </SectionCard>
-    </div>
+
+        <!-- Results table -->
+        <div class="overflow-hidden rounded-2xl border border-slate-200">
+          <table class="min-w-full divide-y divide-slate-200 bg-white">
+            <thead class="bg-slate-50">
+              <tr>
+                <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Student</th>
+                <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Score</th>
+                <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">%</th>
+                <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Grade</th>
+                <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Result</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              <tr v-for="attempt in attempts" :key="attempt.id" class="hover:bg-slate-50/60">
+                <td class="px-5 py-4 text-sm font-medium text-slate-900">{{ attempt.student?.name || attempt.student_name || '–' }}</td>
+                <td class="px-5 py-4 text-sm text-slate-600">{{ attempt.score ?? '–' }} / {{ attempt.total_marks ?? '–' }}</td>
+                <td class="px-5 py-4 text-sm text-slate-600">{{ attempt.percentage != null ? attempt.percentage + '%' : '–' }}</td>
+                <td class="px-5 py-4 text-sm text-slate-600">{{ attempt.grade || '–' }}</td>
+                <td class="px-5 py-4">
+                  <span class="rounded-full px-2 py-1 text-xs font-semibold"
+                    :class="attempt.passed ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'">
+                    {{ attempt.passed ? 'PASS' : 'FAIL' }}
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Publish button -->
+        <div class="flex justify-end pt-2">
+          <AppButton
+            v-if="selectedExam?.status === 'completed'"
+            text="Publish Results"
+            variant="primary"
+            :processing="publishing"
+            @click="publishResults"
+          />
+          <span v-else-if="selectedExam?.status === 'published'" class="text-sm text-emerald-600 font-semibold">
+            ✓ Results published — students can now view their scores.
+          </span>
+        </div>
+      </div>
+    </SectionCard>
   </div>
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import AppButton from '../../shared/AppButton.vue'
-import { useSchoolAdminUiStore } from '../../schooladmincomponents/stores/ui'
 import SectionCard from '../components/SectionCard.vue'
-import { cloneMock, gradingDetail, gradingQueue } from '../data/mockTeacherData'
+import { useTeacherExamsStore } from '../stores/exams'
+import { useSchoolAdminUiStore } from '../../schooladmincomponents/stores/ui'
+import { apiFetch } from '../../../js/lib/api'
 
-const uiStore = useSchoolAdminUiStore()
-const selectedScript = ref(gradingQueue[0])
-const activeDetail = ref(cloneMock(gradingDetail))
+const store = useTeacherExamsStore()
+const ui    = useSchoolAdminUiStore()
 
-const percentage = (item) => Math.round((item.score / item.totalQuestions) * 100)
+const selectedExamId  = ref('')
+const attempts        = ref([])
+const loadingAttempts = ref(false)
+const publishing      = ref(false)
 
-const selectScript = (item) => {
-  selectedScript.value = item
-  activeDetail.value = {
-    ...cloneMock(gradingDetail),
-    scriptId: item.id,
-    studentName: item.studentName,
-    className: item.className,
-    examTitle: item.examTitle,
-    score: item.correctCount,
-    totalQuestions: item.totalQuestions,
+const gradableExams = computed(() =>
+  store.exams.filter((e) => ['grading', 'completed', 'published'].includes(e.status))
+)
+
+const selectedExam = computed(() =>
+  store.exams.find((e) => String(e.id) === String(selectedExamId.value)) || null
+)
+
+const avgScore = computed(() => {
+  const pcts = attempts.value.map((a) => a.percentage).filter((p) => p != null)
+  if (!pcts.length) return 0
+  return Math.round(pcts.reduce((s, p) => s + p, 0) / pcts.length)
+})
+
+const passRate = computed(() => {
+  if (!attempts.value.length) return 0
+  const passed = attempts.value.filter((a) => a.passed).length
+  return Math.round((passed / attempts.value.length) * 100)
+})
+
+const loadAttempts = async () => {
+  if (!selectedExamId.value) return
+  loadingAttempts.value = true
+  try {
+    // DEPENDENCY: /api/exams/{id}/results — teacher endpoint per spec §2.8
+    const res = await apiFetch(`/api/exams/${selectedExamId.value}/results`)
+    attempts.value = Array.isArray(res) ? res : res?.data || []
+  } catch (err) {
+    ui.addToast({ title: 'Error', message: err.message || 'Failed to load results.', variant: 'error' })
+    attempts.value = []
+  } finally {
+    loadingAttempts.value = false
   }
 }
 
-const moveSelection = (direction) => {
-  const currentIndex = gradingQueue.findIndex((item) => item.id === selectedScript.value.id)
-  const nextIndex = currentIndex + direction
-  if (nextIndex < 0 || nextIndex >= gradingQueue.length) return
-  selectScript(gradingQueue[nextIndex])
+const publishResults = async () => {
+  publishing.value = true
+  try {
+    await store.performLifecycleAction(selectedExamId.value, 'publish')
+    ui.addToast({ title: 'Published', message: 'Results are now visible to students.', variant: 'success' })
+  } catch (err) {
+    ui.addToast({ title: 'Error', message: err.message, variant: 'error' })
+  } finally {
+    publishing.value = false
+  }
 }
 
-const confirmScores = () => {
-  uiStore.addToast({
-    title: 'Auto score confirmed',
-    message: `${selectedScript.value.studentName}'s objective result remains based on answer comparison.`,
-    variant: 'success',
-  })
-}
+onMounted(async () => {
+  if (!store.exams.length) {
+    await store.fetchExams().catch(() => {})
+  }
+})
 </script>

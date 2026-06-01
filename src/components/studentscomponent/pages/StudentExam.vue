@@ -1,310 +1,486 @@
 <template>
-  <div class="grid gap-6 lg:grid-cols-[1fr_320px]">
-    <div>
-      <div class="rounded-[20px] border border-slate-200 bg-white p-6">
-        <div class="flex items-start justify-between">
-          <div>
-            <h3 class="text-lg font-semibold text-slate-900">Question {{ currentIndex + 1 }} of {{ questions.length }}</h3>
-            <p class="mt-2 text-sm text-slate-500">{{ currentQuestion?.topic || '' }}</p>
-          </div>
-          <div class="text-sm text-slate-500">Time left: {{ timeLeftLabel }}</div>
+  <div class="min-h-screen bg-slate-50">
+    <!-- Timer bar (sticky) -->
+    <div
+      class="sticky top-0 z-30 border-b border-slate-200 bg-white px-4 py-3 shadow-sm"
+      :class="timerBarClass"
+    >
+      <div class="mx-auto flex max-w-5xl items-center justify-between">
+        <div class="flex items-center gap-3">
+          <span class="text-sm font-medium text-slate-700">{{ exam?.title || 'Exam' }}</span>
         </div>
-
-        <div class="mt-4">
-          <div class="rounded-lg bg-slate-50 p-4 text-slate-900">{{ currentQuestion?.content }}</div>
-
-          <div class="mt-4 space-y-3">
-            <label v-for="(opt, idx) in currentQuestion?.options || []" :key="idx" class="block rounded-lg border p-3">
-              <input type="radio" :name="currentQuestion.id" :value="opt" v-model="answers[currentQuestion.id]" @change="handleAnswerChange(currentQuestion.id, opt)" />
-              <span class="ml-3">{{ opt }}</span>
-            </label>
-          </div>
-        </div>
-
-        <div class="mt-6 flex items-center justify-between">
+        <div class="flex items-center gap-4">
           <div class="flex items-center gap-2">
-            <AppButton text="Previous" variant="ghost" :disabled="currentIndex === 0" @click="changeQuestion(-1)" />
-            <AppButton text="Mark for Review" variant="outline" @click="toggleMark()" />
-            <AppButton text="Clear Response" variant="ghost" @click="clearResponse()" />
+            <Clock class="h-4 w-4" :class="timerIconClass" />
+            <span
+              class="font-mono text-lg font-bold tabular-nums"
+              :class="timerTextClass"
+              :style="remaining <= 60 ? 'animation: pulse 1s infinite' : ''"
+            >
+              {{ timerLabel }}
+            </span>
           </div>
-          <div>
-            <AppButton text="Next" variant="primary" @click="changeQuestion(1)" />
-          </div>
+          <span class="text-xs text-slate-500">{{ answeredCount }}/{{ questions.length }} answered</span>
         </div>
       </div>
     </div>
 
-    <aside>
-      <div class="rounded-[20px] border border-slate-200 bg-white p-5">
-        <h4 class="font-semibold text-slate-900">Question Palette</h4>
-        <div class="mt-4 grid grid-cols-5 gap-2">
-          <button v-for="(q, idx) in questions" :key="q.id" class="h-10 w-10 rounded border" :class="paletteClass(q)" @click="goTo(idx)">{{ idx + 1 }}</button>
+    <!-- Main content -->
+    <div v-if="loading" class="flex items-center justify-center py-24">
+      <div class="text-center">
+        <div class="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-[#0B1F3A] border-t-transparent" />
+        <p class="mt-4 text-sm text-slate-500">Loading exam…</p>
+      </div>
+    </div>
+
+    <div v-else-if="error" class="mx-auto max-w-lg py-24 text-center">
+      <p class="text-lg font-semibold text-slate-900">{{ error }}</p>
+      <AppButton class="mt-4" text="Back to Dashboard" variant="primary" @click="goToDashboard" />
+    </div>
+
+    <div v-else-if="submitted" class="mx-auto max-w-lg py-24 text-center space-y-4">
+      <div class="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100">
+        <CheckCircle2 class="h-10 w-10 text-emerald-600" />
+      </div>
+      <h2 class="text-2xl font-bold text-slate-900">Exam Submitted!</h2>
+      <p class="text-slate-500">Your answers have been recorded. Results will be available once your teacher publishes them.</p>
+      <AppButton text="Back to Dashboard" variant="primary" @click="goToDashboard" />
+    </div>
+
+    <template v-else-if="questions.length">
+      <div class="mx-auto max-w-5xl px-4 py-6 grid gap-6 lg:grid-cols-[1fr_280px]">
+        <!-- Question card -->
+        <div class="space-y-4">
+          <div class="rounded-[20px] border border-slate-200 bg-white p-6 shadow-sm">
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                  Question {{ currentIndex + 1 }} of {{ questions.length }}
+                </p>
+                <div v-if="savedIndicator" class="mt-1 text-xs text-emerald-600 font-medium">✓ Saved</div>
+              </div>
+              <button
+                type="button"
+                class="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition"
+                :class="isFlagged(currentQuestion) ? 'bg-amber-100 text-amber-700 hover:bg-amber-200' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
+                @click="toggleFlag(currentQuestion)"
+              >
+                <Flag class="h-3.5 w-3.5" />
+                {{ isFlagged(currentQuestion) ? 'Flagged' : 'Flag' }}
+              </button>
+            </div>
+
+            <div class="mt-4 rounded-xl bg-slate-50 p-4">
+              <p class="text-base font-semibold leading-7 text-slate-900">{{ getQuestionText(currentQuestion) }}</p>
+            </div>
+
+            <div class="mt-5 space-y-3">
+              <label
+                v-for="(opt, idx) in getOptions(currentQuestion)"
+                :key="idx"
+                class="flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition"
+                :class="isSelected(currentQuestion, opt, idx)
+                  ? 'border-[#0B1F3A] bg-[#0B1F3A]/5'
+                  : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'"
+              >
+                <input
+                  type="radio"
+                  :name="`q-${getQId(currentQuestion)}`"
+                  :checked="isSelected(currentQuestion, opt, idx)"
+                  class="mt-0.5 h-4 w-4 cursor-pointer text-[#0B1F3A]"
+                  @change="selectAnswer(currentQuestion, opt, idx)"
+                />
+                <span class="text-sm leading-6 text-slate-900">
+                  <span class="font-semibold">{{ String.fromCharCode(65 + idx) }}.</span>
+                  {{ getOptionText(opt) }}
+                </span>
+              </label>
+            </div>
+
+            <!-- Navigation -->
+            <div class="mt-6 flex items-center justify-between">
+              <AppButton
+                text="Previous"
+                variant="ghost"
+                :disabled="currentIndex === 0"
+                @click="currentIndex--"
+              />
+              <AppButton
+                v-if="currentIndex < questions.length - 1"
+                text="Next"
+                variant="primary"
+                @click="currentIndex++"
+              />
+              <AppButton
+                v-else
+                text="Submit Exam"
+                variant="primary"
+                @click="confirmSubmit"
+              />
+            </div>
+          </div>
         </div>
 
-        <div class="mt-4 space-y-2 text-sm text-slate-600">
-          <div class="flex items-center gap-2"><span class="h-3 w-3 rounded bg-emerald-500"></span> Answered</div>
-          <div class="flex items-center gap-2"><span class="h-3 w-3 rounded bg-amber-400"></span> Marked</div>
-          <div class="flex items-center gap-2"><span class="h-3 w-3 rounded bg-slate-200 border"></span> Unanswered</div>
-        </div>
+        <!-- Navigation panel -->
+        <aside class="space-y-4">
+          <!-- Progress bar -->
+          <div class="rounded-[20px] border border-slate-200 bg-white p-5">
+            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Progress</p>
+            <div class="mt-3 h-2 overflow-hidden rounded-full bg-slate-100">
+              <div
+                class="h-2 rounded-full bg-[#0B1F3A] transition-all duration-300"
+                :style="{ width: `${progressPct}%` }"
+              />
+            </div>
+            <p class="mt-2 text-sm text-slate-600">{{ answeredCount }} of {{ questions.length }} answered</p>
+          </div>
 
-        <div class="mt-6">
-          <AppButton text="Submit" variant="primary" @click="submitExam" />
+          <!-- Navigation dots -->
+          <div class="rounded-[20px] border border-slate-200 bg-white p-5">
+            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Questions</p>
+            <div class="mt-3 flex flex-wrap gap-2">
+              <button
+                v-for="(q, idx) in questions"
+                :key="getQId(q, idx)"
+                type="button"
+                class="flex h-9 w-9 items-center justify-center rounded-lg border text-xs font-semibold transition"
+                :class="navDotClass(q, idx)"
+                @click="currentIndex = idx"
+              >
+                {{ idx + 1 }}
+              </button>
+            </div>
+            <div class="mt-4 grid grid-cols-2 gap-2 text-xs text-slate-500">
+              <div class="flex items-center gap-1.5"><span class="h-3 w-3 rounded bg-emerald-500" /> Answered</div>
+              <div class="flex items-center gap-1.5"><span class="h-3 w-3 rounded bg-amber-400" /> Flagged</div>
+              <div class="flex items-center gap-1.5"><span class="h-3 w-3 rounded border border-slate-300" /> Unanswered</div>
+              <div class="flex items-center gap-1.5"><span class="h-3 w-3 rounded bg-[#0B1F3A]" /> Current</div>
+            </div>
+
+            <AppButton
+              class="mt-4 w-full"
+              text="Submit Exam"
+              variant="primary"
+              @click="confirmSubmit"
+            />
+          </div>
+        </aside>
+      </div>
+    </template>
+
+    <!-- Submit confirmation dialog -->
+    <div v-if="showSubmitConfirm" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 px-4">
+      <div class="w-full max-w-md rounded-[28px] bg-white p-6 shadow-2xl">
+        <h2 class="text-xl font-semibold text-slate-900">Submit Exam?</h2>
+        <p class="mt-3 text-sm text-slate-500">
+          You have answered {{ answeredCount }} of {{ questions.length }} questions.
+          <span v-if="unansweredCount > 0" class="font-semibold text-amber-600">
+            {{ unansweredCount }} question(s) unanswered.
+          </span>
+          This action cannot be undone.
+        </p>
+        <div class="mt-6 flex gap-3 justify-end">
+          <AppButton text="Keep working" variant="ghost" @click="showSubmitConfirm = false" />
+          <AppButton text="Submit now" variant="primary" :processing="submitting" @click="submitExam" />
         </div>
       </div>
-    </aside>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
-import AppButton from '../../shared/AppButton.vue'
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { getQuestionBankForExam } from '../../teacherscomponent/data/mockTeacherData'
+import { CheckCircle2, Clock, Flag } from 'lucide-vue-next'
+import AppButton from '../../shared/AppButton.vue'
+import {
+  getStudentExamAttempt,
+  getStudentExamQuestions,
+  saveStudentAnswer,
+  getTimeRemaining,
+  flagQuestion,
+  submitStudentAttempt,
+} from '../services/api/studentExams'
 import { useSchoolAdminUiStore } from '../../schooladmincomponents/stores/ui'
-import { getStudentExamAttempt, getStudentExamQuestions, saveStudentAnswer, bulkSaveAnswers, getTimeRemaining, flagQuestion, submitStudentAttempt, getAttemptResult } from '../services/api/studentExams'
 
 const route = useRoute()
 const router = useRouter()
 const uiStore = useSchoolAdminUiStore()
 const examId = route.params.id
 
+// ── State ──────────────────────────────────────────────────────────────────
+
 const exam = ref(null)
 const questions = ref([])
 const currentIndex = ref(0)
-const answers = reactive({})
-const marked = reactive({})
 const attemptId = ref(null)
-
-const durationSeconds = ref(0)
-const remaining = ref(0)
+const answers = reactive({})   // { [questionId]: optionValue }
+const flagged = reactive({})   // { [questionId]: boolean }
 const loading = ref(true)
-const isSubmitting = ref(false)
-const savingAnswer = ref(false)
-let timer = null
-let autoSaveTimer = null
+const error = ref(null)
+const submitted = ref(false)
+const submitting = ref(false)
+const showSubmitConfirm = ref(false)
+const savedIndicator = ref(false)
 
-const normalizeAnswerKey = (item) => item.question_id || item.questionId || item.id
-const normalizeAnswerValue = (item) => item.answer ?? item.response ?? item.selected_option ?? item.value
+// ── Timer (backend is source of truth per spec) ───────────────────────────
 
-const setAnswersFromAttempt = (attemptAnswers = []) => {
-  attemptAnswers.forEach((item) => {
-    const questionId = normalizeAnswerKey(item)
-    if (!questionId) return
-    answers[questionId] = normalizeAnswerValue(item)
-  })
-}
+const remaining = ref(0)
+let timerEnd = 0
+let timerInterval = null
 
-const orderQuestions = (rawQuestions = [], order = []) => {
-  if (!Array.isArray(order) || !order.length) return rawQuestions
-  const lookup = Object.fromEntries(rawQuestions.map((question) => [String(question.id), question]))
-  return order.map((questionId) => lookup[String(questionId)]).filter(Boolean)
-}
-
-const loadExamAttempt = async () => {
-  loading.value = true
-  try {
-    const response = await getStudentExamAttempt(examId)
-    const attempt = response.attempt || response.data?.attempt || response
-    if (!attempt?.id && !attempt?.attempt_id) {
-      throw new Error('No active attempt is available for this exam.')
-    }
-
-    attemptId.value = attempt.id || attempt.attempt_id
-    exam.value = response.exam || attempt.exam || exam.value || {}
-    
-    // Try to get questions from the attempt response, otherwise fetch separately
-    let rawQuestions = response.questions || attempt.questions || []
-    if (!rawQuestions.length) {
-      try {
-        rawQuestions = await getStudentExamQuestions(examId)
-      } catch (e) {
-        // Fallback to mock data if API fails
-        if (exam.value.questions) {
-          rawQuestions = getQuestionBankForExam(exam.value.questions)
-        }
-      }
-    }
-    
-    questions.value = orderQuestions(rawQuestions, response.order || [])
-
-    setAnswersFromAttempt(attempt.answers || attempt.responses || [])
-    
-    // Try to get time remaining from API, otherwise use attempt data
-    try {
-      const timeResponse = await getTimeRemaining(attemptId.value)
-      durationSeconds.value = Number(timeResponse.remaining_seconds ?? timeResponse.time_remaining ?? attempt.remaining_seconds ?? attempt.duration_seconds ?? exam.value.duration * 60) || (exam.value.duration || 60) * 60
-    } catch (e) {
-      durationSeconds.value = Number(attempt.remaining_seconds ?? attempt.duration_seconds ?? exam.value.duration * 60) || (exam.value.duration || 60) * 60
-    }
-    
-    remaining.value = durationSeconds.value
-    startTimer()
-    startAutoSave()
-  } catch (error) {
-    uiStore.addToast({
-      title: 'Unable to resume exam',
-      message: error.message || 'Please return to your dashboard.',
-      variant: 'error',
-    })
-    router.push({ name: 'StudentDashboard' })
-  } finally {
-    loading.value = false
-  }
-}
-
-const startAutoSave = () => {
-  if (autoSaveTimer) clearInterval(autoSaveTimer)
-  // Auto-save every 30 seconds
-  autoSaveTimer = setInterval(() => {
-    bulkSaveAllAnswers()
-  }, 30000)
-}
-
-onMounted(loadExamAttempt)
-
-onUnmounted(() => {
-  if (timer) clearInterval(timer)
-  if (autoSaveTimer) clearInterval(autoSaveTimer)
-  // Final save before unmounting
-  bulkSaveAllAnswers()
+const timerLabel = computed(() => {
+  const secs = Math.max(0, Math.round(remaining.value))
+  const m = Math.floor(secs / 60)
+  const s = secs % 60
+  return `${m}:${String(s).padStart(2, '0')}`
 })
 
-const currentQuestion = computed(() => questions.value[currentIndex.value] || null)
+const timerBarClass = computed(() => {
+  if (remaining.value <= 60) return 'bg-rose-50 border-rose-200'
+  if (remaining.value <= 300) return 'bg-amber-50 border-amber-200'
+  return ''
+})
 
-const startTimer = () => {
-  if (timer) clearInterval(timer)
-  timer = setInterval(() => {
-    remaining.value -= 1
+const timerIconClass = computed(() => {
+  if (remaining.value <= 60) return 'text-rose-600'
+  if (remaining.value <= 300) return 'text-amber-600'
+  return 'text-slate-500'
+})
+
+const timerTextClass = computed(() => {
+  if (remaining.value <= 60) return 'text-rose-600'
+  if (remaining.value <= 300) return 'text-amber-600'
+  return 'text-slate-900'
+})
+
+const startTimer = (seconds) => {
+  timerEnd = Date.now() + seconds * 1000
+  remaining.value = seconds
+  clearInterval(timerInterval)
+  timerInterval = setInterval(() => {
+    const newRemaining = (timerEnd - Date.now()) / 1000
+    remaining.value = Math.max(0, newRemaining)
     if (remaining.value <= 0) {
-      clearInterval(timer)
-      submitExam()
+      clearInterval(timerInterval)
+      autoSubmit()
     }
   }, 1000)
 }
 
-const timeLeftLabel = computed(() => {
-  const mins = Math.floor(remaining.value / 60)
-  const secs = remaining.value % 60
-  return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
-})
-
-const changeQuestion = (delta) => {
-  const next = currentIndex.value + delta
-  if (next < 0 || next >= questions.value.length) return
-  currentIndex.value = next
+const resyncTimer = async () => {
+  if (!attemptId.value) return
+  try {
+    const data = await getTimeRemaining(attemptId.value)
+    const secs = data?.time_remaining_seconds ?? data?.remaining ?? data
+    if (typeof secs === 'number' && secs > 0) {
+      timerEnd = Date.now() + secs * 1000
+      remaining.value = secs
+    }
+  } catch {
+    // Non-critical — local timer continues
+  }
 }
 
-const goTo = (index) => {
-  currentIndex.value = index
+// Resync when tab becomes visible again (spec requirement)
+const onVisibilityChange = () => {
+  if (document.visibilityState === 'visible') {
+    resyncTimer()
+  }
 }
 
-const toggleMark = async () => {
-  const q = currentQuestion.value
-  if (!q) return
-  marked[q.id] = !marked[q.id]
-  
-  // Call the flagQuestion API if attemptId is available
-  if (attemptId.value && marked[q.id]) {
+// ── Computed ───────────────────────────────────────────────────────────────
+
+const currentQuestion = computed(() => questions.value[currentIndex.value] || null)
+
+const answeredCount = computed(() =>
+  Object.keys(answers).filter((k) => answers[k] !== undefined && answers[k] !== null).length,
+)
+
+const unansweredCount = computed(() => questions.value.length - answeredCount.value)
+
+const progressPct = computed(() =>
+  questions.value.length ? Math.round((answeredCount.value / questions.value.length) * 100) : 0,
+)
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+
+const getQId = (q, fallback = 0) => q?.id || q?.question_id || `q-${fallback}`
+
+const getQuestionText = (q) => {
+  const src = q?.question || q?.question_details || q
+  return src?.content || src?.question_text || src?.text || 'Untitled question'
+}
+
+const getOptions = (q) => {
+  const src = q?.question || q?.question_details || q
+  const opts = src?.options || src?.answers || src?.choices || []
+  return Array.isArray(opts) ? opts : []
+}
+
+const getOptionText = (opt) => {
+  if (typeof opt === 'string') return opt
+  return opt?.content || opt?.text || opt?.label || String(opt || '')
+}
+
+const getOptionValue = (opt, idx) => {
+  if (opt?.id) return opt.id
+  return `${idx}`
+}
+
+const isSelected = (q, opt, idx) => {
+  const qId = getQId(q)
+  const val = getOptionValue(opt, idx)
+  return answers[qId] === val
+}
+
+const isFlagged = (q) => !!flagged[getQId(q)]
+
+const navDotClass = (q, idx) => {
+  const qId = getQId(q, idx)
+  const isCurrent = idx === currentIndex.value
+  const isAnswered = answers[qId] !== undefined && answers[qId] !== null
+  const isFlag = flagged[qId]
+
+  if (isCurrent) return 'bg-[#0B1F3A] text-white border-[#0B1F3A]'
+  if (isFlag) return 'border-amber-400 bg-amber-50 text-amber-700'
+  if (isAnswered) return 'border-emerald-400 bg-emerald-50 text-emerald-700'
+  return 'border-slate-200 text-slate-600 hover:border-slate-400'
+}
+
+// ── Actions ────────────────────────────────────────────────────────────────
+
+const selectAnswer = async (q, opt, idx) => {
+  const qId = getQId(q)
+  const val = getOptionValue(opt, idx)
+  answers[qId] = val
+
+  // Auto-save — fire and forget (spec requirement)
+  if (attemptId.value) {
     try {
-      await flagQuestion(attemptId.value, q.id)
-    } catch (error) {
-      // Don't block UI if flag API fails
-      console.error('Failed to flag question:', error)
+      await saveStudentAnswer(attemptId.value, qId, {
+        selected_option_ids: [val],
+        time_spent_seconds: null,
+      })
+      savedIndicator.value = true
+      setTimeout(() => { savedIndicator.value = false }, 2000)
+    } catch {
+      // Non-blocking — answer saved locally, server-side check on submit
     }
   }
 }
 
-const clearResponse = () => {
-  const q = currentQuestion.value
+const toggleFlag = async (q) => {
   if (!q) return
-  delete answers[q.id]
-}
+  const qId = getQId(q)
+  flagged[qId] = !flagged[qId]
 
-const paletteClass = (q) => {
-  if (answers[q.id]) return 'border-0 bg-emerald-100'
-  if (marked[q.id]) return 'border-0 bg-amber-100'
-  return ''
-}
-
-const handleAnswerChange = async (questionId, value) => {
-  answers[questionId] = value
-  if (!questionId || !attemptId.value) return
-  savingAnswer.value = true
-  try {
-    await saveStudentAnswer(attemptId.value, questionId, { answer: value })
-  } catch (error) {
-    uiStore.addToast({ title: 'Save failed', message: error.message || 'Could not save your answer.', variant: 'error' })
-  } finally {
-    savingAnswer.value = false
+  if (attemptId.value) {
+    try {
+      await flagQuestion(attemptId.value, qId)
+    } catch {
+      // Non-critical
+    }
   }
 }
 
-const bulkSaveAllAnswers = async () => {
-  if (!attemptId.value || Object.keys(answers).length === 0) return
-  try {
-    const answersPayload = Object.entries(answers).map(([questionId, answer]) => ({
-      question_id: questionId,
-      answer: answer,
-    }))
-    await bulkSaveAnswers(attemptId.value, { answers: answersPayload })
-  } catch (error) {
-    console.error('Bulk save failed:', error)
-    // Don't show toast for bulk save failures to avoid annoying the user
-  }
+const confirmSubmit = () => {
+  showSubmitConfirm.value = true
 }
 
 const submitExam = async () => {
-  if (isSubmitting.value || !exam.value) return
-  isSubmitting.value = true
-  clearInterval(timer)
-
+  if (!attemptId.value || submitting.value) return
+  submitting.value = true
+  showSubmitConfirm.value = false
   try {
-    const currentAttemptId = attemptId.value || route.query.attemptId
-    if (!currentAttemptId) {
-      throw new Error('Unable to identify the exam attempt.')
-    }
-
-    // Bulk save all answers before submitting
-    await bulkSaveAllAnswers()
-
-    await submitStudentAttempt(currentAttemptId)
-    
-    // Try to fetch the result after submission
-    try {
-      const result = await getAttemptResult(currentAttemptId)
-      const score = result?.score || result?.result?.score || result?.total_score
-
-      uiStore.addToast({
-        title: 'Exam submitted',
-        message: score != null ? `Your exam has been submitted. Score: ${score}` : 'Your exam has been submitted successfully.',
-        variant: 'success',
-      })
-      
-      // Store result in localStorage or route to results page if needed
-      if (result) {
-        localStorage.setItem(`exam_result_${currentAttemptId}`, JSON.stringify(result))
-      }
-    } catch (e) {
-      // If result fetch fails, still show success message
-      uiStore.addToast({
-        title: 'Exam submitted',
-        message: 'Your exam has been submitted successfully.',
-        variant: 'success',
-      })
-    }
-    
-    router.push({ name: 'StudentDashboard' })
-  } catch (error) {
+    await submitStudentAttempt(attemptId.value)
+    clearInterval(timerInterval)
+    submitted.value = true
+  } catch (err) {
     uiStore.addToast({
-      title: 'Submission failed',
-      message: error.message || 'Could not submit your exam.',
+      title: 'Submit failed',
+      message: err.message || 'Could not submit. Please check your connection and try again.',
       variant: 'error',
     })
-  } finally {
-    isSubmitting.value = false
+    submitting.value = false
   }
 }
+
+const autoSubmit = async () => {
+  if (submitted.value || !attemptId.value) return
+  try {
+    await submitStudentAttempt(attemptId.value)
+    submitted.value = true
+  } catch {
+    // Backend will auto-submit on time expiry — show message
+    submitted.value = true
+  }
+}
+
+const goToDashboard = () => router.push({ name: 'StudentDashboard' })
+
+// ── Load ───────────────────────────────────────────────────────────────────
+
+onMounted(async () => {
+  loading.value = true
+  try {
+    // 1. Get or resume active attempt
+    let attempt
+    try {
+      attempt = await getStudentExamAttempt(examId)
+    } catch (err) {
+      if (err?.status === 404 || (err?.message || '').includes('404')) {
+        error.value = 'No active attempt found. Please go back to the dashboard and start the exam.'
+        return
+      }
+      throw err
+    }
+
+    if (!attempt?.id) {
+      error.value = 'Could not load your exam attempt.'
+      return
+    }
+
+    attemptId.value = attempt.id
+    exam.value = attempt
+
+    // 2. Load questions — spec: GET /api/student/exams/attempts/{attemptId}/questions
+    const qs = await getStudentExamQuestions(attempt.id)
+    questions.value = Array.isArray(qs) ? qs : (qs?.data || [])
+
+    // Restore saved answers from attempt data
+    if (attempt.answers && typeof attempt.answers === 'object') {
+      Object.entries(attempt.answers).forEach(([qId, val]) => {
+        answers[qId] = val
+      })
+    }
+
+    // 3. Start timer from backend's time_remaining_seconds (source of truth)
+    const timeRemaining =
+      attempt.time_remaining_seconds ??
+      attempt.timeRemainingSeconds ??
+      (attempt.duration_minutes || 60) * 60
+
+    startTimer(timeRemaining)
+  } catch (err) {
+    error.value = err.message || 'Failed to load the exam. Please try again.'
+  } finally {
+    loading.value = false
+  }
+
+  // Visibility resync (spec requirement)
+  document.addEventListener('visibilitychange', onVisibilityChange)
+})
+
+onUnmounted(() => {
+  clearInterval(timerInterval)
+  document.removeEventListener('visibilitychange', onVisibilityChange)
+})
 </script>
 
 <style scoped>
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
 </style>

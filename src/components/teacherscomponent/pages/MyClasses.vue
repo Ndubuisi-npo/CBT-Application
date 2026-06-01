@@ -75,8 +75,11 @@
 </template>
 
 <script setup>
+import { ref } from 'vue'
 import SectionCard from '../components/SectionCard.vue'
-import { classOverview, teacherStudents } from '../data/mockTeacherData'
+
+const classOverview = ref([])
+const teacherStudents = ref([])
 
 const statusClass = (status) => {
   const classes = {

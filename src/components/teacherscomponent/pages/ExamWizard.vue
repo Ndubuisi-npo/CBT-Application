@@ -38,39 +38,44 @@
                 </label>
                 <label class="wizard-field">
                   <span>Subject</span>
-                  <select v-model="wizard.subject" class="wizard-input">
+                  <select v-model="wizard.subject_id" class="wizard-input">
                     <option value="">Select subject</option>
-                    <option v-for="subject in subjects" :key="subject" :value="subject">{{ subject }}</option>
+                    <option v-for="s in subjects" :key="s.id" :value="s.id">{{ s.name }}</option>
                   </select>
                 </label>
                 <label class="wizard-field">
-                  <span>Class</span>
-                  <select v-model="wizard.className" class="wizard-input">
+                  <span>Class Level</span>
+                  <select v-model="wizard.class_level_id" class="wizard-input" @change="examsStore.fetchArms(wizard.class_level_id)">
                     <option value="">Select class</option>
-                    <option v-for="className in classNames" :key="className" :value="className">{{ className }}</option>
+                    <option v-for="c in classLevels" :key="c.id" :value="c.id">{{ c.name }}</option>
+                  </select>
+                </label>
+                <label class="wizard-field">
+                  <span>Class Arm (optional)</span>
+                  <select v-model="wizard.class_arm_id" class="wizard-input">
+                    <option value="">All arms</option>
+                    <option v-for="a in classArms" :key="a.id" :value="a.id">{{ a.name }}</option>
                   </select>
                 </label>
                 <div class="wizard-field">
                   <span>Exam Type</span>
-                  <div class="wizard-input flex items-center font-semibold text-slate-600">Multiple Choice</div>
+                  <select v-model="wizard.type" class="wizard-input">
+                    <option value="exam">Exam</option>
+                    <option value="test">Test</option>
+                  </select>
                 </div>
                 <label class="wizard-field">
-                  <span>Term</span>
-                  <select v-model="wizard.term" class="wizard-input">
-                    <option value="">Select term</option>
-                    <option>First Term</option>
-                    <option>Second Term</option>
-                    <option>Third Term</option>
+                  <span>Session</span>
+                  <select v-model="wizard.session_id" class="wizard-input" @change="examsStore.fetchTerms(wizard.session_id)">
+                    <option value="">Select session</option>
+                    <option v-for="s in sessions" :key="s.id" :value="s.id">{{ s.name }}</option>
                   </select>
                 </label>
                 <label class="wizard-field">
-                  <span>Assessment Purpose</span>
-                  <select v-model="wizard.purpose" class="wizard-input">
-                    <option value="">Select purpose</option>
-                    <option>Continuous Assessment</option>
-                    <option>Mid-Term</option>
-                    <option>Mock Revision</option>
-                    <option>Promotion Exam</option>
+                  <span>Term</span>
+                  <select v-model="wizard.term_id" class="wizard-input">
+                    <option value="">Select term</option>
+                    <option v-for="t in terms" :key="t.id" :value="t.id">{{ t.name }}</option>
                   </select>
                 </label>
               </div>
@@ -210,7 +215,11 @@
                   <div>
                     <p class="text-xs font-semibold uppercase tracking-[0.24em] text-[#D4AF37]">Exam Preview</p>
                     <h2 class="mt-3 text-3xl font-semibold">{{ wizard.title || 'Untitled exam draft' }}</h2>
-                    <p class="mt-2 text-sm text-slate-300">{{ wizard.subject || 'Subject' }} • {{ wizard.className || 'Class' }} • Multiple Choice</p>
+                    <p class="mt-2 text-sm text-slate-300">
+                      {{ subjects.find(s => s.id === wizard.subject_id)?.name || 'Subject' }}
+                      • {{ classLevels.find(c => c.id === wizard.class_level_id)?.name || 'Class' }}
+                      • {{ wizard.type === 'exam' ? 'Exam' : 'Test' }}
+                    </p>
                   </div>
                   <span class="rounded-full bg-white/10 px-4 py-2 text-sm font-semibold">{{ publishState }}</span>
                 </div>
@@ -362,16 +371,17 @@
 </template>
 
 <script setup>
-import { computed, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { X } from 'lucide-vue-next'
 import AppButton from '../../shared/AppButton.vue'
 import { useSchoolAdminUiStore } from '../../schooladmincomponents/stores/ui'
 import SectionCard from '../components/SectionCard.vue'
-import { cloneMock, questionBank, questionTopics, teacherProfile } from '../data/mockTeacherData'
+import { useTeacherExamsStore } from '../stores/exams'
 
-const router = useRouter()
-const uiStore = useSchoolAdminUiStore()
+const router   = useRouter()
+const uiStore  = useSchoolAdminUiStore()
+const examsStore = useTeacherExamsStore()
 
 const steps = [
   { id: 1, short: 'Step 1', title: 'Basic Information', description: 'Set the what, who, and why of the exam.' },
@@ -380,177 +390,236 @@ const steps = [
   { id: 4, short: 'Step 4', title: 'Review & Publish', description: 'Confirm everything before students see it.' },
 ]
 
-const subjects = [...new Set(teacherProfile.assignedSubjects)]
-const classNames = [...new Set(teacherProfile.assignedClasses)]
+// Reference data — loaded from API; fallback to empty arrays
+const subjects   = computed(() => examsStore.subjects.map((s) => ({ id: s.id, name: s.name || s.title || s.code })))
+const classLevels = computed(() => examsStore.classLevels)
+const classArms   = computed(() => examsStore.classArms)
+const sessions    = computed(() => examsStore.sessions)
+const terms       = computed(() => examsStore.terms)
+const questionTopics = computed(() => [...new Set(questionOptions.value.map((q) => q.topic).filter(Boolean))])
+
 const publishOptions = [
-  { state: 'Draft', label: 'Keep as draft', description: 'Return later to finish scheduling or moderation changes.', badgeClass: 'bg-slate-100 text-slate-700' },
-  { state: 'Scheduled', label: 'Schedule for later', description: 'Lock settings now and release to students at the chosen start time.', badgeClass: 'bg-blue-100 text-blue-700' },
-  { state: 'Published', label: 'Publish immediately', description: 'Make this exam available now for assigned students.', badgeClass: 'bg-emerald-100 text-emerald-700' },
+  { state: 'Draft', label: 'Save as draft', description: 'Save now and launch from the Exams page when ready.', badgeClass: 'bg-slate-100 text-slate-700' },
 ]
 
-const currentStep = ref(1)
-const questionSearch = ref('')
+const currentStep      = ref(1)
+const questionSearch   = ref('')
 const showPublishModal = ref(false)
-const autosaveLabel = ref('Saved just now')
+const autosaveLabel    = ref('Not saved yet')
+const saving           = ref(false)
+const createdExamId    = ref(null)
 
-const questionFilters = reactive({
-  topic: '',
-})
+const questionFilters = reactive({ topic: '' })
 
 const wizard = reactive({
   title: '',
-  subject: '',
-  className: '',
-  type: 'Multiple Choice',
-  term: '',
+  subject_id: '',
+  class_level_id: '',
+  class_arm_id: '',
+  term_id: '',
+  session_id: '',
+  type: 'exam',
   purpose: '',
   instructions: '',
   selectedQuestionIds: [],
   questionMarks: {},
   duration: 60,
   passMark: 50,
-  startTime: '2026-05-15T09:00',
-  endTime: '2026-05-15T10:00',
+  startTime: '',
+  endTime: '',
   randomizeQuestions: true,
   randomizeOptions: true,
   allowReview: false,
   showResultsInstantly: false,
-  fullscreenMode: true,
-  tabSwitchWarnings: true,
-  captureDisconnects: true,
-  webcamPrompt: false,
   status: 'Draft',
+  // UI helpers
+  subject: '',   // display name
+  className: '', // display name
+  term: '',      // display name
 })
 
-const questionOptions = ref(cloneMock(questionBank.filter(question => 
-  teacherProfile.assignedSubjects.includes(question.subject) && 
-  teacherProfile.assignedClasses.includes(question.className)
-)))
+// Question bank from API
+const questionOptions  = computed(() => examsStore.questionBank)
 
 const selectedQuestions = computed(() =>
   wizard.selectedQuestionIds
-    .map((id) => questionOptions.value.find((question) => question.id === id))
-    .filter(Boolean),
+    .map((id) => questionOptions.value.find((q) => String(q.id) === String(id)))
+    .filter(Boolean)
 )
 
 const filteredQuestionOptions = computed(() =>
-  questionOptions.value.filter((question) => {
-    const matchesSubject = !wizard.subject || question.subject === wizard.subject
-    const matchesClass = !wizard.className || question.className === wizard.className
-    const matchesSearch = !questionSearch.value || question.content.toLowerCase().includes(questionSearch.value.toLowerCase())
-    const matchesTopic = !questionFilters.topic || question.topic === questionFilters.topic
-    return matchesSubject && matchesClass && matchesSearch && matchesTopic
-  }),
+  questionOptions.value.filter((q) => {
+    const matchesSearch = !questionSearch.value || (q.content || '').toLowerCase().includes(questionSearch.value.toLowerCase())
+    const matchesTopic  = !questionFilters.topic || q.topic === questionFilters.topic
+    return matchesSearch && matchesTopic
+  })
 )
 
 const totalMarks = computed(() =>
-  selectedQuestions.value.reduce((sum, question) => sum + Number(wizard.questionMarks[question.id] || question.marks || 0), 0),
+  selectedQuestions.value.reduce((sum, q) => sum + Number(wizard.questionMarks[q.id] || q.default_marks || q.marks || 0), 0)
 )
 
-const currentStepLabel = computed(() => steps.find((step) => step.id === currentStep.value)?.title || '')
-const publishState = computed(() => wizard.status)
-const scheduleSummary = computed(() => {
+const currentStepLabel = computed(() => steps.find((s) => s.id === currentStep.value)?.title || '')
+const publishState     = computed(() => wizard.status)
+const scheduleSummary  = computed(() => {
   if (!wizard.startTime || !wizard.endTime) return 'Start and end time not fully set'
   return `${wizard.startTime.replace('T', ' ')} to ${wizard.endTime.replace('T', ' ')}`
 })
 
 const validationChecklist = computed(() => [
-  { label: 'Basic exam information complete', help: 'Title, subject, class, term, and purpose should be selected.', valid: Boolean(wizard.title && wizard.subject && wizard.className && wizard.term && wizard.purpose) },
-  { label: 'Question paper prepared', help: 'At least one objective question is needed before review.', valid: selectedQuestions.value.length > 0 },
-  { label: 'Scheduling and scoring configured', help: 'Duration, pass mark, and start/end time should be valid.', valid: Boolean(wizard.duration >= 10 && wizard.passMark >= 1 && wizard.passMark <= 100 && wizard.startTime && wizard.endTime) },
+  {
+    label: 'Basic exam information complete',
+    help:  'Title, subject, class level, and term should be selected.',
+    valid: Boolean(wizard.title && wizard.subject_id && wizard.class_level_id && wizard.term_id),
+  },
+  {
+    label: 'Question paper prepared',
+    help:  'At least one question is needed.',
+    valid: selectedQuestions.value.length > 0,
+  },
+  {
+    label: 'Scheduling and scoring configured',
+    help:  'Duration and pass mark should be valid.',
+    valid: wizard.duration >= 1 && wizard.passMark >= 0,
+  },
 ])
 
 const studentToggles = [
-  { key: 'randomizeQuestions', label: 'Randomize questions', help: 'Shuffle question order per student session.' },
-  { key: 'randomizeOptions', label: 'Randomize options', help: 'Reduce answer-pattern copying in objective sections.' },
-  { key: 'allowReview', label: 'Allow review before submission', help: 'Students can return to earlier questions before final submit.' },
-  { key: 'showResultsInstantly', label: 'Show results instantly', help: 'Release objective scores immediately after submission where appropriate.' },
+  { key: 'randomizeQuestions',  label: 'Randomize questions',              help: 'Shuffle question order per student session.' },
+  { key: 'randomizeOptions',    label: 'Randomize options',                help: 'Reduce answer-pattern copying.' },
+  { key: 'allowReview',         label: 'Allow review before submission',   help: 'Students can return to earlier questions.' },
+  { key: 'showResultsInstantly',label: 'Show results instantly',           help: 'Release scores immediately after submission.' },
 ]
-const isSelected = (id) => wizard.selectedQuestionIds.includes(id)
+
+const isSelected = (id) => wizard.selectedQuestionIds.includes(String(id))
 
 const toggleQuestion = (question) => {
-  if (isSelected(question.id)) {
-    wizard.selectedQuestionIds = wizard.selectedQuestionIds.filter((item) => item !== question.id)
-    delete wizard.questionMarks[question.id]
+  const sid = String(question.id)
+  if (isSelected(sid)) {
+    wizard.selectedQuestionIds = wizard.selectedQuestionIds.filter((i) => i !== sid)
+    delete wizard.questionMarks[sid]
   } else {
-    wizard.selectedQuestionIds.push(question.id)
-    wizard.questionMarks[question.id] = question.marks
+    wizard.selectedQuestionIds.push(sid)
+    wizard.questionMarks[sid] = question.default_marks ?? question.marks ?? 1
   }
-  autosaveLabel.value = 'Draft updated just now'
+  autosaveLabel.value = 'Unsaved changes'
 }
 
 const moveQuestion = (index, direction) => {
-  const nextIndex = index + direction
-  if (nextIndex < 0 || nextIndex >= wizard.selectedQuestionIds.length) return
-  const updated = [...wizard.selectedQuestionIds]
-  const [item] = updated.splice(index, 1)
-  updated.splice(nextIndex, 0, item)
-  wizard.selectedQuestionIds = updated
+  const next = index + direction
+  if (next < 0 || next >= wizard.selectedQuestionIds.length) return
+  const arr = [...wizard.selectedQuestionIds]
+  ;[arr[index], arr[next]] = [arr[next], arr[index]]
+  wizard.selectedQuestionIds = arr
 }
 
 const resetQuestionSelection = () => {
   wizard.selectedQuestionIds = []
-  wizard.questionMarks = {}
+  wizard.questionMarks       = {}
 }
 
 const validateStep = () => {
-  const [basicReady, questionReady, settingsReady] = validationChecklist.value.map((item) => item.valid)
-  const currentMap = {
-    1: basicReady,
-    2: questionReady,
-    3: settingsReady,
-    4: true,
+  const [basicReady, questionReady, settingsReady] = validationChecklist.value.map((i) => i.valid)
+  const map = { 1: basicReady, 2: questionReady, 3: settingsReady, 4: true }
+  if (!map[currentStep.value]) {
+    uiStore.addToast({ title: 'Complete the current step', message: 'Some required fields are missing.', variant: 'error' })
   }
-  if (!currentMap[currentStep.value]) {
-    uiStore.addToast({
-      title: 'Complete the current step',
-      message: 'Some required fields are still missing. Review the validation panel before moving on.',
-      variant: 'error',
-    })
-  }
-  return currentMap[currentStep.value]
+  return map[currentStep.value]
 }
 
 const nextStep = () => {
-  if (validateStep() && currentStep.value < 4) {
-    currentStep.value += 1
-  }
+  if (validateStep() && currentStep.value < 4) currentStep.value += 1
 }
 
 const jumpToStep = (step) => {
-  if (step <= currentStep.value || validateStep()) {
-    currentStep.value = step
+  if (step <= currentStep.value || validateStep()) currentStep.value = step
+}
+
+// ── API save / submit ─────────────────────────────────────────────────────────
+
+const buildPayload = () => ({
+  title:            wizard.title,
+  subject_id:       wizard.subject_id,
+  class_level_id:   wizard.class_level_id,
+  class_arm_id:     wizard.class_arm_id || null,
+  term_id:          wizard.term_id,
+  type:             wizard.type,
+  duration_minutes: wizard.duration,
+  pass_mark:        wizard.passMark,
+})
+
+const saveDraft = async () => {
+  if (!wizard.title) {
+    uiStore.addToast({ title: 'Title required', message: 'Add a title before saving.', variant: 'error' })
+    return
+  }
+  saving.value = true
+  try {
+    if (createdExamId.value) {
+      await examsStore.updateExam(createdExamId.value, buildPayload())
+    } else {
+      const record = await examsStore.createExam(buildPayload())
+      createdExamId.value = record.id
+      // Add selected questions
+      await addQuestionsToExam(record.id)
+    }
+    autosaveLabel.value = 'Saved just now'
+    uiStore.addToast({ title: 'Draft saved', message: 'Exam saved as draft.', variant: 'success' })
+  } catch (err) {
+    uiStore.addToast({ title: 'Save failed', message: err.message, variant: 'error' })
+  } finally {
+    saving.value = false
   }
 }
 
-const saveDraft = () => {
-  wizard.status = 'Draft'
-  autosaveLabel.value = 'Saved just now'
-  uiStore.addToast({
-    title: 'Draft saved',
-    message: 'Your objective exam setup is now stored as a draft mock state.',
-    variant: 'success',
-  })
+const addQuestionsToExam = async (examId) => {
+  for (let i = 0; i < wizard.selectedQuestionIds.length; i++) {
+    const qId = wizard.selectedQuestionIds[i]
+    const marks = wizard.questionMarks[qId] ?? 1
+    await examsStore.addQuestion(examId, { question_id: qId, marks, order: i + 1 }).catch(() => {})
+  }
 }
 
 const openPublishDialog = () => {
-  if (!validationChecklist.value.every((item) => item.valid)) {
+  if (!validationChecklist.value.every((i) => i.valid)) {
     validateStep()
     return
   }
   showPublishModal.value = true
 }
 
-const publishExam = (state) => {
-  wizard.status = state
+const publishExam = async (state) => {
   showPublishModal.value = false
-  uiStore.addToast({
-    title: `Exam ${state.toLowerCase()}`,
-    message: state === 'Published' ? 'Students can now access this exam and their answers will be auto-scored.' : state === 'Scheduled' ? 'The exam has been scheduled successfully.' : 'The exam remains in draft for later edits.',
-    variant: 'success',
-  })
-  router.push('/teachers/exams')
+  saving.value = true
+  try {
+    let examId = createdExamId.value
+    if (!examId) {
+      const record = await examsStore.createExam(buildPayload())
+      examId = record.id
+      createdExamId.value = examId
+      await addQuestionsToExam(examId)
+    }
+    // Admin-review workflow removed — teacher saves directly as draft
+    autosaveLabel.value = 'Saved'
+    uiStore.addToast({
+      title: 'Exam saved as draft',
+      message: 'Your exam is ready. Go to Exams to launch it.',
+      variant: 'success',
+    })
+    router.push('/teachers/exams')
+  } catch (err) {
+    uiStore.addToast({ title: 'Error', message: err.message, variant: 'error' })
+  } finally {
+    saving.value = false
+  }
 }
+
+// ── Lifecycle ─────────────────────────────────────────────────────────────────
+
+onMounted(async () => {
+  await examsStore.fetchRefData()
+  await examsStore.fetchQuestionBank().catch(() => {})
+})
 </script>
 
 <style scoped>
