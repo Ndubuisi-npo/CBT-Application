@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-6">
     <!-- Exam selector -->
-    <SectionCard title="Grading" subtitle="Review auto-graded submissions and publish results.">
+    <SectionCard title="Results Review" subtitle="Review auto-graded submissions after an exam ends.">
       <template #header>
         <select
           v-model="selectedExamId"
@@ -70,19 +70,6 @@
           </table>
         </div>
 
-        <!-- Publish button -->
-        <div class="flex justify-end pt-2">
-          <AppButton
-            v-if="selectedExam?.status === 'completed'"
-            text="Publish Results"
-            variant="primary"
-            :processing="publishing"
-            @click="publishResults"
-          />
-          <span v-else-if="selectedExam?.status === 'published'" class="text-sm text-emerald-600 font-semibold">
-            ✓ Results published — students can now view their scores.
-          </span>
-        </div>
       </div>
     </SectionCard>
   </div>
@@ -90,7 +77,6 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
-import AppButton from '../../shared/AppButton.vue'
 import SectionCard from '../components/SectionCard.vue'
 import { useTeacherExamsStore } from '../stores/exams'
 import { useSchoolAdminUiStore } from '../../schooladmincomponents/stores/ui'
@@ -102,10 +88,9 @@ const ui    = useSchoolAdminUiStore()
 const selectedExamId  = ref('')
 const attempts        = ref([])
 const loadingAttempts = ref(false)
-const publishing      = ref(false)
 
 const gradableExams = computed(() =>
-  store.exams.filter((e) => ['grading', 'completed', 'published'].includes(e.status))
+  store.exams.filter((e) => ['concluded', 'grading', 'completed'].includes((e.status || '').toLowerCase()))
 )
 
 const selectedExam = computed(() =>
@@ -136,18 +121,6 @@ const loadAttempts = async () => {
     attempts.value = []
   } finally {
     loadingAttempts.value = false
-  }
-}
-
-const publishResults = async () => {
-  publishing.value = true
-  try {
-    await store.performLifecycleAction(selectedExamId.value, 'publish')
-    ui.addToast({ title: 'Published', message: 'Results are now visible to students.', variant: 'success' })
-  } catch (err) {
-    ui.addToast({ title: 'Error', message: err.message, variant: 'error' })
-  } finally {
-    publishing.value = false
   }
 }
 

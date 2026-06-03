@@ -15,6 +15,7 @@ const origin = normalizeOrigin(import.meta.env.VITE_API_BASE_URL)
 export const API_BASE_URL = origin
 
 let authToken = ''
+const DEFAULT_TIMEOUT_MS = 30000
 
 // Initialize from localStorage on module load
 export function initializeApiState() {
@@ -87,11 +88,27 @@ export async function apiFetch(path, options = {}) {
     headers['X-Tenant'] = tenantHandle
   }
 
-  const { params: _params, ...fetchOptions } = options
-  const response = await fetch(`${baseUrl}${fullPath}`, {
-    ...fetchOptions,
-    headers,
-  })
+  const { params: _params, timeoutMs = DEFAULT_TIMEOUT_MS, ...fetchOptions } = options
+  const controller = new AbortController()
+  const timeoutId = timeoutMs
+    ? setTimeout(() => controller.abort(), timeoutMs)
+    : null
+
+  let response
+  try {
+    response = await fetch(`${baseUrl}${fullPath}`, {
+      ...fetchOptions,
+      headers,
+      signal: fetchOptions.signal || controller.signal,
+    })
+  } catch (error) {
+    if (error?.name === 'AbortError') {
+      throw new Error('The server is taking too long to respond. Please try again shortly.')
+    }
+    throw error
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId)
+  }
 
   // Auto-logout on 401
   if (response.status === 401) {
@@ -110,6 +127,18 @@ export async function apiFetch(path, options = {}) {
     const error = new Error(extractErrorMessage(data))
     error.status = response.status
     error.data = data
+    if (
+      response.status === 403 &&
+      /^\/api\/(?:questions|exams)(?:\/|$)/.test(path) &&
+      typeof window !== 'undefined'
+    ) {
+      window.dispatchEvent(new CustomEvent('cbt:authorization-forbidden', {
+        detail: {
+          message: 'You are not authorized to modify content for this class level or subject.',
+          path,
+        },
+      }))
+    }
     throw error
   }
 

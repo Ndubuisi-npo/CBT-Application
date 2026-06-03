@@ -232,6 +232,7 @@ const authData = await unifiedLogin(form)
     window.location.href = fullRedirectUrl
   } catch (error) {
     errors.general = error.message || 'Unable to sign in.'
+    isLoading.value = false
 
     uiStore.addToast({
       title: 'Login failed',

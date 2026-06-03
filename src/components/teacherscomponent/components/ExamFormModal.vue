@@ -124,6 +124,7 @@
 import { onMounted, reactive, ref, computed } from 'vue'
 import AppButton from '../../shared/AppButton.vue'
 import { useTeacherExamsStore } from '../stores/exams'
+import { getAuthUser } from '../../../js/lib/auth'
 
 const props = defineProps({
   exam: { type: Object, default: null },
@@ -136,6 +137,7 @@ const error = ref(null)
 const selectedSession = ref('')
 
 const isEditing = computed(() => !!props.exam?.id)
+const teacherClassLevel = computed(() => getAuthUser()?.teacher_profile?.class_level || null)
 
 const form = reactive({
   title: '',
@@ -183,13 +185,23 @@ onMounted(async () => {
       pass_mark: props.exam.pass_mark ?? props.exam.passMark ?? 50,
       instructions: props.exam.instructions || '',
     })
+  } else if (teacherClassLevel.value?.id) {
+    form.class_level_id = teacherClassLevel.value.id
+    await Promise.all([
+      store.loadClassArms(form.class_level_id),
+      store.loadSubjectsForClassLevel(form.class_level_id),
+    ])
   }
 })
 
 const onClassLevelChange = async () => {
   form.class_arm_id = null
+  form.subject_id = ''
   if (form.class_level_id) {
-    await store.loadClassArms(form.class_level_id)
+    await Promise.all([
+      store.loadClassArms(form.class_level_id),
+      store.loadSubjectsForClassLevel(form.class_level_id),
+    ])
   }
 }
 

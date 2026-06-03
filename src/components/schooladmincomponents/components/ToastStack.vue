@@ -29,16 +29,23 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { onBeforeUnmount, onMounted } from 'vue'
 import { CircleAlert, CircleCheckBig, X } from 'lucide-vue-next'
 import AppButton from '../../shared/AppButton.vue'
 import { useSchoolAdminUiStore } from '../stores/ui'
 
 const uiStore = useSchoolAdminUiStore()
 
-const removeToast = (id) => {
-  uiStore.removeToast(id)
+const handleForbidden = (event) => {
+  uiStore.addToast({
+    title: 'Not authorized',
+    message: event.detail?.message || 'You are not authorized to modify content for this class level or subject.',
+    variant: 'error',
+  })
 }
+
+onMounted(() => window.addEventListener('cbt:authorization-forbidden', handleForbidden))
+onBeforeUnmount(() => window.removeEventListener('cbt:authorization-forbidden', handleForbidden))
 </script>
 
 <style scoped>

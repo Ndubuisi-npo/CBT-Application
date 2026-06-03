@@ -18,48 +18,22 @@ export async function getQuestion(id) {
 
 export async function createQuestion(payload) {
   try {
-    // Normalize/validate payload according to API contract
     const body = {}
 
-    // class_level_id (required)
     body.class_level_id = payload.class_level_id || payload.className || payload.class || ''
     if (!body.class_level_id) throw new Error('class_level_id is required')
 
-    // content (required)
     body.content = (payload.content || payload.question_text || '').trim()
     if (!body.content) throw new Error('content is required')
 
-    // default_marks (required)
-    body.default_marks = Number(payload.default_marks ?? payload.marks ?? payload.points ?? 0)
-    if (Number.isNaN(body.default_marks) || body.default_marks < 0.5 || body.default_marks > 100) {
-      throw new Error('default_marks must be a number between 0.5 and 100')
-    }
+    body.type = payload.type || 'Multiple Choice'
 
-    // options (required) - expect array of objects { content, is_correct, label?, order? }
-    if (Array.isArray(payload.options)) {
-      if (payload.options.length < 2) throw new Error('options must have at least 2 items')
-      body.options = payload.options.map((opt, idx) => {
-        if (typeof opt === 'string') {
-          // backward compatibility: convert string to object
-          return { content: String(opt), is_correct: false, label: null, order: idx + 1 }
-        }
-
-        const content = String(opt.content || opt.text || '').trim()
-        if (!content) throw new Error('each option must have content')
-
-        const is_correct = Boolean(opt.is_correct === true || opt.is_correct === 'true')
-
-        const label = opt.label != null ? String(opt.label).slice(0, 10) : null
-
-        const order = Number.isFinite(opt.order) ? Number(opt.order) : idx + 1
-
-        return { content, is_correct, label, order }
-      })
-    }
-
-    // optional fields
     if (payload.subject_id) body.subject_id = payload.subject_id
     else if (payload.subject) body.subject_id = payload.subject
+
+    if (payload.default_marks !== undefined || payload.marks !== undefined || payload.points !== undefined) {
+      body.default_marks = Number(payload.default_marks ?? payload.marks ?? payload.points)
+    }
 
     if (payload.image_url) body.image_url = payload.image_url
 

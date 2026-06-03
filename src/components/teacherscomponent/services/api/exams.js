@@ -1,11 +1,8 @@
 /**
  * Teacher Exam API Service
  *
- * REFACTOR: Removed all admin-approval workflow endpoints.
- * - Removed: submit-for-review, reject, activate, scheduled state
- * - Removed: admin scheduling endpoints
- * - Added: activate (draft → active), startSession, endSession, lock/unlock, publish
- * Teacher owns the full lifecycle: draft → active → grading → published
+ * Teacher Exam API Service
+ * Lifecycle: draft → live → concluded.
  */
 import { apiFetch, extractErrorMessage } from '../../../../js/lib/api'
 
@@ -57,45 +54,21 @@ export async function deleteExam(id) {
   }
 }
 
-// ─── LIFECYCLE ACTIONS (Teacher-owned, no admin involvement) ─────────────────
+// ─── LIFECYCLE ACTIONS ───────────────────────────────────────────────────────
 
-/**
- * draft → active
- * Teacher activates their own exam. No admin approval required.
- * Body: { session_duration_minutes: int }
- */
-export async function activateExam(id, payload = {}) {
+export async function startSession(id) {
   try {
-    return await apiFetch(`/api/exams/${id}/activate`, {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    })
+    return await apiFetch(`/api/exams/${id}/start-session`, { method: 'POST' })
   } catch (error) {
-    throw new Error(extractErrorMessage(error, 'Unable to activate exam.'))
+    throw new Error(extractErrorMessage(error, 'Unable to start exam session.'))
   }
 }
 
-/**
- * active → grading
- * Teacher ends the exam session. Auto-submits all active student attempts.
- */
 export async function endSession(id) {
   try {
     return await apiFetch(`/api/exams/${id}/end-session`, { method: 'POST' })
   } catch (error) {
     throw new Error(extractErrorMessage(error, 'Unable to end exam session.'))
-  }
-}
-
-/**
- * grading / completed → published
- * Teacher publishes results so students can see them.
- */
-export async function publishExam(id) {
-  try {
-    return await apiFetch(`/api/exams/${id}/publish`, { method: 'POST' })
-  } catch (error) {
-    throw new Error(extractErrorMessage(error, 'Unable to publish exam.'))
   }
 }
 
@@ -238,9 +211,9 @@ export async function getAttemptResult(attemptId) {
 
 // ─── METADATA (kept for teacher use) ─────────────────────────────────────────
 
-export async function getSubjects() {
+export async function getSubjects(params = {}) {
   try {
-    return await apiFetch('/api/subjects')
+    return await apiFetch('/api/subjects', { params })
   } catch (error) {
     throw new Error(extractErrorMessage(error, 'Unable to fetch subjects.'))
   }

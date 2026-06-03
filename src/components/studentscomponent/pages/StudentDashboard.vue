@@ -190,17 +190,8 @@ const resumeExam = (exam) => {
   router.push({ name: 'StudentExam', params: { id: exam.id } })
 }
 
-// ── Polling (spec requirement: poll every 2s for exam availability) ──────────
-
 onMounted(async () => {
   await loadExams()
   await loadResults()
-  // Poll for exam availability — spec says every 2s while waiting for teacher to launch
-  // We use 5s since we now also check attempts per exam (reduces API load)
-  pollTimer = setInterval(loadExams, 5000)
-})
-
-onUnmounted(() => {
-  clearInterval(pollTimer)
 })
 </script>

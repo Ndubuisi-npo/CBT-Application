@@ -1,15 +1,7 @@
 /**
  * Teacher Exams Store (Pinia)
  *
- * REFACTOR: Complete lifecycle ownership by teacher.
- * REMOVED states: submitted, pending_approval, scheduled_by_admin, approved
- * NEW states: draft | active | grading | published | locked
- * REMOVED actions: submitForReview, adminActivate, adminReject
- * NEW actions: activateExam (draft→active), endSession (active→grading),
- *              publishExam (grading→published), lockExam, unlockExam
- *
- * The store mirrors the backend state machine exactly.
- * Action buttons are derived from VALID_TRANSITIONS map.
+ * Lifecycle: draft → live → concluded.
  */
 import { defineStore } from 'pinia'
 import {
@@ -18,11 +10,8 @@ import {
   createExam,
   updateExam,
   deleteExam,
-  activateExam,
   endSession,
-  publishExam,
-  lockExam,
-  unlockExam,
+  startSession,
   getExamQuestions,
   addQuestionToExam,
   removeQuestionFromExam,
@@ -45,95 +34,55 @@ import {
 // Invalid transitions are HIDDEN (not just disabled) in the UI.
 export const EXAM_STATUSES = {
   DRAFT: 'draft',
-  ACTIVE: 'active',
-  GRADING: 'grading',
-  PUBLISHED: 'published',
-  LOCKED: 'locked',
+  LIVE: 'live',
+  CONCLUDED: 'concluded',
 }
 
 export const VALID_TRANSITIONS = {
   draft: [
     {
-      action: 'activate',
-      label: 'Launch Exam',
+      action: 'start-session',
+      label: 'Start Exam',
       variant: 'primary',
       confirm: false,
-      description: 'Make exam live so students can take it.',
-    },
-    {
-      action: 'lock',
-      label: 'Lock',
-      variant: 'outline',
-      confirm: true,
-      description: 'Freeze exam — no edits or transitions until unlocked.',
+      description: 'Make this exam live for students.',
     },
   ],
-  active: [
+  live: [
     {
-      action: 'endSession',
+      action: 'end-session',
       label: 'End Session',
       variant: 'danger',
       confirm: true,
-      description: 'End the live exam session. All remaining attempts will be force-submitted.',
-    },
-    {
-      action: 'lock',
-      label: 'Lock (Emergency)',
-      variant: 'outline',
-      confirm: true,
-      description: 'Freeze the active exam immediately.',
+      description: 'End this live exam and trigger auto-grading.',
     },
   ],
-  grading: [
+  concluded: [],
+  active: [
     {
-      action: 'publish',
-      label: 'Publish Results',
-      variant: 'primary',
-      confirm: false,
-      description: 'Release results so students can view their scores.',
-    },
-    {
-      action: 'lock',
-      label: 'Lock',
-      variant: 'outline',
+      action: 'end-session',
+      label: 'End Session',
+      variant: 'danger',
       confirm: true,
-      description: 'Freeze exam.',
-    },
-  ],
-  published: [
-    {
-      action: 'lock',
-      label: 'Lock',
-      variant: 'outline',
-      confirm: true,
-      description: 'Freeze exam.',
-    },
-  ],
-  locked: [
-    {
-      action: 'unlock',
-      label: 'Unlock (revert to Draft)',
-      variant: 'secondary',
-      confirm: true,
-      description: 'Unfreeze exam and return it to Draft status.',
+      description: 'End this live exam and trigger auto-grading.',
     },
   ],
 }
 
 export const STATUS_LABELS = {
   draft: 'Draft',
+  live: 'Live',
   active: 'Live',
-  grading: 'Grading',
-  published: 'Published',
-  locked: 'Locked',
+  concluded: 'Concluded',
+  grading: 'Concluded',
 }
 
 export const STATUS_CLASSES = {
   draft: 'bg-slate-100 text-slate-700',
+  live: 'bg-emerald-100 text-emerald-700',
   active: 'bg-emerald-100 text-emerald-700',
-  grading: 'bg-amber-100 text-amber-700',
-  published: 'bg-blue-100 text-blue-700',
-  locked: 'bg-rose-100 text-rose-700',
+  concluded: 'bg-slate-200 text-slate-700',
+  grading: 'bg-slate-200 text-slate-700',
 }
 
 // ─── Store ────────────────────────────────────────────────────────────────────
@@ -206,7 +155,7 @@ export const useTeacherExamsStore = defineStore('teacher-exams', {
 
     // Can the exam be edited (only draft)
     canEdit: () => (exam) => (exam?.status || '').toLowerCase() === 'draft',
-    canDelete: () => (exam) => ['draft', 'locked', 'published'].includes((exam?.status || '').toLowerCase()),
+    canDelete: () => (exam) => ['draft', 'concluded', 'grading'].includes((exam?.status || '').toLowerCase()),
 
     // Alias: ExamWizard reads examsStore.sessions
     sessions: (state) => state.academicSessions,
@@ -224,7 +173,7 @@ export const useTeacherExamsStore = defineStore('teacher-exams', {
       })
     },
 
-    liveExams: (state) => state.exams.filter((e) => (e.status || '').toLowerCase() === 'active'),
+    liveExams: (state) => state.exams.filter((e) => ['live', 'active'].includes((e.status || '').toLowerCase())),
     draftExams: (state) => state.exams.filter((e) => (e.status || '').toLowerCase() === 'draft'),
   },
 
@@ -296,52 +245,16 @@ export const useTeacherExamsStore = defineStore('teacher-exams', {
       if (this.currentExam?.id === id) this.currentExam = null
     },
 
-    // ── Lifecycle (Teacher-owned, no admin) ───────────────────────────────────
+    // ── Lifecycle ─────────────────────────────────────────────────────────────
 
-    /**
-     * draft → active
-     * Teacher launches exam directly. No admin approval gate.
-     */
-    async activateExam(id, sessionDurationMinutes) {
-      const result = await activateExam(id, { session_duration_minutes: sessionDurationMinutes })
+    async startSession(id) {
+      const result = await startSession(id)
       await this.fetchExam(id)
       return result
     },
 
-    /**
-     * active → grading
-     * Teacher ends session. All ongoing student attempts are force-submitted by backend.
-     */
     async endSession(id) {
       const result = await endSession(id)
-      await this.fetchExam(id)
-      return result
-    },
-
-    /**
-     * grading → published
-     * Teacher publishes results.
-     */
-    async publishExam(id) {
-      const result = await publishExam(id)
-      await this.fetchExam(id)
-      return result
-    },
-
-    /**
-     * any → locked
-     */
-    async lockExam(id) {
-      const result = await lockExam(id)
-      await this.fetchExam(id)
-      return result
-    },
-
-    /**
-     * locked → draft
-     */
-    async unlockExam(id) {
-      const result = await unlockExam(id)
       await this.fetchExam(id)
       return result
     },
@@ -419,14 +332,25 @@ export const useTeacherExamsStore = defineStore('teacher-exams', {
     // ── Metadata ──────────────────────────────────────────────────────────────
 
     async loadFormMetadata() {
+      const classLevelId = this._teacherClassLevelId()
       const [subjects, classLevels, sessions] = await Promise.allSettled([
-        getSubjects(),
+        getSubjects(classLevelId ? { class_level_id: classLevelId } : {}),
         getClassLevels(),
         getAcademicSessions(),
       ])
       if (subjects.status === 'fulfilled') this.subjects = subjects.value?.data ?? subjects.value ?? []
       if (classLevels.status === 'fulfilled') this.classLevels = classLevels.value?.data ?? classLevels.value ?? []
+      if (classLevelId) {
+        const scopedClass = this.classLevels.find((item) => String(item.id) === String(classLevelId))
+        this.classLevels = scopedClass ? [scopedClass] : this.classLevels
+      }
       if (sessions.status === 'fulfilled') this.academicSessions = sessions.value?.data ?? sessions.value ?? []
+    },
+
+    async loadSubjectsForClassLevel(classLevelId) {
+      const subjects = await getSubjects(classLevelId ? { class_level_id: classLevelId } : {})
+      this.subjects = subjects?.data ?? subjects ?? []
+      return this.subjects
     },
 
     async loadClassArms(classLevelId) {
@@ -500,26 +424,17 @@ export const useTeacherExamsStore = defineStore('teacher-exams', {
     },
 
     /**
-     * Generic lifecycle action dispatcher — used by ExamWizard publish flow.
-     * NOTE: admin-approval actions (submit-for-review, activate) are no-ops since
-     * we removed the admin workflow. Only teacher-owned transitions are honoured.
+     * Generic lifecycle action dispatcher.
      */
     async performLifecycleAction(examId, action, payload = {}) {
       switch (action) {
+        case 'start-session':
+        case 'start':
         case 'activate':
-          return this.activateExam(examId, payload.session_duration_minutes || 60)
+          return this.startSession(examId)
         case 'end-session':
+        case 'endSession':
           return this.endSession(examId)
-        case 'publish':
-          return this.publishExam(examId)
-        case 'lock':
-          return this.lockExam(examId)
-        case 'unlock':
-          return this.unlockExam(examId)
-        case 'submit-for-review':
-          // Admin review removed — silently treat as no-op save (exam stays draft)
-          console.info('[ExamStore] submit-for-review is a no-op in teacher-only mode')
-          return null
         default:
           throw new Error(`Unknown lifecycle action: ${action}`)
       }
@@ -530,6 +445,18 @@ export const useTeacherExamsStore = defineStore('teacher-exams', {
     _replaceInList(record) {
       const idx = this.exams.findIndex((e) => e.id === record.id)
       if (idx !== -1) this.exams[idx] = record
+    },
+
+    _teacherClassLevelId() {
+      if (typeof window === 'undefined') return null
+      try {
+        const auth = JSON.parse(window.localStorage.getItem('cbt_auth') || '{}')
+        return auth.user?.teacher_profile?.class_level?.id
+          ?? auth.user?.teacher_profile?.class_level_id
+          ?? null
+      } catch {
+        return null
+      }
     },
   },
 })

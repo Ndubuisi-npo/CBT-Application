@@ -66,6 +66,10 @@ function persistAuth(authData) {
   window.localStorage.setItem('authToken', authData.token)
 }
 
+function normalizeAuthUser(response, fallbackUser = null) {
+  return response?.user ?? response?.admin ?? response ?? fallbackUser
+}
+
 function clearAuth() {
   authState = {
     user: null,
@@ -84,18 +88,31 @@ function clearAuth() {
 export async function login(credentials) {
   const response = await apiFetch('/api/auth/login', {
     method: 'POST',
+    timeoutMs: 30000,
     body: JSON.stringify({
       identifier: credentials.email || credentials.identifier,
       password: credentials.password,
     }),
   })
 
+  const user = response.user ?? response.admin ?? response.profile ?? null
+  const token = response.token ?? response.access_token ?? response.auth_token ?? null
+  const role = response.role
+    ?? user?.role
+    ?? user?.role_name
+    ?? user?.role?.name
+    ?? null
+
+  if (!token) {
+    throw new Error('Login response did not include an authentication token.')
+  }
+
   const expiresAt = Date.now() + ((response.expires_in || 28800) * 1000)
 
   authState = {
-    user: response.user ?? response.admin ?? null,
-    token: response.token,
-    role: response.role || 'super_admin',
+    user,
+    token,
+    role: role || 'school_admin',
     tenantSlug: response.tenant_slug || null,
     expiresAt,
   }
@@ -104,6 +121,16 @@ export async function login(credentials) {
   setApiToken(authState.token)
 
   return authState
+}
+
+export async function refreshAuthUser() {
+  const response = await apiFetch('/api/auth/me')
+  authState = {
+    ...authState,
+    user: normalizeAuthUser(response, authState.user),
+  }
+  persistAuth(authState)
+  return authState.user
 }
 
 export async function logout() {

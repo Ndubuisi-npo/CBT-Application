@@ -16,15 +16,15 @@
         </div>
         <div class="rounded-[24px] border border-slate-200 bg-slate-50 p-5">
           <p class="text-sm text-slate-500">Live Now</p>
-          <p class="mt-3 text-3xl font-semibold text-emerald-600">{{ countByStatus('active') }}</p>
+          <p class="mt-3 text-3xl font-semibold text-emerald-600">{{ liveCount }}</p>
         </div>
         <div class="rounded-[24px] border border-slate-200 bg-slate-50 p-5">
           <p class="text-sm text-slate-500">Draft</p>
           <p class="mt-3 text-3xl font-semibold text-slate-900">{{ countByStatus('draft') }}</p>
         </div>
         <div class="rounded-[24px] border border-slate-200 bg-slate-50 p-5">
-          <p class="text-sm text-slate-500">Published</p>
-          <p class="mt-3 text-3xl font-semibold text-blue-600">{{ countByStatus('published') }}</p>
+          <p class="text-sm text-slate-500">Concluded</p>
+          <p class="mt-3 text-3xl font-semibold text-blue-600">{{ concludedCount }}</p>
         </div>
       </div>
     </SectionCard>
@@ -110,12 +110,12 @@
               </template>
 
               <!-- Active exam — monitoring & end session -->
-              <template v-if="(exam.status || '').toLowerCase() === 'active'">
+              <template v-if="['live', 'active'].includes((exam.status || '').toLowerCase())">
                 <AppButton :icon="Activity" text="Monitor" variant="primary" size="sm" @click="openMonitor(exam)" />
               </template>
 
-              <!-- Results — grading or published -->
-              <template v-if="['grading', 'published'].includes((exam.status || '').toLowerCase())">
+              <!-- Results — after conclusion -->
+              <template v-if="['concluded', 'grading', 'completed'].includes((exam.status || '').toLowerCase())">
                 <AppButton :icon="BarChart2" text="Results" variant="outline" size="sm" @click="viewResults(exam)" />
               </template>
 
@@ -238,19 +238,31 @@ const previewExamData = ref(null)
 const tabs = [
   { label: 'All', value: 'all' },
   { label: 'Draft', value: 'draft' },
-  { label: 'Live', value: 'active' },
-  { label: 'Grading', value: 'grading' },
-  { label: 'Published', value: 'published' },
-  { label: 'Locked', value: 'locked' },
+  { label: 'Live', value: 'live' },
+  { label: 'Concluded', value: 'concluded' },
 ]
 
 const filteredExams = computed(() => {
   if (activeTab.value === 'all') return store.exams
+  if (activeTab.value === 'live') {
+    return store.exams.filter((e) => ['live', 'active'].includes((e.status || '').toLowerCase()))
+  }
+  if (activeTab.value === 'concluded') {
+    return store.exams.filter((e) => ['concluded', 'grading', 'completed'].includes((e.status || '').toLowerCase()))
+  }
   return store.exams.filter((e) => (e.status || '').toLowerCase() === activeTab.value)
 })
 
 const countByStatus = (status) =>
   store.exams.filter((e) => (e.status || '').toLowerCase() === status).length
+
+const liveCount = computed(() =>
+  store.exams.filter((e) => ['live', 'active'].includes((e.status || '').toLowerCase())).length,
+)
+
+const concludedCount = computed(() =>
+  store.exams.filter((e) => ['concluded', 'grading', 'completed'].includes((e.status || '').toLowerCase())).length,
+)
 
 const getQuestionCount = (exam) =>
   exam.question_count ?? exam.questions_count ?? exam.questionsCount ??
@@ -332,13 +344,6 @@ const handleLifecycleAction = (exam, actionDef) => {
       variant: actionDef.variant === 'danger' ? 'danger' : 'primary',
     }
 
-    // activate needs session_duration_minutes input
-    if (actionDef.action === 'activate') {
-      config.extraField = 'sessionDuration'
-      config.extraFieldLabel = 'Session Duration (minutes)'
-      config.extraFieldPlaceholder = '60'
-    }
-
     pendingAction.value = config
   } else {
     // Run immediately without confirm
@@ -359,25 +364,13 @@ const executeAction = async (examId, action, extraValues = {}) => {
 
   try {
     switch (action) {
-      case 'activate':
-        await store.activateExam(examId, Number(extraValues.sessionDuration) || 60)
-        uiStore.addToast({ title: 'Exam launched!', message: 'The exam is now live. Students can join.', variant: 'success' })
+      case 'start-session':
+        await store.startSession(examId)
+        uiStore.addToast({ title: 'Session started', message: 'The exam is now live for students.', variant: 'success' })
         break
-      case 'endSession':
+      case 'end-session':
         await store.endSession(examId)
-        uiStore.addToast({ title: 'Session ended', message: 'All remaining attempts have been submitted. Exam moved to grading.', variant: 'success' })
-        break
-      case 'publish':
-        await store.publishExam(examId)
-        uiStore.addToast({ title: 'Results published!', message: 'Students can now view their results.', variant: 'success' })
-        break
-      case 'lock':
-        await store.lockExam(examId)
-        uiStore.addToast({ title: 'Exam locked', message: 'The exam is frozen.', variant: 'success' })
-        break
-      case 'unlock':
-        await store.unlockExam(examId)
-        uiStore.addToast({ title: 'Exam unlocked', message: 'Exam returned to draft.', variant: 'success' })
+        uiStore.addToast({ title: 'Session ended', message: 'The exam has concluded and auto-grading has started.', variant: 'success' })
         break
       case 'delete':
         await store.deleteExam(examId)

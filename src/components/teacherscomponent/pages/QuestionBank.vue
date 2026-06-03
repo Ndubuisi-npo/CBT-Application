@@ -168,14 +168,14 @@
                 <span>Subject</span>
                 <select v-model="form.subject_id" class="question-filter !py-3" @change="onSubjectChange">
                   <option value="">Select subject</option>
-                  <option v-for="subject in examsStore.subjects" :key="subject.id" :value="subject.id">{{ subject.name }}</option>
+                  <option v-for="subject in modalSubjects" :key="subject.id" :value="subject.id">{{ subject.name }}</option>
                 </select>
               </label>
               <label class="space-y-2 text-sm font-medium text-slate-700">
                 <span>Class Level</span>
                 <select v-model="form.class_level_id" class="question-filter !py-3" @change="onClassLevelChange">
                   <option value="">Select class</option>
-                  <option v-for="classItem in examsStore.classLevels" :key="classItem.id" :value="classItem.id">{{ classItem.name }}</option>
+                  <option v-for="classItem in modalClassLevels" :key="classItem.id" :value="classItem.id">{{ classItem.name }}</option>
                 </select>
               </label>
               <label class="space-y-2 text-sm font-medium text-slate-700">
@@ -357,7 +357,7 @@ import { useSchoolAdminUiStore } from '../../schooladmincomponents/stores/ui'
 import { useTeacherExamsStore } from '../stores/exams'
 import SectionCard from '../components/SectionCard.vue'
 import { useTeachersQuestionsStore } from '../stores/questions'
-import { getTeacherClasses, getTeacherSubjects } from '../services/api/questions'
+import { getSubjects as getScopedSubjects } from '../services/api/exams'
 import { getAuthUser } from '../../../js/lib/auth'
 
 const uiStore = useSchoolAdminUiStore()
@@ -438,15 +438,7 @@ const normalizeClass = (classItem) => {
   }
 }
 
-const getTeacherId = () => {
-  const user = getAuthUser()
-  return user?.teacher?.id
-    ?? user?.teacher_profile?.id
-    ?? user?.teacher_id
-    ?? user?.profile?.teacher_id
-    ?? user?.id
-    ?? null
-}
+const getTeacherClassLevel = () => getAuthUser()?.teacher_profile?.class_level || null
 
 const getQuestionText = (question) => question.content || question.question_text || ''
 const getQuestionSubject = (question) => questionStringValue(question.subject) || question.subject_name || ''
@@ -507,13 +499,13 @@ const isLoading = computed(() => questionsStore.loading)
 
 const selectedSubjectName = computed(() => {
   if (!form.subject_id) return ''
-  const found = examsStore.subjects.find(s => s.id === form.subject_id)
+  const found = modalSubjects.value.find(s => s.id === form.subject_id)
   return found?.name || ''
 })
 
 const selectedClassName = computed(() => {
   if (!form.class_level_id) return ''
-  const found = examsStore.classLevels.find(c => c.id === form.class_level_id)
+  const found = modalClassLevels.value.find(c => c.id === form.class_level_id)
   return found?.name || ''
 })
 
@@ -580,6 +572,11 @@ function createDefaultForm() {
 
 const resetForm = () => {
   Object.assign(form, createDefaultForm())
+  const classLevel = getTeacherClassLevel()
+  if (classLevel?.id) {
+    form.class_level_id = classLevel.id
+    form.className = classLevel.name || ''
+  }
   errors.content = ''
 }
 
@@ -602,6 +599,7 @@ const hydrateForm = (question) => {
     id: question.id,
     type: question.type || 'Multiple Choice',
     subject: question.subject_id || question.subject?.id || getQuestionSubject(question),
+    subject_id: question.subject_id || question.subject?.id || '',
     topic: getQuestionTopic(question),
     className: getQuestionClassName(question),
     class_level_id: question.class_level_id || question.class_id || question.class_level?.id || question.class?.id || '',
@@ -625,17 +623,16 @@ const openEditor = (question = null) => {
 }
 
 const loadTeacherAssignments = async () => {
-  const teacherId = getTeacherId()
-  if (!teacherId) return
+  const classLevel = getTeacherClassLevel()
+  teacherClassLevels.value = classLevel?.id ? [normalizeClass(classLevel)] : []
 
   try {
-    const [subjectsResponse, classesResponse] = await Promise.all([
-      getTeacherSubjects(teacherId),
-      getTeacherClasses(teacherId),
-    ])
-
+    if (!classLevel?.id) {
+      teacherSubjects.value = []
+      return
+    }
+    const subjectsResponse = await getScopedSubjects({ class_level_id: classLevel.id })
     teacherSubjects.value = unwrapList(subjectsResponse, ['subjects']).map(normalizeSubject).filter((subject) => subject.id && subject.name)
-    teacherClassLevels.value = unwrapList(classesResponse, ['classes', 'class_levels']).map(normalizeClass).filter((classItem) => classItem.id && classItem.name)
   } catch (error) {
     console.error('Failed to load teacher assignments:', error)
     uiStore.addToast({
@@ -856,24 +853,27 @@ const showUploadToast = () => {
 
 const onSubjectChange = async () => {
   // Update subject name for display
-  const selected = examsStore.subjects.find(s => s.id === form.subject_id)
+  const selected = modalSubjects.value.find(s => s.id === form.subject_id)
   form.subject = selected?.name || ''
 }
 
 const onClassLevelChange = async () => {
-  // Load class arms for this level
+  form.subject_id = ''
+  form.subject = ''
+  form.class_arm_id = ''
   if (form.class_level_id) {
-    await examsStore.loadClassArms(form.class_level_id)
+    const [subjectsResponse] = await Promise.all([
+      getScopedSubjects({ class_level_id: form.class_level_id }),
+      examsStore.loadClassArms(form.class_level_id),
+    ])
+    teacherSubjects.value = unwrapList(subjectsResponse, ['subjects']).map(normalizeSubject).filter((subject) => subject.id && subject.name)
   }
-  form.class_arm_id = '' // Reset arm selection
 }
 
 onMounted(async () => {
   await questionsStore.fetchQuestions()
-  // Load form metadata if not already loaded
-  if (!examsStore.subjects.length) {
-    await examsStore.loadFormMetadata()
-  }
+  await examsStore.loadFormMetadata()
+  await loadTeacherAssignments()
 })
 </script>
 

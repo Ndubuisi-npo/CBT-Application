@@ -8,14 +8,6 @@
           <p class="mt-1 text-sm text-slate-500">{{ results.length }} results loaded</p>
         </div>
         <div class="flex items-center gap-2">
-          <AppButton
-            v-if="canPublish"
-            text="Publish Results"
-            variant="primary"
-            size="sm"
-            :processing="publishing"
-            @click="publishResults"
-          />
           <button type="button" class="p-2 text-slate-400 hover:text-slate-600" @click="$emit('close')">✕</button>
         </div>
       </div>
@@ -65,8 +57,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
-import AppButton from '../../shared/AppButton.vue'
+import { onMounted, ref } from 'vue'
 import { useTeacherExamsStore } from '../stores/exams'
 import { useSchoolAdminUiStore } from '../../schooladmincomponents/stores/ui'
 
@@ -78,12 +69,6 @@ const uiStore = useSchoolAdminUiStore()
 
 const results = ref([])
 const loading = ref(false)
-const publishing = ref(false)
-
-const canPublish = computed(() =>
-  ['grading', 'completed', 'active'].includes((props.exam.status || '').toLowerCase()),
-)
-
 const pctClass = (pct) => {
   if (pct == null) return 'text-slate-700'
   if (pct >= 70) return 'text-emerald-600'
@@ -102,19 +87,4 @@ onMounted(async () => {
   }
 })
 
-const publishResults = async () => {
-  publishing.value = true
-  try {
-    await store.publishExam(props.exam.id)
-    uiStore.addToast({
-      title: 'Results published!',
-      message: 'Students can now view their scores.',
-      variant: 'success',
-    })
-  } catch (err) {
-    uiStore.addToast({ title: 'Error', message: err.message, variant: 'error' })
-  } finally {
-    publishing.value = false
-  }
-}
 </script>

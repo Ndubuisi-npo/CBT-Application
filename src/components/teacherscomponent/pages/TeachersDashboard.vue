@@ -9,7 +9,7 @@
               <p class="text-xs font-semibold uppercase tracking-[0.32em] text-[#D4AF37]">Teacher Workspace</p>
               <h1 class="mt-3 text-3xl font-semibold tracking-tight">Welcome back, {{ userName }}</h1>
               <p class="mt-3 max-w-2xl text-sm leading-6 text-slate-200">
-                You own the full exam lifecycle — create, launch, monitor, and publish results directly from your dashboard.
+                You own the exam lifecycle: create exams, make them live, monitor progress, and end sessions when students are done.
               </p>
             </div>
 
@@ -32,31 +32,48 @@
           <div class="rounded-[24px] border border-white/10 bg-white/10 p-5 backdrop-blur">
             <p class="text-sm font-medium text-slate-200">Exam Overview</p>
             <div class="mt-4 space-y-3 text-sm">
+              <div v-if="teacherClassLevelName" class="flex items-center justify-between">
+                <span class="text-slate-300">Class Scope</span>
+                <span class="font-semibold text-white">{{ teacherClassLevelName }}</span>
+              </div>
               <div class="flex items-center justify-between">
                 <span class="text-slate-300">Total Exams</span>
                 <span class="font-semibold text-white">{{ examsStore.exams.length }}</span>
               </div>
               <div class="flex items-center justify-between">
                 <span class="text-slate-300">Live Now</span>
-                <span class="font-semibold text-emerald-400">{{ countByStatus('active') }}</span>
+                <span class="font-semibold text-emerald-400">{{ liveCount }}</span>
               </div>
               <div class="flex items-center justify-between">
                 <span class="text-slate-300">Draft</span>
                 <span class="font-semibold text-white">{{ countByStatus('draft') }}</span>
               </div>
               <div class="flex items-center justify-between">
-                <span class="text-slate-300">Grading</span>
-                <span class="font-semibold text-amber-400">{{ countByStatus('grading') }}</span>
-              </div>
-              <div class="flex items-center justify-between">
-                <span class="text-slate-300">Published</span>
-                <span class="font-semibold text-blue-300">{{ countByStatus('published') }}</span>
+                <span class="text-slate-300">Concluded</span>
+                <span class="font-semibold text-blue-300">{{ concludedCount }}</span>
               </div>
             </div>
           </div>
         </div>
       </div>
     </section>
+
+    <!-- Personal workload -->
+    <SectionCard title="My Workload" subtitle="Subjects and classes from your current teacher assignments.">
+      <div class="grid gap-4 pt-6 md:grid-cols-2 xl:grid-cols-3">
+        <div
+          v-for="assignment in assignedWorkload"
+          :key="assignment.key"
+          class="rounded-[24px] border border-slate-200 p-5"
+        >
+          <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">{{ assignment.className || 'Class level' }}</p>
+          <h3 class="mt-2 text-lg font-semibold text-slate-900">{{ assignment.subjectName || 'Subject' }}</h3>
+        </div>
+        <div v-if="!assignedWorkload.length" class="rounded-[24px] border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-sm text-slate-500 md:col-span-2 xl:col-span-3">
+          No teaching assignments are attached to your profile yet.
+        </div>
+      </div>
+    </SectionCard>
 
     <!-- Live exams -->
     <section v-if="liveExams.length">
@@ -85,9 +102,9 @@
       </SectionCard>
     </section>
 
-    <!-- Grading queue -->
+    <!-- Concluded exams -->
     <section v-if="gradingExams.length">
-      <SectionCard title="Grading Queue" subtitle="These exams have ended and are awaiting result publication.">
+      <SectionCard title="Concluded Exams" subtitle="These exams have ended and are ready for results review.">
         <div class="space-y-4 pt-6">
           <div
             v-for="exam in gradingExams"
@@ -101,7 +118,6 @@
               </div>
               <div class="flex gap-2">
                 <AppButton text="View Results" variant="outline" size="sm" @click="goTo('/teachers/exams')" />
-                <AppButton text="Publish" variant="primary" size="sm" @click="confirmPublish(exam)" />
               </div>
             </div>
           </div>
@@ -184,13 +200,34 @@ const userName = computed(() => {
 const countByStatus = (status) =>
   examsStore.exams.filter((e) => (e.status || '').toLowerCase() === status).length
 
+const liveCount = computed(() =>
+  examsStore.exams.filter((e) => ['live', 'active'].includes((e.status || '').toLowerCase())).length,
+)
+
 const liveExams = computed(() =>
-  examsStore.exams.filter((e) => (e.status || '').toLowerCase() === 'active'),
+  examsStore.exams.filter((e) => ['live', 'active'].includes((e.status || '').toLowerCase())),
 )
 
 const gradingExams = computed(() =>
-  examsStore.exams.filter((e) => (e.status || '').toLowerCase() === 'grading'),
+  examsStore.exams.filter((e) => ['concluded', 'grading', 'completed'].includes((e.status || '').toLowerCase())),
 )
+
+const concludedCount = computed(() => gradingExams.value.length)
+
+const teacherClassLevelName = computed(() => getAuthUser()?.teacher_profile?.class_level?.name || '')
+
+const assignedWorkload = computed(() => {
+  const assignments = getAuthUser()?.assigned_subjects || []
+  return assignments.map((assignment, index) => {
+    const subject = assignment.subject || assignment
+    const classLevel = assignment.class_level || assignment.class || assignment.classLevel || {}
+    return {
+      key: assignment.id || `${subject.id || subject.name || index}-${classLevel.id || classLevel.name || index}`,
+      subjectName: subject.name || assignment.subject_name || '',
+      className: classLevel.name || assignment.class_level_name || '',
+    }
+  })
+})
 
 const recentExams = computed(() =>
   [...examsStore.exams]
@@ -201,9 +238,9 @@ const recentExams = computed(() =>
 // ── Quick actions ──────────────────────────────────────────────────────────
 
 const quickActions = [
-  { label: 'Manage Exams', caption: 'Create, launch and publish exams', to: '/teachers/exams', icon: ClipboardCheck },
+  { label: 'Manage Exams', caption: 'Create, start and end exams', to: '/teachers/exams', icon: ClipboardCheck },
   { label: 'Question Bank', caption: 'Build and manage your questions', to: '/teachers/questions', icon: FilePenLine },
-  { label: 'Grade & Results', caption: 'View scores and publish results', to: '/teachers/exams', icon: BookOpen },
+  { label: 'Results', caption: 'View student scores', to: '/teachers/exams', icon: BookOpen },
   { label: 'Attendance', caption: 'Mark class attendance', to: '/teachers/attendance', icon: GraduationCap },
 ]
 
@@ -214,22 +251,11 @@ const goTo = (path) => router.push(path)
 const confirmEndSession = (exam) => {
   pendingDashAction.value = {
     examId: exam.id,
-    action: 'endSession',
+      action: 'end-session',
     title: `End Session — "${exam.title}"?`,
     message: 'All active student attempts will be force-submitted. This cannot be undone.',
     confirmLabel: 'End Session',
     variant: 'danger',
-  }
-}
-
-const confirmPublish = (exam) => {
-  pendingDashAction.value = {
-    examId: exam.id,
-    action: 'publish',
-    title: `Publish Results — "${exam.title}"?`,
-    message: 'Students will be able to view their scores immediately.',
-    confirmLabel: 'Publish Results',
-    variant: 'primary',
   }
 }
 
@@ -239,12 +265,9 @@ const runDashAction = async () => {
   pendingDashAction.value = null
 
   try {
-    if (action === 'endSession') {
+    if (action === 'end-session') {
       await examsStore.endSession(examId)
       uiStore.addToast({ title: 'Session ended', variant: 'success' })
-    } else if (action === 'publish') {
-      await examsStore.publishExam(examId)
-      uiStore.addToast({ title: 'Results published!', variant: 'success' })
     }
   } catch (err) {
     uiStore.addToast({ title: 'Error', message: err.message, variant: 'error' })
