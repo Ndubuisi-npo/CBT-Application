@@ -78,11 +78,15 @@ import { CalendarRange, Columns3, GraduationCap, School, Shapes, Users } from 'l
 import SectionCard from '../components/SectionCard.vue'
 import { useSchoolAdminStudentsStore } from '../stores/students'
 import { useSchoolAdminTeachersStore } from '../stores/teachers'
+import { useSchoolAdminClassLevelsStore } from '../stores/classLevels'
+import { useSchoolAdminSubjectsStore } from '../stores/subjects'
 import { getAuthUser } from '../../../js/lib/auth'
 
 const router = useRouter()
 const studentsStore = useSchoolAdminStudentsStore()
 const teachersStore = useSchoolAdminTeachersStore()
+const classLevelsStore = useSchoolAdminClassLevelsStore()
+const subjectsStore = useSchoolAdminSubjectsStore()
 
 const adminName = computed(() => {
   const u = getAuthUser()
@@ -108,16 +112,16 @@ const statCards = computed(() => [
   },
   {
     label: 'Class Levels',
-    value: '—',
-    loading: false,
+    value: classLevelsStore.classLevels?.length ?? '—',
+    loading: classLevelsStore.loading,
     icon: Columns3,
     bg: 'bg-amber-100',
     color: 'text-amber-600',
   },
   {
     label: 'Subjects',
-    value: '—',
-    loading: false,
+    value: subjectsStore.subjects?.length ?? '—',
+    loading: subjectsStore.loading,
     icon: Shapes,
     bg: 'bg-indigo-100',
     color: 'text-indigo-600',
@@ -137,6 +141,8 @@ onMounted(async () => {
   await Promise.allSettled([
     studentsStore.fetchStudents?.(),
     teachersStore.fetchTeachers?.(),
+    classLevelsStore.fetchClassLevels?.(),
+    subjectsStore.fetchSubjects?.(),
   ])
 })
 </script>

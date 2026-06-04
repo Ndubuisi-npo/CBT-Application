@@ -39,12 +39,12 @@
             </thead>
             <tbody class="divide-y divide-slate-100">
               <tr v-for="student in filteredStudents" :key="student.id" class="transition hover:bg-slate-50/80">
-                <td class="px-5 py-4 text-sm text-slate-600">{{ student.student_profile?.admission_number || student.admission_number || student.admissionNo || '—' }}</td>
+                <td class="px-5 py-4 text-sm text-slate-600">{{ student.studentProfile?.admission_number || '—' }}</td>
                 <td class="px-5 py-4 text-sm text-slate-600">
                   <p class="font-semibold text-slate-900">{{ student.first_name }} {{ student.last_name }}</p>
                 </td>
-                <td class="px-5 py-4 text-sm text-slate-600">{{ student.student_profile?.gender || student.gender || '—' }}</td>
-                <td class="px-5 py-4 text-sm text-slate-600">{{ student.student_profile?.class_arm?.name || student.class_arm?.name || student.student_profile?.class_level?.name || student.class_level?.name || student.className || '—' }}</td>
+                <td class="px-5 py-4 text-sm text-slate-600">{{ student.studentProfile?.gender || '—' }}</td>
+                <td class="px-5 py-4 text-sm text-slate-600">{{ student.studentProfile?.class_level?.name || '—' }}</td>
                 <td class="px-5 py-4 text-sm text-slate-600">{{ student.email || '—' }}</td>
                 <td class="px-5 py-4 text-sm text-slate-600">{{ student.phone || '—' }}</td>
                 <td class="px-5 py-4">

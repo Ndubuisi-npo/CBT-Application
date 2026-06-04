@@ -358,6 +358,7 @@ import { useTeacherExamsStore } from '../stores/exams'
 import SectionCard from '../components/SectionCard.vue'
 import { useTeachersQuestionsStore } from '../stores/questions'
 import { getSubjects as getScopedSubjects } from '../services/api/exams'
+import { getTeacherSubjects, getTeacherClasses } from '../services/api/questions'
 import { getAuthUser } from '../../../js/lib/auth'
 
 const uiStore = useSchoolAdminUiStore()
@@ -623,16 +624,27 @@ const openEditor = (question = null) => {
 }
 
 const loadTeacherAssignments = async () => {
-  const classLevel = getTeacherClassLevel()
-  teacherClassLevels.value = classLevel?.id ? [normalizeClass(classLevel)] : []
-
   try {
-    if (!classLevel?.id) {
+    const authUser = getAuthUser()
+    const teacherId = authUser?.id
+
+    if (!teacherId) {
       teacherSubjects.value = []
+      teacherClassLevels.value = []
       return
     }
-    const subjectsResponse = await getScopedSubjects({ class_level_id: classLevel.id })
-    teacherSubjects.value = unwrapList(subjectsResponse, ['subjects']).map(normalizeSubject).filter((subject) => subject.id && subject.name)
+
+    // Fetch all teacher's subjects and classes
+    const subjectsResponse = await getTeacherSubjects(teacherId)
+    const classesResponse = await getTeacherClasses(teacherId)
+
+    // Process subjects
+    const subjectsArray = Array.isArray(subjectsResponse) ? subjectsResponse : (subjectsResponse?.subjects || subjectsResponse?.data || [])
+    teacherSubjects.value = subjectsArray.map(normalizeSubject).filter((subject) => subject.id && subject.name)
+
+    // Process class levels
+    const classesArray = Array.isArray(classesResponse) ? classesResponse : (classesResponse?.classes || classesResponse?.class_levels || classesResponse?.data || [])
+    teacherClassLevels.value = classesArray.map(normalizeClass).filter((classItem) => classItem.id && classItem.name)
   } catch (error) {
     console.error('Failed to load teacher assignments:', error)
     uiStore.addToast({
@@ -640,6 +652,8 @@ const loadTeacherAssignments = async () => {
       message: error.message || 'Unable to load your assigned subjects and classes.',
       variant: 'error',
     })
+    teacherSubjects.value = []
+    teacherClassLevels.value = []
   }
 }
 

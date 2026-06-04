@@ -106,9 +106,28 @@
                 <input v-model="form.admission_number" class="sa-input" placeholder="ADM001" required />
               </FormField>
 
-              <FormField label="Class" :error="errors.class_name">
-                <input v-model="form.class_name" class="sa-input" placeholder="JSS 1A" />
-              </FormField>
+              <div class="grid grid-cols-2 gap-4">
+                <FormField label="Class Level" :error="errors.class_name">
+                  <select v-model="form.class_level_id" class="sa-input" :disabled="loadingClassLevels">
+                    <option value="">Select class level</option>
+                    <option v-for="level in classLevels" :key="level.id" :value="level.id">
+                      {{ level.name }}
+                    </option>
+                  </select>
+                  <p v-if="loadingClassLevels" class="mt-1 text-xs text-slate-500">Loading class levels...</p>
+                </FormField>
+
+                <FormField label="Class Arm" :error="errors.class_name">
+                  <select v-model="form.class_arm_id" class="sa-input" :disabled="!form.class_level_id || loadingClassArms">
+                    <option value="">Select class arm</option>
+                    <option v-for="arm in classArms" :key="arm.id" :value="arm.id">
+                      {{ arm.name }}
+                    </option>
+                  </select>
+                  <p v-if="loadingClassArms" class="mt-1 text-xs text-slate-500">Loading class arms...</p>
+                  <p v-if="form.class_level_id && !loadingClassArms && classArms.length === 0" class="mt-1 text-xs text-slate-500">No arms available for this class level.</p>
+                </FormField>
+              </div>
 
               <div class="flex gap-2">
                 <AppButton 
@@ -135,10 +154,11 @@
 </template>
 
 <script setup>
-import { reactive, watch, computed, ref } from 'vue'
+import { reactive, watch, computed, ref, onMounted } from 'vue'
 import { X } from 'lucide-vue-next'
 import AppButton from '../../shared/AppButton.vue'
 import FormField from './FormField.vue'
+import { fetchClassLevels, fetchClassArms } from '../../../js/api/classManagement'
 
 const props = defineProps({
   show: { type: Boolean, default: false },
@@ -176,10 +196,45 @@ const errors = reactive({
 })
 
 const loading = ref(false)
+const classLevels = ref([])
+const classArms = ref([])
+const loadingClassLevels = ref(false)
+const loadingClassArms = ref(false)
 
 const resetForm = () => {
   Object.assign(form, { firstName: '', lastName: '', email: '', phone: '', gender: '', date_of_birth: '', admission_number: '', class_level_id: '', class_arm_id: '', class_name: '' })
   Object.assign(errors, { firstName: '', lastName: '', email: '', phone: '', gender: '', date_of_birth: '', admission_number: '', class_name: '' })
+}
+
+const loadClassLevels = async () => {
+  loadingClassLevels.value = true
+  try {
+    const data = await fetchClassLevels()
+    classLevels.value = Array.isArray(data) ? data : (data?.class_levels || data?.data || [])
+  } catch (error) {
+    console.error('Failed to load class levels:', error)
+    classLevels.value = []
+  } finally {
+    loadingClassLevels.value = false
+  }
+}
+
+const loadClassArms = async (classLevelId) => {
+  if (!classLevelId) {
+    classArms.value = []
+    return
+  }
+
+  loadingClassArms.value = true
+  try {
+    const data = await fetchClassArms(classLevelId)
+    classArms.value = Array.isArray(data) ? data : (data?.arms || data?.class_arms || data?.data || [])
+  } catch (error) {
+    console.error('Failed to load class arms:', error)
+    classArms.value = []
+  } finally {
+    loadingClassArms.value = false
+  }
 }
 
 // Watch for student changes and update form
@@ -195,17 +250,31 @@ watch(() => props.student, (student) => {
     form.class_level_id = student.student_profile?.class_level?.id || ''
     form.class_arm_id = student.student_profile?.class_arm?.id || ''
     form.class_name = student.student_profile?.class_arm?.name || student.student_profile?.class_name || student.class_name || ''
+    
+    // Load class arms if class level is set
+    if (form.class_level_id) {
+      loadClassArms(form.class_level_id)
+    }
   } else {
     resetForm()
   }
 }, { immediate: true })
 
 // Watch for modal close to reset loading state
-watch(() => props.show, (show) => {
-  if (!show) {
+watch(() => props.show, async (show) => {
+  if (show) {
+    // Load class levels when modal opens
+    await loadClassLevels()
+  } else {
     loading.value = false
     resetForm()
   }
+})
+
+// Watch class level changes to load arms
+watch(() => form.class_level_id, (newClassLevelId) => {
+  form.class_arm_id = '' // Reset class arm when class level changes
+  loadClassArms(newClassLevelId)
 })
 
 const validate = () => {

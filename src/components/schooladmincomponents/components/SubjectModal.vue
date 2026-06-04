@@ -108,6 +108,7 @@ import AppButton from '../../shared/AppButton.vue'
 import FormField from './FormField.vue'
 import { useSchoolAdminSubjectsStore } from '../stores/subjects'
 import { getClassArms } from '../services/api/classes'
+import { fetchClassLevels } from '../../../js/api/classManagement'
 
 const props = defineProps({
   show: { type: Boolean, default: false },
@@ -135,25 +136,20 @@ const loading = ref(false)
 const selectedClassLevelId = ref('')
 const loadingClassArmIds = ref(new Set())
 const classArmsByLevelId = ref({})
+const allClassLevels = ref([])
+const loadingClassLevels = ref(false)
 
 const subjectsStore = useSchoolAdminSubjectsStore()
 
 // Extract unique class levels from all subjects
 const classLevelOptions = computed(() => {
-  const classLevelsMap = new Map()
-  subjectsStore.subjects.forEach(subject => {
-    if (subject.class_levels && Array.isArray(subject.class_levels)) {
-      subject.class_levels.forEach(classLevel => {
-        if (!classLevelsMap.has(classLevel.id)) {
-          classLevelsMap.set(classLevel.id, {
-            value: classLevel.id,
-            label: classLevel.name,
-          })
-        }
-      })
-    }
-  })
-  return Array.from(classLevelsMap.values())
+  if (allClassLevels.value.length > 0) {
+    return allClassLevels.value.map(level => ({
+      value: level.id,
+      label: level.name,
+    }))
+  }
+  return []
 })
 
 const availableClassLevelOptions = computed(() => {
@@ -161,20 +157,10 @@ const availableClassLevelOptions = computed(() => {
 })
 
 const selectedClassLevels = computed(() => {
-  const classLevelsMap = new Map()
-  subjectsStore.subjects.forEach(subject => {
-    if (subject.class_levels && Array.isArray(subject.class_levels)) {
-      subject.class_levels.forEach(classLevel => {
-        if (!classLevelsMap.has(classLevel.id)) {
-          classLevelsMap.set(classLevel.id, classLevel)
-        }
-      })
-    }
-  })
-  const allClassLevels = Array.from(classLevelsMap.values())
+  if (allClassLevels.value.length === 0) return []
   
   return form.class_level_ids
-    .map(id => allClassLevels.find(classLevel => classLevel.id === id))
+    .map(id => allClassLevels.value.find(classLevel => classLevel.id === id))
     .filter(Boolean)
 })
 
@@ -196,6 +182,21 @@ const resetForm = () => {
 const ensureSubjectsLoaded = async () => {
   if (subjectsStore.subjects.length === 0 && !subjectsStore.loading) {
     await subjectsStore.fetchSubjects()
+  }
+}
+
+const loadAllClassLevels = async () => {
+  if (loadingClassLevels.value) return
+  
+  loadingClassLevels.value = true
+  try {
+    const data = await fetchClassLevels()
+    allClassLevels.value = Array.isArray(data) ? data : (data?.class_levels || data?.data || [])
+  } catch (error) {
+    console.error('Failed to load class levels:', error)
+    allClassLevels.value = []
+  } finally {
+    loadingClassLevels.value = false
   }
 }
 
@@ -294,6 +295,7 @@ onMounted(async () => {
 watch(() => props.show, async (show) => {
   if (show) {
     await ensureSubjectsLoaded()
+    await loadAllClassLevels()
     await populateForm(props.subject)
     return
   }

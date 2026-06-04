@@ -16,7 +16,7 @@
             <div class="grid grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm text-slate-500">Staff ID</label>
-                <p class="text-sm font-medium text-slate-900">{{ teacher.teacher_profile?.staff_id || 'Not specified' }}</p>
+                <p class="text-sm font-medium text-slate-900">{{ teacher.teacherProfile?.staff_id || teacher.teacher_profile?.staff_id || teacher.staff_id || 'Not specified' }}</p>
               </div>
               <div>
                 <label class="block text-sm text-slate-500">First Name</label>
@@ -28,24 +28,24 @@
               </div>
               <div>
                 <label class="block text-sm text-slate-500">Qualification</label>
-                <p class="text-sm font-medium text-slate-900">{{ teacher.teacher_profile?.qualification || 'Not specified' }}</p>
+                <p class="text-sm font-medium text-slate-900">{{ teacher.teacherProfile?.qualification || teacher.teacher_profile?.qualification || teacher.qualification || 'Not specified' }}</p>
               </div>
             </div>
 
             <!-- Assigned Classes (under Basic Information) -->
             <div class="mt-4">
               <label class="block text-sm text-slate-500">Assigned Classes</label>
-              <div class="mt-2">
-                <div v-if="teacher.assigned_classes && teacher.assigned_classes.length">
-                  <ul class="space-y-2">
-                    <li v-for="cls in teacher.assigned_classes" :key="cls.id" class="rounded-2xl bg-slate-50 px-4 py-3 text-sm">
-                      <div class="font-semibold text-slate-900">{{ cls.name }}</div>
-                      <div class="text-xs text-slate-500">{{ (cls.student_count || cls.studentCount) ? (cls.student_count || cls.studentCount) + ' students' : '' }}</div>
-                    </li>
-                  </ul>
+                <div class="mt-2">
+                  <div v-if="assignedClasses.length">
+                    <ul class="space-y-2">
+                      <li v-for="cls in assignedClasses" :key="cls.id" class="rounded-2xl bg-slate-50 px-4 py-3 text-sm">
+                        <div class="font-semibold text-slate-900">{{ cls.name }}</div>
+                        <div class="text-xs text-slate-500">{{ cls.student_count ? cls.student_count + ' students' : (cls.studentCount ? cls.studentCount + ' students' : '') }}</div>
+                      </li>
+                    </ul>
+                  </div>
+                  <p v-else class="text-sm text-slate-600">No assigned classes</p>
                 </div>
-                <p v-else class="text-sm text-slate-600">No assigned classes</p>
-              </div>
             </div>
 
             <div class="mt-4">
@@ -163,9 +163,9 @@ const isEdit = computed(() => props.mode === 'edit' && !!props.teacher)
 const isView = computed(() => props.mode === 'view')
 
 const assignedSubjects = computed(() => {
-  const subjects = props.teacher?.assigned_subjects || []
+  const subjectsSrc = props.teacher?.assigned_subjects || props.teacher?.assignedSubjects || props.teacher?.teacherAssignments || props.teacher?.assignments || []
 
-  return subjects.map((item) => {
+  return subjectsSrc.map((item) => {
     const source = item?.subject && typeof item.subject === 'object' ? item.subject : item
     const name = source?.name || source?.title || item?.subject_name || 'Unnamed subject'
     const code = source?.code || item?.subject_code || ''
@@ -177,6 +177,28 @@ const assignedSubjects = computed(() => {
       meta: [code, className].filter(Boolean).join(' - '),
     }
   })
+})
+
+const assignedClasses = computed(() => {
+  const direct = props.teacher?.assigned_classes || props.teacher?.assignedClasses || []
+  const fromAssignments = (props.teacher?.teacherAssignments || props.teacher?.assignments || []).map(a => a.class_level || a.class || a)
+
+  const combined = [...direct, ...fromAssignments].filter(Boolean)
+
+  // normalize and dedupe by id or name
+  const seen = new Map()
+  combined.forEach((c) => {
+    const id = c?.id || c?.class_level_id || c?.class_id || c?.name || JSON.stringify(c)
+    if (!seen.has(id)) {
+      seen.set(id, {
+        id,
+        name: c?.name || c?.class_name || c?.title || 'Unnamed class',
+        student_count: c?.student_count || c?.studentCount || 0,
+      })
+    }
+  })
+
+  return Array.from(seen.values())
 })
 
 const form = reactive({
@@ -212,8 +234,8 @@ watch(() => props.teacher, (teacher) => {
     form.lastName = teacher.user?.last_name || teacher.last_name || ''
     form.email = teacher.user?.email || teacher.email || ''
     form.phone = teacher.user?.phone || teacher.phone || ''
-    form.qualification = teacher.teacher_profile?.qualification || teacher.qualification || ''
-    form.staff_id = teacher.teacher_profile?.staff_id || teacher.staff_id || ''
+    form.qualification = teacher.teacherProfile?.qualification || teacher.teacher_profile?.qualification || teacher.qualification || ''
+    form.staff_id = teacher.teacherProfile?.staff_id || teacher.teacher_profile?.staff_id || teacher.staff_id || ''
   } else {
     resetForm()
   }

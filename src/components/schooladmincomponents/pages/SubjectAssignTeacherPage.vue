@@ -119,8 +119,13 @@ const getClassName = (classId) => {
 }
 
 const getSessionName = (sessionId) => {
-  // Since academic session data is not nested in subject, we'll need to keep the sessions store
-  // For now, return the ID as fallback
+  // Since academic_session is nested in the assignment object
+  if (subject.value?.teacher_assignments) {
+    const assignment = subject.value.teacher_assignments.find(a => a.academic_session_id === sessionId || a.id === sessionId)
+    if (assignment?.academic_session) {
+      return assignment.academic_session.name || sessionId || 'Unknown'
+    }
+  }
   return sessionId || 'Unknown'
 }
 

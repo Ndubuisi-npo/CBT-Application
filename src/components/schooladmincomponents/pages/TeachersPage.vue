@@ -157,7 +157,7 @@
                     @change="toggleTeacherSelection(teacher.id, $event.target.checked)"
                   />
                 </td>
-                <td class="px-5 py-4 text-sm text-slate-600">{{ teacher?.teacher_profile?.staff_id || '-' }}</td>
+                <td class="px-5 py-4 text-sm text-slate-600">{{ teacher?.teacherProfile?.staff_id || '-' }}</td>
                 <td class="px-5 py-4 text-sm text-slate-600">{{ teacher?.first_name }} {{ teacher?.last_name || '-' }}</td>
                 <td class="px-5 py-4 text-sm text-slate-600">{{ teacher?.email || '-' }}</td>
                 <td class="px-5 py-4 text-sm text-slate-600">{{ teacher?.phone || '-' }}</td>
