@@ -34,7 +34,7 @@
     </div>
 
     <div v-else-if="error" class="mx-auto max-w-lg py-24 text-center">
-      <p class="text-lg font-semibold text-slate-900">{{ error }}</p>
+      <p class="text-lg font-semibold text-slate-900">{{ formattedError }}</p>
       <AppButton class="mt-4" text="Back to Dashboard" variant="primary" @click="goToDashboard" />
     </div>
 
@@ -202,6 +202,7 @@ import {
   submitStudentAttempt,
 } from '../services/api/studentExams'
 import { useSchoolAdminUiStore } from '../../schooladmincomponents/stores/ui'
+import { fmtDateTime } from '../../../js/lib/helpers'
 
 const route = useRoute()
 const router = useRouter()
@@ -222,6 +223,15 @@ const submitted = ref(false)
 const submitting = ref(false)
 const showSubmitConfirm = ref(false)
 const savedIndicator = ref(false)
+
+// Replace raw ISO timestamps in error messages with localised display times
+const formattedError = computed(() => {
+  if (!error.value) return ''
+  return error.value.replace(
+    /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})?/g,
+    (match) => fmtDateTime(match) || match
+  )
+})
 
 // ── Timer (backend is source of truth per spec) ───────────────────────────
 
@@ -425,9 +435,11 @@ onMounted(async () => {
   loading.value = true
   try {
     // 1. Get or resume active attempt
-    let attempt
+    // API returns { attempt: {...}, questions: [...], order: [...], time_remaining_seconds: N }
+    // or the attempt object directly — handle both shapes
+    let raw
     try {
-      attempt = await getStudentExamAttempt(examId)
+      raw = await getStudentExamAttempt(examId)
     } catch (err) {
       if (err?.status === 404 || (err?.message || '').includes('404')) {
         error.value = 'No active attempt found. Please go back to the dashboard and start the exam.'
@@ -436,30 +448,60 @@ onMounted(async () => {
       throw err
     }
 
+    // Normalise: backend may wrap in { attempt, questions, ... } or return attempt directly
+    const attempt = raw?.attempt ?? raw
+    const embeddedQuestions = raw?.questions ?? null
+    const embeddedTimeRemaining = raw?.time_remaining_seconds ?? null
+
     if (!attempt?.id) {
       error.value = 'Could not load your exam attempt.'
       return
     }
 
     attemptId.value = attempt.id
-    exam.value = attempt
+    // Use embedded exam data for title etc.
+    exam.value = attempt.exam ?? attempt
 
-    // 2. Load questions — spec: GET /api/student/exams/attempts/{attemptId}/questions
-    const qs = await getStudentExamQuestions(attempt.id)
-    questions.value = Array.isArray(qs) ? qs : (qs?.data || [])
-
-    // Restore saved answers from attempt data
-    if (attempt.answers && typeof attempt.answers === 'object') {
-      Object.entries(attempt.answers).forEach(([qId, val]) => {
-        answers[qId] = val
-      })
+    // 2. Load questions — use embedded if available, otherwise fetch separately
+    let qs
+    if (embeddedQuestions && Array.isArray(embeddedQuestions) && embeddedQuestions.length > 0) {
+      qs = embeddedQuestions
+    } else {
+      const fetched = await getStudentExamQuestions(attempt.id)
+      qs = Array.isArray(fetched) ? fetched : (fetched?.data || [])
     }
 
-    // 3. Start timer from backend's time_remaining_seconds (source of truth)
+    // Questions may be wrapped as exam_question objects with nested question
+    questions.value = qs.map((q) => {
+      // If the item has a top-level `question` object, merge it up for easy access
+      if (q?.question && typeof q.question === 'object') {
+        return { ...q, ...q.question, _exam_question_id: q.id, id: q.question.id }
+      }
+      return q
+    })
+
+    // Restore saved answers from attempt data
+    const savedAnswers = attempt.answers ?? raw?.answers
+    if (savedAnswers && typeof savedAnswers === 'object') {
+      if (Array.isArray(savedAnswers)) {
+        savedAnswers.forEach((a) => {
+          if (a?.question_id && a?.selected_option_ids?.length) {
+            answers[a.question_id] = a.selected_option_ids[0]
+          }
+        })
+      } else {
+        Object.entries(savedAnswers).forEach(([qId, val]) => {
+          answers[qId] = val
+        })
+      }
+    }
+
+    // 3. Start timer — backend time_remaining_seconds is source of truth
     const timeRemaining =
+      embeddedTimeRemaining ??
       attempt.time_remaining_seconds ??
       attempt.timeRemainingSeconds ??
-      (attempt.duration_minutes || 60) * 60
+      (attempt.exam?.duration_minutes || attempt.duration_minutes || 60) * 60
 
     startTimer(timeRemaining)
   } catch (err) {

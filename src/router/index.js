@@ -37,6 +37,7 @@ import SchoolAdminSubjects from '../components/schooladmincomponents/pages/Subje
 import SchoolAdminSubjectAssignTeacher from '../components/schooladmincomponents/pages/SubjectAssignTeacherPage.vue'
 import SchoolAdminSettings from '../components/schooladmincomponents/pages/SettingsPage.vue'
 import SchoolAdminProfile from '../components/schooladmincomponents/pages/ProfilePage.vue'
+import SchoolAdminExamApprovals from '../components/schooladmincomponents/pages/ExamApprovalsPage.vue'
 import StudentImportPage from '../components/schooladmincomponents/pages/StudentImportPage.vue'
 import TeacherImportPage from '../components/schooladmincomponents/pages/TeacherImportPage.vue'
 
@@ -96,6 +97,7 @@ const routes = [
           { path: 'teachers/import', name: 'SchoolAdminTeacherImport', component: TeacherImportPage },
           { path: 'students', name: 'SchoolAdminStudents', component: SchoolAdminStudents },
           { path: 'students/import', name: 'SchoolAdminStudentImport', component: StudentImportPage },
+          { path: 'exams', name: 'SchoolAdminExamApprovals', component: SchoolAdminExamApprovals },
           // NOTE: 'assessments' route REMOVED — School Admin has no exam access.
           { path: 'subjects', name: 'SchoolAdminSubjects', component: SchoolAdminSubjects },
           {

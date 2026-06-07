@@ -7,7 +7,7 @@
             {{ isEditing ? 'Edit Exam' : 'Create Exam' }}
           </p>
           <h2 class="mt-1 text-2xl font-semibold text-slate-900">
-            {{ isEditing ? 'Update exam details' : 'New exam — you own the full lifecycle' }}
+            {{ isEditing ? 'Update exam details' : 'New exam' }}
           </h2>
         </div>
         <button type="button" class="text-slate-400 hover:text-slate-600 p-2" @click="$emit('close')">✕</button>
@@ -91,8 +91,24 @@
           </label>
 
           <label class="flex flex-col gap-1.5">
+            <span class="text-sm font-medium text-slate-700">Total Marks</span>
+            <input v-model.number="form.total_marks" type="number" min="0" class="form-input" placeholder="100" />
+          </label>
+
+          <label class="flex flex-col gap-1.5">
+            <span class="text-sm font-medium text-slate-700">Max Attempts</span>
+            <input v-model.number="form.max_attempts" type="number" min="1" class="form-input" placeholder="1" />
+          </label>
+
+          <label class="flex flex-col gap-1.5">
             <span class="text-sm font-medium text-slate-700">Pass Mark (%) <span class="text-rose-500">*</span></span>
             <input v-model.number="form.pass_mark" type="number" min="0" max="100" class="form-input" placeholder="50" required />
+          </label>
+
+          <label class="flex flex-col gap-1.5">
+            <span class="text-sm font-medium text-slate-700">Scheduled Start</span>
+            <input v-model="form.scheduled_start" type="datetime-local" class="form-input" />
+            <span class="text-xs text-slate-400">Time is in your local timezone ({{ localTimezone }})</span>
           </label>
 
           <label class="flex flex-col gap-1.5 md:col-span-2">
@@ -125,6 +141,7 @@ import { onMounted, reactive, ref, computed } from 'vue'
 import AppButton from '../../shared/AppButton.vue'
 import { useTeacherExamsStore } from '../stores/exams'
 import { getAuthUser } from '../../../js/lib/auth'
+import { toDatetimeLocalInputValue, toDatetimeLocalIsoWithOffset } from '../../../js/lib/helpers'
 
 const props = defineProps({
   exam: { type: Object, default: null },
@@ -147,7 +164,10 @@ const form = reactive({
   term_id: '',
   type: 'exam',
   duration_minutes: 60,
+  total_marks: null,
   pass_mark: 50,
+  max_attempts: 1,
+  scheduled_start: '',
   instructions: '',
 })
 
@@ -182,7 +202,10 @@ onMounted(async () => {
       term_id: props.exam.term_id || props.exam.term?.id || props.exam.termId || '',
       type: props.exam.type || 'exam',
       duration_minutes: props.exam.duration_minutes || props.exam.duration || 60,
+      total_marks: props.exam.total_marks ?? props.exam.totalMarks ?? null,
       pass_mark: props.exam.pass_mark ?? props.exam.passMark ?? 50,
+      max_attempts: props.exam.max_attempts ?? props.exam.maxAttempts ?? 1,
+      scheduled_start: toDatetimeLocalInputValue(props.exam.scheduled_start || props.exam.scheduledStart || ''),
       instructions: props.exam.instructions || '',
     })
   } else if (teacherClassLevel.value?.id) {
@@ -215,17 +238,21 @@ const onSessionChange = async () => {
 const save = async () => {
   error.value = null
 
-  if (!form.title || !form.subject_id || !form.class_level_id || !form.term_id) {
-    error.value = 'Please fill in all required fields.'
+  if (!form.title || !form.subject_id || !form.class_level_id || !form.term_id || !form.duration_minutes || form.duration_minutes < 1) {
+    error.value = 'Please fill in all required fields and ensure the duration is at least 1 minute.'
     return
   }
 
   saving.value = true
   try {
+    const payload = {
+      ...form,
+      scheduled_start: toDatetimeLocalIsoWithOffset(form.scheduled_start),
+    }
     if (isEditing.value) {
-      await store.updateExam(props.exam.id, form)
+      await store.updateExam(props.exam.id, payload)
     } else {
-      await store.createExam(form)
+      await store.createExam(payload)
     }
     emit('saved')
   } catch (err) {

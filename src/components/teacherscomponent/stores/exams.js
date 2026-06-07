@@ -1,7 +1,7 @@
 /**
  * Teacher Exams Store (Pinia)
  *
- * Lifecycle: draft → live → concluded.
+ * Lifecycle: draft → submitted → active → completed.
  */
 import { defineStore } from 'pinia'
 import {
@@ -10,14 +10,12 @@ import {
   createExam,
   updateExam,
   deleteExam,
-  endSession,
-  startSession,
+  submitForReview,
+  activateExam,
   getExamQuestions,
   addQuestionToExam,
   removeQuestionFromExam,
   updateExamQuestion,
-  getClassStudentsForAttendance,
-  saveAttendance,
   getStudentAttempts,
   forceSubmitAttempt,
   getExamResults,
@@ -34,55 +32,39 @@ import {
 // Invalid transitions are HIDDEN (not just disabled) in the UI.
 export const EXAM_STATUSES = {
   DRAFT: 'draft',
-  LIVE: 'live',
-  CONCLUDED: 'concluded',
+  SUBMITTED: 'submitted',
+  ACTIVE: 'active',
+  COMPLETED: 'completed',
 }
 
 export const VALID_TRANSITIONS = {
   draft: [
     {
-      action: 'start-session',
-      label: 'Start Exam',
+      action: 'submit-for-review',
+      label: 'Submit for Review',
       variant: 'primary',
-      confirm: false,
-      description: 'Make this exam live for students.',
-    },
-  ],
-  live: [
-    {
-      action: 'end-session',
-      label: 'End Session',
-      variant: 'danger',
       confirm: true,
-      description: 'End this live exam and trigger auto-grading.',
+      confirmLabel: 'Confirm Submit',
+      description: 'You will be unable to make changes to this exam when it is submitted. Are you sure you want to continue?',
     },
   ],
-  concluded: [],
-  active: [
-    {
-      action: 'end-session',
-      label: 'End Session',
-      variant: 'danger',
-      confirm: true,
-      description: 'End this live exam and trigger auto-grading.',
-    },
-  ],
+  submitted: [],
+  active: [],
+  completed: [],
 }
 
 export const STATUS_LABELS = {
   draft: 'Draft',
-  live: 'Live',
-  active: 'Live',
-  concluded: 'Concluded',
-  grading: 'Concluded',
+  submitted: 'Submitted',
+  active: 'Active',
+  completed: 'Completed',
 }
 
 export const STATUS_CLASSES = {
   draft: 'bg-slate-100 text-slate-700',
-  live: 'bg-emerald-100 text-emerald-700',
+  submitted: 'bg-slate-100 text-slate-700',
   active: 'bg-emerald-100 text-emerald-700',
-  concluded: 'bg-slate-200 text-slate-700',
-  grading: 'bg-slate-200 text-slate-700',
+  completed: 'bg-slate-200 text-slate-700',
 }
 
 // ─── Store ────────────────────────────────────────────────────────────────────
@@ -99,7 +81,6 @@ export const useTeacherExamsStore = defineStore('teacher-exams', {
     currentExam: null,
     currentExamQuestions: [],
     currentExamStudents: [],   // attendance list
-    currentExamAttempts: [],   // monitoring
     currentExamResults: [],
 
     // Metadata (loaded once for form dropdowns)
@@ -155,7 +136,7 @@ export const useTeacherExamsStore = defineStore('teacher-exams', {
 
     // Can the exam be edited (only draft)
     canEdit: () => (exam) => (exam?.status || '').toLowerCase() === 'draft',
-    canDelete: () => (exam) => ['draft', 'concluded', 'grading'].includes((exam?.status || '').toLowerCase()),
+    canDelete: () => (exam) => (exam?.status || '').toLowerCase() === 'draft',
 
     // Alias: ExamWizard reads examsStore.sessions
     sessions: (state) => state.academicSessions,
@@ -173,8 +154,10 @@ export const useTeacherExamsStore = defineStore('teacher-exams', {
       })
     },
 
-    liveExams: (state) => state.exams.filter((e) => ['live', 'active'].includes((e.status || '').toLowerCase())),
     draftExams: (state) => state.exams.filter((e) => (e.status || '').toLowerCase() === 'draft'),
+    submittedExams: (state) => state.exams.filter((e) => (e.status || '').toLowerCase() === 'submitted'),
+    activeExams: (state) => state.exams.filter((e) => (e.status || '').toLowerCase() === 'active'),
+    completedExams: (state) => state.exams.filter((e) => (e.status || '').toLowerCase() === 'completed'),
   },
 
   actions: {
@@ -247,14 +230,14 @@ export const useTeacherExamsStore = defineStore('teacher-exams', {
 
     // ── Lifecycle ─────────────────────────────────────────────────────────────
 
-    async startSession(id) {
-      const result = await startSession(id)
+    async submitForReview(id) {
+      const result = await submitForReview(id)
       await this.fetchExam(id)
       return result
     },
 
-    async endSession(id) {
-      const result = await endSession(id)
+    async activateExam(id) {
+      const result = await activateExam(id)
       await this.fetchExam(id)
       return result
     },
@@ -288,22 +271,6 @@ export const useTeacherExamsStore = defineStore('teacher-exams', {
       return result
     },
 
-    // ── Attendance ────────────────────────────────────────────────────────────
-
-    async fetchClassStudents(examId) {
-      const students = await getClassStudentsForAttendance(examId)
-      this.currentExamStudents = Array.isArray(students) ? students : (students?.data || [])
-      return this.currentExamStudents
-    },
-
-    async fetchAttendanceStudents(examId) {
-      return this.fetchClassStudents(examId)
-    },
-
-    async saveAttendance(examId, attendance) {
-      return await saveAttendance(examId, attendance)
-    },
-
     // ── Monitoring ────────────────────────────────────────────────────────────
 
     async fetchAttempts(examId) {
@@ -319,6 +286,20 @@ export const useTeacherExamsStore = defineStore('teacher-exams', {
         a.id === attemptId ? { ...a, status: 'submitted' } : a,
       )
       return result
+    },
+
+    async endSession(examId) {
+      const attempts = await getStudentAttempts(examId)
+      const activeAttempts = (Array.isArray(attempts) ? attempts : attempts?.data || [])
+        .filter((attempt) => attempt && !['submitted', 'completed'].includes((attempt.status || '').toLowerCase()))
+
+      for (const attempt of activeAttempts) {
+        if (!attempt?.id) continue
+        await forceSubmitAttempt(attempt.id)
+      }
+
+      await this.fetchExam(examId)
+      return activeAttempts.length
     },
 
     // ── Results ───────────────────────────────────────────────────────────────
@@ -428,13 +409,9 @@ export const useTeacherExamsStore = defineStore('teacher-exams', {
      */
     async performLifecycleAction(examId, action, payload = {}) {
       switch (action) {
-        case 'start-session':
-        case 'start':
-        case 'activate':
-          return this.startSession(examId)
-        case 'end-session':
-        case 'endSession':
-          return this.endSession(examId)
+        case 'submit-for-review':
+        case 'submitForReview':
+          return this.submitForReview(examId)
         default:
           throw new Error(`Unknown lifecycle action: ${action}`)
       }

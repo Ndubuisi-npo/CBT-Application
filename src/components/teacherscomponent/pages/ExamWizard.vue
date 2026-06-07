@@ -180,16 +180,16 @@
                   <input v-model.number="wizard.duration" type="number" min="10" class="wizard-input" />
                 </label>
                 <label class="wizard-field">
-                  <span>Pass Mark (%)</span>
-                  <input v-model.number="wizard.passMark" type="number" min="1" max="100" class="wizard-input" />
+                  <span>Total Marks</span>
+                  <input v-model.number="wizard.totalMarks" type="number" min="0" class="wizard-input" />
+                </label>
+                <label class="wizard-field">
+                  <span>Max Attempts</span>
+                  <input v-model.number="wizard.maxAttempts" type="number" min="1" class="wizard-input" />
                 </label>
                 <label class="wizard-field">
                   <span>Scheduled Start</span>
-                  <input v-model="wizard.startTime" type="datetime-local" class="wizard-input" />
-                </label>
-                <label class="wizard-field">
-                  <span>Scheduled End</span>
-                  <input v-model="wizard.endTime" type="datetime-local" class="wizard-input" />
+                  <input v-model="wizard.scheduledStart" type="datetime-local" class="wizard-input" />
                 </label>
               </div>
 
@@ -221,7 +221,7 @@
                       • {{ wizard.type === 'exam' ? 'Exam' : 'Test' }}
                     </p>
                   </div>
-                  <span class="rounded-full bg-white/10 px-4 py-2 text-sm font-semibold">{{ publishState }}</span>
+                  <span class="rounded-full bg-white/10 px-4 py-2 text-sm font-semibold">{{ statusLabel }}</span>
                 </div>
                 <p class="mt-5 max-w-3xl text-sm leading-6 text-slate-200">{{ wizard.instructions || 'No student instructions added yet.' }}</p>
               </div>
@@ -248,8 +248,8 @@
               <div class="rounded-[24px] border border-slate-200 bg-white p-5">
                 <div class="flex items-center justify-between">
                   <h3 class="text-lg font-semibold text-slate-900">Review Checklist</h3>
-                  <button type="button" class="text-sm font-semibold text-[#0B1F3A] hover:text-[#D4AF37]" @click="showPublishModal = true">
-                    Publish options
+                  <button type="button" class="text-sm font-semibold text-[#0B1F3A] hover:text-[#D4AF37]" @click="showSaveModal = true">
+                    Save exam draft
                   </button>
                 </div>
                 <div class="mt-5 grid gap-4 md:grid-cols-2">
@@ -288,7 +288,7 @@
                 </div>
                 <div class="flex items-center justify-between">
                   <span>Draft status</span>
-                  <span class="font-semibold text-slate-900">{{ publishState }}</span>
+                  <span class="font-semibold text-slate-900">{{ statusLabel }}</span>
                 </div>
                 <div class="flex items-center justify-between">
                   <span>Auto-save</span>
@@ -311,14 +311,15 @@
             </div>
 
             <div class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
-              <h3 class="text-lg font-semibold text-slate-900">Publishing States</h3>
+              <h3 class="text-lg font-semibold text-slate-900">Lifecycle States</h3>
               <div class="mt-4 flex flex-wrap gap-2 text-sm">
                 <span class="rounded-full bg-slate-100 px-3 py-2 font-medium text-slate-600">Draft</span>
-                <span class="rounded-full bg-blue-100 px-3 py-2 font-medium text-blue-700">Scheduled</span>
-                <span class="rounded-full bg-emerald-100 px-3 py-2 font-medium text-emerald-700">Published</span>
+                <span class="rounded-full bg-blue-100 px-3 py-2 font-medium text-blue-700">Submitted</span>
+                <span class="rounded-full bg-emerald-100 px-3 py-2 font-medium text-emerald-700">Active</span>
+                <span class="rounded-full bg-slate-200 px-3 py-2 font-medium text-slate-700">Completed</span>
               </div>
               <p class="mt-4 text-sm leading-6 text-slate-500">
-                Save now as draft, publish immediately, or schedule for a future sitting. Results will be auto-generated after submission.
+                Save the exam as a draft, then submit it for review. The school admin will activate it. Completed exams show results after the exam ends.
               </p>
             </div>
           </div>
@@ -329,32 +330,32 @@
     <div class="sticky bottom-4 z-20 flex flex-col gap-3 rounded-[28px] border border-slate-200 bg-white/95 p-4 shadow-xl backdrop-blur sm:flex-row sm:items-center sm:justify-between">
       <div>
         <p class="text-sm font-semibold text-slate-900">{{ currentStepLabel }}</p>
-        <p class="text-sm text-slate-500">Complete each step before publishing to students.</p>
+        <p class="text-sm text-slate-500">Complete each step before saving the exam draft.</p>
       </div>
       <div class="flex flex-wrap items-center gap-2">
         <AppButton text="Previous" variant="ghost" :disabled="currentStep === 1" @click="currentStep -= 1" />
         <AppButton v-if="currentStep < 4" text="Next Step" variant="primary" @click="nextStep" />
-        <AppButton v-else text="Review Publish Options" variant="primary" @click="openPublishDialog" />
+        <AppButton v-else text="Save Draft" variant="primary" @click="openSaveDialog" />
       </div>
     </div>
 
-    <div v-if="showPublishModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 px-4">
+    <div v-if="showSaveModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 px-4">
       <div class="w-full max-w-2xl rounded-[28px] bg-white p-6 shadow-2xl">
         <div class="flex items-start justify-between gap-4">
           <div>
-            <p class="text-xs font-semibold uppercase tracking-[0.24em] text-[#D4AF37]">Review & Publish</p>
+            <p class="text-xs font-semibold uppercase tracking-[0.24em] text-[#D4AF37]">Save Draft</p>
             <h2 class="mt-2 text-2xl font-semibold text-slate-900">{{ wizard.title || 'Untitled exam draft' }}</h2>
           </div>
-          <AppButton :icon="X" variant="ghost" @click="showPublishModal = false" />
+          <AppButton :icon="X" variant="ghost" @click="showSaveModal = false" />
         </div>
 
         <div class="mt-6 space-y-4">
           <button
-            v-for="option in publishOptions"
+            v-for="option in saveOptions"
             :key="option.state"
             type="button"
             class="w-full rounded-[24px] border p-5 text-left transition hover:border-[#D4AF37]/70 hover:bg-slate-50"
-            @click="publishExam(option.state)"
+            @click="saveExam"
           >
             <div class="flex items-center justify-between gap-4">
               <div>
@@ -378,6 +379,7 @@ import AppButton from '../../shared/AppButton.vue'
 import { useSchoolAdminUiStore } from '../../schooladmincomponents/stores/ui'
 import SectionCard from '../components/SectionCard.vue'
 import { useTeacherExamsStore } from '../stores/exams'
+import { toDatetimeLocalIsoWithOffset } from '../../../js/lib/helpers'
 
 const router   = useRouter()
 const uiStore  = useSchoolAdminUiStore()
@@ -387,7 +389,7 @@ const steps = [
   { id: 1, short: 'Step 1', title: 'Basic Information', description: 'Set the what, who, and why of the exam.' },
   { id: 2, short: 'Step 2', title: 'Select Questions', description: 'Choose and order auto-gradable objective items.' },
   { id: 3, short: 'Step 3', title: 'Configure Settings', description: 'Control schedule, review, and anti-cheat rules.' },
-  { id: 4, short: 'Step 4', title: 'Review & Publish', description: 'Confirm everything before students see it.' },
+  { id: 4, short: 'Step 4', title: 'Review & Save', description: 'Confirm everything before saving the draft.' },
 ]
 
 // Reference data — loaded from API; fallback to empty arrays
@@ -398,13 +400,13 @@ const sessions    = computed(() => examsStore.sessions)
 const terms       = computed(() => examsStore.terms)
 const questionTopics = computed(() => [...new Set(questionOptions.value.map((q) => q.topic).filter(Boolean))])
 
-const publishOptions = [
+const saveOptions = [
   { state: 'Draft', label: 'Save as draft', description: 'Save now and launch from the Exams page when ready.', badgeClass: 'bg-slate-100 text-slate-700' },
 ]
 
 const currentStep      = ref(1)
 const questionSearch   = ref('')
-const showPublishModal = ref(false)
+const showSaveModal = ref(false)
 const autosaveLabel    = ref('Not saved yet')
 const saving           = ref(false)
 const createdExamId    = ref(null)
@@ -419,23 +421,23 @@ const wizard = reactive({
   term_id: '',
   session_id: '',
   type: 'exam',
-  purpose: '',
   instructions: '',
   selectedQuestionIds: [],
   questionMarks: {},
   duration: 60,
+  totalMarks: null,
   passMark: 50,
-  startTime: '',
-  endTime: '',
+  maxAttempts: 1,
+  scheduledStart: '',
   randomizeQuestions: true,
   randomizeOptions: true,
   allowReview: false,
   showResultsInstantly: false,
-  status: 'Draft',
+  status: 'draft',
   // UI helpers
-  subject: '',   // display name
-  className: '', // display name
-  term: '',      // display name
+  subject: '',
+  className: '',
+  term: '',
 })
 
 // Question bank from API
@@ -460,10 +462,10 @@ const totalMarks = computed(() =>
 )
 
 const currentStepLabel = computed(() => steps.find((s) => s.id === currentStep.value)?.title || '')
-const publishState     = computed(() => wizard.status)
+const statusLabel      = computed(() => wizard.status)
 const scheduleSummary  = computed(() => {
-  if (!wizard.startTime || !wizard.endTime) return 'Start and end time not fully set'
-  return `${wizard.startTime.replace('T', ' ')} to ${wizard.endTime.replace('T', ' ')}`
+  if (!wizard.scheduledStart) return 'Scheduled start not set'
+  return wizard.scheduledStart.replace('T', ' ')
 })
 
 const validationChecklist = computed(() => [
@@ -545,7 +547,11 @@ const buildPayload = () => ({
   term_id:          wizard.term_id,
   type:             wizard.type,
   duration_minutes: wizard.duration,
+  total_marks:      wizard.totalMarks,
   pass_mark:        wizard.passMark,
+  max_attempts:     wizard.maxAttempts,
+  scheduled_start:  toDatetimeLocalIsoWithOffset(wizard.scheduledStart) || null,
+  instructions:     wizard.instructions,
 })
 
 const saveDraft = async () => {
@@ -580,16 +586,16 @@ const addQuestionsToExam = async (examId) => {
   }
 }
 
-const openPublishDialog = () => {
+const openSaveDialog = () => {
   if (!validationChecklist.value.every((i) => i.valid)) {
     validateStep()
     return
   }
-  showPublishModal.value = true
+  showSaveModal.value = true
 }
 
-const publishExam = async (state) => {
-  showPublishModal.value = false
+const saveExam = async () => {
+  showSaveModal.value = false
   saving.value = true
   try {
     let examId = createdExamId.value

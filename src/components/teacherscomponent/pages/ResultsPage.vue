@@ -1,22 +1,22 @@
 <template>
   <div class="space-y-6">
-    <SectionCard title="Published Results" subtitle="Exam outcomes that have been released to students.">
+    <SectionCard title="Completed Exams" subtitle="Exam outcomes that have been finalized and released to students.">
       <template #header>
         <select
           v-model="selectedExamId"
           class="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:border-[#0B1F3A]"
           @change="loadResults"
         >
-          <option value="">All published exams</option>
-          <option v-for="e in publishedExams" :key="e.id" :value="e.id">{{ e.title }}</option>
+          <option value="">All completed exams</option>
+          <option v-for="e in completedExams" :key="e.id" :value="e.id">{{ e.title }}</option>
         </select>
       </template>
 
       <!-- Summary cards -->
       <div class="grid gap-4 pt-6 md:grid-cols-4">
         <div class="rounded-2xl bg-slate-50 p-4">
-          <p class="text-xs uppercase tracking-wider text-slate-400">Published Exams</p>
-          <p class="mt-2 text-3xl font-semibold text-slate-900">{{ publishedExams.length }}</p>
+          <p class="text-xs uppercase tracking-wider text-slate-400">Completed Exams</p>
+          <p class="mt-2 text-3xl font-semibold text-slate-900">{{ completedExams.length }}</p>
         </div>
         <div class="rounded-2xl bg-slate-50 p-4">
           <p class="text-xs uppercase tracking-wider text-slate-400">Total Submissions</p>
@@ -40,7 +40,7 @@
         <button class="ml-2 underline font-semibold" @click="loadResults">Retry</button>
       </div>
       <div v-else-if="!results.length" class="py-8 text-center text-sm text-slate-500 border border-dashed border-slate-300 rounded-2xl mt-4">
-        No results available. Publish an exam from the Grading page.
+        No results available. Complete an exam to populate the results list.
       </div>
       <div v-else class="overflow-hidden rounded-2xl border border-slate-200 mt-6">
         <table class="min-w-full divide-y divide-slate-200 bg-white">
@@ -90,7 +90,7 @@ const results        = ref([])
 const loading        = ref(false)
 const loadError      = ref('')
 
-const publishedExams = computed(() => store.exams.filter((e) => e.status === 'published'))
+const completedExams = computed(() => store.exams.filter((e) => (e.status || '').toLowerCase() === 'completed'))
 
 const avgScore = computed(() => {
   const pcts = results.value.map((r) => r.percentage).filter((p) => p != null)
@@ -111,9 +111,9 @@ const loadResults = async () => {
       const res = await apiFetch(`/api/exams/${selectedExamId.value}/results`)
       results.value = Array.isArray(res) ? res : res?.data || []
     } else {
-      // Aggregate across all published exams
+      // Aggregate across all completed exams
       const all = await Promise.all(
-        publishedExams.value.map((e) =>
+        completedExams.value.map((e) =>
           apiFetch(`/api/exams/${e.id}/results`)
             .then((r) => (Array.isArray(r) ? r : r?.data || []))
             .catch(() => [])
@@ -132,7 +132,7 @@ onMounted(async () => {
   if (!store.exams.length) {
     await store.fetchExams().catch(() => {})
   }
-  if (publishedExams.value.length) {
+  if (completedExams.value.length) {
     await loadResults()
   }
 })

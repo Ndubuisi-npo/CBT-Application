@@ -1,16 +1,16 @@
 import { apiFetch } from '../../../../js/lib/api'
 
 const normalizeExam = (exam = {}) => ({
+  ...exam,                                    // preserve all raw fields (class_level, scheduled_start, etc.)
   id: exam.id,
   title: exam.title || exam.name || 'Exam',
-  subject: exam.subject?.name || exam.subject || exam.subject_name || exam.subjectTitle || exam.subjectTitle || '',
+  subject: exam.subject?.name || exam.subject || exam.subject_name || exam.subjectTitle || '',
   className: exam.class_arm?.name || exam.class_arm_name || exam.class_name || exam.className || exam.class || '',
-  duration: Number(exam.duration || exam.duration_minutes || exam.durationMinutes || exam.time_limit || 0) || 0,
+  duration: Number(exam.duration_minutes || exam.duration || exam.durationMinutes || exam.time_limit || 0) || 0,
   status: exam.status || (exam.is_active ? 'Live' : 'Draft') || 'Draft',
   instructions: exam.instructions || exam.instructions_text || exam.instruction || '',
   remaining_attempts: exam.remaining_attempts ?? exam.remainingAttempts ?? exam.remaining_attempts_count ?? null,
   start_time: exam.start_time || exam.startTime || exam.scheduled_start || null,
-  end_time: exam.end_time || exam.endTime || exam.scheduled_end || null,
   questions: Array.isArray(exam.questions) ? exam.questions : [],
 })
 
@@ -21,7 +21,17 @@ export async function getAvailableExams(params = {}) {
 }
 
 export async function getStudentExam(examId) {
-  // Spec has no dedicated single-exam endpoint for students; get from available list
+  // Try the direct exam detail endpoint first
+  try {
+    const single = await apiFetch(`/api/student/exams/${examId}`)
+    if (single && (single.id || single.data?.id)) {
+      return normalizeExam(single.data ?? single)
+    }
+  } catch {
+    // Fall through to available list lookup
+  }
+
+  // Fall back: search within the available list
   const response = await apiFetch('/api/student/exams/available')
   const exams = Array.isArray(response) ? response : response?.data || []
   const found = exams.find((e) => String(e.id) === String(examId))

@@ -148,8 +148,8 @@
                 <td class="px-5 py-4 text-sm text-slate-600">{{ student?.last_name || '-' }}</td>
                 <td class="px-5 py-4 text-sm text-slate-600">{{ student?.email || '-' }}</td>
                 <td class="px-5 py-4 text-sm text-slate-600">{{ student?.phone || '-' }}</td>
-                <td class="px-5 py-4 text-sm text-slate-600">{{ student.student_profile?.admission_number || '-' }}</td>
-                <td class="px-5 py-4 text-sm text-slate-600">{{ student.student_profile?.class_arm?.name || student.student_profile?.class_name || '-' }}</td>
+                <td class="px-5 py-4 text-sm text-slate-600">{{ student.studentProfile?.admission_number || '-' }}</td>
+                <td class="px-5 py-4 text-sm text-slate-600">{{ student.studentProfile?.class_level?.name || student.student_profile?.class_name || '-' }}</td>
                 <td class="px-5 py-4">
                   <div class="flex flex-wrap gap-2">
                     <AppButton text="View" @click="viewStudent(student)" variant="outline" size="xs" />

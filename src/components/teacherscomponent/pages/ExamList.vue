@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-6">
     <!-- Stats bar -->
-    <SectionCard title="Exam Management" subtitle="Create, manage, launch, and monitor your exams. You own the full lifecycle.">
+    <SectionCard title="Exam Management" subtitle="Create, manage, and submit your exams. The school admin activates them for students.">
       <template #header>
         <div class="flex flex-wrap items-center gap-3">
           <AppButton :icon="Plus" text="Create Exam" variant="primary" @click="openCreateModal" />
@@ -15,16 +15,16 @@
           <p class="mt-3 text-3xl font-semibold text-slate-900">{{ store.exams.length }}</p>
         </div>
         <div class="rounded-[24px] border border-slate-200 bg-slate-50 p-5">
-          <p class="text-sm text-slate-500">Live Now</p>
-          <p class="mt-3 text-3xl font-semibold text-emerald-600">{{ liveCount }}</p>
+          <p class="text-sm text-slate-500">Active</p>
+          <p class="mt-3 text-3xl font-semibold text-emerald-600">{{ countByStatus('active') }}</p>
         </div>
         <div class="rounded-[24px] border border-slate-200 bg-slate-50 p-5">
           <p class="text-sm text-slate-500">Draft</p>
           <p class="mt-3 text-3xl font-semibold text-slate-900">{{ countByStatus('draft') }}</p>
         </div>
         <div class="rounded-[24px] border border-slate-200 bg-slate-50 p-5">
-          <p class="text-sm text-slate-500">Concluded</p>
-          <p class="mt-3 text-3xl font-semibold text-blue-600">{{ concludedCount }}</p>
+          <p class="text-sm text-slate-500">Completed</p>
+          <p class="mt-3 text-3xl font-semibold text-blue-600">{{ countByStatus('completed') }}</p>
         </div>
       </div>
     </SectionCard>
@@ -76,7 +76,7 @@
                 </span>
               </div>
               <p class="text-sm text-slate-500">
-                {{ exam.subject?.name || exam.subject || '—' }} &nbsp;|&nbsp; {{ exam.class_level?.name || '—' }} &nbsp;|&nbsp; {{ exam.class_arm?.name || '—' }} &nbsp;|&nbsp; {{ exam.type || 'exam' }}
+                {{ exam.subject?.name || exam.subject || '—' }} &nbsp;|&nbsp; {{ exam.classLevel?.name || '—' }} &nbsp;|&nbsp; {{ exam.classArm?.name || '—' }} &nbsp;|&nbsp; {{ exam.type || 'exam' }}
               </p>
               <div class="grid gap-3 md:grid-cols-4">
                 <div class="rounded-2xl bg-slate-50 px-4 py-3 text-sm">
@@ -91,10 +91,6 @@
                   <p class="text-xs uppercase tracking-[0.18em] text-slate-400">Pass Mark</p>
                   <p class="mt-2 font-medium text-slate-900">{{ exam.pass_mark ?? exam.passMark ?? '—' }}%</p>
                 </div>
-                <div class="rounded-2xl bg-slate-50 px-4 py-3 text-sm">
-                  <p class="text-xs uppercase tracking-[0.18em] text-slate-400">Attempts</p>
-                  <p class="mt-2 font-medium text-slate-900">{{ exam.attempts_count ?? '—' }}</p>
-                </div>
               </div>
             </div>
 
@@ -105,17 +101,12 @@
 
               <!-- Edit/Questions — only for draft -->
               <template v-if="store.canEdit(exam)">
-                <AppButton :icon="Edit3" text="Edit" variant="outline" size="sm" @click="openEditModal(exam)" />
+                <AppButton :icon="Edit3" text="Continue Draft" variant="outline" size="sm" @click="openEditModal(exam)" />
                 <AppButton :icon="ListChecks" text="Questions" variant="secondary" size="sm" @click="manageQuestions(exam)" />
               </template>
 
-              <!-- Active exam — monitoring & end session -->
-              <template v-if="['live', 'active'].includes((exam.status || '').toLowerCase())">
-                <AppButton :icon="Activity" text="Monitor" variant="primary" size="sm" @click="openMonitor(exam)" />
-              </template>
-
-              <!-- Results — after conclusion -->
-              <template v-if="['concluded', 'grading', 'completed'].includes((exam.status || '').toLowerCase())">
+              <!-- Results — completed exams only -->
+              <template v-if="(exam.status || '').toLowerCase() === 'completed'">
                 <AppButton :icon="BarChart2" text="Results" variant="outline" size="sm" @click="viewResults(exam)" />
               </template>
 
@@ -181,13 +172,6 @@
       @updated="loadExams"
     />
 
-    <!-- Monitoring panel -->
-    <ExamMonitorPanel
-      v-if="monitorExam"
-      :exam="monitorExam"
-      @close="monitorExam = null"
-    />
-
     <!-- Results panel -->
     <ExamResultsPanel
       v-if="resultsExam"
@@ -206,13 +190,12 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
-import { Activity, BarChart2, Edit3, Eye, FileQuestion, ListChecks, Plus, Trash2 } from 'lucide-vue-next'
+import { BarChart2, Edit3, Eye, FileQuestion, ListChecks, Plus, Trash2 } from 'lucide-vue-next'
 import AppButton from '../../shared/AppButton.vue'
 import SectionCard from '../components/SectionCard.vue'
 import ConfirmModal from '../components/ConfirmModal.vue'
 import ExamFormModal from '../components/ExamFormModal.vue'
 import ExamQuestionsPanel from '../components/ExamQuestionsPanel.vue'
-import ExamMonitorPanel from '../components/ExamMonitorPanel.vue'
 import ExamResultsPanel from '../components/ExamResultsPanel.vue'
 import ExamPreviewModal from '../components/ExamPreviewModal.vue'
 import { useTeacherExamsStore } from '../stores/exams'
@@ -229,7 +212,6 @@ const pendingAction = ref(null)  // { examId, action, title, message, confirmLab
 const showFormModal = ref(false)
 const editingExam = ref(null)
 const questionsPanelExam = ref(null)
-const monitorExam = ref(null)
 const resultsExam = ref(null)
 const previewExamData = ref(null)
 
@@ -238,18 +220,13 @@ const previewExamData = ref(null)
 const tabs = [
   { label: 'All', value: 'all' },
   { label: 'Draft', value: 'draft' },
-  { label: 'Live', value: 'live' },
-  { label: 'Concluded', value: 'concluded' },
+  { label: 'Submitted', value: 'submitted' },
+  { label: 'Active', value: 'active' },
+  { label: 'Completed', value: 'completed' },
 ]
 
 const filteredExams = computed(() => {
   if (activeTab.value === 'all') return store.exams
-  if (activeTab.value === 'live') {
-    return store.exams.filter((e) => ['live', 'active'].includes((e.status || '').toLowerCase()))
-  }
-  if (activeTab.value === 'concluded') {
-    return store.exams.filter((e) => ['concluded', 'grading', 'completed'].includes((e.status || '').toLowerCase()))
-  }
   return store.exams.filter((e) => (e.status || '').toLowerCase() === activeTab.value)
 })
 
@@ -257,16 +234,32 @@ const countByStatus = (status) =>
   store.exams.filter((e) => (e.status || '').toLowerCase() === status).length
 
 const liveCount = computed(() =>
-  store.exams.filter((e) => ['live', 'active'].includes((e.status || '').toLowerCase())).length,
+  store.exams.filter((e) => (e.status || '').toLowerCase() === 'active').length,
 )
 
 const concludedCount = computed(() =>
-  store.exams.filter((e) => ['concluded', 'grading', 'completed'].includes((e.status || '').toLowerCase())).length,
+  store.exams.filter((e) => (e.status || '').toLowerCase() === 'completed').length,
 )
 
-const getQuestionCount = (exam) =>
-  exam.question_count ?? exam.questions_count ?? exam.questionsCount ??
-  (Array.isArray(exam.questions) ? exam.questions.length : 0)
+const getQuestionCount = (exam) => {
+  if (!exam) return 0
+
+  const explicitCount = [
+    exam.question_count,
+    exam.questions_count,
+    exam.questionsCount,
+    exam.questionCount,
+  ].find((value) => value != null && value !== '')
+
+  if (typeof explicitCount === 'number') return explicitCount
+  if (typeof explicitCount === 'string' && !Number.isNaN(Number(explicitCount))) return Number(explicitCount)
+
+  if (Array.isArray(exam.questions)) return exam.questions.length
+  if (Array.isArray(exam.questions?.data)) return exam.questions.data.length
+  if (Array.isArray(exam.exam_questions)) return exam.exam_questions.length
+
+  return 0
+}
 
 // ── Load ───────────────────────────────────────────────────────────────────
 
@@ -307,10 +300,6 @@ const manageQuestions = (exam) => {
   questionsPanelExam.value = exam
 }
 
-const openMonitor = (exam) => {
-  monitorExam.value = exam
-}
-
 const viewResults = (exam) => {
   resultsExam.value = exam
 }
@@ -330,6 +319,7 @@ const confirmDelete = (exam) => {
   }
 }
 
+
 // ── Lifecycle action handling ──────────────────────────────────────────────
 
 const handleLifecycleAction = (exam, actionDef) => {
@@ -340,7 +330,7 @@ const handleLifecycleAction = (exam, actionDef) => {
       action: actionDef.action,
       title: `${actionDef.label} — "${exam.title}"?`,
       message: actionDef.description,
-      confirmLabel: actionDef.label,
+      confirmLabel: actionDef.confirmLabel || actionDef.label,
       variant: actionDef.variant === 'danger' ? 'danger' : 'primary',
     }
 
@@ -364,17 +354,15 @@ const executeAction = async (examId, action, extraValues = {}) => {
 
   try {
     switch (action) {
-      case 'start-session':
-        await store.startSession(examId)
-        uiStore.addToast({ title: 'Session started', message: 'The exam is now live for students.', variant: 'success' })
-        break
-      case 'end-session':
-        await store.endSession(examId)
-        uiStore.addToast({ title: 'Session ended', message: 'The exam has concluded and auto-grading has started.', variant: 'success' })
+      case 'submit-for-review':
+        await store.submitForReview(examId)
+        uiStore.addToast({ title: 'Submitted for review', message: 'The exam is now awaiting approval.', variant: 'success' })
+        await loadExams()
         break
       case 'delete':
         await store.deleteExam(examId)
         uiStore.addToast({ title: 'Exam deleted', variant: 'success' })
+        await loadExams()
         break
       default:
         console.warn(`Unknown action: ${action}`)

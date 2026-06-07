@@ -10,7 +10,7 @@
       <div class="rounded-[24px] bg-[#0B1F3A] p-6 text-white">
         <p class="text-xs font-semibold uppercase tracking-[0.28em] text-[#D4AF37]">Exam Instructions</p>
         <h1 class="mt-3 text-2xl font-semibold">{{ exam.title }}</h1>
-        <p class="mt-2 text-sm text-slate-300">{{ exam.subject || '—' }} • {{ exam.className || '—' }}</p>
+        <p class="mt-2 text-sm text-slate-300">{{ exam.subject || '—' }} • {{ exam.class_level?.name || '—' }}</p>
       </div>
 
       <!-- Exam details -->
@@ -60,7 +60,7 @@
 
       <!-- Error -->
       <div v-if="startError" class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-        {{ startError }}
+        {{ formattedStartError }}
       </div>
 
       <!-- CTA -->
@@ -83,10 +83,11 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppButton from '../../shared/AppButton.vue'
 import { getStudentExam, startStudentExam } from '../services/api/studentExams'
+import { fmtDateTime } from '../../../js/lib/helpers'
 import { useSchoolAdminUiStore } from '../../schooladmincomponents/stores/ui'
 
 const props = defineProps({ id: { type: String, required: true } })
@@ -100,6 +101,19 @@ const exam = ref(null)
 const loading = ref(true)
 const starting = ref(false)
 const startError = ref(null)
+
+// Convert any ISO timestamps in error messages to local time for readability
+const formattedStartError = computed(() => {
+  if (!startError.value) return ''
+  // Replace ISO 8601 datetime strings (e.g. 2026-06-04T14:28:00+00:00) with local time
+  return startError.value.replace(
+    /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})?/g,
+    (match) => {
+      const formatted = fmtDateTime(match)
+      return formatted || match
+    }
+  )
+})
 
 const defaultInstructions = `• This is a timed exam. The timer starts when you begin.
 • Read each question carefully before selecting your answer.

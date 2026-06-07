@@ -124,7 +124,7 @@ const navItems = computed(() => {
     { label: 'Academic Sessions', to: '/school-admin/sessions', icon: CalendarRange },
     { label: 'Teachers', to: '/school-admin/teachers', icon: Users },
     { label: 'Students', to: '/school-admin/students', icon: GraduationCap },
-    // NOTE: 'Assessments' link REMOVED — school admin has no exam responsibilities.
+    { label: 'Exam Approvals', to: '/school-admin/exams', icon: ClipboardList },
     { label: 'Class Levels', to: '/school-admin/class-levels', icon: Columns3 },
     { label: 'Subjects', to: '/school-admin/subjects', icon: Shapes },
     { label: 'Settings', to: '/school-admin/settings', icon: Settings },

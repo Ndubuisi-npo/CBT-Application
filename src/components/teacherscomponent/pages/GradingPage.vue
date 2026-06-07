@@ -35,7 +35,7 @@
           </div>
           <div class="rounded-2xl bg-slate-50 p-4 text-sm">
             <p class="text-xs uppercase tracking-wider text-slate-400">Status</p>
-            <p class="mt-2 text-sm font-semibold" :class="selectedExam?.status === 'published' ? 'text-emerald-700' : 'text-amber-600'">
+            <p class="mt-2 text-sm font-semibold" :class="selectedExam?.status === 'completed' ? 'text-emerald-700' : 'text-amber-600'">
               {{ (selectedExam?.status || '').toUpperCase() }}
             </p>
           </div>
@@ -90,7 +90,7 @@ const attempts        = ref([])
 const loadingAttempts = ref(false)
 
 const gradableExams = computed(() =>
-  store.exams.filter((e) => ['concluded', 'grading', 'completed'].includes((e.status || '').toLowerCase()))
+  store.exams.filter((e) => (e.status || '').toLowerCase() === 'completed')
 )
 
 const selectedExam = computed(() =>

@@ -138,9 +138,11 @@ const loadExams = async () => {
     const attemptChecks = await Promise.allSettled(
       available.map(async (exam) => {
         try {
-          const attempt = await getStudentExamAttempt(exam.id)
-          // If attempt exists and is not submitted, it's resumable
-          if (attempt && attempt.id && attempt.status !== 'submitted') {
+          const raw = await getStudentExamAttempt(exam.id)
+          // Normalise: response may be wrapped as { attempt, questions, ... } or direct attempt
+          const attempt = raw?.attempt ?? raw
+          // If attempt exists and is in_progress, it's resumable
+          if (attempt && attempt.id && (attempt.status === 'in_progress' || attempt.status === 'in-progress')) {
             return exam
           }
         } catch {

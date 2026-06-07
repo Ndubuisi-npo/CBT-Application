@@ -9,7 +9,7 @@
               <p class="text-xs font-semibold uppercase tracking-[0.32em] text-[#D4AF37]">Teacher Workspace</p>
               <h1 class="mt-3 text-3xl font-semibold tracking-tight">Welcome back, {{ userName }}</h1>
               <p class="mt-3 max-w-2xl text-sm leading-6 text-slate-200">
-                You own the exam lifecycle: create exams, make them live, monitor progress, and end sessions when students are done.
+                You own the exam lifecycle: create exams, add questions, and submit for admin approval. Active exams run automatically by schedule.
               </p>
             </div>
 
@@ -77,7 +77,7 @@
 
     <!-- Live exams -->
     <section v-if="liveExams.length">
-      <SectionCard title="Live Exams" subtitle="These exams are currently active. Monitor student progress.">
+      <SectionCard title="Live Exams" subtitle="These exams are currently active. Students can take them within the scheduled window.">
         <div class="space-y-4 pt-6">
           <div
             v-for="exam in liveExams"
@@ -93,8 +93,7 @@
                 <p class="mt-1 text-sm text-slate-500">{{ exam.subject?.name || exam.subject || '—' }} • {{ exam.class_level?.name || '—' }} • {{ exam.class_arm?.name || '—' }}</p>
               </div>
               <div class="flex gap-2">
-                <AppButton text="Monitor" variant="primary" size="sm" @click="goTo('/teachers/exams')" />
-                <AppButton text="End Session" variant="danger" size="sm" @click="confirmEndSession(exam)" />
+                <AppButton text="View Exam" variant="primary" size="sm" @click="goTo('/teachers/exams')" />
               </div>
             </div>
           </div>
@@ -158,16 +157,7 @@
       </div>
     </SectionCard>
 
-    <!-- Confirm action modal -->
-    <ConfirmModal
-      v-if="pendingDashAction"
-      :title="pendingDashAction.title"
-      :message="pendingDashAction.message"
-      :confirm-label="pendingDashAction.confirmLabel"
-      :variant="pendingDashAction.variant"
-      @confirm="runDashAction"
-      @cancel="pendingDashAction = null"
-    />
+
   </div>
 </template>
 
@@ -177,7 +167,6 @@ import { useRouter } from 'vue-router'
 import { BookOpen, ClipboardCheck, FilePenLine, GraduationCap, Plus } from 'lucide-vue-next'
 import AppButton from '../../shared/AppButton.vue'
 import SectionCard from '../components/SectionCard.vue'
-import ConfirmModal from '../components/ConfirmModal.vue'
 import { useTeacherExamsStore } from '../stores/exams'
 import { useSchoolAdminUiStore } from '../../schooladmincomponents/stores/ui'
 import { getAuthUser } from '../../../js/lib/auth'
@@ -186,7 +175,6 @@ const router = useRouter()
 const examsStore = useTeacherExamsStore()
 const uiStore = useSchoolAdminUiStore()
 
-const pendingDashAction = ref(null)
 
 // ── User info ──────────────────────────────────────────────────────────────
 
@@ -238,7 +226,7 @@ const recentExams = computed(() =>
 // ── Quick actions ──────────────────────────────────────────────────────────
 
 const quickActions = [
-  { label: 'Manage Exams', caption: 'Create, start and end exams', to: '/teachers/exams', icon: ClipboardCheck },
+  { label: 'Manage Exams', caption: 'Create and manage your exams', to: '/teachers/exams', icon: ClipboardCheck },
   { label: 'Question Bank', caption: 'Build and manage your questions', to: '/teachers/questions', icon: FilePenLine },
   { label: 'Results', caption: 'View student scores', to: '/teachers/exams', icon: BookOpen },
   { label: 'Attendance', caption: 'Mark class attendance', to: '/teachers/attendance', icon: GraduationCap },
@@ -246,33 +234,6 @@ const quickActions = [
 
 const goTo = (path) => router.push(path)
 
-// ── Dashboard quick actions ─────────────────────────────────────────────────
-
-const confirmEndSession = (exam) => {
-  pendingDashAction.value = {
-    examId: exam.id,
-      action: 'end-session',
-    title: `End Session — "${exam.title}"?`,
-    message: 'All active student attempts will be force-submitted. This cannot be undone.',
-    confirmLabel: 'End Session',
-    variant: 'danger',
-  }
-}
-
-const runDashAction = async () => {
-  if (!pendingDashAction.value) return
-  const { examId, action } = pendingDashAction.value
-  pendingDashAction.value = null
-
-  try {
-    if (action === 'end-session') {
-      await examsStore.endSession(examId)
-      uiStore.addToast({ title: 'Session ended', variant: 'success' })
-    }
-  } catch (err) {
-    uiStore.addToast({ title: 'Error', message: err.message, variant: 'error' })
-  }
-}
 
 // ── Load ───────────────────────────────────────────────────────────────────
 

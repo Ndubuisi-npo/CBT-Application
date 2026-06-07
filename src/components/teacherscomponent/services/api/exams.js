@@ -2,7 +2,7 @@
  * Teacher Exam API Service
  *
  * Teacher Exam API Service
- * Lifecycle: draft → live → concluded.
+ * Lifecycle: draft → submitted → active → completed.
  */
 import { apiFetch, extractErrorMessage } from '../../../../js/lib/api'
 
@@ -56,43 +56,19 @@ export async function deleteExam(id) {
 
 // ─── LIFECYCLE ACTIONS ───────────────────────────────────────────────────────
 
-export async function startSession(id) {
+export async function submitForReview(id) {
   try {
-    return await apiFetch(`/api/exams/${id}/start-session`, { method: 'POST' })
+    return await apiFetch(`/api/exams/${id}/submit-for-review`, { method: 'POST' })
   } catch (error) {
-    throw new Error(extractErrorMessage(error, 'Unable to start exam session.'))
+    throw new Error(extractErrorMessage(error, 'Unable to submit exam for review.'))
   }
 }
 
-export async function endSession(id) {
+export async function activateExam(id) {
   try {
-    return await apiFetch(`/api/exams/${id}/end-session`, { method: 'POST' })
+    return await apiFetch(`/api/exams/${id}/activate`, { method: 'POST' })
   } catch (error) {
-    throw new Error(extractErrorMessage(error, 'Unable to end exam session.'))
-  }
-}
-
-/**
- * any → locked
- * Teacher locks/freezes exam.
- */
-export async function lockExam(id) {
-  try {
-    return await apiFetch(`/api/exams/${id}/lock`, { method: 'POST' })
-  } catch (error) {
-    throw new Error(extractErrorMessage(error, 'Unable to lock exam.'))
-  }
-}
-
-/**
- * locked → draft
- * Teacher unlocks exam back to draft.
- */
-export async function unlockExam(id) {
-  try {
-    return await apiFetch(`/api/exams/${id}/unlock`, { method: 'POST' })
-  } catch (error) {
-    throw new Error(extractErrorMessage(error, 'Unable to unlock exam.'))
+    throw new Error(extractErrorMessage(error, 'Unable to activate exam.'))
   }
 }
 
@@ -137,28 +113,6 @@ export async function updateExamQuestion(examId, examQuestionId, payload) {
     })
   } catch (error) {
     throw new Error(extractErrorMessage(error, 'Unable to update exam question.'))
-  }
-}
-
-// ─── ATTENDANCE ───────────────────────────────────────────────────────────────
-
-export async function getClassStudentsForAttendance(examId) {
-  try {
-    return await apiFetch(`/api/exams/${examId}/attendance/class-students`)
-  } catch (error) {
-    throw new Error(extractErrorMessage(error, 'Unable to fetch class students.'))
-  }
-}
-
-export async function saveAttendance(examId, attendance) {
-  // attendance: [{ student_id, status: 'present' | 'absent' }]
-  try {
-    return await apiFetch(`/api/exams/${examId}/attendance/batch`, {
-      method: 'POST',
-      body: JSON.stringify({ attendance }),
-    })
-  } catch (error) {
-    throw new Error(extractErrorMessage(error, 'Unable to save attendance.'))
   }
 }
 
