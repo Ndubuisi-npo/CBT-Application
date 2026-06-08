@@ -35,7 +35,9 @@ export async function createQuestion(payload) {
       body.default_marks = Number(payload.default_marks ?? payload.marks ?? payload.points)
     }
 
-    if (payload.image_url) body.image_url = payload.image_url
+
+    // Always include options array
+    body.options = Array.isArray(payload.options) ? payload.options : []
 
     return await apiFetch('/api/questions', {
       method: 'POST',
@@ -62,6 +64,8 @@ export async function updateQuestion(id, payload) {
     else if (payload.topic !== undefined) body.topic = payload.topic
     if (payload.class_level_id !== undefined) body.class_level_id = payload.class_level_id
     else if (payload.className !== undefined) body.class_level_id = payload.className
+    // Always include options array if provided
+    if (payload.options !== undefined) body.options = Array.isArray(payload.options) ? payload.options : []
 
     return await apiFetch(`/api/questions/${id}`, {
       method: 'PUT',

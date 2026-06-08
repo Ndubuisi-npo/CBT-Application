@@ -90,7 +90,7 @@
                   <span class="inline-flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
                   <h3 class="text-lg font-semibold text-slate-900">{{ exam.title }}</h3>
                 </div>
-                <p class="mt-1 text-sm text-slate-500">{{ exam.subject?.name || exam.subject || '—' }} • {{ exam.class_level?.name || '—' }} • {{ exam.class_arm?.name || '—' }}</p>
+                <p class="mt-1 text-sm text-slate-500">{{ getExamSubjectName(exam) }} • {{ getExamClassLevelName(exam) }} • {{ getExamClassArmName(exam) }}</p>
               </div>
               <div class="flex gap-2">
                 <AppButton text="View Exam" variant="primary" size="sm" @click="goTo('/teachers/exams')" />
@@ -113,7 +113,7 @@
             <div class="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <h3 class="text-lg font-semibold text-slate-900">{{ exam.title }}</h3>
-                <p class="mt-1 text-sm text-slate-500">{{ exam.subject?.name || exam.subject || '—' }} • {{ exam.class_level?.name || '—' }} • {{ exam.class_arm?.name || '—' }}</p>
+                <p class="mt-1 text-sm text-slate-500">{{ getExamSubjectName(exam) }} • {{ getExamClassLevelName(exam) }} • {{ getExamClassArmName(exam) }}</p>
               </div>
               <div class="flex gap-2">
                 <AppButton text="View Results" variant="outline" size="sm" @click="goTo('/teachers/exams')" />
@@ -141,7 +141,7 @@
                 </span>
               </div>
               <p class="mt-2 text-sm text-slate-500">
-                {{ exam.subject?.name || exam.subject || '—' }} • {{ exam.class_level?.name || '—' }} • {{ exam.class_arm?.name || '—' }} • {{ exam.duration_minutes || exam.duration || '—' }} min
+                {{ getExamSubjectName(exam) }} • {{ getExamClassLevelName(exam) }} • {{ getExamClassArmName(exam) }} • {{ exam.duration_minutes || exam.duration || '—' }} min
               </p>
             </div>
             <AppButton text="Open" variant="outline" size="sm" @click="goTo('/teachers/exams')" />
@@ -216,6 +216,10 @@ const assignedWorkload = computed(() => {
     }
   })
 })
+
+const getExamSubjectName = (exam) => exam.subject?.name || exam.subject || exam.subject_name || exam.subjectName || '—'
+const getExamClassLevelName = (exam) => exam.class_level?.name || exam.classLevel?.name || exam.class_level_name || exam.classLevelName || exam.class_name || exam.className || '—'
+const getExamClassArmName = (exam) => exam.class_arm?.name || exam.classArm?.name || exam.class_arm_name || exam.classArmName || exam.arm?.name || exam.section || '—'
 
 const recentExams = computed(() =>
   [...examsStore.exams]

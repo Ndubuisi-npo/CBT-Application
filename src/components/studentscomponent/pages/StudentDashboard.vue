@@ -1,5 +1,20 @@
 <template>
   <div class="space-y-6">
+    <div class="rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm">
+      <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <p class="text-sm text-slate-500">Student Profile</p>
+          <h2 class="mt-2 text-2xl font-semibold text-slate-900">{{ studentName }}</h2>
+          <p class="text-sm text-slate-500">{{ user.email || user.username || 'No email available' }}</p>
+          <p v-if="studentClass" class="mt-1 text-sm text-slate-500">{{ studentClass }}</p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3">
+          <AppButton text="Logout" variant="secondary" size="sm" :processing="logoutLoading" loadingText="Logging out..." @click="handleLogout" />
+        </div>
+      </div>
+    </div>
+
     <!-- Available / Live exams -->
     <SectionCard title="Available Exams" subtitle="Live exams you can take right now.">
       <template #header>
@@ -94,26 +109,38 @@
 </template>
 
 <script setup>
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import SectionCard from '../../schooladmincomponents/components/SectionCard.vue'
 import AppButton from '../../shared/AppButton.vue'
 import { getAvailableExams, getStudentExamAttempt } from '../services/api/studentExams'
 import { useSchoolAdminUiStore } from '../../schooladmincomponents/stores/ui'
-import { getAuthUser } from '../../../js/lib/auth'
+import { getAuthUser, logout } from '../../../js/lib/auth'
 
 const router = useRouter()
 const uiStore = useSchoolAdminUiStore()
 
 const exams = ref([])
 const loading = ref(false)
+const logoutLoading = ref(false)
 const publishedResults = ref([])
 const resultsLoading = ref(false)
 const inProgressAttempts = ref([])
+const showProfile = ref(false)
 
 let pollTimer = null
 
 // ── Computed ───────────────────────────────────────────────────────────────
+
+const user = computed(() => getAuthUser() || {})
+const studentName = computed(() => {
+  const firstName = user.value.first_name || user.value.firstName || ''
+  const lastName = user.value.last_name || user.value.lastName || ''
+  return (firstName || lastName)
+    ? `${firstName} ${lastName}`.trim()
+    : user.value.name || user.value.full_name || 'Student'
+})
+
 
 const liveExams = computed(() =>
   exams.value.filter((e) => ['live', 'active'].includes((e.status || '').toLowerCase())),
@@ -190,6 +217,16 @@ const startExam = (exam) => {
 
 const resumeExam = (exam) => {
   router.push({ name: 'StudentExam', params: { id: exam.id } })
+}
+
+const handleLogout = async () => {
+  logoutLoading.value = true
+  try {
+    await logout()
+  } finally {
+    logoutLoading.value = false
+    router.replace({ name: 'Login' })
+  }
 }
 
 onMounted(async () => {

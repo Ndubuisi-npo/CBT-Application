@@ -123,17 +123,6 @@ export const useTeachersQuestionsStore = defineStore(
 
             async createQuestion(payload) {
                 const record = await createQuestion(payload);
-                const options = Array.isArray(payload.options) ? payload.options : [];
-                const savedOptions = [];
-                for (const option of options) {
-                    const content = String(option.content || option.text || '').trim();
-                    if (!content) continue;
-                    savedOptions.push(await createQuestionOption(record.id, {
-                        content,
-                        is_correct: Boolean(option.is_correct),
-                    }));
-                }
-                if (savedOptions.length) record.options = savedOptions;
                 this.questions = [record, ...this.questions];
                 this.totalQuestions++;
                 return record;

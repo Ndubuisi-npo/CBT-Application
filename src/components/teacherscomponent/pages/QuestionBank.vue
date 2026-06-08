@@ -37,14 +37,13 @@
             <button type="button" class="rounded-full bg-white px-4 py-2 font-semibold text-slate-700 shadow-sm">
               {{ selectedIds.length }} selected
             </button>
-            <span class="hidden sm:inline">Only multiple choice items are available for auto-graded exams.</span>
           </div>
           <div class="flex flex-wrap items-center gap-2">
             <AppButton text="Clear Filters" variant="outline" size="sm" @click="clearFilters" />
-            <AppButton text="Bulk Publish" variant="secondary" size="sm" :disabled="!selectedIds.length" @click="bulkAction('publish')" />
-            <AppButton text="Mark Draft" variant="secondary" size="sm" :disabled="!selectedIds.length" @click="bulkAction('draft')" />
+            <!-- <AppButton text="Bulk Publish" variant="secondary" size="sm" :disabled="!selectedIds.length" @click="bulkAction('publish')" /> -->
+            <!-- <AppButton text="Mark Draft" variant="secondary" size="sm" :disabled="!selectedIds.length" @click="bulkAction('draft')" /> -->
             <AppButton text="Delete" variant="danger" size="sm" :disabled="!selectedIds.length" @click="bulkAction('delete')" />
-            <AppButton text="Add selected to assessment" variant="primary" size="sm" :disabled="!selectedIds.length || !assessmentId" @click="addSelectedToAssessment" />
+            <AppButton text="Add selected to exam" variant="primary" size="sm" :disabled="!selectedIds.length || !assessmentId" @click="addSelectedToAssessment" />
           </div>
         </div>
       </div>
@@ -123,7 +122,7 @@
           <div class="flex flex-wrap items-center gap-2 lg:justify-end">
             <AppButton :icon="Eye" text="Preview" variant="outline" size="sm" @click="previewQuestion(question)" />
             <AppButton :icon="PencilLine" text="Edit" variant="secondary" size="sm" @click="openEditor(question)" />
-            <AppButton :icon="question.status === 'Published' ? FilePenLine : Send" :text="question.status === 'Published' ? 'Draft' : 'Publish'" variant="ghost" size="sm" @click="toggleStatus(question)" />
+            <!-- <AppButton :icon="question.status === 'Published' ? FilePenLine : Send" :text="question.status === 'Published' ? 'Draft' : 'Publish'" variant="ghost" size="sm" @click="toggleStatus(question)" /> -->
           </div>
         </div>
       </article>
@@ -205,18 +204,7 @@
                   placeholder="Type the full multiple choice question stem here."
                 ></textarea>
               </div>
-              <p v-if="errors.content" class="text-sm text-rose-600">{{ errors.content }}</p>
             </label>
-
-            <div class="rounded-[24px] border border-dashed border-slate-300 bg-slate-50 p-5">
-              <div class="flex items-center justify-between gap-3">
-                <div>
-                  <h3 class="text-sm font-semibold text-slate-900">Image / Diagram Placeholder</h3>
-                  <p class="mt-1 text-sm text-slate-500">Reserve space for graphs, geometry diagrams, or scanned stimulus material.</p>
-                </div>
-                <AppButton :icon="ImagePlus" text="Upload Placeholder" variant="outline" size="sm" @click="showUploadToast" />
-              </div>
-            </div>
 
             <div class="space-y-4">
               <div class="flex items-center justify-between">
@@ -283,7 +271,7 @@
                   Subject assigned
                 </li>
                 <li class="flex items-center gap-3">
-                  <span class="h-2.5 w-2.5 rounded-full" :class="form.content.length > 15 ? 'bg-emerald-500' : 'bg-rose-400'"></span>
+                  <span class="h-2.5 w-2.5 rounded-full" :class="form.content.trim().length ? 'bg-emerald-500' : 'bg-rose-400'"></span>
                   Question stem added
                 </li>
                 <li class="flex items-center gap-3">
@@ -351,14 +339,13 @@
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { Eye, FilePenLine, FileQuestion, ImagePlus, PencilLine, Plus, Search, Send, Trash2, X } from 'lucide-vue-next'
+import { Eye, FilePenLine, FileQuestion, PencilLine, Plus, Search, Send, Trash2, X } from 'lucide-vue-next'
 import AppButton from '../../shared/AppButton.vue'
 import { useSchoolAdminUiStore } from '../../schooladmincomponents/stores/ui'
 import { useTeacherExamsStore } from '../stores/exams'
 import SectionCard from '../components/SectionCard.vue'
 import { useTeachersQuestionsStore } from '../stores/questions'
-import { getSubjects as getScopedSubjects } from '../services/api/exams'
-import { getTeacherSubjects, getTeacherClasses } from '../services/api/questions'
+import { getSubjects, getClassLevels } from '../services/api/exams'
 import { getAuthUser } from '../../../js/lib/auth'
 
 const uiStore = useSchoolAdminUiStore()
@@ -372,11 +359,10 @@ const currentPage = ref(1)
 const pageSize = 4
 const selectedIds = ref([])
 const form = reactive(createDefaultForm())
-const errors = reactive({ content: '' })
 
-// Teacher-specific subjects and class levels (populated on editor open)
-const teacherSubjects = ref([])
-const teacherClassLevels = ref([])
+// Global subjects and class levels for question creation
+const subjectsData = ref([])
+const classLevelsData = ref([])
 
 const filters = reactive({
   subject: '',
@@ -444,8 +430,23 @@ const getTeacherClassLevel = () => getAuthUser()?.teacher_profile?.class_level |
 const getQuestionText = (question) => question.content || question.question_text || ''
 const getQuestionSubject = (question) => questionStringValue(question.subject) || question.subject_name || ''
 const getQuestionTopic = (question) => questionStringValue(question.topic) || question.topic_name || ''
-const getQuestionClassName = (question) => questionStringValue(question.className) || questionStringValue(question.class) || questionStringValue(question.class_level) || ''
-const getQuestionClassArm = (question) => questionStringValue(question.class_arm) || question.class_arm_name || ''
+const getQuestionClassName = (question) => {
+  return questionStringValue(question.className)
+    || questionStringValue(question.class_name)
+    || questionStringValue(question.class_level)
+    || questionStringValue(question.classLevel)
+    || questionStringValue(question.class)
+    || ''
+}
+const getQuestionClassArm = (question) => {
+  return questionStringValue(question.class_arm)
+    || questionStringValue(question.classArm)
+    || question.class_arm_name
+    || question.classArmName
+    || question.arm?.name
+    || question.section
+    || ''
+}
 const getQuestionMarks = (question) => question.marks ?? question.default_marks ?? question.points ?? 0
 const getQuestionCorrectAnswer = (question) => question.correctAnswer ?? question.correct_answer ?? ''
 
@@ -492,8 +493,8 @@ const getQuestionCorrectAnswerText = (question) => {
 
 const subjects = computed(() => [...new Set(questionsStore.questions.map((question) => getQuestionSubject(question)))].filter(Boolean))
 const classNames = computed(() => [...new Set(questionsStore.questions.map((question) => getQuestionClassName(question)))].filter(Boolean))
-const modalSubjects = computed(() => teacherSubjects.value || [])
-const modalClassLevels = computed(() => teacherClassLevels.value || [])
+const modalSubjects = computed(() => subjectsData.value || [])
+const modalClassLevels = computed(() => classLevelsData.value || [])
 // topic removed from Question Bank per API change
 const totalQuestions = computed(() => questionsStore.questions.length)
 const isLoading = computed(() => questionsStore.loading)
@@ -578,7 +579,6 @@ const resetForm = () => {
     form.class_level_id = classLevel.id
     form.className = classLevel.name || ''
   }
-  errors.content = ''
 }
 
 const hydrateForm = (question) => {
@@ -603,7 +603,8 @@ const hydrateForm = (question) => {
     subject_id: question.subject_id || question.subject?.id || '',
     topic: getQuestionTopic(question),
     className: getQuestionClassName(question),
-    class_level_id: question.class_level_id || question.class_id || question.class_level?.id || question.class?.id || '',
+    class_level_id: question.class_level_id || question.class_id || question.class_level?.id || question.class?.id || question.classLevel?.id || '',
+    class_arm_id: question.class_arm_id || question.classArmId || question.class_arm?.id || question.classArm?.id || null,
     status: question.status || 'Draft',
     marks: getQuestionMarks(question) || 2,
     content: getQuestionText(question),
@@ -613,9 +614,11 @@ const hydrateForm = (question) => {
   })
 }
 
-const openEditor = (question = null) => {
+const openEditor = async (question = null) => {
   resetForm()
-  loadTeacherAssignments()
+  if (form.class_level_id) {
+    await loadSubjectsForSelectedClassLevel(form.class_level_id)
+  }
 
   if (question) {
     hydrateForm(question)
@@ -623,37 +626,44 @@ const openEditor = (question = null) => {
   showEditor.value = true
 }
 
-const loadTeacherAssignments = async () => {
+const loadGlobalAssignments = async () => {
   try {
-    const authUser = getAuthUser()
-    const teacherId = authUser?.id
+    const [subjectsResponse, classLevelsResponse] = await Promise.all([
+      getSubjects(),
+      getClassLevels(),
+    ])
 
-    if (!teacherId) {
-      teacherSubjects.value = []
-      teacherClassLevels.value = []
-      return
-    }
-
-    // Fetch all teacher's subjects and classes
-    const subjectsResponse = await getTeacherSubjects(teacherId)
-    const classesResponse = await getTeacherClasses(teacherId)
-
-    // Process subjects
     const subjectsArray = Array.isArray(subjectsResponse) ? subjectsResponse : (subjectsResponse?.subjects || subjectsResponse?.data || [])
-    teacherSubjects.value = subjectsArray.map(normalizeSubject).filter((subject) => subject.id && subject.name)
+    subjectsData.value = subjectsArray.map(normalizeSubject).filter((subject) => subject.id && subject.name)
 
-    // Process class levels
-    const classesArray = Array.isArray(classesResponse) ? classesResponse : (classesResponse?.classes || classesResponse?.class_levels || classesResponse?.data || [])
-    teacherClassLevels.value = classesArray.map(normalizeClass).filter((classItem) => classItem.id && classItem.name)
+    const classLevelsArray = Array.isArray(classLevelsResponse)
+      ? classLevelsResponse
+      : (classLevelsResponse?.class_levels || classLevelsResponse?.data || classLevelsResponse || [])
+    classLevelsData.value = classLevelsArray.map(normalizeClass).filter((classItem) => classItem.id && classItem.name)
   } catch (error) {
-    console.error('Failed to load teacher assignments:', error)
+    console.error('Failed to load subjects and class levels:', error)
     uiStore.addToast({
-      title: 'Teacher assignments unavailable',
-      message: error.message || 'Unable to load your assigned subjects and classes.',
+      title: 'Unable to load metadata',
+      message: error.message || 'Unable to load subjects and class levels.',
       variant: 'error',
     })
-    teacherSubjects.value = []
-    teacherClassLevels.value = []
+    subjectsData.value = []
+    classLevelsData.value = []
+  }
+}
+
+const loadSubjectsForSelectedClassLevel = async (classLevelId) => {
+  try {
+    const subjectsResponse = await getSubjects({ class_level_id: classLevelId })
+    subjectsData.value = unwrapList(subjectsResponse, ['subjects']).map(normalizeSubject).filter((subject) => subject.id && subject.name)
+    await examsStore.loadClassArms(classLevelId)
+  } catch (error) {
+    console.error('Failed to load subjects for class level:', error)
+    uiStore.addToast({
+      title: 'Unable to load subjects',
+      message: error.message || 'Unable to load subjects for the selected class level.',
+      variant: 'error',
+    })
   }
 }
 
@@ -682,7 +692,6 @@ const markCorrect = (index) => {
 }
 
 const validateForm = () => {
-  errors.content = form.content.trim().length < 15 ? 'Add a clearer question stem before saving.' : ''
   if (!form.subject_id || !form.class_level_id) {
     uiStore.addToast({
       title: 'Validation required',
@@ -700,11 +709,6 @@ const validateForm = () => {
 
   if (!form.options.some((o) => o.is_correct)) {
     uiStore.addToast({ title: 'Correct option', message: 'Select which option is correct.', variant: 'error' })
-    return false
-  }
-
-  if (errors.content) {
-    uiStore.addToast({ title: 'Question incomplete', message: 'Please complete the stem before continuing.', variant: 'error' })
     return false
   }
 
@@ -729,7 +733,7 @@ const submitQuestion = async (status) => {
     subject_id: form.subject_id,
     // topic intentionally omitted per request
     class_level_id: form.class_level_id || form.className,
-    class_arm_id: form.class_arm_id,
+    class_arm_id: form.class_arm_id || null,
     status,
     default_marks: form.marks,
     content: form.content.trim(),
@@ -746,7 +750,20 @@ const submitQuestion = async (status) => {
     }
     closeEditor()
   } catch (error) {
-    uiStore.addToast({ title: 'Save failed', message: error.message || 'Unable to save the question right now.', variant: 'error' })
+    let errorMessage = error.message || 'Unable to save the question right now.'
+    // Handle validation errors from API
+    if (error.response?.data?.errors) {
+      const errors = error.response.data.errors
+      if (typeof errors === 'object') {
+        const firstError = Object.values(errors)[0]
+        if (Array.isArray(firstError)) {
+          errorMessage = firstError[0] || errorMessage
+        } else if (typeof firstError === 'string') {
+          errorMessage = firstError
+        }
+      }
+    }
+    uiStore.addToast({ title: 'Save failed', message: errorMessage, variant: 'error' })
   }
 }
 
@@ -857,13 +874,6 @@ const addSelectedToAssessment = async () => {
   }
 }
 
-const showUploadToast = () => {
-  uiStore.addToast({
-    title: 'Placeholder added',
-    message: 'A diagram upload slot has been reserved for this question.',
-    variant: 'success',
-  })
-}
 
 const onSubjectChange = async () => {
   // Update subject name for display
@@ -877,17 +887,16 @@ const onClassLevelChange = async () => {
   form.class_arm_id = ''
   if (form.class_level_id) {
     const [subjectsResponse] = await Promise.all([
-      getScopedSubjects({ class_level_id: form.class_level_id }),
+      getSubjects({ class_level_id: form.class_level_id }),
       examsStore.loadClassArms(form.class_level_id),
     ])
-    teacherSubjects.value = unwrapList(subjectsResponse, ['subjects']).map(normalizeSubject).filter((subject) => subject.id && subject.name)
+    subjectsData.value = unwrapList(subjectsResponse, ['subjects']).map(normalizeSubject).filter((subject) => subject.id && subject.name)
   }
 }
 
 onMounted(async () => {
   await questionsStore.fetchQuestions()
-  await examsStore.loadFormMetadata()
-  await loadTeacherAssignments()
+  await loadGlobalAssignments()
 })
 </script>
 

@@ -32,14 +32,6 @@
           </label>
 
           <label class="flex flex-col gap-1.5">
-            <span class="text-sm font-medium text-slate-700">Subject <span class="text-rose-500">*</span></span>
-            <select v-model="form.subject_id" class="form-input" required>
-              <option value="">Select subject</option>
-              <option v-for="s in store.subjects" :key="s.id" :value="s.id">{{ s.name }}</option>
-            </select>
-          </label>
-
-          <label class="flex flex-col gap-1.5">
             <span class="text-sm font-medium text-slate-700">Class Level <span class="text-rose-500">*</span></span>
             <select v-model="form.class_level_id" class="form-input" required @change="onClassLevelChange">
               <option value="">Select class</option>
@@ -52,6 +44,14 @@
             <select v-model="form.class_arm_id" class="form-input">
               <option value="">All arms (entire class level)</option>
               <option v-for="arm in store.classArms" :key="arm.id" :value="arm.id">{{ arm.name }}</option>
+            </select>
+          </label>
+
+          <label class="flex flex-col gap-1.5">
+            <span class="text-sm font-medium text-slate-700">Subject <span class="text-rose-500">*</span></span>
+            <select v-model="form.subject_id" class="form-input" required>
+              <option value="">Select subject</option>
+              <option v-for="s in store.subjects" :key="s.id" :value="s.id">{{ s.name }}</option>
             </select>
           </label>
 

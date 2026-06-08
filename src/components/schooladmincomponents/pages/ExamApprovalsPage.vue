@@ -40,7 +40,7 @@
 
         <div v-else>
           <article
-            v-for="exam in submittedExams"
+            v-for="exam in approvalExams"
             :key="exam.id"
             class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm"
           >
@@ -48,7 +48,9 @@
               <div class="min-w-0 flex-1">
                 <div class="flex flex-wrap items-center gap-2">
                   <h2 class="text-lg font-semibold text-slate-900 truncate">{{ exam.title }}</h2>
-                  <span class="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">Submitted</span>
+                  <span :class="`rounded-full px-3 py-1 text-xs font-semibold ${statusBadgeClass(normalizeStatus(exam.status))}`">
+                    {{ normalizeStatus(exam.status) === 'active' ? 'Active' : normalizeStatus(exam.status) === 'submitted' ? 'Submitted' : 'Unknown' }}
+                  </span>
                 </div>
                 <p class="mt-2 text-sm text-slate-500">
                   {{ exam.subject?.name || exam.subject || '—' }} • {{ exam.classLevel?.name || '—' }} • {{ exam.classArm?.name || '—' }}
@@ -75,17 +77,26 @@
                   text="Activate Exam"
                   variant="primary"
                   size="sm"
+                  v-if="normalizeStatus(exam.status) === 'submitted'"
                   :processing="processingId === exam.id"
                   @click="confirmActivate(exam)"
+                />
+                <AppButton
+                  text="Publish Results"
+                  variant="primary"
+                  size="sm"
+                  v-else-if="normalizeStatus(exam.status) === 'active'"
+                  :processing="processingId === exam.id"
+                  @click="confirmPublish(exam)"
                 />
                 <AppButton text="View Details" variant="outline" size="sm" @click="previewExam(exam)" />
               </div>
             </div>
           </article>
 
-          <div v-if="!submittedExams.length" class="rounded-[24px] border border-dashed border-slate-300 bg-slate-50 px-6 py-12 text-center text-sm text-slate-500">
-            <p class="font-medium text-slate-700">No submitted exams found</p>
-            <p class="mt-2">Teachers will see their submitted exams here once they push them forward.</p>
+          <div v-if="!approvalExams.length" class="rounded-[24px] border border-dashed border-slate-300 bg-slate-50 px-6 py-12 text-center text-sm text-slate-500">
+            <p class="font-medium text-slate-700">No exams found for approval or publishing</p>
+            <p class="mt-2">Teachers will see their submitted or active exams here once they push them forward.</p>
           </div>
         </div>
       </div>
@@ -126,9 +137,16 @@ const processingId = ref(null)
 const pendingAction = ref(null)
 const previewExamData = ref(null)
 
-const submittedExams = computed(() => store.exams.filter((exam) => (exam.status || '').toLowerCase() === 'submitted'))
-const activeExams = computed(() => store.exams.filter((exam) => (exam.status || '').toLowerCase() === 'active'))
-const completedExams = computed(() => store.exams.filter((exam) => (exam.status || '').toLowerCase() === 'completed'))
+const normalizeStatus = (status) => {
+  const lower = (status || '').toLowerCase()
+  if (lower === 'activated') return 'active'
+  return lower
+}
+
+const submittedExams = computed(() => store.exams.filter((exam) => normalizeStatus(exam.status) === 'submitted'))
+const activeExams = computed(() => store.exams.filter((exam) => normalizeStatus(exam.status) === 'active'))
+const completedExams = computed(() => store.exams.filter((exam) => normalizeStatus(exam.status) === 'completed'))
+const approvalExams = computed(() => store.exams.filter((exam) => ['submitted', 'active'].includes(normalizeStatus(exam.status))))
 
 const submittedCount = computed(() => submittedExams.value.length)
 const activeCount = computed(() => activeExams.value.length)
@@ -136,6 +154,13 @@ const completedCount = computed(() => completedExams.value.length)
 const totalExpectedAttempts = computed(() =>
   store.exams.reduce((sum, exam) => sum + Number(getExpectedAttempts(exam) || 0), 0),
 )
+
+const statusBadgeClass = (status) => {
+  if (status === 'active') return 'bg-emerald-100 text-emerald-700'
+  if (status === 'submitted') return 'bg-slate-100 text-slate-700'
+  if (status === 'completed') return 'bg-blue-100 text-blue-700'
+  return 'bg-slate-100 text-slate-700'
+}
 
 const getExpectedAttempts = (exam) =>
   exam.expected_attempts ??
@@ -198,6 +223,17 @@ const confirmActivate = (exam) => {
   }
 }
 
+const confirmPublish = (exam) => {
+  pendingAction.value = {
+    examId: exam.id,
+    action: 'publish',
+    title: `Publish results — “${exam.title}”?`,
+    message: 'Publishing results will make exam scores visible to students on their dashboard.',
+    confirmLabel: 'Publish Results',
+    variant: 'primary',
+  }
+}
+
 const runAction = async () => {
   if (!pendingAction.value) return
   const { examId, action } = pendingAction.value
@@ -208,10 +244,14 @@ const runAction = async () => {
     if (action === 'activate') {
       await store.activateExam(examId)
       uiStore.addToast({ title: 'Exam activated', message: 'This exam is now live for students.', variant: 'success' })
-      await loadSubmittedExams()
     }
+    if (action === 'publish') {
+      await store.publishExam(examId)
+      uiStore.addToast({ title: 'Results published', message: 'Students can now view their exam results.', variant: 'success' })
+    }
+    await loadSubmittedExams()
   } catch (err) {
-    uiStore.addToast({ title: 'Action failed', message: err.message || 'Unable to activate exam.', variant: 'error' })
+    uiStore.addToast({ title: 'Action failed', message: err.message || 'Unable to complete exam action.', variant: 'error' })
   } finally {
     processingId.value = null
   }

@@ -12,6 +12,7 @@ import {
   deleteExam,
   submitForReview,
   activateExam,
+  publishExam,
   getExamQuestions,
   addQuestionToExam,
   removeQuestionFromExam,
@@ -241,7 +242,11 @@ export const useTeacherExamsStore = defineStore('teacher-exams', {
       await this.fetchExam(id)
       return result
     },
-
+    async publishExam(id) {
+      const result = await publishExam(id)
+      await this.fetchExam(id)
+      return result
+    },
     // ── Questions ─────────────────────────────────────────────────────────────
 
     async fetchExamQuestions(examId) {
