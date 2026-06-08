@@ -9,6 +9,8 @@
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
+    "allowJs": true,
+    "checkJs": false,
     "noEmit": true,
     "jsx": "preserve",
     "strict": true,
@@ -21,10 +23,12 @@
     }
   },
   "include": [
+    "src/**/*.js",
+    "src/**/*.jsx",
     "src/**/*.ts",
     "src/**/*.tsx",
     "src/**/*.vue",
     "src/**/*.json"
   ],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", "dist"]
 }

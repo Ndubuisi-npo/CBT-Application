@@ -1,17 +1,14 @@
-import { apiFetch, extractErrorMessage } from '../../../js/lib/api'
+import { extractErrorMessage, unauthenticatedFetch } from '../../../js/lib/api'
 
 export async function checkHandle(handle) {
   try {
-    // Get all tenants and check if handle exists
-    const response = await apiFetch('/api/super-admin/tenants')
-    
-    // Tenants are directly in the response array, not in response.data
-    const tenants = Array.isArray(response) ? response : response.data || []
-    
-    const handleExists = tenants.some(tenant => tenant.handle === handle)
+    // Check handle availability by passing it as a query parameter
+    const response = await unauthenticatedFetch('/api/super-admin/tenants', {
+      params: { handle }
+    })
     
     return {
-      available: !handleExists,
+      available: response.available,
       handle: handle
     }
   } catch (error) {

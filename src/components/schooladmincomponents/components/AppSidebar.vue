@@ -107,12 +107,12 @@ const navItems = computed(() => {
       { label: 'My Exams', to: '/teachers/exams', icon: ClipboardList },
       // ── Supporting features ──
       { label: 'Question Bank', to: '/teachers/questions', icon: FileQuestion },
-      { label: 'My Classes', to: '/teachers/my-classes', icon: BookOpenCheck },
+      // { label: 'My Classes', to: '/teachers/my-classes', icon: BookOpenCheck },
       { label: 'Students', to: '/teachers/students', icon: GraduationCap },
       { label: 'Attendance', to: '/teachers/attendance', icon: CalendarCheck2 },
-      { label: 'Grading', to: '/teachers/grading', icon: ScrollText },
-      { label: 'Results', to: '/teachers/results', icon: BarChart3 },
-      { label: 'Timetable', to: '/teachers/timetable', icon: AlarmClockCheck },
+      // { label: 'Grading', to: '/teachers/grading', icon: ScrollText },
+      // { label: 'Results', to: '/teachers/results', icon: BarChart3 },
+      // { label: 'Timetable', to: '/teachers/timetable', icon: AlarmClockCheck },
       { label: 'Settings', to: '/teachers/settings', icon: Settings },
       { label: 'Profile', to: '/teachers/profile', icon: School },
     ]

@@ -164,13 +164,6 @@
                 <div class="question-filter !py-3 flex items-center font-semibold text-slate-600">Multiple Choice</div>
               </div>
               <label class="space-y-2 text-sm font-medium text-slate-700">
-                <span>Subject</span>
-                <select v-model="form.subject_id" class="question-filter !py-3" @change="onSubjectChange">
-                  <option value="">Select subject</option>
-                  <option v-for="subject in modalSubjects" :key="subject.id" :value="subject.id">{{ subject.name }}</option>
-                </select>
-              </label>
-              <label class="space-y-2 text-sm font-medium text-slate-700">
                 <span>Class Level</span>
                 <select v-model="form.class_level_id" class="question-filter !py-3" @change="onClassLevelChange">
                   <option value="">Select class</option>
@@ -184,6 +177,14 @@
                   <option v-for="arm in examsStore.classArms" :key="arm.id" :value="arm.id">{{ arm.name }}</option>
                 </select>
               </label>
+              <label class="space-y-2 text-sm font-medium text-slate-700">
+                <span>Subject</span>
+                <select v-model="form.subject_id" class="question-filter !py-3" @change="onSubjectChange">
+                  <option value="">Select subject</option>
+                  <option v-for="subject in modalSubjects" :key="subject.id" :value="subject.id">{{ subject.name }}</option>
+                </select>
+              </label>
+              
               <label class="space-y-2 text-sm font-medium text-slate-700">
                 <span>Marks</span>
                 <input v-model.number="form.marks" type="number" min="0.5" step="0.5" class="question-input" />

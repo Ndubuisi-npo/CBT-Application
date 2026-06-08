@@ -1,17 +1,4 @@
-/**
- * Application Router
- *
- * REFACTOR SUMMARY:
- * - Removed: /school-admin/assessments route (admin has NO exam responsibilities)
- * - Removed: Assessments link from school-admin sidebar navigation
- * - Removed: Admin exam approval, scheduling, activation routes
- * - Added: Dedicated teacher exam routes (/teachers/exams/:id/*)
- * - Fixed: Duplicate /student/instructions and /student/exam routes removed
- * - Fixed: /dashboard now correctly redirects based on role
- * - Teacher role: full exam lifecycle control
- * - Student role: attempt and view results only
- * - School Admin role: zero exam management access
- */
+
 import { createRouter, createWebHistory } from 'vue-router'
 import { isAuthenticated, getAuthRole } from '../js/lib/auth'
 import { getTenantHandle } from '../js/lib/api'
@@ -31,8 +18,7 @@ import SchoolAdminClassLevels from '../components/schooladmincomponents/pages/Cl
 import SchoolAdminClassArms from '../components/schooladmincomponents/pages/ClassArmsPage.vue'
 import SchoolAdminTeachers from '../components/schooladmincomponents/pages/TeachersPage.vue'
 import SchoolAdminStudents from '../components/schooladmincomponents/pages/StudentsPage.vue'
-// NOTE: SchoolAdminAssessments is INTENTIONALLY NOT imported or routed.
-// School Admin has NO exam management responsibilities.
+
 import SchoolAdminSubjects from '../components/schooladmincomponents/pages/SubjectsPage.vue'
 import SchoolAdminSubjectAssignTeacher from '../components/schooladmincomponents/pages/SubjectAssignTeacherPage.vue'
 import SchoolAdminSettings from '../components/schooladmincomponents/pages/SettingsPage.vue'

@@ -145,6 +145,64 @@ export async function apiFetch(path, options = {}) {
   return data?.data ?? data
 }
 
+export async function unauthenticatedFetch(path, options = {}) {
+  const tenantHandle = getTenantHandle()
+  const baseUrl = tenantHandle ? window.location.origin : API_BASE_URL
+
+  let fullPath = path
+  if (options.params && typeof options.params === 'object') {
+    const qs = new URLSearchParams(
+      Object.entries(options.params).filter(([, v]) => v !== undefined && v !== null && v !== '')
+    ).toString()
+    if (qs) fullPath = `${path}?${qs}`
+  }
+
+  const headers = {
+    'Accept': 'application/json',
+    ...(options.headers || {}),
+  }
+
+  const isFormData = options.body instanceof FormData
+  if (!isFormData) {
+    headers['Content-Type'] = headers['Content-Type'] || 'application/json'
+  }
+
+  const { params: _params, timeoutMs = DEFAULT_TIMEOUT_MS, ...fetchOptions } = options
+  const controller = new AbortController()
+  const timeoutId = timeoutMs
+    ? setTimeout(() => controller.abort(), timeoutMs)
+    : null
+
+  let response
+  try {
+    response = await fetch(`${baseUrl}${fullPath}`, {
+      ...fetchOptions,
+      headers,
+      signal: fetchOptions.signal || controller.signal,
+    })
+  } catch (error) {
+    if (error?.name === 'AbortError') {
+      throw new Error('The server is taking too long to respond. Please try again shortly.')
+    }
+    throw error
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId)
+  }
+
+  const contentType = response.headers.get('content-type') || ''
+  const isJson = contentType.includes('application/json')
+  const data = isJson ? await response.json() : await response.text()
+
+  if (!response.ok) {
+    const error = new Error(extractErrorMessage(data))
+    error.status = response.status
+    error.data = data
+    throw error
+  }
+
+  return data?.data ?? data
+}
+
 export function extractErrorMessage(error, fallback = 'Something went wrong.') {
   if (typeof error?.message === 'string' && error.message.trim()) {
     return error.message

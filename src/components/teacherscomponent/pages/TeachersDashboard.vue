@@ -59,7 +59,7 @@
     </section>
 
     <!-- Personal workload -->
-    <SectionCard title="My Workload" subtitle="Subjects and classes from your current teacher assignments.">
+    <!-- <SectionCard title="My Workload" subtitle="Subjects and classes from your current teacher assignments.">
       <div class="grid gap-4 pt-6 md:grid-cols-2 xl:grid-cols-3">
         <div
           v-for="assignment in assignedWorkload"
@@ -73,7 +73,7 @@
           No teaching assignments are attached to your profile yet.
         </div>
       </div>
-    </SectionCard>
+    </SectionCard> -->
 
     <!-- Live exams -->
     <section v-if="liveExams.length">
