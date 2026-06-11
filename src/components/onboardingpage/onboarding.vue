@@ -157,8 +157,13 @@ const submitRegistration = async () => {
     
     await registerOnboarding(payload)
     
-    // Redirect to success page or login
-    router.push('/login')
+    const tenantPrefix = formData.value.handle?.trim()
+    const host = window.location.host
+    const loginUrl = tenantPrefix
+      ? `${window.location.protocol}//${tenantPrefix}.${host}/login`
+      : '/login'
+
+    window.location.href = loginUrl
   } catch (error) {
     errorMessage.value = error.message || 'Registration failed. Please try again.'
   } finally {

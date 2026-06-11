@@ -34,7 +34,7 @@
       </div>
     </div>
 
-    <div class="mt-12 flex flex-nowrap justify-center gap-5 overflow-x-auto pb-4">
+    <div class="mt-12 flex flex-nowrap justify-start gap-5 overflow-x-auto pb-4">
       <!-- Loading state -->
       <div v-if="loading" class="col-span-full flex items-center justify-center py-12">
         <div class="text-center">
@@ -65,7 +65,7 @@
       >
         <div
           v-if="plan.name === recommendedPlan?.name"
-          class="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 rounded-full bg-slate-800 px-4 py-1 text-sm font-semibold text-amber-400"
+          class="absolute left-1/2 top-5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-slate-800 px-4 py-1 text-sm font-semibold text-amber-400"
         >
           Recommended
         </div>
@@ -102,7 +102,7 @@
             <span class="mt-1 flex h-5 w-5 items-center justify-center rounded-full bg-amber-50 text-amber-500">
               <Check class="h-3.5 w-3.5" />
             </span>
-            <span>{{ feature }}</span>
+            <span class="break-words">{{ feature }}</span>
           </li>
         </ul>
 

@@ -1,6 +1,6 @@
 <template>
   <div class="space-y-6">
-    <SectionCard title="Classes" subtitle="Manage classes (e.g., JSS 1A, JSS 1B).">
+    <SectionCard title="Arms" subtitle="Manage class arms (e.g., JSS 1A, JSS 1B).">
       <template #header>
         <AppButton @click="openModal()" :icon="Plus" text="Create" variant="primary" size="sm" />
       </template>
@@ -11,7 +11,7 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
           </svg>
         </div>
-        <h3 class="text-lg font-medium text-slate-900 mb-2">No classes created</h3>
+        <h3 class="text-lg font-medium text-slate-900 mb-2">No arms created</h3>
         <p class="text-slate-600 mb-6">Get started by creating your first class.</p>
       </div>
       <div v-else class="overflow-hidden rounded-[24px] border border-slate-200">

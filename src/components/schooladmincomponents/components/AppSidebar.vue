@@ -11,9 +11,9 @@
         <component :is="isTeacherSection ? FileQuestion : Building2" class="h-5 w-5" />
       </div>
       <div v-if="!collapsed">
-        <p class="text-xs uppercase tracking-[0.28em] text-[#D4AF37]">
+        <!-- <p class="text-xs uppercase tracking-[0.28em] text-[#D4AF37]">
           {{ isTeacherSection ? 'Teacher Portal' : 'School Admin' }}
-        </p>
+        </p> -->
         <p class="text-lg font-semibold">
           {{ isTeacherSection ? 'Teacher Dashboard' : (profile.schoolName || 'School Admin') }}
         </p>

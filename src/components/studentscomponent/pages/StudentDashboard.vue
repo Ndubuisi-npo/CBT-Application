@@ -246,14 +246,43 @@ const getQuestionText = (question) => {
 }
 
 const getAnswerText = (question, type) => {
-  const selected = question?.selected_answer ?? question?.selected_option ?? question?.selected_option_id ?? question?.selected_option_ids?.[0] ?? question?.answer ?? question?.submitted_answer
-  const correct = question?.correct_answer ?? question?.correctOption ?? question?.correct_option_id ?? question?.correct_option_ids?.[0] ?? question?.answer
-  if (type === 'selected') {
-    if (typeof selected === 'object') return selected?.content || selected?.label || JSON.stringify(selected)
-    return selected != null ? String(selected) : ''
+  // Resolve selected answer
+  let selected = null
+  if (Array.isArray(question?.selected_options) && question.selected_options.length > 0) {
+    const s = question.selected_options[0]
+    selected = (typeof s === 'object') ? (s.content ?? s.label ?? s.id) : s
+  } else if (Array.isArray(question?.selected_option_ids) && question.selected_option_ids.length > 0) {
+    selected = question.selected_option_ids[0]
+  } else {
+    selected = question?.selected_answer ?? question?.selected_option ?? question?.selected_option_id ?? question?.answer ?? question?.submitted_answer
   }
-  if (typeof correct === 'object') return correct?.content || correct?.label || JSON.stringify(correct)
-  return correct != null ? String(correct) : ''
+
+  // Resolve correct answer
+  let correct = null
+  if (Array.isArray(question?.options) && question.options.length > 0) {
+    const c = question.options.find((o) => o && (o.is_correct === true || o.is_correct === 'true'))
+    if (c) correct = c.content ?? c.label ?? c.id
+  }
+  if (!correct) {
+    if (Array.isArray(question?.correct_option_ids) && question.correct_option_ids.length > 0) {
+      correct = question.correct_option_ids[0]
+    } else if (Array.isArray(question?.correct_options) && question.correct_options.length > 0) {
+      const c = question.correct_options[0]
+      correct = (typeof c === 'object') ? (c.content ?? c.label ?? c.id) : c
+    } else {
+      correct = question?.correct_answer ?? question?.correctOption ?? question?.correct_option_id ?? question?.answer
+    }
+  }
+
+  const fmt = (val) => {
+    if (val == null) return ''
+    if (typeof val === 'object') return val?.content ?? val?.label ?? JSON.stringify(val)
+    return String(val)
+  }
+
+  if (type === 'selected') return fmt(selected)
+  if (type === 'correct') return fmt(correct)
+  return ''
 }
 
 const getAttemptQuestions = (detail) => {
@@ -326,8 +355,19 @@ const openResultModal = async (result) => {
   showResultModal.value = true
 
   try {
-    const response = await getAttemptResult(result?.id || result?.attempt_id)
-    selectedResultDetails.value = Array.isArray(response) ? { questions: response } : (response?.data ?? response)
+    // Try the students/results endpoint (returns detailed attempt objects including questions, selected and correct answers)
+    const { apiFetch } = await import('../../../js/lib/api')
+    const allResults = await apiFetch('/api/students/results')
+    const list = Array.isArray(allResults) ? allResults : (allResults?.data || [])
+    const attemptId = result?.attempt_id || result?.id
+    const found = list.find((r) => String(r.attempt_id || r.id) === String(attemptId))
+    if (found) {
+      selectedResultDetails.value = found
+    } else {
+      // Fallback to the attempt result endpoint
+      const response = await getAttemptResult(attemptId)
+      selectedResultDetails.value = Array.isArray(response) ? { questions: response } : (response?.data ?? response)
+    }
   } catch (err) {
     detailError.value = err?.message || 'Unable to load question details.'
   } finally {

@@ -102,14 +102,14 @@
                             @click="confirmPublish(exam)"
                           />
                           <AppButton text="View Details" variant="outline" size="sm" @click="previewExam(exam)" />
-                          <AppButton v-if="normalizeStatus(exam.status) !== 'active' && normalizeStatus(exam.status) !== 'published'" :icon="Trash2" text="Delete" variant="danger" size="sm" @click="confirmDelete(exam)" :processing="processingId === exam.id" />
+                          <AppButton v-if="canDeleteExam(exam.status)" :icon="Trash2" text="Delete" variant="danger" size="sm" @click="confirmDelete(exam)" :processing="processingId === exam.id" />
                         </div>
             </div>
           </article>
 
           <div v-if="!approvalExams.length" class="rounded-[24px] border border-dashed border-slate-300 bg-slate-50 px-6 py-12 text-center text-sm text-slate-500">
             <p class="font-medium text-slate-700">No exams found for approval or publishing</p>
-            <p class="mt-2">Teachers will see their submitted or active exams here once they push them forward.</p>
+            <p class="mt-2">School Admins will see the teachers submitted exams here once they push them forward.</p>
           </div>
         </div>
       </div>
@@ -161,7 +161,7 @@
                     @click="confirmPublish(exam)"
                   />
                   <AppButton text="View Details" variant="outline" size="sm" @click="previewExam(exam)" />
-                  <AppButton v-if="normalizeStatus(exam.status) !== 'active' && normalizeStatus(exam.status) !== 'published'" :icon="Trash2" text="Delete" variant="danger" size="sm" @click="confirmDelete(exam)" :processing="processingId === exam.id" />
+                  <AppButton v-if="canDeleteExam(exam.status)" :icon="Trash2" text="Delete" variant="danger" size="sm" @click="confirmDelete(exam)" :processing="processingId === exam.id" />
                 </div>
               </div>
             </article>
@@ -249,6 +249,11 @@ const getCompletedAttempts = (exam) =>
   exam.attempts_count ??
   exam.attempts?.filter((attempt) => ['submitted', 'completed'].includes((attempt?.status || '').toLowerCase())).length ??
   0
+
+const canDeleteExam = (status) => {
+  const normalized = normalizeStatus(status)
+  return normalized !== 'active' && normalized !== 'published' && normalized !== 'draft'
+}
 
 const getQuestionCount = (exam) => {
   if (!exam) return 0

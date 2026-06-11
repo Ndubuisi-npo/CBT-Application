@@ -1,5 +1,5 @@
 <template>
-  <div class="max-w-2xl">
+  <div class="w-full">
     <SectionCard title="Change Password" subtitle="Update your account password for security.">
       <form @submit.prevent="handlePasswordChange" class="space-y-5">
         <FormField label="Current Password" :error="errors.currentPassword">

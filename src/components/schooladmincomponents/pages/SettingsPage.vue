@@ -79,8 +79,6 @@
       </form>
     </SectionCard>
 
-    <!-- Grading System Section -->
-    <GradingSystemSettings />
   </div>
 </template>
 

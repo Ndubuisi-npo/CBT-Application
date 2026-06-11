@@ -218,6 +218,7 @@ const attemptId = ref(null)
 const answers = reactive({})   // { [questionId]: optionValue }
 const flagged = reactive({})   // { [questionId]: boolean }
 const loading = ref(true)
+const questionStartAt = ref(Date.now())
 const error = ref(null)
 const submitted = ref(false)
 const submitting = ref(false)
@@ -368,17 +369,26 @@ const selectAnswer = async (q, opt, idx) => {
   // Auto-save — fire and forget (spec requirement)
   if (attemptId.value) {
     try {
+      const elapsedMs = questionStartAt.value ? Date.now() - questionStartAt.value : null
+      const elapsedSec = elapsedMs == null ? null : Math.round(elapsedMs / 1000)
       await saveStudentAnswer(attemptId.value, qId, {
         selected_option_ids: [val],
-        time_spent_seconds: null,
+        time_spent_seconds: elapsedSec,
       })
       savedIndicator.value = true
       setTimeout(() => { savedIndicator.value = false }, 2000)
+      // reset timer for the next view
+      questionStartAt.value = Date.now()
     } catch {
       // Non-blocking — answer saved locally, server-side check on submit
     }
   }
 }
+
+// Reset per-question timer when user navigates between questions
+watch(currentIndex, () => {
+  questionStartAt.value = Date.now()
+})
 
 const toggleFlag = async (q) => {
   if (!q) return

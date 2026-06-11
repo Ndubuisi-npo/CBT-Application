@@ -25,8 +25,8 @@
         <p v-if="errors.schoolName" class="text-sm text-red-500">{{ errors.schoolName }}</p>
       </div>
 
-      <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <div class="space-y-3">
+      <div class="grid grid-cols-1 gap-6">
+        <!-- <div class="space-y-3">
           <label for="school-type" class="block text-base font-semibold text-slate-700">School Type</label>
           <div class="relative">
             <select
@@ -46,7 +46,7 @@
             <ChevronDown class="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-700" />
           </div>
           <p v-if="errors.schoolType" class="text-sm text-red-500">{{ errors.schoolType }}</p>
-        </div>
+        </div> -->
 
         <div class="space-y-3">
           <label for="website" class="block text-base font-semibold text-slate-700">Website Handle</label>

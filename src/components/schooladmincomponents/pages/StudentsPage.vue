@@ -760,7 +760,10 @@ const submitStudent = async (studentData) => {
     if (studentData.id) {
       await studentsStore.updateStudent(studentData.id, payload)
     } else {
-      await studentsStore.createStudent(payload)
+      await studentsStore.createStudent({
+        ...payload,
+        password: 'Cbt@2026'
+      })
     }
     
     uiStore.addToast({ title: 'Student saved', message: 'Student has been saved successfully.', variant: 'success' })

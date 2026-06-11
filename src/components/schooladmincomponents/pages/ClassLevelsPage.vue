@@ -58,11 +58,11 @@
                   />
                 </td>
                 <td class="px-5 py-4 font-semibold text-slate-900">{{ classLevel.name }}</td>
-                <td class="px-5 py-4 text-sm text-slate-600">{{ getClassesCount(classLevel) }} classes</td>
+                <td class="px-5 py-4 text-sm text-slate-600">{{ getClassesCount(classLevel) }} arms</td>
                 <td class="px-5 py-4">
                   <div class="flex gap-2">
                     <AppButton text="Edit" @click="editClassLevel(classLevel)" variant="outline" size="xs" />
-                    <ActionButton tag="RouterLink" :to="`/school-admin/classes/${classLevel.id}`" text="View Classes" variant="primary" size="xs" />
+                    <ActionButton tag="RouterLink" :to="`/school-admin/classes/${classLevel.id}`" text="View Arms" variant="primary" size="xs" />
                     <AppButton 
                       text="Delete" 
                       @click="deleteClassLevel(classLevel.id)" 
@@ -123,7 +123,7 @@ import { useSchoolAdminClassLevelsStore } from '../stores/classLevels'
 import { useSchoolAdminClassArmsStore } from '../stores/classArms'
 import { useSchoolAdminUiStore } from '../stores/ui'
 
-const headings = ['Class Level', 'Number of Classes', 'Actions']
+const headings = ['Class Level', 'Number of Arms', 'Actions']
 const classLevelsStore = useSchoolAdminClassLevelsStore()
 const classArmsStore = useSchoolAdminClassArmsStore()
 const uiStore = useSchoolAdminUiStore()

@@ -122,6 +122,11 @@
             <input v-model="form.qualification" class="sa-input" placeholder="B.Sc. Mathematics" required />
           </FormField>
 
+          <FormField label="Default Password" v-if="!isEdit">
+            <input value="teach12345" readonly class="sa-input bg-slate-100 text-slate-700" />
+            <p class="mt-1 text-xs text-slate-500">This default password will be used for the teacher's first login.</p>
+          </FormField>
+
           <div class="flex gap-2">
             <AppButton 
               type="submit" 

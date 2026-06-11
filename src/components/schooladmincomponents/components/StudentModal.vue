@@ -106,6 +106,11 @@
                 <input v-model="form.admission_number" class="sa-input" placeholder="ADM001" required />
               </FormField>
 
+              <FormField label="Default Password" v-if="!isEdit">
+                <input value="Cbt@2026" readonly class="sa-input bg-slate-100 text-slate-700" />
+                <p class="mt-1 text-xs text-slate-500">This default password will be used for the student's first login.</p>
+              </FormField>
+
               <div class="grid grid-cols-2 gap-4">
                 <FormField label="Class Level" :error="errors.class_name">
                   <select v-model="form.class_level_id" class="sa-input" :disabled="loadingClassLevels">
