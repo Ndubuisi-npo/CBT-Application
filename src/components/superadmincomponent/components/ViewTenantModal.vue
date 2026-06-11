@@ -47,23 +47,23 @@
             <div class="grid grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm text-slate-500">Email</label>
-                <p class="text-sm font-medium text-slate-900">{{ tenant.contact?.email || 'Not provided' }}</p>
+                <p class="text-sm font-medium text-slate-900">{{ tenant.email || 'Not provided' }}</p>
               </div>
               <div>
                 <label class="block text-sm text-slate-500">Phone</label>
-                <p class="text-sm font-medium text-slate-900">{{ tenant.contact?.phone || 'Not provided' }}</p>
+                <p class="text-sm font-medium text-slate-900">{{ tenant.phone || 'Not provided' }}</p>
               </div>
               <div>
                 <label class="block text-sm text-slate-500">Address</label>
-                <p class="text-sm font-medium text-slate-900">{{ tenant.contact?.address || 'No Address' }}</p>
+                <p class="text-sm font-medium text-slate-900">{{ tenant.address || 'No Address' }}</p>
               </div>
               <div>
                 <label class="block text-sm text-slate-500">City</label>
-                <p class="text-sm font-medium text-slate-900">{{ tenant.contact?.city || 'Not provided' }}</p>
+                <p class="text-sm font-medium text-slate-900">{{ tenant.city || 'Not provided' }}</p>
               </div>
               <div>
                 <label class="block text-sm text-slate-500">State</label>
-                <p class="text-sm font-medium text-slate-900">{{ tenant.contact?.state || 'Not provided' }}</p>
+                <p class="text-sm font-medium text-slate-900">{{ tenant.state || 'Not provided' }}</p>
               </div>
             </div>
           </div>
@@ -74,19 +74,20 @@
             <div class="grid grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm text-slate-500">Subscription Status</label>
-                <StatusBadge :status="tenant.subscription?.status || 'Not Active'" />
+                <StatusBadge :status="tenant.subscription_status || 'Not Active'" />
               </div>
               <div>
                 <label class="block text-sm text-slate-500">Plan</label>
-                <p class="text-sm font-medium text-slate-900">{{ tenant.subscription?.plan?.name || 'No Plan' }}</p>
+                <p class="text-sm font-medium text-slate-900">{{ tenant.plan?.name || 'No Plan' }}</p>
               </div>
               <div>
                 <label class="block text-sm text-slate-500">Subscription Ends</label>
-                <p class="text-sm font-medium text-slate-900">{{ formatDate(tenant.subscription?.ends_at) }}</p>
+                <p class="text-sm font-medium text-slate-900">{{ formatDate(tenant.subscription_ends_at
+) }}</p>
               </div>
               <div>
                 <label class="block text-sm text-slate-500">Trial Ends</label>
-                <p class="text-sm font-medium text-slate-900">{{ formatDate(tenant.subscription?.trial_ends_at) }}</p>
+                <p class="text-sm font-medium text-slate-900">{{ formatDate(tenant.trial_ends_at) }}</p>
               </div>
             </div>
           </div>

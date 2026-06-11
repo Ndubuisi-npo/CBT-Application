@@ -157,7 +157,7 @@
                     @change="toggleTeacherSelection(teacher.id, $event.target.checked)"
                   />
                 </td>
-                <td class="px-5 py-4 text-sm text-slate-600">{{ teacher?.teacherProfile?.staff_id || '-' }}</td>
+                <td class="px-5 py-4 text-sm text-slate-600">{{ teacher?.teacherProfile?.staff_id || teacher?.teacher_profile?.staff_id || teacher?.staff_id || '-' }}</td>
                 <td class="px-5 py-4 text-sm text-slate-600">{{ teacher?.first_name }} {{ teacher?.last_name || '-' }}</td>
                 <td class="px-5 py-4 text-sm text-slate-600">{{ teacher?.email || '-' }}</td>
                 <td class="px-5 py-4 text-sm text-slate-600">{{ teacher?.phone || '-' }}</td>
@@ -286,11 +286,11 @@
                     @change="toggleArchivedTeacherSelection(teacher.id, $event.target.checked)"
                   />
                 </td>
-                <td class="px-5 py-4 text-sm text-slate-600">{{ teacher?.teacher_profile?.staff_id || '-' }}</td>
+                <td class="px-5 py-4 text-sm text-slate-600">{{ teacher?.teacherProfile?.staff_id || '-' }}</td>
                 <td class="px-5 py-4 text-sm text-slate-600">{{ teacher?.first_name || '-' }} {{ teacher?.last_name || '' }}</td>
                 <td class="px-5 py-4 text-sm text-slate-600">{{ teacher?.email || '-' }}</td>
                 <td class="px-5 py-4 text-sm text-slate-600">{{ teacher?.phone || '-' }}</td>
-                <td class="px-5 py-4 text-sm text-slate-600">{{ teacher.teacher_profile?.qualification || '-' }}</td>
+                <td class="px-5 py-4 text-sm text-slate-600">{{ teacher.teacherProfile?.qualification || '-' }}</td>
                 <td class="px-5 py-4">
                   <span class="rounded-lg bg-slate-100 px-3 py-2 text-xs font-medium text-slate-600">Archived</span>
                 </td>
@@ -789,11 +789,8 @@ const submitTeacher = async (teacherData) => {
       closeModal()
     }, 100)
   } catch (error) {
-    uiStore.addToast({ title: 'Error', message: 'Failed to save teacher.', variant: 'error' })
-    // Close modal after error toast as well
-    setTimeout(() => {
-      closeModal()
-    }, 100)
+    const message = error?.response?.data?.message || error?.message || 'Failed to save teacher.'
+    uiStore.addToast({ title: 'Error', message, variant: 'error' })
   }
 }
 

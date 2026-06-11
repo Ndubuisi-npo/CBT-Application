@@ -12,6 +12,7 @@ import {
   deleteExam,
   submitForReview,
   activateExam,
+  forceCompleteExam,
   publishExam,
   getExamQuestions,
   addQuestionToExam,
@@ -59,13 +60,15 @@ export const STATUS_LABELS = {
   submitted: 'Submitted',
   active: 'Active',
   completed: 'Completed',
+  published: 'Published',
 }
 
 export const STATUS_CLASSES = {
   draft: 'bg-slate-100 text-slate-700',
   submitted: 'bg-slate-100 text-slate-700',
   active: 'bg-emerald-100 text-emerald-700',
-  completed: 'bg-slate-200 text-slate-700',
+  completed: 'bg-blue-100 text-blue-700',
+  published: 'bg-indigo-100 text-indigo-700',
 }
 
 // ─── Store ────────────────────────────────────────────────────────────────────
@@ -156,7 +159,10 @@ export const useTeacherExamsStore = defineStore('teacher-exams', {
     },
 
     draftExams: (state) => state.exams.filter((e) => (e.status || '').toLowerCase() === 'draft'),
-    submittedExams: (state) => state.exams.filter((e) => (e.status || '').toLowerCase() === 'submitted'),
+    submittedExams: (state) => state.exams.filter((e) => {
+      const s = (e.status || '').toLowerCase()
+      return s === 'submitted' || s === 'completed'
+    }),
     activeExams: (state) => state.exams.filter((e) => (e.status || '').toLowerCase() === 'active'),
     completedExams: (state) => state.exams.filter((e) => (e.status || '').toLowerCase() === 'completed'),
   },
@@ -242,7 +248,24 @@ export const useTeacherExamsStore = defineStore('teacher-exams', {
       await this.fetchExam(id)
       return result
     },
+    async forceCompleteExam(id) {
+      const result = await forceCompleteExam(id)
+      await this.fetchExam(id)
+      return result
+    },
     async publishExam(id) {
+      // Client-side validation with helpful messages
+      const exam = this.exams.find((e) => e.id === id) || this.currentExam
+      const status = (exam?.status || '').toLowerCase()
+
+      if (status === 'active') {
+        throw new Error('Cannot publish a live exam. Please end the exam before publishing results.')
+      }
+
+      if (status !== 'completed') {
+        throw new Error('Exam must be completed before results can be published.')
+      }
+
       const result = await publishExam(id)
       await this.fetchExam(id)
       return result

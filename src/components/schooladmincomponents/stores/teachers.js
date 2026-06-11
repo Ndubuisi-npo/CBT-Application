@@ -1,6 +1,7 @@
 import { defineStore } from "pinia";
 import {
     getTeachers,
+    getTeacher,
     saveTeacher,
     updateTeacher,
     createTeacher,
@@ -72,7 +73,16 @@ export const useSchoolAdminTeachersStore = defineStore(
             async saveTeacher(payload) {
                 const { addActivity } = useActivities();
                 const isNew = !payload.id;
-                const record = await saveTeacher(payload);
+                let record = await saveTeacher(payload);
+                // Try to refetch the full record if API returned a minimal shape
+                if (record && record.id) {
+                    try {
+                        const full = await getTeacher(record.id)
+                        record = full || record
+                    } catch (err) {
+                        // ignore refetch failure; keep returned record
+                    }
+                }
                 const exists = this.teachers.some(
                     (item) => item.id === record.id,
                 );
@@ -112,9 +122,26 @@ export const useSchoolAdminTeachersStore = defineStore(
             },
 
             async createTeacher(payload) {
-                const record = await createTeacher(payload);
+                let record = await createTeacher(payload);
+                // Refetch created teacher to ensure list has full nested shape
+                if (record && record.id) {
+                    try {
+                        const full = await getTeacher(record.id)
+                        record = full || record
+                    } catch (err) {
+                        // ignore and use original create response
+                    }
+                }
+
                 this.teachers = [record, ...this.teachers];
                 this.totalTeachers++;
+
+                try {
+                    await this.fetchTeachers({ status: 'active' })
+                } catch (err) {
+                    console.warn('Failed to refresh active teacher list after creation.', err)
+                }
+
                 return record;
             },
 

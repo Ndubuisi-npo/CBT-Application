@@ -49,7 +49,7 @@
                 <span class="font-semibold text-white">{{ countByStatus('draft') }}</span>
               </div>
               <div class="flex items-center justify-between">
-                <span class="text-slate-300">Concluded</span>
+                <span class="text-slate-300">Completed</span>
                 <span class="font-semibold text-blue-300">{{ concludedCount }}</span>
               </div>
             </div>
@@ -169,7 +169,7 @@ import AppButton from '../../shared/AppButton.vue'
 import SectionCard from '../components/SectionCard.vue'
 import { useTeacherExamsStore } from '../stores/exams'
 import { useSchoolAdminUiStore } from '../../schooladmincomponents/stores/ui'
-import { getAuthUser } from '../../../js/lib/auth'
+import { getAuthUser, getDisplayName } from '../../../js/lib/auth'
 
 const router = useRouter()
 const examsStore = useTeacherExamsStore()
@@ -178,10 +178,7 @@ const uiStore = useSchoolAdminUiStore()
 
 // ── User info ──────────────────────────────────────────────────────────────
 
-const userName = computed(() => {
-  const u = getAuthUser()
-  return u?.name || u?.full_name || 'Teacher'
-})
+const userName = computed(() => getDisplayName() || 'Teacher')
 
 // ── Computed exam groups ────────────────────────────────────────────────────
 
@@ -232,8 +229,8 @@ const recentExams = computed(() =>
 const quickActions = [
   { label: 'Manage Exams', caption: 'Create and manage your exams', to: '/teachers/exams', icon: ClipboardCheck },
   { label: 'Question Bank', caption: 'Build and manage your questions', to: '/teachers/questions', icon: FilePenLine },
-  { label: 'Results', caption: 'View student scores', to: '/teachers/exams', icon: BookOpen },
-  { label: 'Attendance', caption: 'Mark class attendance', to: '/teachers/attendance', icon: GraduationCap },
+  // { label: 'Results', caption: 'View student scores', to: '/teachers/exams', icon: BookOpen },
+  // { label: 'Attendance', caption: 'Mark class attendance', to: '/teachers/attendance', icon: GraduationCap },
 ]
 
 const goTo = (path) => router.push(path)

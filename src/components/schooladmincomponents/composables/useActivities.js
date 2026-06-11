@@ -1,5 +1,5 @@
 import { ref, computed } from 'vue'
-import { fetchActivities, logActivity, getActivityTypes } from '../services/api/activities'
+import { fetchActivities, getActivityTypes } from '../services/api/activities'
 
 const activities = ref([])
 const activityTypes = ref([])
@@ -40,14 +40,8 @@ export function useActivities() {
   }
 
   const addActivity = async (activityData) => {
-    try {
-      const newActivity = await logActivity(activityData)
-      activities.value.unshift(newActivity)
-      return newActivity
-    } catch (err) {
-      console.error('Failed to log activity:', err)
-      throw err
-    }
+    // Activity posting is disabled for school admin pages.
+    return null
   }
 
   const getActivityIcon = (activityType) => {

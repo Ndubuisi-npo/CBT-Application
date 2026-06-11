@@ -129,7 +129,13 @@
                       <button class="p-1 text-slate-400 hover:text-slate-700" title="Move up" :disabled="idx === 0" @click="moveUp(idx)">↑</button>
                       <button class="p-1 text-slate-400 hover:text-slate-700" title="Move down" :disabled="idx === examQuestions.length - 1" @click="moveDown(idx)">↓</button>
                     </div>
-                    <button class="text-xs text-rose-500 hover:text-rose-700" @click="removeQuestion(q)">Remove</button>
+                    <button
+                      class="text-xs text-rose-500 hover:text-rose-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                      :disabled="removingId === q.id"
+                      @click="removeQuestion(q)"
+                    >
+                      {{ removingId === q.id ? 'Removing...' : 'Remove' }}
+                    </button>
                   </div>
                 </div>
               </div>
@@ -210,6 +216,8 @@ const loadExamQuestions = async () => {
   }
 }
 
+const removingId = ref(null)
+
 const searchQuestionBank = async () => {
   bankLoading.value = true
   try {
@@ -255,12 +263,15 @@ const addQuestion = async (q) => {
 }
 
 const removeQuestion = async (q) => {
+  removingId.value = q.id
   try {
     await store.removeQuestion(props.exam.id, q.id)
     examQuestions.value = examQuestions.value.filter((x) => x.id !== q.id)
     uiStore.addToast({ title: 'Question removed', variant: 'success' })
   } catch (err) {
     uiStore.addToast({ title: 'Error', message: err.message, variant: 'error' })
+  } finally {
+    removingId.value = null
   }
 }
 

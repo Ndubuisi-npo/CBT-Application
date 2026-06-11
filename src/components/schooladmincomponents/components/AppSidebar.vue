@@ -114,7 +114,7 @@ const navItems = computed(() => {
       // { label: 'Results', to: '/teachers/results', icon: BarChart3 },
       // { label: 'Timetable', to: '/teachers/timetable', icon: AlarmClockCheck },
       { label: 'Settings', to: '/teachers/settings', icon: Settings },
-      { label: 'Profile', to: '/teachers/profile', icon: School },
+      // { label: 'Profile', to: '/teachers/profile', icon: School },
     ]
   }
 
@@ -128,7 +128,7 @@ const navItems = computed(() => {
     { label: 'Class Levels', to: '/school-admin/class-levels', icon: Columns3 },
     { label: 'Subjects', to: '/school-admin/subjects', icon: Shapes },
     { label: 'Settings', to: '/school-admin/settings', icon: Settings },
-    { label: 'School Profile', to: '/school-admin/profile', icon: School },
+    // { label: 'School Profile', to: '/school-admin/profile', icon: School },
   ]
 })
 

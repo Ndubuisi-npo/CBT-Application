@@ -89,7 +89,7 @@ const submit = async () => {
   loading.value = true
   
   try {
-    await emit('submit', {
+    emit('submit', {
       id: props.classLevel?.id,
       name: form.name
     })
@@ -97,8 +97,7 @@ const submit = async () => {
     // Don't reset form or close here - let parent handle after toast
   } catch (error) {
   } finally {
-    // Keep loading state active until parent closes modal
-    // Don't auto-reset loading state
+    loading.value = false
   }
 }
 </script>

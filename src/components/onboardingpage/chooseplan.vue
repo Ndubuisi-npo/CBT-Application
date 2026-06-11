@@ -34,7 +34,7 @@
       </div>
     </div>
 
-    <div class="mt-12 grid grid-cols-1 gap-5 xl:grid-cols-4">
+    <div class="mt-12 flex flex-nowrap justify-center gap-5 overflow-x-auto pb-4">
       <!-- Loading state -->
       <div v-if="loading" class="col-span-full flex items-center justify-center py-12">
         <div class="text-center">
@@ -42,14 +42,20 @@
           <p class="mt-4 text-slate-600">Loading plans...</p>
         </div>
       </div>
-      
+
+      <!-- Error state -->
+      <div v-else-if="errorMessage" class="col-span-full rounded-2xl border border-red-200 bg-red-50 p-8 text-center text-red-700">
+        <p class="text-lg font-semibold">Unable to get plans</p>
+        <p class="mt-2">{{ errorMessage }}</p>
+      </div>
+
       <!-- Plans -->
       <article
         v-else
         v-for="plan in plans"
         :key="plan.id || plan.name"
         :class="[
-          'relative flex h-full flex-col rounded-2xl border p-6 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-md',
+          'relative flex min-w-[280px] flex-shrink-0 h-full flex-col rounded-2xl border p-6 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-md',
           plan.id === props.formData.plan_id 
             ? 'border-[#D4AF37] bg-amber-50 shadow-lg border-2' 
             : plan.name === recommendedPlan?.name 
@@ -147,7 +153,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { ArrowRight, Check, ShieldCheck, Sparkles } from 'lucide-vue-next'
-import { fetchPlans } from '../superadmincomponent/api/plans'
+import { fetchPlans } from './api/plans'
 
 const props = defineProps<{
   formData: {
@@ -161,12 +167,21 @@ const emit = defineEmits<{
   continue: []
 }>()
 
+interface Plan {
+  id: string
+  name: string
+  range: string
+  price: number | null
+  features: string[]
+}
+
 const isAnnual = ref(true)
-const plans = ref([])
+const plans = ref<Plan[]>([])
 const loading = ref(true)
+const errorMessage = ref('')
 
 // Transform API plan data to match the expected format
-const transformPlans = (apiPlans) => {
+const transformPlans = (apiPlans: any[]): Plan[] => {
   return apiPlans.map(plan => ({
     name: plan.name,
     range: plan.max_students ? `Up to ${plan.max_students} students` : 'Unlimited students',
@@ -179,38 +194,26 @@ const transformPlans = (apiPlans) => {
 onMounted(async () => {
   try {
     const apiPlans = await fetchPlans()
-    plans.value = transformPlans(apiPlans)
+    plans.value = transformPlans(Array.isArray(apiPlans) ? apiPlans : [])
+    if (plans.value.length === 0) {
+      throw new Error('No plans were returned from the server.')
+    }
   } catch (error) {
-    // Fallback to basic plans if API fails
-    plans.value = [
-      {
-        name: 'Basic Plan',
-        range: 'Up to 100 students',
-        price: 29.99,
-        features: ['Up to 100 students', 'Basic grading', 'Email support'],
-        id: 'basic'
-      },
-      {
-        name: 'Premium Plan',
-        range: 'Up to 500 students',
-        price: 79.99,
-        features: ['Up to 500 students', 'Advanced grading', 'Priority support'],
-        id: 'premium'
-      }
-    ]
+    const planError = error instanceof Error ? error.message : String(error)
+    errorMessage.value = planError || 'Unable to get plans.'
   } finally {
     loading.value = false
   }
 })
 
 const recommendedPlan = computed(() => {
-  if (plans.value.length === 0) return null
+  if (!plans.value?.length) return null
   const count = Number(props.formData.subjectCount || 0)
 
-  if (count >= 20) return plans.value[2]
-  if (count >= 10) return plans.value[1]
-  if (count > 0) return plans.value[0]
-  return plans.value[1]
+  if (count >= 20 && plans.value[2]) return plans.value[2]
+  if (count >= 10 && plans.value[1]) return plans.value[1]
+  if (count > 0 && plans.value[0]) return plans.value[0]
+  return plans.value[0]
 })
 
 const displayedPrice = (price: number) => {
@@ -218,7 +221,7 @@ const displayedPrice = (price: number) => {
   return `$ ${value}`
 }
 
-const selectPlan = (plan) => {
+const selectPlan = (plan: Plan) => {
   props.formData.plan_id = plan.id
   // Don't emit submit-registration here - just select the plan
 }

@@ -81,6 +81,7 @@
             <p v-else-if="handleError" class="text-sm text-red-500">{{ handleError }}</p>
             <p v-else-if="handleStatus === 'available'" class="text-sm text-green-500">Handle is available!</p>
             <p v-else-if="handleStatus === 'taken'" class="text-sm text-red-500">This handle is already taken</p>
+            <p v-else-if="!props.formData.handle && suggestedHandle" class="text-sm text-slate-500">Suggested handle: <strong>{{ suggestedHandle }}</strong></p>
           </div>
         </div>
       </div>
@@ -206,9 +207,18 @@ const errors = ref({
 })
 
 // Auto-generate website handle from school name
-const websiteHandle = computed(() => {
-  if (!props.formData.handle) return ''
-  return `https://${props.formData.handle}.localhost:5173`
+const suggestedHandle = computed(() => {
+  const name = props.formData.schoolName?.trim() || ''
+  if (!name) return ''
+
+  const words = name.split(/\s+/).filter(Boolean)
+  const normalize = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, '')
+
+  if (words.length === 1) {
+    return normalize(words[0]).slice(0, 3)
+  }
+
+  return normalize(words.map((word) => word[0]).join('')).slice(0, 10)
 })
 
 // Check handle availability

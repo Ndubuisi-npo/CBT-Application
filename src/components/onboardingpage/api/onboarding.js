@@ -1,9 +1,9 @@
-import { extractErrorMessage, unauthenticatedFetch } from '../../../js/lib/api'
+import { apiFetch, extractErrorMessage, unauthenticatedFetch } from '../../../js/lib/api'
 
 export async function checkHandle(handle) {
   try {
     // Check handle availability by passing it as a query parameter
-    const response = await unauthenticatedFetch('/api/super-admin/tenants', {
+    const response = await unauthenticatedFetch('/api/onboarding/check-handle', {
       params: { handle }
     })
     

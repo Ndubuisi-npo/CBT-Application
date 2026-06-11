@@ -78,6 +78,14 @@ export async function publishExam(id) {
     throw new Error(extractErrorMessage(error, 'Unable to publish exam results.'))
   }
 }
+
+export async function forceCompleteExam(id) {
+  try {
+    return await apiFetch(`/api/exams/${id}/force-complete`, { method: 'POST' })
+  } catch (error) {
+    throw new Error(extractErrorMessage(error, 'Unable to end exam.'))
+  }
+}
 // ─── QUESTIONS ────────────────────────────────────────────────────────────────
 
 export async function getExamQuestions(examId) {

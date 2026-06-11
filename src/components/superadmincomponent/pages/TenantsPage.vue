@@ -103,15 +103,15 @@
                   <p class="text-sm text-slate-500">{{ tenant.handle }}</p>
                 </td>
                 <td class="px-5 py-4 text-sm text-slate-600">
-                  <p>{{ tenant.contact?.email || 'No email' }}</p>
-                  <p class="text-xs text-slate-500">{{ tenant.contact?.phone || 'No phone' }}</p>
+                  <p>{{ tenant.contact?.email || tenant.email || 'No email' }}</p>
+                  <p class="text-xs text-slate-500">{{ tenant.contact?.phone || tenant.phone || 'No phone' }}</p>
                 </td>
                 <td class="px-5 py-4 text-sm text-slate-600">
-                  <p>{{ tenant.contact?.address || 'No address' }}</p>
-                  <p class="text-xs text-slate-500">{{ tenant.contact?.city || 'No city' }}, {{ tenant.contact?.state || 'No state' }}</p>
+                  <p>{{ tenant.contact?.address || tenant.address || 'No address' }}</p>
+                  <p class="text-xs text-slate-500">{{ tenant.contact?.city || tenant.city || 'No city' }}, {{ tenant.contact?.state || tenant.state || 'No state' }}</p>
                 </td>
                 <td class="px-5 py-4">
-                  <StatusBadge :status="tenant.subscription?.status || 'Not Active'" />
+                  <StatusBadge :status="tenant.subscription?.status || tenant.subscription_status || 'Not Active'" />
                 </td>
                 <td class="px-5 py-4">
                   <StatusBadge :status="tenant.is_active ? 'Active' : 'Suspended'" />

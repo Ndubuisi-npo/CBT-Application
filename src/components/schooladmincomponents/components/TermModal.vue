@@ -118,11 +118,7 @@ const submit = async () => {
       name: form.name,
       start_date: form.startDate,
       end_date: form.endDate,
-    }
-    
-    // Only include isCurrent if it's true, to avoid sending false
-    if (form.isCurrent) {
-      payload.is_current = true
+      is_current: Boolean(form.isCurrent),
     }
     
     await emit('submit', {

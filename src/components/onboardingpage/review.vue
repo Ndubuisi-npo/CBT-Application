@@ -88,8 +88,16 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { ArrowLeft, ArrowRight, BadgeCheck, Pencil } from 'lucide-vue-next'
-import { fetchPlans } from '../superadmincomponent/api/plans'
+import { ArrowLeft, ArrowRight, BadgeCheck } from 'lucide-vue-next'
+import { fetchPlans } from './api/plans'
+
+interface Plan {
+  id: string
+  name: string
+  range: string
+  price: number | null
+  features: string[]
+}
 
 const props = defineProps<{
   formData: {
@@ -115,45 +123,30 @@ const emit = defineEmits<{
   'submit-registration': []
 }>()
 
-const plans = ref([])
+const plans = ref<Plan[]>([])
 
 onMounted(async () => {
   try {
     const apiPlans = await fetchPlans()
-    plans.value = apiPlans.map(plan => ({
-      name: plan.name,
-      range: plan.max_students ? `Up to ${plan.max_students} students` : 'Unlimited students',
-      price: plan.price_monthly || plan.price || null,
-      features: plan.features || [],
-      id: plan.id
-    }))
+    plans.value = Array.isArray(apiPlans)
+      ? apiPlans.map((plan: any) => ({
+          name: plan.name,
+          range: plan.max_students ? `Up to ${plan.max_students} students` : 'Unlimited students',
+          price: plan.price_monthly || plan.price || null,
+          features: plan.features || [],
+          id: plan.id
+        }))
+      : []
   } catch (error) {
-    // Fallback to basic plans if API fails
-    plans.value = [
-      {
-        name: 'Basic Plan',
-        range: 'Up to 100 students',
-        price: 29.99,
-        features: ['Up to 100 students', 'Basic grading', 'Email support'],
-        id: 'basic'
-      },
-      {
-        name: 'Premium Plan',
-        range: 'Unlimited students',
-        price: 99.99,
-        features: ['Unlimited students', 'Advanced grading', 'Priority support', 'Custom branding'],
-        id: 'premium'
-      }
-    ]
+    plans.value = []
   }
 })
 
 const display = (value: string) => value?.trim() || '-'
 const getPlanName = (planId: string) => {
-  const plan = plans.value.find(p => p.id === planId)
+  const plan = plans.value.find((p) => p.id === planId)
   return plan ? plan.name : planId
 }
-const displayArray = (value: string[] | undefined) => (value && value.length ? value.join(', ') : 'None selected')
 const displayLocation = computed(() => {
   const pieces = [props.formData.address, props.formData.city, props.formData.state].filter(Boolean)
   return pieces.length ? pieces.join(', ') : '-'

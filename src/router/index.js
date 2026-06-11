@@ -84,7 +84,6 @@ const routes = [
           { path: 'students', name: 'SchoolAdminStudents', component: SchoolAdminStudents },
           { path: 'students/import', name: 'SchoolAdminStudentImport', component: StudentImportPage },
           { path: 'exams', name: 'SchoolAdminExamApprovals', component: SchoolAdminExamApprovals },
-          // NOTE: 'assessments' route REMOVED — School Admin has no exam access.
           { path: 'subjects', name: 'SchoolAdminSubjects', component: SchoolAdminSubjects },
           {
             path: 'subjects/:id/assign-teacher',

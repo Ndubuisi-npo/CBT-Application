@@ -213,7 +213,8 @@ const toggleItemSelection = (id, checked) => {
 }
 
 const deleteSelected = async () => {
-  if (!confirm(`Are you sure you want to delete ${selectedItems.value.size} selected class level(s)? This action cannot be undone.`)) {
+  const selectedCount = selectedItems.value.size
+  if (!confirm(`Are you sure you want to delete ${selectedCount} selected class level(s)? This action cannot be undone.`)) {
     return
   }
 
@@ -230,13 +231,14 @@ const deleteSelected = async () => {
     isSelectMode.value = false
     uiStore.addToast({ 
       title: 'Class Levels Deleted', 
-      message: `${selectedItems.value.size} class level(s) have been deleted successfully.`, 
+      message: `${selectedCount} class level(s) have been deleted successfully.`, 
       variant: 'success' 
     })
   } catch (error) {
+    const message = error?.response?.data?.message || error?.message || 'Failed to delete selected class levels.'
     uiStore.addToast({ 
       title: 'Error', 
-      message: 'Failed to delete selected class levels.', 
+      message, 
       variant: 'error' 
     })
   } finally {
@@ -276,7 +278,8 @@ const deleteClassLevel = async (id) => {
     await classLevelsStore.deleteClassLevel(id)
     uiStore.addToast({ title: 'Class level deleted', message: 'Class level has been deleted.', variant: 'success' })
   } catch (error) {
-    uiStore.addToast({ title: 'Error', message: 'Failed to delete class level.', variant: 'error' })
+    const message = error?.response?.data?.message || error?.message || 'Failed to delete class level.'
+    uiStore.addToast({ title: 'Error', message, variant: 'error' })
   } finally {
     deleteLoading.value = new Set([...deleteLoading.value].filter(loadingId => loadingId !== id))
   }
@@ -310,11 +313,8 @@ const submitClassLevel = async (classLevelData) => {
       closeModal()
     }, 100)
   } catch (error) {
-    uiStore.addToast({ title: 'Error', message: 'Failed to save class level.', variant: 'error' })
-    // Close modal after error toast as well
-    setTimeout(() => {
-      closeModal()
-    }, 100)
+    const message = error?.response?.data?.message || error?.message || 'Failed to save class level.'
+    uiStore.addToast({ title: 'Error', message, variant: 'error' })
   }
 }
 

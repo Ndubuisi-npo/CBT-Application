@@ -95,6 +95,8 @@ export async function login(credentials) {
     }),
   })
 
+  console.log('[Auth] Login API Response:', JSON.stringify(response, null, 2))
+
   const user = response.user ?? response.admin ?? response.profile ?? null
   const token = response.token ?? response.access_token ?? response.auth_token ?? null
   const role = response.role
@@ -102,6 +104,8 @@ export async function login(credentials) {
     ?? user?.role_name
     ?? user?.role?.name
     ?? null
+
+  console.log('[Auth] Extracted - User:', user, 'Token:', token ? 'exists' : 'missing', 'Role:', role)
 
   if (!token) {
     throw new Error('Login response did not include an authentication token.')
@@ -112,10 +116,13 @@ export async function login(credentials) {
   authState = {
     user,
     token,
-    role: role || 'school_admin',
+    role: role, 
     tenantSlug: response.tenant_slug || null,
     expiresAt,
   }
+
+  console.log('[Auth] Final Auth State:', authState)
+  console.log('[Auth] Stored in localStorage - cbt_auth:', JSON.parse(window.localStorage.getItem('cbt_auth')), 'authToken:', window.localStorage.getItem('authToken') ? 'exists' : 'missing')
 
   persistAuth(authState)
   setApiToken(authState.token)
@@ -146,6 +153,19 @@ export async function logout() {
 
 export function getAuthUser() {
   return authState.user
+}
+
+export function getDisplayName(user = null) {
+  const u = user || authState.user
+  if (!u) return 'Admin'
+
+  const first = u?.first_name || u?.firstName || u?.user?.first_name || ''
+  const last = u?.last_name || u?.lastName || u?.user?.last_name || ''
+
+  const full = `${first} ${last}`.trim()
+  if (full) return full
+
+  return u?.name || u?.full_name || u?.email || 'Admin'
 }
 
 export function getAuthRole() {

@@ -1,10 +1,10 @@
 <template>
   <div class="space-y-6">
     <section class="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-      <OverviewCard title="Total Tenants" :value="metrics.totalTenants" change="+12% from last month" progress="78%" :icon="Building2" />
-      <OverviewCard title="Active Subscriptions" :value="metrics.activeSubscriptions" change="+8% renewal growth" progress="69%" :icon="BadgeCheck" />
-      <OverviewCard title="Suspended Tenants" :value="metrics.suspendedTenants" change="-3% suspension" progress="22%" :icon="ShieldAlert" :positive="false" />
-      <OverviewCard title="Revenue" :value="metrics.revenue" change="+18% MRR expansion" progress="84%" :icon="Coins" />
+      <OverviewCard title="Total Tenants" :value="metrics.totalTenants" change="" progress="78%" :icon="Building2" />
+      <OverviewCard title="Active Subscriptions" :value="metrics.activeSubscriptions" change="" progress="69%" :icon="BadgeCheck" />
+      <OverviewCard title="Suspended Tenants" :value="metrics.suspendedTenants" change="" progress="22%" :icon="ShieldAlert" :positive="false" />
+      <OverviewCard title="Revenue" :value="metrics.revenue" change="" progress="84%" :icon="Coins" />
     </section>
 
     <SectionCard title="Recent Tenant Activity" subtitle="Operational visibility across your school portfolio.">
@@ -45,15 +45,11 @@ onMounted(() => {
 const metrics = computed(() => {
   const activeTenants = tenants.value.filter((tenant) => tenant.is_active)
   const totalRevenue = activeTenants.reduce((sum, tenant) => {
-    // Check if tenant has an active subscription with a plan
-    if (!tenant.subscription?.plan?.id) return sum
-    
-    // Find the plan in the plans array using the plan_id from subscription
-    const plan = plans.value.find(p => p.id === tenant.subscription.plan.id)
-    if (!plan) return sum
-    
-    // Get the monthly price from the plan details
-    const monthlyPrice = parseFloat(plan.price_monthly) || 0
+    const tenantPlan = tenant.plan || tenant.subscription?.plan
+    const plan = tenantPlan || plans.value.find((p) => p.id === tenant.subscription?.plan?.id)
+    const monthlyPrice = parseFloat(
+      plan?.price_monthly ?? (plan?.price_yearly ? Number(plan.price_yearly) / 12 : 0),
+    ) || 0
     return sum + monthlyPrice
   }, 0)
   

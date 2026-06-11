@@ -317,14 +317,9 @@ const submitSession = async (sessionData) => {
   try {
     const payload = {
       name: sessionData.name,
-      start_date: sessionData.startDate,
-      end_date: sessionData.endDate,
-      is_current: sessionData.isCurrent
-    }
-    
-    // If setting as current, ensure is_current is true
-    if (sessionData.isCurrent) {
-      payload.is_current = true
+      start_date: sessionData.startDate ?? sessionData.start_date,
+      end_date: sessionData.endDate ?? sessionData.end_date,
+      is_current: Boolean(sessionData.isCurrent ?? sessionData.is_current),
     }
 
     if (sessionData.id) {
@@ -348,7 +343,13 @@ const submitSession = async (sessionData) => {
 }
 
 const getTermsCount = (session) => {
-  return sessionsStore.terms[session.id]?.length || 0
+  const terms = Array.isArray(session.terms)
+    ? session.terms
+    : Array.isArray(session.terms?.data)
+      ? session.terms.data
+      : sessionsStore.terms[session.id]
+
+  return Array.isArray(terms) ? terms.length : 0
 }
 
 const nextPage = () => {

@@ -45,7 +45,7 @@
             id="phone-number"
             v-model="formData.phone"
             type="tel"
-            placeholder="+234 000 000 0000"
+            placeholder="0900 000 0000"
             class="h-14 w-full rounded-xl border-2 px-4 text-base text-slate-700 outline-none transition duration-300 placeholder:text-slate-400 focus:border-[#D4AF37] focus:shadow-sm"
             :class="{ 'border-red-500 focus:border-red-500': errors.phone }"
           />
@@ -183,8 +183,8 @@ const validateForm = () => {
   if (!props.formData.phone?.trim()) {
     errors.value.phone = 'Phone number is required'
     isValid = false
-  } else if (!/^\+?[\d\s\-\(\)]+$/.test(props.formData.phone.replace(/\s/g, ''))) {
-    errors.value.phone = 'Phone number must contain only numbers'
+  } else if (!/^[0-9\s\-\(\)]+$/.test(props.formData.phone.trim())) {
+    errors.value.phone = 'Phone number must be in the format 0900 000 0000'
     isValid = false
   }
 

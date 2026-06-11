@@ -80,7 +80,7 @@ import { useSchoolAdminStudentsStore } from '../stores/students'
 import { useSchoolAdminTeachersStore } from '../stores/teachers'
 import { useSchoolAdminClassLevelsStore } from '../stores/classLevels'
 import { useSchoolAdminSubjectsStore } from '../stores/subjects'
-import { getAuthUser } from '../../../js/lib/auth'
+import { getAuthUser, getDisplayName } from '../../../js/lib/auth'
 
 const router = useRouter()
 const studentsStore = useSchoolAdminStudentsStore()
@@ -88,10 +88,7 @@ const teachersStore = useSchoolAdminTeachersStore()
 const classLevelsStore = useSchoolAdminClassLevelsStore()
 const subjectsStore = useSchoolAdminSubjectsStore()
 
-const adminName = computed(() => {
-  const u = getAuthUser()
-  return u?.name || u?.full_name || 'Admin'
-})
+const adminName = computed(() => getDisplayName())
 
 const statCards = computed(() => [
   {

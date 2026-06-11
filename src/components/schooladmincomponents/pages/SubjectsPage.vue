@@ -165,27 +165,32 @@ const itemsPerPage = 10
 
 
 const formatClassLevels = (subject) => {
-  if (!subject.class_levels || !Array.isArray(subject.class_levels)) {
-    return '-'
-  }
-  
-  return subject.class_levels.map(classLevel => classLevel.name).join(' | ')
+  const classLevels = Array.isArray(subject.class_levels)
+    ? subject.class_levels
+    : Array.isArray(subject.classLevels)
+      ? subject.classLevels
+      : []
+
+  if (!classLevels.length) return '-'
+  return classLevels.map((classLevel) => classLevel.name).join(' | ')
 }
 
 const formatAssignedTeachers = (subject) => {
-  if (!subject.teacher_assignments || !Array.isArray(subject.teacher_assignments)) {
-    return '-'
-  }
-  
-  const teacherNames = subject.teacher_assignments
-    .map(assignment => {
+  const assignments = Array.isArray(subject.teacher_assignments)
+    ? subject.teacher_assignments
+    : Array.isArray(subject.teacherAssignments)
+      ? subject.teacherAssignments
+      : []
+
+  const teacherNames = assignments
+    .map((assignment) => {
       if (assignment.user && assignment.user.first_name && assignment.user.last_name) {
         return `${assignment.user.first_name} ${assignment.user.last_name}`.trim()
       }
       return null
     })
     .filter(Boolean)
-  
+
   return teacherNames.length > 0 ? teacherNames.join(', ') : '-'
 }
 
