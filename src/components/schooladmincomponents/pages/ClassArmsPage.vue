@@ -77,6 +77,7 @@ import { Plus } from 'lucide-vue-next'
 import { useSchoolAdminClassArmsStore } from '../stores/classArms'
 import { useSchoolAdminClassLevelsStore } from '../stores/classLevels'
 import { useSchoolAdminUiStore } from '../stores/ui'
+import { isNameTakenError } from '../../../js/lib/api'
 
 const route = useRoute()
 const headings = ['Class Name', 'Teacher', 'Actions']
@@ -158,7 +159,11 @@ const submitClass = async (classData) => {
     }, 100)
     await classArmsStore.fetchClassArms(classLevelId.value) // Refresh to get updated list
   } catch (error) {
-    uiStore.addToast({ title: 'Error', message: error.message || 'Failed to save class.', variant: 'error' })
+    if (isNameTakenError(error)) {
+      uiStore.addToast({ title: 'Name taken', message: 'Name has already been taken.', variant: 'error' })
+    } else {
+      uiStore.addToast({ title: 'Error', message: error.message || 'Failed to save class.', variant: 'error' })
+    }
     // Close modal after error toast as well
     setTimeout(() => {
       closeModal()

@@ -218,3 +218,21 @@ export function extractErrorMessage(error, fallback = 'Something went wrong.') {
 
   return fallback
 }
+
+export function isNameTakenError(error) {
+  if (!error) return false
+  // Prefer explicit HTTP 409 Conflict
+  if (typeof error.status === 'number' && error.status === 409) return true
+
+  const msg = (error?.data?.message || error?.message || '') + ''
+  const lower = msg.toLowerCase()
+  if (!lower) return false
+
+  return (
+    lower.includes('taken') ||
+    lower.includes('already exists') ||
+    lower.includes('already taken') ||
+    lower.includes('duplicate') ||
+    lower.includes('already been taken')
+  )
+}

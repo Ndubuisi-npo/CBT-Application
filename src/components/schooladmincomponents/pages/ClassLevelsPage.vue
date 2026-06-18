@@ -104,6 +104,7 @@
     <ClassLevelModal 
       :show="showModal" 
       :classLevel="selectedClassLevel"
+      :loading="isSaving"
       @close="closeModal"
       @submit="submitClassLevel"
     />
@@ -138,6 +139,7 @@ const selectedClassLevel = ref(null)
 
 // Loading states
 const deleteLoading = ref(new Set())
+const isSaving = ref(false)
 
 // Form state
 const form = reactive({ id: null, name: '' })
@@ -296,6 +298,7 @@ const previousPage = () => {
   }
 }
 const submitClassLevel = async (classLevelData) => {
+  isSaving.value = true
   try {
     const payload = {
       name: classLevelData.name
@@ -315,6 +318,8 @@ const submitClassLevel = async (classLevelData) => {
   } catch (error) {
     const message = error?.response?.data?.message || error?.message || 'Failed to save class level.'
     uiStore.addToast({ title: 'Error', message, variant: 'error' })
+  } finally {
+    isSaving.value = false
   }
 }
 

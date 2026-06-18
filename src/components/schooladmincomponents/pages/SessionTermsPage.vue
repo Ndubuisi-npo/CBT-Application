@@ -91,6 +91,7 @@ import TermModal from '../components/TermModal.vue'
 import { useSchoolAdminSessionsStore } from '../stores/sessions'
 import { useSchoolAdminUiStore } from '../stores/ui'
 import { fmtDate } from '@/lib/helpers'
+import { isNameTakenError } from '../../../js/lib/api'
 
 const route = useRoute()
 const headings = ['Term Name', 'Start Date', 'End Date', 'Actions']
@@ -168,7 +169,11 @@ const submitTerm = async (termData) => {
     }, 100)
     await sessionsStore.fetchTerms(sessionId.value) // Refresh to get updated list
   } catch (error) {
-    uiStore.addToast({ title: 'Error', message: error.message || 'Failed to save term.', variant: 'error' })
+    if (isNameTakenError(error)) {
+      uiStore.addToast({ title: 'Name taken', message: 'Name has already been taken.', variant: 'error' })
+    } else {
+      uiStore.addToast({ title: 'Error', message: error.message || 'Failed to save term.', variant: 'error' })
+    }
     // Close modal after error toast as well
     setTimeout(() => {
       closeModal()

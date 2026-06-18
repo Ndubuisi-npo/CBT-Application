@@ -20,8 +20,8 @@
               full-width 
               variant="primary" 
               :loadingText="isEdit ? 'Updating Class Level...' : 'Creating Class Level...'"
-              :processing="loading" 
-              :disabled="loading"
+              :processing="props.loading" 
+              :disabled="props.loading"
             />
             <AppButton type="button" text="Cancel" variant="outline" @click="$emit('close')" />
           </div>
@@ -39,7 +39,8 @@ import FormField from './FormField.vue'
 
 const props = defineProps({
   show: { type: Boolean, default: false },
-  classLevel: { type: Object, default: null }
+  classLevel: { type: Object, default: null },
+  loading: { type: Boolean, default: false }
 })
 
 const emit = defineEmits(['close', 'submit'])

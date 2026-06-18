@@ -368,6 +368,7 @@ import AppButton from '../../shared/AppButton.vue';
 import TeacherModal from '../components/TeacherModal.vue'
 import { useSchoolAdminTeachersStore } from "../stores/teachers";
 import { useSchoolAdminUiStore } from "../stores/ui";
+import { isNameTakenError } from '../../../js/lib/api'
 
 const activeHeadings = [
   "Staff ID",
@@ -792,8 +793,12 @@ const submitTeacher = async (teacherData) => {
       closeModal()
     }, 100)
   } catch (error) {
-    const message = error?.response?.data?.message || error?.message || 'Failed to save teacher.'
-    uiStore.addToast({ title: 'Error', message, variant: 'error' })
+    if (isNameTakenError(error)) {
+      uiStore.addToast({ title: 'Name taken', message: 'Name has already been taken.', variant: 'error' })
+    } else {
+      const message = error?.response?.data?.message || error?.message || 'Failed to save teacher.'
+      uiStore.addToast({ title: 'Error', message, variant: 'error' })
+    }
   }
 }
 

@@ -2,7 +2,7 @@
   <div class="space-y-6">
     <SectionCard :title="title" :subtitle="subtitle">
       <template #header>
-        <AppButton text="Download Template" variant="outline" size="base" @click="downloadTemplate" />
+        <AppButton text="Download Template" variant="outline" size="base" :processing="isDownloadingTemplate" :disabled="isDownloadingTemplate" loadingText="Downloading..." @click="downloadTemplate" />
       </template>
 
       <div
@@ -69,6 +69,7 @@ const emit = defineEmits(['file-selected'])
 const fileInput = ref(null)
 const isDragging = ref(false)
 const error = ref('')
+const isDownloadingTemplate = ref(false)
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5 MB
 
@@ -133,6 +134,8 @@ function handleDrop(event) {
 }
 
 async function downloadTemplate() {
+  isDownloadingTemplate.value = true
+  error.value = ''
   try {
     const blob = await props.getTemplate()
     const url = URL.createObjectURL(blob)
@@ -143,6 +146,8 @@ async function downloadTemplate() {
     URL.revokeObjectURL(url)
   } catch (err) {
     error.value = err.message || 'Failed to download template. Please try again.'
+  } finally {
+    isDownloadingTemplate.value = false
   }
 }
 </script>
