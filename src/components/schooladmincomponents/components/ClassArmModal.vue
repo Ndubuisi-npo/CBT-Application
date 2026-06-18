@@ -10,23 +10,27 @@
         
         <div class="flex-1 overflow-y-auto">
           <form class="space-y-4" @submit.prevent="submit">
-          <FormField label="Class Arm Name" :error="errors.name">
-            <input v-model="form.name" class="sa-input" placeholder="JSS 1A" />
-          </FormField>
+            <FormField label="Class Level">
+              <input :value="classLevelName" class="sa-input bg-slate-100" readonly />
+            </FormField>
+
+            <FormField :label="prefix ? 'Class Arm Suffix' : 'Class Arm Name'" :error="errors.suffix">
+              <input v-model="form.suffix" class="sa-input" :placeholder="prefix ? 'A' : 'JSS 1A'" />
+            </FormField>
           
-          <div class="flex gap-2">
-            <AppButton 
-              type="submit" 
-              :text="isEdit ? 'Update Class Arm' : 'Create Class Arm'" 
-              full-width 
-              variant="primary" 
-              :loadingText="isEdit ? 'Updating Class Arm...' : 'Creating Class Arm...'"
-              :processing="loading" 
-              :disabled="loading"
-            />
-            <AppButton type="button" text="Cancel" variant="outline" @click="$emit('close')" />
-          </div>
-        </form>
+            <div class="flex gap-2">
+              <AppButton 
+                type="submit" 
+                :text="isEdit ? 'Update Class Arm' : 'Create Class Arm'" 
+                full-width 
+                variant="primary" 
+                :loadingText="isEdit ? 'Updating Class Arm...' : 'Creating Class Arm...'"
+                :processing="loading" 
+                :disabled="loading"
+              />
+              <AppButton type="button" text="Cancel" variant="outline" @click="$emit('close')" />
+            </div>
+          </form>
         </div>
       </div>
     </div>
@@ -41,7 +45,8 @@ import FormField from './FormField.vue'
 
 const props = defineProps({
   show: { type: Boolean, default: false },
-  classArm: { type: Object, default: null }
+  classArm: { type: Object, default: null },
+  classLevelName: { type: String, default: '' }
 })
 
 const emit = defineEmits(['close', 'submit'])
@@ -49,28 +54,45 @@ const emit = defineEmits(['close', 'submit'])
 const isEdit = computed(() => !!props.classArm)
 
 const form = reactive({
-  name: ''
+  suffix: ''
 })
 
 const errors = reactive({
-  name: ''
+  suffix: ''
 })
 
 const loading = ref(false)
 
 const resetForm = () => {
-  Object.assign(form, { name: '' })
-  Object.assign(errors, { name: '' })
+  Object.assign(form, { suffix: '' })
+  Object.assign(errors, { suffix: '' })
 }
 
+const prefix = computed(() => props.classLevelName?.trim())
+const fullName = computed(() => {
+  const suffix = form.suffix?.trim()
+  if (!prefix.value) return suffix
+  return suffix ? `${prefix.value} ${suffix}` : prefix.value
+})
+
 // Watch for class arm changes and update form
-watch(() => props.classArm, (classArm) => {
-  if (classArm) {
-    form.name = classArm.name || ''
-  } else {
-    resetForm()
-  }
-}, { immediate: true })
+watch(
+  () => [props.classArm, props.classLevelName],
+  ([classArm, classLevelName]) => {
+    if (classArm) {
+      const existingName = classArm.name || ''
+      const prefixText = classLevelName?.trim()
+      if (prefixText && existingName.startsWith(prefixText)) {
+        form.suffix = existingName.slice(prefixText.length).trim()
+      } else {
+        form.suffix = existingName
+      }
+    } else {
+      resetForm()
+    }
+  },
+  { immediate: true }
+)
 
 // Watch for modal close to reset loading state
 watch(() => props.show, (show) => {
@@ -81,8 +103,8 @@ watch(() => props.show, (show) => {
 })
 
 const validate = () => {
-  errors.name = form.name ? '' : 'Class arm name is required.'
-  return !errors.name
+  errors.suffix = form.suffix ? '' : (prefix.value ? 'Class arm suffix is required.' : 'Class arm name is required.')
+  return !errors.suffix
 }
 
 const submit = async () => {
@@ -93,7 +115,7 @@ const submit = async () => {
   try {
     await emit('submit', {
       id: props.classArm?.id,
-      name: form.name
+      name: fullName.value
     })
     
     // Don't reset form or close here - let parent handle after toast

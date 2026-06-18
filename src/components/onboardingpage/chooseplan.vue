@@ -34,9 +34,9 @@
       </div>
     </div>
 
-    <div class="mt-12 flex flex-nowrap justify-start gap-5 overflow-x-auto pb-4">
+    <div :class="['mt-12 flex flex-nowrap gap-5 overflow-x-auto pb-4', loading ? 'justify-center' : 'justify-start']">
       <!-- Loading state -->
-      <div v-if="loading" class="col-span-full flex items-center justify-center py-12">
+      <div v-if="loading" class="w-full flex items-center justify-center py-12">
         <div class="text-center">
           <div class="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-slate-300 border-t-slate-800"></div>
           <p class="mt-4 text-slate-600">Loading plans...</p>

@@ -80,14 +80,17 @@
 
 <script setup>
 import { ref, reactive } from 'vue'
+import { useRouter } from 'vue-router'
 import { Eye, EyeOff } from 'lucide-vue-next'
 import FormField from '../../schooladmincomponents/components/FormField.vue'
 import SectionCard from '../components/SectionCard.vue'
 import AppButton from '../../shared/AppButton.vue'
 import { useSchoolAdminUiStore } from '../../schooladmincomponents/stores/ui'
 import { changePassword } from '../services/api/auth'
+import { logout } from '../../../js/lib/auth'
 
 const uiStore = useSchoolAdminUiStore()
+const router = useRouter()
 const loading = ref(false)
 
 // Password visibility states
@@ -166,6 +169,9 @@ const handlePasswordChange = async () => {
       message: 'Your password has been successfully updated.', 
       variant: 'success' 
     })
+
+    await logout()
+    router.replace({ name: 'Login' })
   } catch (error) {
     uiStore.addToast({ 
       title: 'Error', 

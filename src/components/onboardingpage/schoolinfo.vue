@@ -26,28 +26,6 @@
       </div>
 
       <div class="grid grid-cols-1 gap-6">
-        <!-- <div class="space-y-3">
-          <label for="school-type" class="block text-base font-semibold text-slate-700">School Type</label>
-          <div class="relative">
-            <select
-              id="school-type"
-              v-model="formData.schoolType"
-              :class="[
-                formData.schoolType ? 'text-slate-800' : 'text-slate-400',
-                errors.schoolType ? 'border-red-500 focus:border-red-500' : 'border-[#0B1F3A] focus:border-[#D4AF37]'
-              ]"
-              class="cursor-pointer h-14 w-full appearance-none rounded-xl border-2 bg-white px-4 pr-12 text-slate-700 text-base outline-none transition duration-300 focus:shadow-sm"
-            >
-              <option value="" disabled class="text-slate-400">Select School Type</option>
-              <option value="Secondary School">Secondary School</option>
-              <option value="Primary School">Primary School</option>
-              <option value="Mixed">Mixed</option>
-            </select>
-            <ChevronDown class="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-700" />
-          </div>
-          <p v-if="errors.schoolType" class="text-sm text-red-500">{{ errors.schoolType }}</p>
-        </div> -->
-
         <div class="space-y-3">
           <label for="website" class="block text-base font-semibold text-slate-700">Website Handle</label>
           <div class="relative">
@@ -170,7 +148,6 @@ import nigerianStatesData from './data/nigerian-states.json'
 const props = defineProps<{
   formData: {
     schoolName: string
-    schoolType: string
     handle: string
     address: string
     state: string
@@ -199,7 +176,6 @@ const handleError = ref('')
 // Form validation state
 const errors = ref({
   schoolName: '',
-  schoolType: '',
   handle: '',
   address: '',
   state: '',
@@ -276,7 +252,6 @@ const validateForm = () => {
   // Reset errors
   errors.value = {
     schoolName: '',
-    schoolType: '',
     handle: '',
     address: '',
     state: '',
@@ -288,12 +263,6 @@ const validateForm = () => {
   // Validate school name
   if (!props.formData.schoolName?.trim()) {
     errors.value.schoolName = 'School name is required'
-    isValid = false
-  }
-
-  // Validate school type
-  if (!props.formData.schoolType?.trim()) {
-    errors.value.schoolType = 'School type is required'
     isValid = false
   }
 

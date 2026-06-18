@@ -10,17 +10,21 @@
         
         <div class="flex-1 overflow-y-auto">
           <form class="space-y-4" @submit.prevent="submit">
-            <FormField label="Class Name" :error="errors.name">
-              <input v-model="form.name" class="sa-input" placeholder="JSS 1A" />
+            <FormField label="Class Level">
+              <input :value="classLevelName" class="sa-input bg-slate-100" readonly />
+            </FormField>
+
+            <FormField :label="prefix ? 'Class Arm Suffix' : 'Class Arm Name'" :error="errors.suffix">
+              <input v-model="form.suffix" class="sa-input" :placeholder="prefix ? 'A' : 'JSS 1A'" />
             </FormField>
           
             <div class="flex gap-2">
               <AppButton 
                 type="submit" 
-                :text="isEdit ? 'Update Class' : 'Create Class'" 
+                :text="isEdit ? 'Update Class Arm' : 'Create Class Arm'" 
                 full-width 
                 variant="primary" 
-                :loadingText="isEdit ? 'Updating Class...' : 'Creating Class...'"
+                :loadingText="isEdit ? 'Updating Class Arm...' : 'Creating Class Arm...'"
                 :processing="loading" 
                 :disabled="loading"
               />
@@ -41,7 +45,8 @@ import FormField from './FormField.vue'
 
 const props = defineProps({
   show: { type: Boolean, default: false },
-  classItem: { type: Object, default: null }
+  classItem: { type: Object, default: null },
+  classLevelName: { type: String, default: '' }
 })
 
 const emit = defineEmits(['close', 'submit'])
@@ -49,24 +54,37 @@ const emit = defineEmits(['close', 'submit'])
 const isEdit = computed(() => !!props.classItem)
 
 const form = reactive({
-  name: ''
+  suffix: ''
 })
 
 const errors = reactive({
-  name: ''
+  suffix: ''
 })
 
 const loading = ref(false)
 
+const prefix = computed(() => props.classLevelName?.trim())
+const fullName = computed(() => {
+  const suffix = form.suffix?.trim()
+  if (!prefix.value) return suffix
+  return suffix ? `${prefix.value} ${suffix}` : prefix.value
+})
+
 const resetForm = () => {
-  Object.assign(form, { name: '' })
-  Object.assign(errors, { name: '' })
+  Object.assign(form, { suffix: '' })
+  Object.assign(errors, { suffix: '' })
 }
 
 // Watch for class item changes and update form
-watch(() => props.classItem, (classItem) => {
+watch(() => [props.classItem, props.classLevelName], ([classItem, classLevelName]) => {
   if (classItem) {
-    form.name = classItem.name || ''
+    const existingName = classItem.name || ''
+    const prefixText = classLevelName?.trim()
+    if (prefixText && existingName.startsWith(prefixText)) {
+      form.suffix = existingName.slice(prefixText.length).trim()
+    } else {
+      form.suffix = existingName
+    }
   } else {
     resetForm()
   }
@@ -81,8 +99,8 @@ watch(() => props.show, (show) => {
 })
 
 const validate = () => {
-  errors.name = form.name ? '' : 'Class name is required.'
-  return !errors.name
+  errors.suffix = form.suffix ? '' : (prefix.value ? 'Class arm suffix is required.' : 'Class arm name is required.')
+  return !errors.suffix
 }
 
 const submit = async () => {
@@ -93,7 +111,7 @@ const submit = async () => {
   try {
     await emit('submit', {
       id: props.classItem?.id,
-      name: form.name
+      name: fullName.value
     })
     
     // Don't reset form or close here - let parent handle after toast

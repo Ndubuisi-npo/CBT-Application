@@ -102,7 +102,6 @@ interface Plan {
 const props = defineProps<{
   formData: {
     schoolName: string
-    schoolType: string
     handle: string
     address: string
     state: string
@@ -154,7 +153,6 @@ const displayLocation = computed(() => {
 
 const schoolInfo = computed(() => [
   { label: 'Name', value: display(props.formData.schoolName) },
-  { label: 'Type', value: display(props.formData.schoolType) },
   { label: 'Location', value: displayLocation.value },
   { label: 'Handle', value: display(props.formData.handle) },
 ])

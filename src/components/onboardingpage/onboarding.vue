@@ -87,7 +87,6 @@ const isSubmitting = ref(false)
 const errorMessage = ref('')
 const formData = ref({
   schoolName: '',
-  schoolType: '',
   handle: '',
   address: '',
   state: '',
@@ -146,7 +145,6 @@ const submitRegistration = async () => {
       address: formData.value.address,
       state: formData.value.state,
       city: formData.value.city,
-      schoolType: formData.value.schoolType,
       fullName: formData.value.fullName,
       email: formData.value.email,
       phone: formData.value.phone,

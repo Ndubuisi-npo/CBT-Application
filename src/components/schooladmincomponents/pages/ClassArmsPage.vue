@@ -51,6 +51,7 @@
     <ClassModal 
       :show="showModal" 
       :classItem="selectedClass"
+      :classLevelName="classLevelName"
       @close="closeModal"
       @submit="submitClass"
     />
@@ -74,12 +75,18 @@ import ClassModal from '../components/ClassModal.vue'
 import AssignTeacherModal from '../components/AssignTeacherModal.vue'
 import { Plus } from 'lucide-vue-next'
 import { useSchoolAdminClassArmsStore } from '../stores/classArms'
+import { useSchoolAdminClassLevelsStore } from '../stores/classLevels'
 import { useSchoolAdminUiStore } from '../stores/ui'
 
 const route = useRoute()
 const headings = ['Class Name', 'Teacher', 'Actions']
 const classArmsStore = useSchoolAdminClassArmsStore()
+const classLevelsStore = useSchoolAdminClassLevelsStore()
 const uiStore = useSchoolAdminUiStore()
+
+const classLevelId = computed(() => route.params.id)
+const currentClassLevel = computed(() => classLevelsStore.classLevels.find(level => String(level.id) === String(classLevelId.value)))
+const classLevelName = computed(() => currentClassLevel.value?.name || '')
 
 // Modal state
 const showModal = ref(false)
@@ -89,10 +96,12 @@ const showAssignTeacherModal = ref(false)
 // Loading states
 const deleteLoading = ref(new Set())
 
-const classLevelId = computed(() => route.params.id)
-
 onMounted(async () => {
   try {
+    if (!classLevelsStore.classLevels.length) {
+      await classLevelsStore.fetchClassLevels()
+    }
+
     if (classLevelId.value) {
       await classArmsStore.fetchClassArms(classLevelId.value)
     }
@@ -103,6 +112,9 @@ onMounted(async () => {
 
 watch(() => classLevelId.value, async (newId) => {
   if (newId) {
+    if (!classLevelsStore.classLevels.length) {
+      await classLevelsStore.fetchClassLevels()
+    }
     await classArmsStore.fetchClassArms(newId)
   }
 })

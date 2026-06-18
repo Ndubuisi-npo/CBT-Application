@@ -35,8 +35,19 @@
                       @click="toggleTerm(term.id)" 
                       :variant="termStatus(term) === 'Current' ? 'danger' : 'warning'" 
                       size="xs" 
+                      :processing="toggleLoading.has(term.id)"
+                      :disabled="toggleLoading.has(term.id)"
+                      :loadingText="termStatus(term) === 'Current' ? 'Deactivating...' : 'Activating...'"
                     />
-                    <AppButton text="Delete" @click="deleteTerm(term.id)" variant="danger" size="xs" />
+                    <AppButton 
+                      text="Delete" 
+                      @click="deleteTerm(term.id)" 
+                      variant="danger" 
+                      size="xs" 
+                      :processing="deleteLoading.has(term.id)"
+                      :disabled="deleteLoading.has(term.id)"
+                      loadingText="Deleting..."
+                    />
                   </div>
                 </td>
               </tr>
@@ -63,9 +74,9 @@
             />
           </div>
         </div>
-        <TermModal :show="showModal" :term="selectedTerm" @close="closeModal" @submit="submitTerm" />
       </div>
     </SectionCard>
+    <TermModal :show="showModal" :term="selectedTerm" @close="closeModal" @submit="submitTerm" />
   </div>
 </template>
 
@@ -92,6 +103,7 @@ const selectedTerm = ref(null)
 
 // Loading states
 const deleteLoading = ref(new Set())
+const toggleLoading = ref(new Set())
 
 // Pagination state
 const itemsPerPage = 10
@@ -169,26 +181,25 @@ const termStatus = (term) => (term.current ? 'Current' : 'Not current')
 const toggleTerm = async (termId) => {
   const term = currentTerms.value.find(t => t.id === termId)
   const isActive = termStatus(term) === 'Current'
-  
-  if (isActive) {
-    // Deactivate - set is_current to false
-    try {
+  toggleLoading.value = new Set([...toggleLoading.value, termId])
+
+  try {
+    if (isActive) {
+      // Deactivate - set is_current to false
       await sessionsStore.saveTerm(sessionId.value, { 
         id: termId,
         is_current: false 
       })
       uiStore.addToast({ title: 'Term deactivated', message: 'Academic term has been deactivated.', variant: 'success' })
-    } catch (error) {
-      uiStore.addToast({ title: 'Error', message: 'Failed to deactivate term.', variant: 'error' })
-    }
-  } else {
-    // Activate - use set-current endpoint
-    try {
+    } else {
+      // Activate - use set-current endpoint
       await sessionsStore.activateTerm(sessionId.value, termId)
       uiStore.addToast({ title: 'Term activated', message: 'Current academic term updated.', variant: 'success' })
-    } catch (error) {
-      uiStore.addToast({ title: 'Error', message: 'Failed to activate term.', variant: 'error' })
     }
+  } catch (error) {
+    uiStore.addToast({ title: 'Error', message: isActive ? 'Failed to deactivate term.' : 'Failed to activate term.', variant: 'error' })
+  } finally {
+    toggleLoading.value = new Set([...toggleLoading.value].filter(id => id !== termId))
   }
 }
 
