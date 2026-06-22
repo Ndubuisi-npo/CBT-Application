@@ -115,9 +115,9 @@
                 <h3 class="text-lg font-semibold text-slate-900">{{ exam.title }}</h3>
                 <p class="mt-1 text-sm text-slate-500">{{ getExamSubjectName(exam) }} • {{ getExamClassLevelName(exam) }} • {{ getExamClassArmName(exam) }}</p>
               </div>
-              <div class="flex gap-2">
+              <!-- <div class="flex gap-2">
                 <AppButton text="View Results" variant="outline" size="sm" @click="goTo('/teachers/exams')" />
-              </div>
+              </div> -->
             </div>
           </div>
         </div>

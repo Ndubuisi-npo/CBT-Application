@@ -85,7 +85,11 @@ const subject = computed(() => {
 })
 const assignments = computed(() => {
   if (!subject.value) return []
-  const assignments = subject.value?.teacher_assignments || []
+  const assignments = Array.isArray(subject.value.teacher_assignments)
+    ? subject.value.teacher_assignments
+    : Array.isArray(subject.value.teacherAssignments)
+      ? subject.value.teacherAssignments
+      : []
   return assignments
 })
 
@@ -98,33 +102,42 @@ const deleteLoading = ref(new Set())
 
 const getTeacherName = (teacherId) => {
   // Extract teacher name from teacher_assignments in subject
-  if (subject.value?.teacher_assignments) {
-    const assignment = subject.value.teacher_assignments.find(a => a.user_id === teacherId)
-    if (assignment?.user) {
-      return `${assignment.user.first_name} ${assignment.user.last_name}`.trim()
-    }
+  const teacherAssignments = Array.isArray(subject.value?.teacher_assignments)
+    ? subject.value.teacher_assignments
+    : Array.isArray(subject.value?.teacherAssignments)
+      ? subject.value.teacherAssignments
+      : []
+  const assignment = teacherAssignments.find(a => a.user_id === teacherId)
+  if (assignment?.user) {
+    return `${assignment.user.first_name} ${assignment.user.last_name}`.trim()
   }
   return 'Unknown'
 }
 
 const getClassName = (classId) => {
   // Extract class level name from subject's class_levels
-  if (subject.value?.class_levels) {
-    const classLevel = subject.value.class_levels.find(c => c.id === classId)
-    if (classLevel) {
-      return classLevel.name
-    }
+  const classLevels = Array.isArray(subject.value?.class_levels)
+    ? subject.value.class_levels
+    : Array.isArray(subject.value?.classLevels)
+      ? subject.value.classLevels
+      : []
+  const classLevel = classLevels.find(c => c.id === classId)
+  if (classLevel) {
+    return classLevel.name
   }
   return 'Unknown'
 }
 
 const getSessionName = (sessionId) => {
   // Since academic_session is nested in the assignment object
-  if (subject.value?.teacher_assignments) {
-    const assignment = subject.value.teacher_assignments.find(a => a.academic_session_id === sessionId || a.id === sessionId)
-    if (assignment?.academic_session) {
-      return assignment.academic_session.name || sessionId || 'Unknown'
-    }
+  const teacherAssignments = Array.isArray(subject.value?.teacher_assignments)
+    ? subject.value.teacher_assignments
+    : Array.isArray(subject.value?.teacherAssignments)
+      ? subject.value.teacherAssignments
+      : []
+  const assignment = teacherAssignments.find(a => a.academic_session_id === sessionId || a.id === sessionId)
+  if (assignment?.academic_session) {
+    return assignment.academic_session.name || sessionId || 'Unknown'
   }
   return sessionId || 'Unknown'
 }

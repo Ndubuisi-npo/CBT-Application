@@ -106,9 +106,9 @@
               </template>
 
               <!-- Results — completed exams only -->
-              <template v-if="(exam.status || '').toLowerCase() === 'completed'">
+              <!-- <template v-if="(exam.status || '').toLowerCase() === 'completed'">
                 <AppButton :icon="BarChart2" text="Results" variant="outline" size="sm" @click="viewResults(exam)" />
-              </template>
+              </template> -->
 
               <!-- Dynamic lifecycle actions from state machine -->
               <template v-for="action in store.getValidActions(exam)" :key="action.action">

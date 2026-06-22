@@ -109,7 +109,7 @@ const navItems = computed(() => {
       { label: 'Question Bank', to: '/teachers/questions', icon: FileQuestion },
       // { label: 'My Classes', to: '/teachers/my-classes', icon: BookOpenCheck },
       { label: 'Students', to: '/teachers/students', icon: GraduationCap },
-      { label: 'Attendance', to: '/teachers/attendance', icon: CalendarCheck2 },
+      // { label: 'Attendance', to: '/teachers/attendance', icon: CalendarCheck2 },
       // { label: 'Grading', to: '/teachers/grading', icon: ScrollText },
       // { label: 'Results', to: '/teachers/results', icon: BarChart3 },
       // { label: 'Timetable', to: '/teachers/timetable', icon: AlarmClockCheck },

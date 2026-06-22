@@ -32,11 +32,11 @@
                   </div>
                   <div>
                     <label class="block text-sm text-slate-500">Gender</label>
-                    <p class="text-sm font-medium text-slate-900">{{ student.gender || student.student_profile?.gender || 'Not specified' }}</p>
+                    <p class="text-sm font-medium text-slate-900">{{ student.gender || student.studentProfile?.gender || 'Not specified' }}</p>
                   </div>
                   <div>
                     <label class="block text-sm text-slate-500">Date of Birth</label>
-                    <p class="text-sm font-medium text-slate-900">{{ student.date_of_birth || student.student_profile?.date_of_birth || 'Not specified' }}</p>
+                    <p class="text-sm font-medium text-slate-900">{{ student.date_of_birth || student.studentProfile?.date_of_birth || 'Not specified' }}</p>
                   </div>
                 </div>
               </div>
@@ -46,11 +46,11 @@
                 <div class="grid grid-cols-2 gap-4">
                   <div>
                     <label class="block text-sm text-slate-500">Admission Number</label>
-                    <p class="text-sm font-medium text-slate-900">{{ student.student_profile?.admission_number || 'Not specified' }}</p>
+                    <p class="text-sm font-medium text-slate-900">{{ student.studentProfile?.admission_number || 'Not specified' }}</p>
                   </div>
                   <div>
                     <label class="block text-sm text-slate-500">Class</label>
-                    <p class="text-sm font-medium text-slate-900">{{ student.student_profile?.class_arm?.name || student.student_profile?.class_name || 'Not specified' }}</p>
+                    <p class="text-sm font-medium text-slate-900">{{ student.studentProfile?.class_arm?.name || student.student_profile?.class_name || 'Not specified' }}</p>
                   </div>
                 </div>
               </div>
@@ -58,10 +58,10 @@
               <div>
                 <h4 class="text-sm font-medium text-slate-700 mb-3">Account Status</h4>
                 <div class="grid grid-cols-2 gap-4">
-                  <div>
+                  <!-- <div>
                     <label class="block text-sm text-slate-500">Student ID</label>
                     <p class="text-sm font-medium text-slate-900">{{ student.id }}</p>
-                  </div>
+                  </div> -->
                   <div>
                     <label class="block text-sm text-slate-500">Active</label>
                     <p class="text-sm font-medium text-slate-900">{{ student.is_active ? 'Yes' : 'No' }}</p>

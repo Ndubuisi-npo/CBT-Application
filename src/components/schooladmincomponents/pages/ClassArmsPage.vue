@@ -223,7 +223,7 @@ const assignTeacher = async (assignmentData) => {
 }
 
 const getAssignedTeacher = (classItem) => {
-  const teacher = classItem.assigned_teacher || classItem.teacher
+  const teacher = classItem.assignedTeacher || classItem.teacher
 
   if (teacher?.first_name || teacher?.last_name) {
     return `${teacher.first_name || ''} ${teacher.last_name || ''}`.trim()
