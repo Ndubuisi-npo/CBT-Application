@@ -32,6 +32,17 @@ import {
 // ─── State machine ────────────────────────────────────────────────────────────
 // Source of truth for which actions are valid from each status.
 // Invalid transitions are HIDDEN (not just disabled) in the UI.
+const unwrapList = (response) => {
+  if (Array.isArray(response)) return response
+  if (!response || typeof response !== 'object') return []
+  if (Array.isArray(response.data)) return response.data
+  if (Array.isArray(response.questions)) return response.questions
+  if (Array.isArray(response.items)) return response.items
+  if (Array.isArray(response.results)) return response.results
+  if (response.data && typeof response.data === 'object') return unwrapList(response.data)
+  return []
+}
+
 export const EXAM_STATUSES = {
   DRAFT: 'draft',
   SUBMITTED: 'submitted',
@@ -376,7 +387,7 @@ export const useTeacherExamsStore = defineStore('teacher-exams', {
 
     async fetchQuestionBank(params = {}) {
       const result = await getQuestionBank(params)
-      this.questionBank = result?.data ?? result ?? []
+      this.questionBank = unwrapList(result)
       return this.questionBank
     },
 

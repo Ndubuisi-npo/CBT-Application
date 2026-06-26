@@ -2,7 +2,7 @@
   <div class="space-y-6">
     <SectionCard title="Assigned Classes" subtitle="A deeper view of class workload, attendance, and performance support needs.">
       <div class="grid gap-4 pt-6 lg:grid-cols-2 2xl:grid-cols-4">
-        <article v-for="classItem in classOverview" :key="classItem.id" class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
+        <article v-for="classItem in classOverview" :key="classItem.id" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <div class="flex items-start justify-between gap-3">
             <div>
               <h2 class="text-lg font-semibold text-slate-900">{{ classItem.name }}</h2>
@@ -37,7 +37,7 @@
           <article
             v-for="student in teacherStudents"
             :key="student.id"
-            class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm"
+            class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
           >
             <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div>
@@ -64,7 +64,7 @@
 
       <SectionCard title="Class Action Queue" subtitle="What your SS2 Gold class needs from you this week.">
         <div class="space-y-4 pt-6">
-          <div class="rounded-[24px] border border-blue-200 bg-blue-50 p-5">
+          <div class="rounded-2xl border border-blue-200 bg-blue-50 p-5">
             <p class="text-sm font-semibold text-blue-800">SS2 Gold</p>
             <p class="mt-2 text-sm leading-6 text-blue-700">Mid-term CBT is scheduled. Confirm invigilation note, lock final question order, and ensure all students have exam access confirmation.</p>
           </div>

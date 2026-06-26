@@ -1,6 +1,6 @@
 <template>
-  <div class="min-h-screen bg-[#F3F6FB] text-slate-900">
-    <div class="flex min-h-screen">
+  <div class="h-screen overflow-hidden bg-[#F3F6FB] text-slate-900">
+    <div class="flex h-full">
       <AppSidebar
         :collapsed="uiStore.sidebarCollapsed"
         :mobile-open="uiStore.mobileSidebarOpen"
@@ -10,7 +10,7 @@
 
       <div class="flex min-w-0 flex-1 flex-col">
         <AppHeader @toggle-sidebar="uiStore.toggleSidebar" />
-        <main class="flex-1 p-4 sm:p-6 lg:p-8">
+        <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8" style="zoom: 0.9;">
           <router-view />
         </main>
       </div>

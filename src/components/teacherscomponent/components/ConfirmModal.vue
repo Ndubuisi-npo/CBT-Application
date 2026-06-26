@@ -1,6 +1,6 @@
 <template>
   <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 px-4">
-    <div class="w-full max-w-xl rounded-[28px] bg-white p-6 shadow-2xl">
+    <div class="w-full max-w-xl rounded-2xl bg-white p-6 shadow-2xl">
       <div class="flex items-start justify-between gap-4">
         <div>
           <p class="text-xs font-semibold uppercase tracking-[0.24em] text-[#D4AF37]">Confirm Action</p>

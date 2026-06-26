@@ -1,6 +1,6 @@
 <template>
   <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 px-4 py-8">
-    <div class="max-h-[92vh] w-full max-w-5xl overflow-y-auto rounded-[28px] bg-white shadow-2xl">
+    <div class="max-h-[92vh] w-full max-w-5xl overflow-y-auto rounded-2xl bg-white shadow-2xl">
       <div class="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-slate-200 bg-white px-6 py-5">
         <div>
           <p class="text-xs font-semibold uppercase tracking-[0.24em] text-[#D4AF37]">Live Monitoring</p>
@@ -18,7 +18,7 @@
           <div v-for="i in 5" :key="i" class="h-16 animate-pulse rounded-xl bg-slate-100" />
         </div>
 
-        <div v-else-if="!attempts.length" class="rounded-[24px] border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-sm text-slate-500">
+        <div v-else-if="!attempts.length" class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-sm text-slate-500">
           No student attempts yet.
         </div>
 

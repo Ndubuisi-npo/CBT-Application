@@ -14,7 +14,7 @@
         <h3 class="text-lg font-medium text-slate-900 mb-2">No terms found</h3>
         <p class="text-slate-600 mb-6">Get started by creating your first term for {{ session?.name || 'this session' }}.</p>
       </div>
-      <div v-else class="overflow-hidden rounded-[24px] border border-slate-200">
+      <div v-else class="overflow-hidden rounded-2xl border border-slate-200">
         <div class="overflow-x-auto">
           <table class="min-w-full divide-y divide-slate-200 bg-white">
             <thead class="bg-slate-50">

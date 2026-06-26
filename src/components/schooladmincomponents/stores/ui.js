@@ -13,24 +13,33 @@ export const useSchoolAdminUiStore = defineStore('school-admin-ui', {
         return
       }
       this.sidebarCollapsed = !this.sidebarCollapsed
+      try {
+        localStorage.setItem('sa_sidebar_collapsed', String(this.sidebarCollapsed))
+      } catch {}
     },
     closeMobileSidebar() {
       this.mobileSidebarOpen = false
     },
+    initSidebar() {
+      try {
+        const saved = localStorage.getItem('sa_sidebar_collapsed')
+        if (saved !== null) this.sidebarCollapsed = saved === 'true'
+      } catch {}
+    },
     addToast(toast) {
       const item = {
         id: Date.now() + Math.random(),
-        title: toast.title,
-        message: toast.message,
+        title: toast.title || '',
+        message: toast.message || '',
         variant: toast.variant || 'success',
       }
-      this.toasts = [item, ...this.toasts].slice(0, 4)
+      this.toasts = [item, ...this.toasts].slice(0, 5)
       window.setTimeout(() => {
         this.toasts = this.toasts.filter((entry) => entry.id !== item.id)
-      }, 3200)
+      }, 4000)
     },
     removeToast(id) {
-      this.toasts = this.toasts.filter((toast) => toast.id !== id)
+      this.toasts = this.toasts.filter((t) => t.id !== id)
     },
   },
 })

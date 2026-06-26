@@ -1,5 +1,5 @@
 <template>
-  <div class="overflow-hidden rounded-[28px] border border-slate-200 bg-white p-6">
+  <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white p-6">
     <div class="flex items-start justify-between gap-4">
       <div>
         <p class="text-sm font-medium text-slate-500">{{ title }}</p>

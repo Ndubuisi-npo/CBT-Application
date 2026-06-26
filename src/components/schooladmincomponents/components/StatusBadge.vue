@@ -1,25 +1,34 @@
 <template>
-  <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold" :class="statusClasses">
-    {{ status }}
-  </span>
+  <AppBadge :label="label" :variant="variant" dot />
 </template>
 
 <script setup>
 import { computed } from 'vue'
+import AppBadge from '../../shared/AppBadge.vue'
 
 const props = defineProps({
-  status: { type: String, default: 'Active' },
+  status: { type: String, default: '' },
 })
 
-const statusClasses = computed(() => {
-  switch (props.status) {
-    case 'Current':
-    case 'Active':
-      return 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200'
-    case 'Not current':
-      return 'bg-slate-100 text-slate-700 ring-1 ring-slate-200'
-    default:
-      return 'bg-slate-100 text-slate-700 ring-1 ring-slate-200'
+const label = computed(() => {
+  const s = (props.status || '').toLowerCase()
+  const map = {
+    current: 'Current', active: 'Active', live: 'Live',
+    draft: 'Draft', submitted: 'Submitted', concluded: 'Concluded',
+    completed: 'Completed', published: 'Published', pending: 'Pending',
+    rejected: 'Rejected', archived: 'Archived', inactive: 'Inactive',
+    'not current': 'Not Current',
   }
+  return map[s] || props.status || '—'
+})
+
+const variant = computed(() => {
+  const s = (props.status || '').toLowerCase()
+  if (['current', 'active', 'live', 'published'].includes(s)) return 'success'
+  if (['draft', 'not current', 'pending'].includes(s)) return 'warning'
+  if (['submitted'].includes(s)) return 'info'
+  if (['concluded', 'completed'].includes(s)) return 'purple'
+  if (['rejected', 'inactive', 'archived'].includes(s)) return 'danger'
+  return 'default'
 })
 </script>

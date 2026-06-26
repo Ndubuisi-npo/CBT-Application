@@ -1,6 +1,6 @@
 <template>
   <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 px-4 py-8">
-    <div class="max-h-[92vh] w-full max-w-4xl overflow-y-auto rounded-[28px] bg-white shadow-2xl">
+    <div class="max-h-[92vh] w-full max-w-4xl overflow-y-auto rounded-2xl bg-white shadow-2xl">
       <div class="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-slate-200 bg-white px-6 py-5">
         <div>
           <p class="text-xs font-semibold uppercase tracking-[0.24em] text-[#D4AF37]">Preview</p>
@@ -17,7 +17,7 @@
       <div class="space-y-4 p-6">
         <div v-if="loading" class="py-8 text-center text-sm text-slate-500">Loading questions...</div>
 
-        <div v-else-if="!questions.length" class="rounded-[24px] border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-sm text-slate-500">
+        <div v-else-if="!questions.length" class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-sm text-slate-500">
           No questions added to this exam yet.
         </div>
 
@@ -31,8 +31,13 @@
               {{ index + 1 }}
             </span>
             <div class="min-w-0 flex-1 space-y-4">
-              <p class="text-base font-semibold leading-7 text-slate-900">{{ getQuestionText(question) }}</p>
-              <div v-if="getOptions(question).length" class="grid gap-2 md:grid-cols-2">
+              <div class="flex items-center gap-2 flex-wrap">
+                <p class="text-base font-semibold leading-7 text-slate-900">{{ getQuestionText(question) }}</p>
+              </div>
+              <span class="inline-block rounded-full bg-slate-100 px-3 py-0.5 text-xs font-semibold text-slate-600">{{ getTypeLabel(question) }}</span>
+
+              <!-- MCQ / True-False options -->
+              <div v-if="isChoiceType(question) && getOptions(question).length" class="grid gap-2 md:grid-cols-2">
                 <div
                   v-for="(opt, i) in getOptions(question)"
                   :key="i"
@@ -40,6 +45,25 @@
                   :class="isCorrect(question, opt, i) ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-slate-200 bg-slate-50 text-slate-600'"
                 >
                   <span class="font-semibold">{{ String.fromCharCode(65 + i) }}.</span> {{ getOptionText(opt) }}
+                </div>
+              </div>
+
+              <!-- FITB: acceptable answers -->
+              <div v-else-if="isFitbType(question)">
+                <div class="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-400 text-center mb-3">
+                  [ Student types answer here ]
+                </div>
+                <div v-if="getAcceptableAnswers(question).length">
+                  <p class="text-xs font-semibold text-slate-500 mb-1">Acceptable answers:</p>
+                  <div class="flex flex-wrap gap-2">
+                    <span
+                      v-for="(ans, ai) in getAcceptableAnswers(question)"
+                      :key="ai"
+                      class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-800"
+                    >
+                      {{ typeof ans === 'object' ? ans.content : ans }}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -54,6 +78,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useTeacherExamsStore } from '../stores/exams'
 import { useSchoolAdminUiStore } from '../../schooladmincomponents/stores/ui'
+import { isChoiceBased, isFillInBlank, QUESTION_TYPE_LABELS } from '../../../types/question'
 
 const props = defineProps({ exam: { type: Object, required: true } })
 defineEmits(['close'])
@@ -70,10 +95,25 @@ const getQuestionText = (q) => {
   return src?.content || src?.question_text || src?.text || 'Untitled question'
 }
 
+const getQuestionType = (q) => {
+  const src = q?.question || q?.question_details || q
+  return src?.type || q?.type || ''
+}
+
+const getTypeLabel = (q) => QUESTION_TYPE_LABELS[getQuestionType(q)] || getQuestionType(q) || 'Question'
+const isChoiceType = (q) => isChoiceBased(getQuestionType(q))
+const isFitbType = (q) => isFillInBlank(getQuestionType(q))
+
 const getOptions = (q) => {
+  if (!isChoiceType(q)) return []
   const src = q?.question || q?.question_details || q
   const opts = src?.options || src?.answers || src?.choices || []
   return Array.isArray(opts) ? opts : []
+}
+
+const getAcceptableAnswers = (q) => {
+  const src = q?.question || q?.question_details || q
+  return Array.isArray(src?.acceptable_answers) ? src.acceptable_answers : []
 }
 
 const getOptionText = (opt) => {

@@ -2,8 +2,8 @@
   <div class="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
     <SectionCard title="School Identity" subtitle="Upload branding assets and confirm tenant profile details.">
       <div class="space-y-5">
-        <div class="rounded-[28px] border-2 border-dashed border-slate-200 bg-slate-50 p-6 text-center">
-          <div class="mx-auto flex h-24 w-24 items-center justify-center overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm">
+        <div class="rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 p-6 text-center">
+          <div class="mx-auto flex h-24 w-24 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
             <img v-if="form.logo" :src="form.logo" :alt="form.schoolName" class="h-full w-full object-cover" />
             <ImagePlus v-else class="h-8 w-8 text-slate-400" />
           </div>

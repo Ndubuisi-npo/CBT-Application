@@ -1,362 +1,162 @@
 <template>
   <div class="space-y-6">
-    <SectionCard title="Subjects" subtitle="Manage subjects and teacher assignments.">
-      <template #header>
-        <div class="flex gap-3">
-          <AppButton 
-            v-if="!isSelectMode" 
-            @click="openModal()" 
-            :icon="Plus" 
-            text="Create Subject" 
-            variant="primary" 
-          />
-          <AppButton 
-            v-if="isSelectMode" 
-            @click="cancelSelectMode()" 
-            text="Cancel Select" 
-            variant="outline" 
-          />
-          <AppButton 
-            v-if="selectedSubjects.size > 0" 
-            @click="deleteSelected()" 
-            text="Delete Selected" 
-            variant="danger" 
-          />
-          <AppButton 
-            v-if="!isSelectMode" 
-            @click="startSelectMode()" 
-            text="Select" 
-            variant="secondary" 
-          />
-        </div>
-      </template>
-      <SkeletonRows v-if="subjectsStore.loading" :columns="5" />
-      <div v-else class="overflow-hidden rounded-[24px] border border-slate-200">
-        <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-slate-200 bg-white">
-            <thead class="bg-slate-50">
-              <tr>
-                <th v-if="isSelectMode" class="px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-                  <input 
-                    type="checkbox" 
-                    @change="toggleSelectAll($event.target.checked)"
-                    :checked="areAllSelected"
-                    class="rounded border-slate-300"
-                  />
-                </th>
-                <th v-for="heading in headings" :key="heading" class="px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">{{ heading }}</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100">
-              <tr v-for="subject in paginatedSubjects" :key="subject.id" class="transition hover:bg-slate-50/80">
-                <td v-if="isSelectMode" class="px-5 py-4">
-                  <input 
-                    type="checkbox" 
-                    :checked="selectedSubjects.has(subject.id)"
-                    @change="toggleItemSelection(subject.id, $event.target.checked)"
-                    class="rounded border-slate-300"
-                  />
-                </td>
-                <td class="px-5 py-4 font-semibold text-slate-900">{{ subject.name }}</td>
-                <td class="px-5 py-4 text-sm text-slate-600">{{ subject.code || '-' }}</td>
-                <td class="px-5 py-4 text-sm text-slate-600">{{ formatClassLevels(subject) }}</td>
-                <td class="px-5 py-4 text-sm text-slate-600">{{ formatAssignedTeachers(subject) }}</td>
-                <td class="px-5 py-4">
-                  <div class="flex gap-2">
-                    <AppButton text="Edit" @click="openModal(subject)" variant="outline" size="xs" />
-                    <AppButton text="Assign Teacher" @click="$router.push(`/school-admin/subjects/${subject.id}/assign-teacher`)" variant="warning" size="xs" />
-                    <AppButton 
-                      text="Delete" 
-                      @click="deleteSubject(subject.id)" 
-                      variant="danger" 
-                      size="xs"
-                      loadingText="Deleting..."
-                      :processing="deleteLoading.has(subject.id)"
-                      :disabled="deleteLoading.has(subject.id) || isSelectMode"
-                    />
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+    <div class="flex flex-wrap items-start justify-between gap-4">
+      <div>
+        <p class="text-xs font-semibold uppercase tracking-[0.28em] text-[#D4AF37]">School Admin</p>
+        <h1 class="mt-1 text-2xl font-semibold tracking-tight text-slate-900">Subjects</h1>
+        <p class="mt-1 text-sm text-slate-500">Manage subjects, codes, class level assignments, and teacher assignments.</p>
       </div>
-      
-      <!-- Pagination Controls -->
-      <div v-if="totalPages > 1" class="flex items-center justify-between px-5 py-4 bg-white border-t border-slate-200">
-        <div class="text-sm text-slate-600">
-          Showing {{ ((currentPage - 1) * itemsPerPage) + 1 }} to {{ Math.min(currentPage * itemsPerPage, subjectsStore.subjects.length) }} of {{ subjectsStore.subjects.length }} subjects
-        </div>
-        <div class="flex gap-2">
-          <AppButton 
-            @click="previousPage" 
-            text="Previous"
-            :disabled="!hasPreviousPage"
-            variant="outline"
-            size="sm"
-          />
-          
-          <span class="flex items-center gap-1">
-            <AppButton 
-              v-for="page in totalPages" 
-              :key="page"
-              @click="goToPage(page)"
-              :text="page.toString()"
-              :variant="page === currentPage ? 'primary' : 'outline'"
-              size="sm"
-              rounded="md"
-            />
-          </span>
-          
-          <AppButton 
-            @click="nextPage" 
-            text="Next"
-            :disabled="!hasNextPage"
-            variant="outline"
-            size="sm"
-          />
-        </div>
+      <div class="flex flex-wrap items-center gap-2">
+        <AppButton v-if="selectedSubjects.size" text="Delete Selected" variant="danger" size="sm" @click="deleteSelected" />
+        <AppButton v-if="isSelectMode" text="Cancel" variant="ghost" size="sm" @click="cancelSelectMode" />
+        <AppButton v-if="!isSelectMode" :icon="CheckSquare" text="Select" variant="ghost" size="sm" @click="startSelectMode" />
+        <AppButton :icon="Plus" text="Create Subject" variant="primary" size="sm" @click="openModal()" />
       </div>
-    </SectionCard>
+    </div>
 
-    <SubjectModal 
-      :show="showModal" 
-      :subject="selectedSubject"
-      @close="closeModal"
-      @submit="submitSubject"
-    />
+    <section class="rounded-2xl border border-slate-200 bg-white">
+      <SkeletonRows v-if="subjectsStore.loading" :columns="5" />
+
+      <div v-else-if="!subjectsStore.subjects.length" class="px-5 py-16 text-center">
+        <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100">
+          <Shapes class="h-8 w-8 text-slate-400" />
+        </div>
+        <h3 class="mt-4 text-base font-semibold text-slate-900">No subjects yet</h3>
+        <p class="mt-1.5 text-sm text-slate-500">Create subjects to build out your curriculum.</p>
+        <div class="mt-5">
+          <AppButton :icon="Plus" text="Create First Subject" variant="primary" size="sm" @click="openModal()" />
+        </div>
+      </div>
+
+      <div v-else class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-slate-100">
+          <thead>
+            <tr class="bg-slate-50">
+              <th v-if="isSelectMode" class="w-10 px-5 py-3">
+                <input type="checkbox" :checked="areAllSelected" class="h-4 w-4 rounded border-slate-300 text-[#D4AF37]" @change="toggleSelectAll($event.target.checked)" />
+              </th>
+              <th class="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">Subject Name</th>
+              <th class="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">Code</th>
+              <th class="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">Class Levels</th>
+              <th class="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">Assigned Teachers</th>
+              <th class="px-5 py-3"></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 bg-white">
+            <tr v-for="subject in paginatedSubjects" :key="subject.id" class="group transition hover:bg-slate-50/70">
+              <td v-if="isSelectMode" class="px-5 py-3.5">
+                <input type="checkbox" :checked="selectedSubjects.has(subject.id)" class="h-4 w-4 rounded border-slate-300 text-[#D4AF37]" @change="toggleItemSelection(subject.id, $event.target.checked)" />
+              </td>
+              <td class="px-5 py-3.5 font-semibold text-slate-900">{{ subject.name }}</td>
+              <td class="px-5 py-3.5">
+                <span v-if="subject.code" class="font-mono text-xs font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded">{{ subject.code }}</span>
+                <span v-else class="text-slate-400">—</span>
+              </td>
+              <td class="px-5 py-3.5 text-sm text-slate-600">{{ formatClassLevels(subject) }}</td>
+              <td class="px-5 py-3.5 text-sm text-slate-600">{{ formatAssignedTeachers(subject) }}</td>
+              <td class="px-5 py-3.5">
+                <div class="flex items-center gap-2 opacity-0 transition group-hover:opacity-100">
+                  <button class="rounded-lg px-2.5 py-1 text-xs font-medium text-slate-600 ring-1 ring-slate-200 transition hover:bg-slate-100" @click="openModal(subject)">Edit</button>
+                  <button class="rounded-lg px-2.5 py-1 text-xs font-medium text-[#0B1F3A] ring-1 ring-slate-200 transition hover:bg-slate-100" @click="$router.push(`/school-admin/subjects/${subject.id}/assign-teacher`)">Assign Teacher</button>
+                  <button class="rounded-lg px-2.5 py-1 text-xs font-medium text-red-600 ring-1 ring-red-200 transition hover:bg-red-50" :disabled="deleteLoading.has(subject.id)" @click="deleteSubject(subject.id)">{{ deleteLoading.has(subject.id) ? '…' : 'Delete' }}</button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div v-if="subjectsStore.subjects.length" class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-5 py-3.5">
+        <p class="text-xs text-slate-500">Showing {{ startIndex }}–{{ endIndex }} of {{ subjectsStore.subjects.length }}</p>
+        <div class="flex items-center gap-1.5">
+          <button class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 ring-1 ring-slate-200 transition hover:bg-slate-100 disabled:opacity-40" :disabled="currentPage === 1" @click="currentPage--"><ChevronLeft class="h-4 w-4" /></button>
+          <span class="px-2 text-xs font-medium text-slate-700">{{ currentPage }} / {{ totalPages }}</span>
+          <button class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 ring-1 ring-slate-200 transition hover:bg-slate-100 disabled:opacity-40" :disabled="currentPage === totalPages" @click="currentPage++"><ChevronRight class="h-4 w-4" /></button>
+        </div>
+      </div>
+    </section>
+
+    <SubjectModal :show="showModal" :subject="selectedSubject" @close="closeModal" @submit="submitSubject" />
   </div>
 </template>
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
-import { Plus } from 'lucide-vue-next'
-import SectionCard from '../components/SectionCard.vue'
-import SkeletonRows from '../components/SkeletonRows.vue'
+import { CheckSquare, ChevronLeft, ChevronRight, Plus, Shapes } from 'lucide-vue-next'
 import AppButton from '../../shared/AppButton.vue'
+import SkeletonRows from '../components/SkeletonRows.vue'
 import SubjectModal from '../components/SubjectModal.vue'
 import { useSchoolAdminSubjectsStore } from '../stores/subjects'
 import { useSchoolAdminUiStore } from '../stores/ui'
 
-const headings = ['Subject Name', 'Code', 'Class Levels', 'Assigned Teachers', 'Actions']
 const subjectsStore = useSchoolAdminSubjectsStore()
 const uiStore = useSchoolAdminUiStore()
 
-// Multi-select state
 const isSelectMode = ref(false)
 const selectedSubjects = ref(new Set())
-
-// Modal state
 const showModal = ref(false)
 const selectedSubject = ref(null)
-
-// Loading states
 const deleteLoading = ref(new Set())
-
-// Computed properties for multi-select
-const areAllSelected = computed(() => {
-  return subjectsStore.subjects.length > 0 && 
-         subjectsStore.subjects.every(subject => selectedSubjects.value.has(subject.id))
-})
-
-// Pagination state
-const currentPage = ref(1)
 const itemsPerPage = 10
+const currentPage = ref(1)
 
+const areAllSelected = computed(() =>
+  subjectsStore.subjects.length > 0 && subjectsStore.subjects.every((s) => selectedSubjects.value.has(s.id)),
+)
+const totalPages = computed(() => Math.max(1, Math.ceil(subjectsStore.subjects.length / itemsPerPage)))
+const startIndex = computed(() => subjectsStore.subjects.length ? (currentPage.value - 1) * itemsPerPage + 1 : 0)
+const endIndex = computed(() => Math.min(currentPage.value * itemsPerPage, subjectsStore.subjects.length))
+const paginatedSubjects = computed(() => subjectsStore.subjects.slice((currentPage.value - 1) * itemsPerPage, currentPage.value * itemsPerPage))
 
-const formatClassLevels = (subject) => {
-  const classLevels = Array.isArray(subject.class_levels)
-    ? subject.class_levels
-    : Array.isArray(subject.classLevels)
-      ? subject.classLevels
-      : []
-
-  if (!classLevels.length) return '-'
-  return classLevels.map((classLevel) => classLevel.name).join(' | ')
+const formatClassLevels = (s) => {
+  const levels = Array.isArray(s.class_levels) ? s.class_levels : Array.isArray(s.classLevels) ? s.classLevels : []
+  return levels.length ? levels.map((l) => l.name).join(', ') : '—'
+}
+const formatAssignedTeachers = (s) => {
+  const assignments = Array.isArray(s.teacher_assignments) ? s.teacher_assignments : Array.isArray(s.teacherAssignments) ? s.teacherAssignments : []
+  const names = assignments.map((a) => a.user ? `${a.user.first_name} ${a.user.last_name}`.trim() : null).filter(Boolean)
+  return names.length ? names.join(', ') : '—'
 }
 
-const formatAssignedTeachers = (subject) => {
-  const assignments = Array.isArray(subject.teacher_assignments)
-    ? subject.teacher_assignments
-    : Array.isArray(subject.teacherAssignments)
-      ? subject.teacherAssignments
-      : []
+const startSelectMode = () => { isSelectMode.value = true; selectedSubjects.value = new Set() }
+const cancelSelectMode = () => { isSelectMode.value = false; selectedSubjects.value = new Set() }
+const toggleSelectAll = (checked) => { const next = new Set(); if (checked) subjectsStore.subjects.forEach((s) => next.add(s.id)); selectedSubjects.value = next }
+const toggleItemSelection = (id, checked) => { const next = new Set(selectedSubjects.value); checked ? next.add(id) : next.delete(id); selectedSubjects.value = next }
 
-  const teacherNames = assignments
-    .map((assignment) => {
-      if (assignment.user && assignment.user.first_name && assignment.user.last_name) {
-        return `${assignment.user.first_name} ${assignment.user.last_name}`.trim()
-      }
-      return null
-    })
-    .filter(Boolean)
-
-  return teacherNames.length > 0 ? teacherNames.join(', ') : '-'
-}
-
-// Pagination computed properties
-const paginatedSubjects = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage
-  const end = start + itemsPerPage
-  return subjectsStore.subjects.slice(start, end)
-})
-
-const totalPages = computed(() => {
-  return Math.ceil(subjectsStore.subjects.length / itemsPerPage)
-})
-
-const hasNextPage = computed(() => {
-  return currentPage.value < totalPages.value
-})
-
-const hasPreviousPage = computed(() => {
-  return currentPage.value > 1
-})
-
-onMounted(async () => {
-  try {
-    await subjectsStore.fetchSubjects()
-  } catch (error) {
-    uiStore.addToast({ title: 'Error', message: 'Failed to load subjects. Please check your connection.', variant: 'error' })
-  }
-})
-
-const closeModal = () => {
-  showModal.value = false
-  selectedSubject.value = null
-}
-
-const openModal = (subject) => {
-  selectedSubject.value = subject
-  showModal.value = true
-}
-
-// Multi-select functionality
-const startSelectMode = () => {
-  isSelectMode.value = true
-  selectedSubjects.value.clear()
-}
-
-const cancelSelectMode = () => {
-  isSelectMode.value = false
-  selectedSubjects.value.clear()
-}
-
-const toggleSelectAll = (checked) => {
-  if (checked) {
-    subjectsStore.subjects.forEach(subject => {
-      selectedSubjects.value.add(subject.id)
-    })
-  } else {
-    selectedSubjects.value.clear()
-  }
-}
-
-const toggleItemSelection = (id, checked) => {
-  if (checked) {
-    selectedSubjects.value.add(id)
-  } else {
-    selectedSubjects.value.delete(id)
-  }
-}
+const openModal = (s) => { selectedSubject.value = s || null; showModal.value = true }
+const closeModal = () => { showModal.value = false; selectedSubject.value = null }
 
 const deleteSelected = async () => {
-  if (!confirm(`Are you sure you want to delete ${selectedSubjects.value.size} selected subject(s)? This action cannot be undone.`)) {
-    return
-  }
-
+  const ids = Array.from(selectedSubjects.value)
+  if (!confirm(`Delete ${ids.length} subject(s)? This cannot be undone.`)) return
   try {
-    for (const id of selectedSubjects.value) {
-      deleteLoading.value.add(id)
-    }
-    
-    for (const id of selectedSubjects.value) {
-      await subjectsStore.deleteSubject(id)
-    }
-    
-    selectedSubjects.value.clear()
-    isSelectMode.value = false
-    uiStore.addToast({ 
-      title: 'Subjects Deleted', 
-      message: `${selectedSubjects.value.size} subject(s) have been deleted successfully.`, 
-      variant: 'success' 
-    })
-  } catch (error) {
-    uiStore.addToast({ 
-      title: 'Error', 
-      message: 'Failed to delete selected subjects.', 
-      variant: 'error' 
-    })
-  } finally {
-    // Clear all loading states
-    deleteLoading.value.clear()
-  }
-}
-
-const submitSubject = async (subjectData) => {
-  try {
-    const payload = {
-      name: subjectData.name,
-      code: subjectData.code,
-      class_level_ids: subjectData.class_level_ids,
-      class_arm_ids: subjectData.class_arm_ids
-    }
-    
-    if (subjectData.id) {
-      await subjectsStore.updateSubject(subjectData.id, payload)
-    } else {
-      await subjectsStore.createSubject(payload)
-    }
-    
-    uiStore.addToast({ title: 'Subject saved', message: 'Subject has been saved successfully.', variant: 'success' })
-    // Close modal after a short delay to ensure toast is visible
-    setTimeout(() => {
-      closeModal()
-    }, 100)
-  } catch (error) {
-    uiStore.addToast({ title: 'Error', message: 'Failed to save subject.', variant: 'error' })
-    // Close modal after error toast as well
-    setTimeout(() => {
-      closeModal()
-    }, 100)
-  }
-}
-
-// Pagination functions
-const goToPage = (page) => {
-  if (page >= 1 && page <= totalPages.value) {
-    currentPage.value = page
-  }
-}
-
-const nextPage = () => {
-  if (hasNextPage.value) {
-    currentPage.value++
-  }
-}
-
-const previousPage = () => {
-  if (hasPreviousPage.value) {
-    currentPage.value--
-  }
+    ids.forEach((id) => deleteLoading.value.add(id))
+    for (const id of ids) await subjectsStore.deleteSubject(id)
+    cancelSelectMode()
+    uiStore.addToast({ title: 'Deleted', message: `${ids.length} subject(s) deleted.`, variant: 'success' })
+  } catch { uiStore.addToast({ title: 'Error', message: 'Failed to delete subjects.', variant: 'error' }) }
+  finally { deleteLoading.value = new Set() }
 }
 
 const deleteSubject = async (id) => {
-  if (!confirm('Are you sure you want to delete this subject? This action cannot be undone.')) {
-    return
-  }
-  
-  // Create new Set to trigger reactivity
+  if (!confirm('Delete this subject? This cannot be undone.')) return
   deleteLoading.value = new Set([...deleteLoading.value, id])
-  
-  try {
-    await subjectsStore.deleteSubject(id)
-    uiStore.addToast({ title: 'Subject deleted', message: 'Subject has been deleted.', variant: 'success' })
-  } catch (error) {
-    uiStore.addToast({ title: 'Error', message: 'Failed to delete subject.', variant: 'error' })
-  } finally {
-    // Create new Set to trigger reactivity
-    deleteLoading.value = new Set([...deleteLoading.value].filter(loadingId => loadingId !== id))
-  }
+  try { await subjectsStore.deleteSubject(id); uiStore.addToast({ title: 'Deleted', message: 'Subject deleted.', variant: 'success' }) }
+  catch { uiStore.addToast({ title: 'Error', message: 'Failed to delete subject.', variant: 'error' }) }
+  finally { deleteLoading.value = new Set([...deleteLoading.value].filter((x) => x !== id)) }
 }
+
+const submitSubject = async (data) => {
+  try {
+    const payload = { name: data.name, code: data.code, class_level_ids: data.class_level_ids, class_arm_ids: data.class_arm_ids }
+    data.id ? await subjectsStore.updateSubject(data.id, payload) : await subjectsStore.createSubject(payload)
+    uiStore.addToast({ title: 'Subject saved', message: 'Subject saved successfully.', variant: 'success' })
+    setTimeout(closeModal, 100)
+  } catch { uiStore.addToast({ title: 'Error', message: 'Failed to save subject.', variant: 'error' }); setTimeout(closeModal, 100) }
+}
+
+onMounted(async () => {
+  try { await subjectsStore.fetchSubjects() }
+  catch { uiStore.addToast({ title: 'Error', message: 'Failed to load subjects.', variant: 'error' }) }
+})
 </script>

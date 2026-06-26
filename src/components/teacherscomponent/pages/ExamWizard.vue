@@ -16,7 +16,7 @@
             v-for="step in steps"
             :key="step.id"
             type="button"
-            class="rounded-[24px] border p-4 text-left transition"
+            class="rounded-2xl border p-4 text-left transition"
             :class="currentStep === step.id ? 'border-[#0B1F3A] bg-[#0B1F3A] text-white shadow-lg' : currentStep > step.id ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-slate-200 bg-slate-50 text-slate-600'"
             @click="jumpToStep(step.id)"
           >
@@ -92,7 +92,7 @@
             </div>
 
             <div v-if="currentStep === 2" class="space-y-6">
-              <div class="flex flex-wrap items-center justify-between gap-3 rounded-[24px] bg-slate-50 p-4">
+              <div class="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-slate-50 p-4">
                 <div class="flex flex-wrap gap-2">
                   <input v-model="questionSearch" type="text" class="wizard-input min-w-[240px]" placeholder="Search question bank" />
                   <select v-model="questionFilters.topic" class="wizard-input min-w-[200px]">
@@ -109,7 +109,7 @@
                   <article
                     v-for="question in filteredQuestionOptions"
                     :key="question.id"
-                    class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm"
+                    class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
                   >
                     <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                       <div class="space-y-3">
@@ -137,12 +137,12 @@
                     </button>
                   </div>
 
-                  <div v-if="!selectedQuestions.length" class="rounded-[24px] border border-dashed border-slate-300 bg-slate-50 px-5 py-10 text-center text-sm text-slate-500">
+                  <div v-if="!selectedQuestions.length" class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-5 py-10 text-center text-sm text-slate-500">
                     Add objective questions from the left. The stored correct answers will be used for auto-grading after submission.
                   </div>
 
                   <div v-else class="space-y-3">
-                    <article v-for="(question, index) in selectedQuestions" :key="question.id" class="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
+                    <article v-for="(question, index) in selectedQuestions" :key="question.id" class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                       <div class="flex items-start justify-between gap-3">
                         <div class="space-y-2">
                           <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Question {{ index + 1 }}</p>
@@ -194,7 +194,7 @@
               </div>
 
               <div class="">
-                <div class="rounded-[24px] border border-slate-200 bg-slate-50 p-5">
+                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-5">
                   <h3 class="text-lg font-semibold text-slate-900">Student Experience</h3>
                   <div class="mt-4 space-y-4">
                     <label v-for="toggle in studentToggles" :key="toggle.key" class="flex items-start justify-between gap-4 rounded-2xl bg-white px-4 py-3">
@@ -210,7 +210,7 @@
             </div>
 
             <div v-if="currentStep === 4" class="space-y-6">
-              <div class="rounded-[28px] bg-[#0B1F3A] p-6 text-white">
+              <div class="rounded-2xl bg-[#0B1F3A] p-6 text-white">
                 <div class="flex flex-wrap items-start justify-between gap-4">
                   <div>
                     <p class="text-xs font-semibold uppercase tracking-[0.24em] text-[#D4AF37]">Exam Preview</p>
@@ -227,25 +227,25 @@
               </div>
 
               <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                <div class="rounded-[24px] border border-slate-200 bg-white p-5">
+                <div class="rounded-2xl border border-slate-200 bg-white p-5">
                   <p class="text-sm text-slate-500">Questions</p>
                   <p class="mt-3 text-3xl font-semibold text-slate-900">{{ selectedQuestions.length }}</p>
                 </div>
-                <div class="rounded-[24px] border border-slate-200 bg-white p-5">
+                <div class="rounded-2xl border border-slate-200 bg-white p-5">
                   <p class="text-sm text-slate-500">Total Marks</p>
                   <p class="mt-3 text-3xl font-semibold text-slate-900">{{ totalMarks }}</p>
                 </div>
-                <div class="rounded-[24px] border border-slate-200 bg-white p-5">
+                <div class="rounded-2xl border border-slate-200 bg-white p-5">
                   <p class="text-sm text-slate-500">Duration</p>
                   <p class="mt-3 text-3xl font-semibold text-slate-900">{{ wizard.duration }} mins</p>
                 </div>
-                <div class="rounded-[24px] border border-slate-200 bg-white p-5">
+                <div class="rounded-2xl border border-slate-200 bg-white p-5">
                   <p class="text-sm text-slate-500">Pass Mark</p>
                   <p class="mt-3 text-3xl font-semibold text-slate-900">{{ wizard.passMark }}%</p>
                 </div>
               </div>
 
-              <div class="rounded-[24px] border border-slate-200 bg-white p-5">
+              <div class="rounded-2xl border border-slate-200 bg-white p-5">
                 <div class="flex items-center justify-between">
                   <h3 class="text-lg font-semibold text-slate-900">Review Checklist</h3>
                   <button type="button" class="text-sm font-semibold text-[#0B1F3A] hover:text-[#D4AF37]" @click="showSaveModal = true">
@@ -275,7 +275,7 @@
           </div>
 
           <div class="space-y-6">
-            <div class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
+            <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
               <h3 class="text-lg font-semibold text-slate-900">Wizard Summary</h3>
               <div class="mt-4 space-y-3 text-sm text-slate-600">
                 <div class="flex items-center justify-between">
@@ -297,7 +297,7 @@
               </div>
             </div>
 
-            <div class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
+            <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
               <h3 class="text-lg font-semibold text-slate-900">Validation</h3>
               <div class="mt-4 space-y-4">
                 <div v-for="item in validationChecklist" :key="item.label" class="flex items-start gap-3">
@@ -310,7 +310,7 @@
               </div>
             </div>
 
-            <div class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
+            <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
               <h3 class="text-lg font-semibold text-slate-900">Lifecycle States</h3>
               <div class="mt-4 flex flex-wrap gap-2 text-sm">
                 <span class="rounded-full bg-slate-100 px-3 py-2 font-medium text-slate-600">Draft</span>
@@ -327,7 +327,7 @@
       </div>
     </SectionCard>
 
-    <div class="sticky bottom-4 z-20 flex flex-col gap-3 rounded-[28px] border border-slate-200 bg-white/95 p-4 shadow-xl backdrop-blur sm:flex-row sm:items-center sm:justify-between">
+    <div class="sticky bottom-4 z-20 flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-xl backdrop-blur sm:flex-row sm:items-center sm:justify-between">
       <div>
         <p class="text-sm font-semibold text-slate-900">{{ currentStepLabel }}</p>
         <p class="text-sm text-slate-500">Complete each step before saving the exam draft.</p>
@@ -340,7 +340,7 @@
     </div>
 
     <div v-if="showSaveModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 px-4">
-      <div class="w-full max-w-2xl rounded-[28px] bg-white p-6 shadow-2xl">
+      <div class="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-2xl">
         <div class="flex items-start justify-between gap-4">
           <div>
             <p class="text-xs font-semibold uppercase tracking-[0.24em] text-[#D4AF37]">Save Draft</p>
@@ -354,7 +354,7 @@
             v-for="option in saveOptions"
             :key="option.state"
             type="button"
-            class="w-full rounded-[24px] border p-5 text-left transition hover:border-[#D4AF37]/70 hover:bg-slate-50"
+            class="w-full rounded-2xl border p-5 text-left transition hover:border-[#D4AF37]/70 hover:bg-slate-50"
             @click="saveExam"
           >
             <div class="flex items-center justify-between gap-4">
@@ -372,7 +372,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { X } from 'lucide-vue-next'
 import AppButton from '../../shared/AppButton.vue'
@@ -412,6 +412,7 @@ const saving           = ref(false)
 const createdExamId    = ref(null)
 
 const questionFilters = reactive({ topic: '' })
+const questionBankLoaded = ref(false)
 
 const wizard = reactive({
   title: '',
@@ -520,6 +521,12 @@ const resetQuestionSelection = () => {
   wizard.questionMarks       = {}
 }
 
+const loadQuestionBank = async (force = false) => {
+  if (questionBankLoaded.value && !force) return
+  await examsStore.fetchQuestionBank()
+  questionBankLoaded.value = true
+}
+
 const validateStep = () => {
   const [basicReady, questionReady, settingsReady] = validationChecklist.value.map((i) => i.valid)
   const map = { 1: basicReady, 2: questionReady, 3: settingsReady, 4: true }
@@ -624,7 +631,13 @@ const saveExam = async () => {
 
 onMounted(async () => {
   await examsStore.fetchRefData()
-  await examsStore.fetchQuestionBank().catch(() => {})
+  await loadQuestionBank().catch(() => {})
+})
+
+watch(currentStep, async (step) => {
+  if (step === 2) {
+    await loadQuestionBank(true).catch(() => {})
+  }
 })
 </script>
 

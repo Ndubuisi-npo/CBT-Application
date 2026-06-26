@@ -12,7 +12,7 @@
       <div v-else-if="!subject" class="text-center py-8">
         <p class="text-slate-600">Loading subject information...</p>
       </div>
-      <div v-else class="overflow-hidden rounded-[24px] border border-slate-200">
+      <div v-else class="overflow-hidden rounded-2xl border border-slate-200">
         <div class="overflow-x-auto">
           <table class="min-w-full divide-y divide-slate-200 bg-white">
             <thead class="bg-slate-50">

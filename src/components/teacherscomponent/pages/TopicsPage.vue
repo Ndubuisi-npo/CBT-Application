@@ -25,7 +25,7 @@
 
     <!-- Topics Grid -->
     <div v-if="questionsStore.loading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      <div v-for="i in 6" :key="i" class="rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm">
+      <div v-for="i in 6" :key="i" class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <div class="space-y-4">
           <div class="h-6 bg-slate-100 rounded animate-pulse"></div>
           <div class="h-4 bg-slate-100 rounded animate-pulse"></div>
@@ -48,7 +48,7 @@
     </div>
 
     <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      <div v-for="topic in filteredTopics" :key="topic.id" class="rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow">
+      <div v-for="topic in filteredTopics" :key="topic.id" class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow">
         <div class="space-y-4">
           <div>
             <h3 class="text-lg font-semibold text-slate-900">{{ topic.name }}</h3>

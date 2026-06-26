@@ -57,6 +57,12 @@
                 <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
                   Question {{ currentIndex + 1 }} of {{ questions.length }}
                 </p>
+                <span
+                  class="mt-1 inline-block rounded-full px-2 py-0.5 text-xs font-semibold"
+                  :class="typeChipClass(currentQuestion)"
+                >
+                  {{ getTypeLabel(currentQuestion) }}
+                </span>
                 <div v-if="savedIndicator" class="mt-1 text-xs text-emerald-600 font-medium">✓ Saved</div>
               </div>
               <button
@@ -74,27 +80,40 @@
               <p class="text-base font-semibold leading-7 text-slate-900">{{ getQuestionText(currentQuestion) }}</p>
             </div>
 
-            <div class="mt-5 space-y-3">
+            <!-- MCQ / True-False: radio options -->
+            <div v-if="isChoiceQuestion(currentQuestion)" class="mt-5 space-y-3">
               <label
                 v-for="(opt, idx) in getOptions(currentQuestion)"
-                :key="idx"
+                :key="opt.id || idx"
                 class="flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition"
-                :class="isSelected(currentQuestion, opt, idx)
+                :class="isSelected(currentQuestion, opt)
                   ? 'border-[#0B1F3A] bg-[#0B1F3A]/5'
                   : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'"
               >
                 <input
                   type="radio"
                   :name="`q-${getQId(currentQuestion)}`"
-                  :checked="isSelected(currentQuestion, opt, idx)"
+                  :checked="isSelected(currentQuestion, opt)"
                   class="mt-0.5 h-4 w-4 cursor-pointer text-[#0B1F3A]"
-                  @change="selectAnswer(currentQuestion, opt, idx)"
+                  @change="selectChoiceAnswer(currentQuestion, opt)"
                 />
                 <span class="text-sm leading-6 text-slate-900">
                   <span class="font-semibold">{{ String.fromCharCode(65 + idx) }}.</span>
                   {{ getOptionText(opt) }}
                 </span>
               </label>
+            </div>
+
+            <!-- Fill-in-the-Blank: text input -->
+            <div v-else-if="isFitbQuestion(currentQuestion)" class="mt-5">
+              <label class="block text-sm font-medium text-slate-700 mb-2">Your Answer</label>
+              <textarea
+                :value="getFitbAnswer(currentQuestion)"
+                rows="3"
+                class="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#0B1F3A] focus:outline-none focus:ring-2 focus:ring-[#0B1F3A]/10 transition"
+                placeholder="Type your answer here…"
+                @input="onFitbInput(currentQuestion, $event)"
+              />
             </div>
 
             <!-- Navigation -->
@@ -123,7 +142,6 @@
 
         <!-- Navigation panel -->
         <aside class="space-y-4">
-          <!-- Progress bar -->
           <div class="rounded-[20px] border border-slate-200 bg-white p-5">
             <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Progress</p>
             <div class="mt-3 h-2 overflow-hidden rounded-full bg-slate-100">
@@ -135,7 +153,6 @@
             <p class="mt-2 text-sm text-slate-600">{{ answeredCount }} of {{ questions.length }} answered</p>
           </div>
 
-          <!-- Navigation dots -->
           <div class="rounded-[20px] border border-slate-200 bg-white p-5">
             <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Questions</p>
             <div class="mt-3 flex flex-wrap gap-2">
@@ -203,6 +220,7 @@ import {
 } from '../services/api/studentExams'
 import { useSchoolAdminUiStore } from '../../schooladmincomponents/stores/ui'
 import { fmtDateTime } from '../../../js/lib/helpers'
+import { isChoiceBased, isFillInBlank, QUESTION_TYPE_LABELS } from '../../../types/question'
 
 const route = useRoute()
 const router = useRouter()
@@ -215,8 +233,9 @@ const exam = ref(null)
 const questions = ref([])
 const currentIndex = ref(0)
 const attemptId = ref(null)
-const answers = reactive({})   // { [questionId]: optionValue }
-const flagged = reactive({})   // { [questionId]: boolean }
+// answers: { [questionId]: string }  — option ID for MCQ/TF, text for FITB
+const answers = reactive({})
+const flagged = reactive({})
 const loading = ref(true)
 const questionStartAt = ref(Date.now())
 const error = ref(null)
@@ -225,7 +244,6 @@ const submitting = ref(false)
 const showSubmitConfirm = ref(false)
 const savedIndicator = ref(false)
 
-// Replace raw ISO timestamps in error messages with localised display times
 const formattedError = computed(() => {
   if (!error.value) return ''
   return error.value.replace(
@@ -234,7 +252,7 @@ const formattedError = computed(() => {
   )
 })
 
-// ── Timer (backend is source of truth per spec) ───────────────────────────
+// ── Timer ──────────────────────────────────────────────────────────────────
 
 const remaining = ref(0)
 let timerEnd = 0
@@ -289,15 +307,39 @@ const resyncTimer = async () => {
       remaining.value = secs
     }
   } catch {
-    // Non-critical — local timer continues
+    // Non-critical
   }
 }
 
-// Resync when tab becomes visible again (spec requirement)
 const onVisibilityChange = () => {
-  if (document.visibilityState === 'visible') {
-    resyncTimer()
-  }
+  if (document.visibilityState === 'visible') resyncTimer()
+}
+
+// ── Question type helpers ─────────────────────────────────────────────────
+
+/**
+ * Get the API type discriminant for a question.
+ * Handles Phase 3 DTO shapes (StudentQuestion variants).
+ */
+const getQuestionType = (q) => {
+  const src = q?.question || q?.question_details || q
+  return src?.type || q?.type || ''
+}
+
+const isChoiceQuestion = (q) => isChoiceBased(getQuestionType(q))
+const isFitbQuestion = (q) => isFillInBlank(getQuestionType(q))
+
+const getTypeLabel = (q) => {
+  const t = getQuestionType(q)
+  return QUESTION_TYPE_LABELS[t] || t || ''
+}
+
+const typeChipClass = (q) => {
+  const t = getQuestionType(q)
+  if (t === 'mcq') return 'bg-blue-100 text-blue-700'
+  if (t === 'true_false') return 'bg-purple-100 text-purple-700'
+  if (t === 'fill_in_blank') return 'bg-amber-100 text-amber-700'
+  return 'bg-slate-100 text-slate-600'
 }
 
 // ── Computed ───────────────────────────────────────────────────────────────
@@ -305,7 +347,10 @@ const onVisibilityChange = () => {
 const currentQuestion = computed(() => questions.value[currentIndex.value] || null)
 
 const answeredCount = computed(() =>
-  Object.keys(answers).filter((k) => answers[k] !== undefined && answers[k] !== null).length,
+  Object.keys(answers).filter((k) => {
+    const v = answers[k]
+    return v !== undefined && v !== null && v !== ''
+  }).length,
 )
 
 const unansweredCount = computed(() => questions.value.length - answeredCount.value)
@@ -323,9 +368,14 @@ const getQuestionText = (q) => {
   return src?.content || src?.question_text || src?.text || 'Untitled question'
 }
 
+/**
+ * Returns the options array for MCQ/TrueFalse questions.
+ * Per the Phase 3 DTO, FITB questions have NO options key — always check isChoiceQuestion first.
+ */
 const getOptions = (q) => {
+  if (!isChoiceQuestion(q)) return []
   const src = q?.question || q?.question_details || q
-  const opts = src?.options || src?.answers || src?.choices || []
+  const opts = src?.options || []
   return Array.isArray(opts) ? opts : []
 }
 
@@ -334,15 +384,21 @@ const getOptionText = (opt) => {
   return opt?.content || opt?.text || opt?.label || String(opt || '')
 }
 
-const getOptionValue = (opt, idx) => {
-  if (opt?.id) return opt.id
-  return `${idx}`
+const getOptionId = (opt) => opt?.id || String(opt)
+
+// ── Selection helpers ──────────────────────────────────────────────────────
+
+const isSelected = (q, opt) => {
+  const qId = getQId(q)
+  return answers[qId] === getOptionId(opt)
 }
 
-const isSelected = (q, opt, idx) => {
+/**
+ * Get the stored text answer for a FITB question.
+ */
+const getFitbAnswer = (q) => {
   const qId = getQId(q)
-  const val = getOptionValue(opt, idx)
-  return answers[qId] === val
+  return answers[qId] ?? ''
 }
 
 const isFlagged = (q) => !!flagged[getQId(q)]
@@ -350,7 +406,7 @@ const isFlagged = (q) => !!flagged[getQId(q)]
 const navDotClass = (q, idx) => {
   const qId = getQId(q, idx)
   const isCurrent = idx === currentIndex.value
-  const isAnswered = answers[qId] !== undefined && answers[qId] !== null
+  const isAnswered = answers[qId] !== undefined && answers[qId] !== null && answers[qId] !== ''
   const isFlag = flagged[qId]
 
   if (isCurrent) return 'bg-[#0B1F3A] text-white border-[#0B1F3A]'
@@ -361,31 +417,62 @@ const navDotClass = (q, idx) => {
 
 // ── Actions ────────────────────────────────────────────────────────────────
 
-const selectAnswer = async (q, opt, idx) => {
+/**
+ * Handle MCQ/TrueFalse option selection.
+ * Sends { selected_option_ids: [id], time_spent_seconds } — never text_answer.
+ */
+const selectChoiceAnswer = async (q, opt) => {
   const qId = getQId(q)
-  const val = getOptionValue(opt, idx)
-  answers[qId] = val
+  const optId = getOptionId(opt)
+  answers[qId] = optId
 
-  // Auto-save — fire and forget (spec requirement)
   if (attemptId.value) {
     try {
-      const elapsedMs = questionStartAt.value ? Date.now() - questionStartAt.value : null
-      const elapsedSec = elapsedMs == null ? null : Math.round(elapsedMs / 1000)
+      const elapsedSec = questionStartAt.value ? Math.round((Date.now() - questionStartAt.value) / 1000) : null
       await saveStudentAnswer(attemptId.value, qId, {
-        selected_option_ids: [val],
+        type: getQuestionType(q),
+        answer: optId,
         time_spent_seconds: elapsedSec,
       })
       savedIndicator.value = true
       setTimeout(() => { savedIndicator.value = false }, 2000)
-      // reset timer for the next view
       questionStartAt.value = Date.now()
     } catch {
-      // Non-blocking — answer saved locally, server-side check on submit
+      // Non-blocking
     }
   }
 }
 
-// Reset per-question timer when user navigates between questions
+/**
+ * Handle FITB text input (debounced auto-save).
+ * Sends { text_answer, time_spent_seconds } — never selected_option_ids.
+ */
+let fitbSaveTimer = null
+
+const onFitbInput = (q, event) => {
+  const qId = getQId(q)
+  const text = event.target.value
+  answers[qId] = text
+
+  // Debounce: save 800ms after user stops typing
+  clearTimeout(fitbSaveTimer)
+  fitbSaveTimer = setTimeout(async () => {
+    if (!attemptId.value) return
+    try {
+      const elapsedSec = questionStartAt.value ? Math.round((Date.now() - questionStartAt.value) / 1000) : null
+      await saveStudentAnswer(attemptId.value, qId, {
+        type: getQuestionType(q),
+        answer: text,
+        time_spent_seconds: elapsedSec,
+      })
+      savedIndicator.value = true
+      setTimeout(() => { savedIndicator.value = false }, 2000)
+    } catch {
+      // Non-blocking
+    }
+  }, 800)
+}
+
 watch(currentIndex, () => {
   questionStartAt.value = Date.now()
 })
@@ -394,13 +481,8 @@ const toggleFlag = async (q) => {
   if (!q) return
   const qId = getQId(q)
   flagged[qId] = !flagged[qId]
-
   if (attemptId.value) {
-    try {
-      await flagQuestion(attemptId.value, qId)
-    } catch {
-      // Non-critical
-    }
+    try { await flagQuestion(attemptId.value, qId) } catch {}
   }
 }
 
@@ -432,7 +514,6 @@ const autoSubmit = async () => {
     await submitStudentAttempt(attemptId.value)
     submitted.value = true
   } catch {
-    // Backend will auto-submit on time expiry — show message
     submitted.value = true
   }
 }
@@ -444,9 +525,6 @@ const goToDashboard = () => router.push({ name: 'StudentDashboard' })
 onMounted(async () => {
   loading.value = true
   try {
-    // 1. Get or resume active attempt
-    // API returns { attempt: {...}, questions: [...], order: [...], time_remaining_seconds: N }
-    // or the attempt object directly — handle both shapes
     let raw
     try {
       raw = await getStudentExamAttempt(examId)
@@ -458,7 +536,6 @@ onMounted(async () => {
       throw err
     }
 
-    // Normalise: backend may wrap in { attempt, questions, ... } or return attempt directly
     const attempt = raw?.attempt ?? raw
     const embeddedQuestions = raw?.questions ?? null
     const embeddedTimeRemaining = raw?.time_remaining_seconds ?? null
@@ -469,10 +546,8 @@ onMounted(async () => {
     }
 
     attemptId.value = attempt.id
-    // Use embedded exam data for title etc.
     exam.value = attempt.exam ?? attempt
 
-    // 2. Load questions — use embedded if available, otherwise fetch separately
     let qs
     if (embeddedQuestions && Array.isArray(embeddedQuestions) && embeddedQuestions.length > 0) {
       qs = embeddedQuestions
@@ -481,22 +556,23 @@ onMounted(async () => {
       qs = Array.isArray(fetched) ? fetched : (fetched?.data || [])
     }
 
-    // Questions may be wrapped as exam_question objects with nested question
     questions.value = qs.map((q) => {
-      // If the item has a top-level `question` object, merge it up for easy access
       if (q?.question && typeof q.question === 'object') {
         return { ...q, ...q.question, _exam_question_id: q.id, id: q.question.id }
       }
       return q
     })
 
-    // Restore saved answers from attempt data
+    // Restore saved answers — handle both choice-based and FITB
     const savedAnswers = attempt.answers ?? raw?.answers
     if (savedAnswers && typeof savedAnswers === 'object') {
       if (Array.isArray(savedAnswers)) {
         savedAnswers.forEach((a) => {
-          if (a?.question_id && a?.selected_option_ids?.length) {
+          if (!a?.question_id) return
+          if (a.selected_option_ids?.length) {
             answers[a.question_id] = a.selected_option_ids[0]
+          } else if (a.text_answer !== undefined && a.text_answer !== null) {
+            answers[a.question_id] = a.text_answer
           }
         })
       } else {
@@ -506,7 +582,6 @@ onMounted(async () => {
       }
     }
 
-    // 3. Start timer — backend time_remaining_seconds is source of truth
     const timeRemaining =
       embeddedTimeRemaining ??
       attempt.time_remaining_seconds ??
@@ -520,12 +595,12 @@ onMounted(async () => {
     loading.value = false
   }
 
-  // Visibility resync (spec requirement)
   document.addEventListener('visibilitychange', onVisibilityChange)
 })
 
 onUnmounted(() => {
   clearInterval(timerInterval)
+  clearTimeout(fitbSaveTimer)
   document.removeEventListener('visibilitychange', onVisibilityChange)
 })
 </script>

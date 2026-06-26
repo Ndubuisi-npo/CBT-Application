@@ -4,27 +4,27 @@
     <SectionCard title="Exam Management" subtitle="Create, manage, and submit your exams. The school admin activates them for students.">
       <template #header>
         <div class="flex flex-wrap items-center gap-3">
-          <AppButton :icon="Plus" text="Create Exam" variant="primary" @click="openCreateModal" />
+          <AppButton :icon="Plus" text="Create Exam" variant="primary" @click="$router.push('/teachers/exams/create')" />
           <AppButton :icon="FileQuestion" text="Question Bank" variant="outline" @click="$router.push('/teachers/questions')" />
         </div>
       </template>
 
-      <div class="grid gap-4 pt-6 md:grid-cols-4">
-        <div class="rounded-[24px] border border-slate-200 bg-slate-50 p-5">
-          <p class="text-sm text-slate-500">All Exams</p>
-          <p class="mt-3 text-3xl font-semibold text-slate-900">{{ store.exams.length }}</p>
+      <div class="grid gap-4 pt-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div class="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3">
+          <span class="text-sm text-slate-500">All Exams</span>
+          <span class="text-xl font-semibold text-slate-900">{{ store.exams.length }}</span>
         </div>
-        <div class="rounded-[24px] border border-slate-200 bg-slate-50 p-5">
-          <p class="text-sm text-slate-500">Active</p>
-          <p class="mt-3 text-3xl font-semibold text-emerald-600">{{ countByStatus('active') }}</p>
+        <div class="flex items-center justify-between rounded-xl bg-emerald-50 px-4 py-3">
+          <span class="text-sm text-emerald-700">Active</span>
+          <span class="text-xl font-semibold text-emerald-700">{{ countByStatus('active') }}</span>
         </div>
-        <div class="rounded-[24px] border border-slate-200 bg-slate-50 p-5">
-          <p class="text-sm text-slate-500">Draft</p>
-          <p class="mt-3 text-3xl font-semibold text-slate-900">{{ countByStatus('draft') }}</p>
+        <div class="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3">
+          <span class="text-sm text-slate-500">Draft</span>
+          <span class="text-xl font-semibold text-slate-900">{{ countByStatus('draft') }}</span>
         </div>
-        <div class="rounded-[24px] border border-slate-200 bg-slate-50 p-5">
-          <p class="text-sm text-slate-500">Completed</p>
-          <p class="mt-3 text-3xl font-semibold text-blue-600">{{ countByStatus('completed') }}</p>
+        <div class="flex items-center justify-between rounded-xl bg-blue-50 px-4 py-3">
+          <span class="text-sm text-blue-700">Concluded</span>
+          <span class="text-xl font-semibold text-blue-700">{{ countByStatus('completed') }}</span>
         </div>
       </div>
     </SectionCard>
@@ -48,11 +48,11 @@
 
       <!-- Loading skeleton -->
       <div v-if="store.loading" class="space-y-4 pt-6">
-        <div v-for="i in 3" :key="i" class="h-36 animate-pulse rounded-[24px] bg-slate-100" />
+        <div v-for="i in 3" :key="i" class="h-36 animate-pulse rounded-2xl bg-slate-100" />
       </div>
 
       <!-- Error state -->
-      <div v-else-if="store.error" class="rounded-[24px] border border-rose-200 bg-rose-50 px-6 py-8 text-center pt-6">
+      <div v-else-if="store.error" class="rounded-2xl border border-rose-200 bg-rose-50 px-6 py-8 text-center pt-6">
         <p class="text-sm text-rose-600">{{ store.error }}</p>
         <AppButton class="mt-4" text="Retry" variant="outline" @click="loadExams" />
       </div>
@@ -62,7 +62,7 @@
         <article
           v-for="exam in filteredExams"
           :key="exam.id"
-          class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm transition hover:border-[#D4AF37]/60 hover:shadow-md"
+          class="rounded-xl border border-slate-200 bg-white p-5 transition hover:border-[#D4AF37]/50 hover:shadow-sm"
         >
           <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div class="space-y-3 flex-1 min-w-0">
@@ -101,7 +101,7 @@
 
               <!-- Edit/Questions — only for draft -->
               <template v-if="store.canEdit(exam)">
-                <AppButton :icon="Edit3" text="Continue Draft" variant="outline" size="sm" @click="openEditModal(exam)" />
+                <AppButton :icon="Edit3" text="Continue Draft" variant="outline" size="sm" @click="$router.push(`/teachers/exams/create?edit=${exam.id}`)" />
                 <AppButton :icon="ListChecks" text="Questions" variant="secondary" size="sm" @click="manageQuestions(exam)" />
               </template>
 
@@ -131,11 +131,11 @@
 
         <div
           v-if="!filteredExams.length && !store.loading"
-          class="rounded-[24px] border border-dashed border-slate-300 bg-slate-50 px-5 py-12 text-center text-sm text-slate-500"
+          class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-5 py-12 text-center text-sm text-slate-500"
         >
           <p class="font-medium text-slate-700">No exams found</p>
           <p class="mt-2">Create your first exam to get started.</p>
-          <AppButton class="mt-4" :icon="Plus" text="Create Exam" variant="primary" @click="openCreateModal" />
+          <AppButton class="mt-4" :icon="Plus" text="Create Exam" variant="primary" @click="$router.push('/teachers/exams/create')" />
         </div>
       </div>
     </SectionCard>

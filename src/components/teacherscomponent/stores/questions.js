@@ -22,6 +22,17 @@ import {
 } from "../services/api/questionoption";
 import { useActivities } from "../composables/useActivities";
 
+const unwrapQuestionList = (response) => {
+    if (Array.isArray(response)) return response;
+    if (!response || typeof response !== 'object') return [];
+    if (Array.isArray(response.data)) return response.data;
+    if (Array.isArray(response.questions)) return response.questions;
+    if (Array.isArray(response.items)) return response.items;
+    if (Array.isArray(response.results)) return response.results;
+    if (response.data && typeof response.data === 'object') return unwrapQuestionList(response.data);
+    return [];
+};
+
 export const useTeachersQuestionsStore = defineStore(
     "teachers-questions",
     {
@@ -65,13 +76,11 @@ export const useTeachersQuestionsStore = defineStore(
                 this.loading = true;
                 try {
                     const response = await getQuestions(params);
+                    const questions = unwrapQuestionList(response);
 
-                    if (Array.isArray(response)) {
-                        this.questions = response || [];
-                        this.totalQuestions = response.length || 0;
-                    } else if (response && response.data) {
-                        this.questions = response.data || [];
-                        this.totalQuestions = response.total ?? response.data.length ?? 0;
+                    if (questions.length || Array.isArray(response)) {
+                        this.questions = questions;
+                        this.totalQuestions = response?.total ?? response?.meta?.total ?? questions.length;
                     } else {
                         this.questions = [];
                         this.totalQuestions = 0;

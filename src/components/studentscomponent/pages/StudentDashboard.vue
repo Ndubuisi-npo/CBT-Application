@@ -155,24 +155,57 @@
               >
                 <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                   <div>
-                    <p class="text-sm font-semibold text-slate-900">Question {{ index + 1 }}</p>
+                    <div class="flex items-center gap-2 mb-1">
+                      <p class="text-sm font-semibold text-slate-900">Question {{ index + 1 }}</p>
+                      <span class="rounded-full px-2 py-0.5 text-xs font-semibold bg-slate-100 text-slate-600">
+                        {{ question.type === 'fill_in_blank' ? 'Fill in Blank' : question.type === 'true_false' ? 'True / False' : 'Multiple Choice' }}
+                      </span>
+                    </div>
                     <p class="mt-2 text-base leading-7 text-slate-900">{{ getQuestionText(question) }}</p>
                   </div>
-                  <div class="text-right text-sm">
+                  <div class="text-right text-sm shrink-0">
                     <p :class="isQuestionCorrect(question) ? 'text-emerald-700' : 'text-rose-700'" class="font-semibold">
                       {{ isQuestionCorrect(question) ? 'Correct' : 'Wrong' }}
+                    </p>
+                    <p v-if="question.marks_awarded != null" class="mt-1 text-xs text-slate-500">
+                      {{ question.marks_awarded }} / {{ question.marks_available ?? '?' }} marks
                     </p>
                   </div>
                 </div>
 
-                <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                <!-- MCQ / True-False: show selected + correct options -->
+                <div v-if="question.type !== 'fill_in_blank'" class="mt-4 grid gap-3 sm:grid-cols-2">
                   <div class="rounded-2xl border border-slate-200 bg-white p-4">
                     <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Your answer</p>
-                    <p class="mt-2 text-sm text-slate-700">{{ getAnswerText(question, 'selected') || 'No answer' }}</p>
+                    <p class="mt-2 text-sm text-slate-700">{{ getAnswerText(question, 'selected') || 'No answer given' }}</p>
                   </div>
+                  <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+                    <p class="text-xs uppercase tracking-[0.2em] text-emerald-600">Correct answer</p>
+                    <p class="mt-2 text-sm text-emerald-800 font-medium">{{ getAnswerText(question, 'correct') || 'Not available' }}</p>
+                  </div>
+                </div>
+
+                <!-- FITB: show text_answer + acceptable_answers -->
+                <div v-else class="mt-4 space-y-3">
                   <div class="rounded-2xl border border-slate-200 bg-white p-4">
-                    <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Correct answer</p>
-                    <p class="mt-2 text-sm text-slate-700">{{ getAnswerText(question, 'correct') || 'Not available' }}</p>
+                    <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Your answer</p>
+                    <p class="mt-2 text-sm text-slate-700 italic">
+                      "{{ getAnswerText(question, 'selected') || 'No answer given' }}"
+                    </p>
+                  </div>
+                  <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+                    <p class="text-xs uppercase tracking-[0.2em] text-emerald-600">Acceptable answers</p>
+                    <div class="mt-2 flex flex-wrap gap-2">
+                      <span
+                        v-for="(acc, ai) in (question.acceptable_answers || [])"
+                        :key="ai"
+                        class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-800"
+                      >
+                        {{ typeof acc === 'object' ? acc.content : acc }}
+                        <span v-if="acc?.case_sensitive" class="opacity-60">(case-sensitive)</span>
+                      </span>
+                      <span v-if="!(question.acceptable_answers?.length)" class="text-xs text-slate-400">Not available</span>
+                    </div>
                   </div>
                 </div>
               </article>
@@ -246,7 +279,29 @@ const getQuestionText = (question) => {
 }
 
 const getAnswerText = (question, type) => {
-  // Resolve selected answer
+  const qType = question?.type || ''
+
+  // ── FITB (Phase 4 ResultQuestion) ─────────────────────────────────────────
+  // text_answer is the student's typed input
+  // acceptable_answers holds the correct answers (no selected_options)
+  if (qType === 'fill_in_blank') {
+    if (type === 'selected') {
+      return question?.text_answer ?? question?.submitted_text ?? question?.answer ?? ''
+    }
+    if (type === 'correct') {
+      const acc = question?.acceptable_answers
+      if (Array.isArray(acc) && acc.length > 0) {
+        return acc.map((a) => (typeof a === 'object' ? a.content : a)).filter(Boolean).join(' / ')
+      }
+      return ''
+    }
+    return ''
+  }
+
+  // ── MCQ / True-False (Phase 4 ResultQuestion) ─────────────────────────────
+  // selected_options: what the student picked (options with content)
+  // options: full array with is_correct revealed
+
   let selected = null
   if (Array.isArray(question?.selected_options) && question.selected_options.length > 0) {
     const s = question.selected_options[0]
@@ -254,10 +309,9 @@ const getAnswerText = (question, type) => {
   } else if (Array.isArray(question?.selected_option_ids) && question.selected_option_ids.length > 0) {
     selected = question.selected_option_ids[0]
   } else {
-    selected = question?.selected_answer ?? question?.selected_option ?? question?.selected_option_id ?? question?.answer ?? question?.submitted_answer
+    selected = question?.selected_answer ?? question?.selected_option ?? question?.answer ?? question?.submitted_answer ?? null
   }
 
-  // Resolve correct answer
   let correct = null
   if (Array.isArray(question?.options) && question.options.length > 0) {
     const c = question.options.find((o) => o && (o.is_correct === true || o.is_correct === 'true'))
@@ -270,7 +324,7 @@ const getAnswerText = (question, type) => {
       const c = question.correct_options[0]
       correct = (typeof c === 'object') ? (c.content ?? c.label ?? c.id) : c
     } else {
-      correct = question?.correct_answer ?? question?.correctOption ?? question?.correct_option_id ?? question?.answer
+      correct = question?.correct_answer ?? question?.correctOption ?? null
     }
   }
 

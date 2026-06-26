@@ -1,330 +1,156 @@
 <template>
   <div class="space-y-6">
-    <SectionCard title="Class Levels" subtitle="Manage class levels (e.g., JSS 1, SS 1).">
-      <template #header>
-        <div class="flex gap-3">
-          <AppButton 
-            v-if="!isSelectMode" 
-            @click="openModal()" 
-            :icon="Plus" 
-            text="Create Class Level" 
-            variant="primary" 
-          />
-          <AppButton 
-            v-if="isSelectMode" 
-            @click="cancelSelectMode()" 
-            text="Cancel Select" 
-            variant="outline" 
-          />
-          <AppButton 
-            v-if="selectedItems.size > 0" 
-            @click="deleteSelected()" 
-            text="Delete Selected" 
-            variant="danger" 
-          />
-          <AppButton 
-            v-if="!isSelectMode" 
-            @click="startSelectMode()" 
-            text="Select" 
-            variant="secondary" 
-          />
-        </div>
-      </template>
+    <div class="flex flex-wrap items-start justify-between gap-4">
+      <div>
+        <p class="text-xs font-semibold uppercase tracking-[0.28em] text-[#D4AF37]">School Admin</p>
+        <h1 class="mt-1 text-2xl font-semibold tracking-tight text-slate-900">Class Levels</h1>
+        <p class="mt-1 text-sm text-slate-500">Manage class levels (e.g., JSS 1, SS 1) and their associated arms.</p>
+      </div>
+      <div class="flex flex-wrap items-center gap-2">
+        <AppButton v-if="selectedItems.size" text="Delete Selected" variant="danger" size="sm" @click="deleteSelected" />
+        <AppButton v-if="isSelectMode" text="Cancel" variant="ghost" size="sm" @click="cancelSelectMode" />
+        <AppButton v-if="!isSelectMode" :icon="CheckSquare" text="Select" variant="ghost" size="sm" @click="startSelectMode" />
+        <AppButton :icon="Plus" text="Create Class Level" variant="primary" size="sm" @click="openModal()" />
+      </div>
+    </div>
+
+    <section class="rounded-2xl border border-slate-200 bg-white">
       <SkeletonRows v-if="classLevelsStore.loading" :columns="3" />
-      <div v-else class="overflow-hidden rounded-[24px] border border-slate-200">
-        <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-slate-200 bg-white">
-            <thead class="bg-slate-50">
-              <tr>
-                <th v-if="isSelectMode" class="px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-                  <input 
-                    type="checkbox" 
-                    @change="toggleSelectAll($event.target.checked)"
-                    :checked="areAllSelected"
-                    class="rounded border-slate-300"
-                  />
-                </th>
-                <th v-for="heading in headings" :key="heading" class="px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">{{ heading }}</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100">
-              <tr v-for="classLevel in paginatedClassLevels" :key="classLevel.id" class="transition hover:bg-slate-50/80">
-                <td v-if="isSelectMode" class="px-5 py-4">
-                  <input 
-                    type="checkbox" 
-                    :checked="selectedItems.has(classLevel.id)"
-                    @change="toggleItemSelection(classLevel.id, $event.target.checked)"
-                    class="rounded border-slate-300"
-                  />
-                </td>
-                <td class="px-5 py-4 font-semibold text-slate-900">{{ classLevel.name }}</td>
-                <td class="px-5 py-4 text-sm text-slate-600">{{ getClassesCount(classLevel) }} arms</td>
-                <td class="px-5 py-4">
-                  <div class="flex gap-2">
-                    <AppButton text="Edit" @click="editClassLevel(classLevel)" variant="outline" size="xs" />
-                    <ActionButton tag="RouterLink" :to="`/school-admin/classes/${classLevel.id}`" text="View Arms" variant="primary" size="xs" />
-                    <AppButton 
-                      text="Delete" 
-                      @click="deleteClassLevel(classLevel.id)" 
-                      variant="danger" 
-                      size="xs"
-                      loadingText="Deleting..."
-                      :processing="deleteLoading.has(classLevel.id)"
-                      :disabled="deleteLoading.has(classLevel.id) || isSelectMode"
-                    />
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+
+      <div v-else-if="!classLevelsStore.classLevels.length" class="px-5 py-16 text-center">
+        <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100">
+          <Columns3 class="h-8 w-8 text-slate-400" />
         </div>
-        <div class="flex items-center justify-between border-t border-slate-200 bg-white px-5 py-4">
-          <div class="text-sm text-slate-600">Showing {{ startIndex }} to {{ endIndex }} of {{ classLevelsStore.classLevels.length }} class levels</div>
-          <div class="flex gap-2">
-            <AppButton 
-              text="Previous" 
-              @click="previousPage" 
-              variant="outline" 
-              size="xs"
-              :disabled="currentPage === 1"
-            />
-            <div class="flex items-center gap-2 px-3 py-2 text-sm text-slate-600">Page {{ currentPage }} of {{ totalPages }}</div>
-            <AppButton 
-              text="Next" 
-              @click="nextPage" 
-              variant="outline" 
-              size="xs"
-              :disabled="currentPage === totalPages"
-            />
-          </div>
+        <h3 class="mt-4 text-base font-semibold text-slate-900">No class levels yet</h3>
+        <p class="mt-1.5 text-sm text-slate-500">Create class levels to organise your school's structure.</p>
+        <div class="mt-5">
+          <AppButton :icon="Plus" text="Create First Level" variant="primary" size="sm" @click="openModal()" />
         </div>
       </div>
-    </SectionCard>
 
-    <ClassLevelModal 
-      :show="showModal" 
-      :classLevel="selectedClassLevel"
-      :loading="isSaving"
-      @close="closeModal"
-      @submit="submitClassLevel"
-    />
+      <div v-else class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-slate-100">
+          <thead>
+            <tr class="bg-slate-50">
+              <th v-if="isSelectMode" class="w-10 px-5 py-3">
+                <input type="checkbox" :checked="areAllSelected" class="h-4 w-4 rounded border-slate-300 text-[#D4AF37]" @change="toggleSelectAll($event.target.checked)" />
+              </th>
+              <th class="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">Class Level</th>
+              <th class="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">Arms</th>
+              <th class="px-5 py-3"></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 bg-white">
+            <tr v-for="level in paginatedLevels" :key="level.id" class="group transition hover:bg-slate-50/70">
+              <td v-if="isSelectMode" class="px-5 py-3.5">
+                <input type="checkbox" :checked="selectedItems.has(level.id)" class="h-4 w-4 rounded border-slate-300 text-[#D4AF37]" @change="toggleItemSelection(level.id, $event.target.checked)" />
+              </td>
+              <td class="px-5 py-3.5">
+                <p class="font-semibold text-slate-900">{{ level.name }}</p>
+              </td>
+              <td class="px-5 py-3.5">
+                <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-700">
+                  {{ getClassesCount(level) }} arm{{ getClassesCount(level) !== 1 ? 's' : '' }}
+                </span>
+              </td>
+              <td class="px-5 py-3.5">
+                <div class="flex items-center gap-2 opacity-0 transition group-hover:opacity-100">
+                  <button class="rounded-lg px-2.5 py-1 text-xs font-medium text-slate-600 ring-1 ring-slate-200 transition hover:bg-slate-100" @click="openModal(level)">Edit</button>
+                  <RouterLink :to="`/school-admin/classes/${level.id}`" class="rounded-lg px-2.5 py-1 text-xs font-medium text-[#0B1F3A] ring-1 ring-slate-200 transition hover:bg-slate-100">View Arms</RouterLink>
+                  <button class="rounded-lg px-2.5 py-1 text-xs font-medium text-red-600 ring-1 ring-red-200 transition hover:bg-red-50" :disabled="deleteLoading.has(level.id)" @click="deleteClassLevel(level.id)">{{ deleteLoading.has(level.id) ? '…' : 'Delete' }}</button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div v-if="classLevelsStore.classLevels.length" class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-5 py-3.5">
+        <p class="text-xs text-slate-500">Showing {{ startIndex }}–{{ endIndex }} of {{ classLevelsStore.classLevels.length }}</p>
+        <div class="flex items-center gap-1.5">
+          <button class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 ring-1 ring-slate-200 transition hover:bg-slate-100 disabled:opacity-40" :disabled="currentPage === 1" @click="currentPage--"><ChevronLeft class="h-4 w-4" /></button>
+          <span class="px-2 text-xs font-medium text-slate-700">{{ currentPage }} / {{ totalPages }}</span>
+          <button class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 ring-1 ring-slate-200 transition hover:bg-slate-100 disabled:opacity-40" :disabled="currentPage === totalPages" @click="currentPage++"><ChevronRight class="h-4 w-4" /></button>
+        </div>
+      </div>
+    </section>
+
+    <ClassLevelModal :show="showModal" :classLevel="selectedClassLevel" :loading="isSaving" @close="closeModal" @submit="submitClassLevel" />
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { Plus } from 'lucide-vue-next'
-import SectionCard from '../components/SectionCard.vue'
-import SkeletonRows from '../components/SkeletonRows.vue'
+import { computed, onMounted, ref } from 'vue'
+import { RouterLink } from 'vue-router'
+import { CheckSquare, ChevronLeft, ChevronRight, Columns3, Plus } from 'lucide-vue-next'
 import AppButton from '../../shared/AppButton.vue'
-import ActionButton from '../../shared/ActionButton.vue'
+import SkeletonRows from '../components/SkeletonRows.vue'
 import ClassLevelModal from '../components/ClassLevelModal.vue'
 import { useSchoolAdminClassLevelsStore } from '../stores/classLevels'
-import { useSchoolAdminClassArmsStore } from '../stores/classArms'
 import { useSchoolAdminUiStore } from '../stores/ui'
 
-const headings = ['Class Level', 'Number of Arms', 'Actions']
 const classLevelsStore = useSchoolAdminClassLevelsStore()
-const classArmsStore = useSchoolAdminClassArmsStore()
 const uiStore = useSchoolAdminUiStore()
 
-// Multi-select state
 const isSelectMode = ref(false)
 const selectedItems = ref(new Set())
-
-// Modal state
 const showModal = ref(false)
 const selectedClassLevel = ref(null)
-
-// Loading states
 const deleteLoading = ref(new Set())
 const isSaving = ref(false)
-
-// Form state
-const form = reactive({ id: null, name: '' })
-const errors = reactive({ name: '' })
-
-// Pagination state
 const itemsPerPage = 10
 const currentPage = ref(1)
 
-// Computed properties for multi-select
-const areAllSelected = computed(() => {
-  return classLevelsStore.classLevels.length > 0 && 
-         classLevelsStore.classLevels.every(level => selectedItems.value.has(level.id))
-})
-
-const hasAnySelected = computed(() => selectedItems.value.size > 0)
-
-// Pagination computed properties
-const totalPages = computed(() => Math.ceil(classLevelsStore.classLevels.length / itemsPerPage))
-const startIndex = computed(() => (currentPage.value - 1) * itemsPerPage + 1)
+const areAllSelected = computed(() =>
+  classLevelsStore.classLevels.length > 0 && classLevelsStore.classLevels.every((l) => selectedItems.value.has(l.id)),
+)
+const totalPages = computed(() => Math.max(1, Math.ceil(classLevelsStore.classLevels.length / itemsPerPage)))
+const startIndex = computed(() => classLevelsStore.classLevels.length ? (currentPage.value - 1) * itemsPerPage + 1 : 0)
 const endIndex = computed(() => Math.min(currentPage.value * itemsPerPage, classLevelsStore.classLevels.length))
-const paginatedClassLevels = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage
-  const end = start + itemsPerPage
-  return classLevelsStore.classLevels.slice(start, end)
-})
+const paginatedLevels = computed(() => classLevelsStore.classLevels.slice((currentPage.value - 1) * itemsPerPage, currentPage.value * itemsPerPage))
 
-onMounted(async () => {
-  try {
-    await classLevelsStore.fetchClassLevels()
-  } catch (error) {
-    uiStore.addToast({ title: 'Error', message: 'Failed to load class levels. Please check your connection.', variant: 'error' })
-  }
-})
+const getClassesCount = (l) => l.class_arms_count ?? 0
 
-const closeModal = () => {
-  showModal.value = false
-  selectedClassLevel.value = null
-}
+const startSelectMode = () => { isSelectMode.value = true; selectedItems.value = new Set() }
+const cancelSelectMode = () => { isSelectMode.value = false; selectedItems.value = new Set() }
+const toggleSelectAll = (checked) => { const next = new Set(); if (checked) classLevelsStore.classLevels.forEach((l) => next.add(l.id)); selectedItems.value = next }
+const toggleItemSelection = (id, checked) => { const next = new Set(selectedItems.value); checked ? next.add(id) : next.delete(id); selectedItems.value = next }
 
-const openModal = (classLevel) => {
-  selectedClassLevel.value = classLevel
-  showModal.value = true
-}
-
-// Multi-select functionality
-const startSelectMode = () => {
-  isSelectMode.value = true
-  selectedItems.value.clear()
-}
-
-const cancelSelectMode = () => {
-  isSelectMode.value = false
-  selectedItems.value.clear()
-}
-
-const toggleSelectAll = (checked) => {
-  if (checked) {
-    classLevelsStore.classLevels.forEach(level => {
-      selectedItems.value.add(level.id)
-    })
-  } else {
-    selectedItems.value.clear()
-  }
-}
-
-const toggleItemSelection = (id, checked) => {
-  if (checked) {
-    selectedItems.value.add(id)
-  } else {
-    selectedItems.value.delete(id)
-  }
-}
+const openModal = (l) => { selectedClassLevel.value = l || null; showModal.value = true }
+const closeModal = () => { showModal.value = false; selectedClassLevel.value = null }
 
 const deleteSelected = async () => {
-  const selectedCount = selectedItems.value.size
-  if (!confirm(`Are you sure you want to delete ${selectedCount} selected class level(s)? This action cannot be undone.`)) {
-    return
-  }
-
+  const ids = Array.from(selectedItems.value)
+  if (!confirm(`Delete ${ids.length} class level(s)? This cannot be undone.`)) return
   try {
-    for (const id of selectedItems.value) {
-      deleteLoading.value.add(id)
-    }
-    
-    for (const id of selectedItems.value) {
-      await classLevelsStore.deleteClassLevel(id)
-    }
-    
-    selectedItems.value.clear()
-    isSelectMode.value = false
-    uiStore.addToast({ 
-      title: 'Class Levels Deleted', 
-      message: `${selectedCount} class level(s) have been deleted successfully.`, 
-      variant: 'success' 
-    })
-  } catch (error) {
-    const message = error?.response?.data?.message || error?.message || 'Failed to delete selected class levels.'
-    uiStore.addToast({ 
-      title: 'Error', 
-      message, 
-      variant: 'error' 
-    })
-  } finally {
-    // Clear all loading states
-    deleteLoading.value.clear()
-  }
-}
-
-const validate = () => {
-  errors.name = form.name ? '' : 'Class level name is required.'
-  return !errors.name
-}
-
-const submit = async () => {
-  if (!validate()) return
-  const savedClassLevel = await classLevelsStore.saveClassLevel({ ...form })
-  uiStore.addToast({ title: 'Class level saved', message: 'Class level configuration was updated.', variant: 'success' })
-  // Load arms count for new/updated class level
-  await loadArmsCount(savedClassLevel.id)
-  Object.assign(form, { id: null, name: '' })
-}
-
-const editClassLevel = (classLevel) => {
-  form.id = classLevel.id
-  form.name = classLevel.name
-  openModal(classLevel)
+    ids.forEach((id) => deleteLoading.value.add(id))
+    for (const id of ids) await classLevelsStore.deleteClassLevel(id)
+    cancelSelectMode()
+    uiStore.addToast({ title: 'Deleted', message: `${ids.length} class level(s) deleted.`, variant: 'success' })
+  } catch (e) { uiStore.addToast({ title: 'Error', message: e?.response?.data?.message || 'Failed to delete.', variant: 'error' }) }
+  finally { deleteLoading.value = new Set() }
 }
 
 const deleteClassLevel = async (id) => {
-  if (!confirm('Are you sure you want to delete this class level? This action cannot be undone and will also delete all associated class arms.')) {
-    return
-  }
-  
+  if (!confirm('Delete this class level? All associated arms will also be deleted.')) return
   deleteLoading.value = new Set([...deleteLoading.value, id])
-  
-  try {
-    await classLevelsStore.deleteClassLevel(id)
-    uiStore.addToast({ title: 'Class level deleted', message: 'Class level has been deleted.', variant: 'success' })
-  } catch (error) {
-    const message = error?.response?.data?.message || error?.message || 'Failed to delete class level.'
-    uiStore.addToast({ title: 'Error', message, variant: 'error' })
-  } finally {
-    deleteLoading.value = new Set([...deleteLoading.value].filter(loadingId => loadingId !== id))
-  }
-}
-const nextPage = () => {
-  if (currentPage.value < totalPages.value) {
-    currentPage.value++
-  }
+  try { await classLevelsStore.deleteClassLevel(id); uiStore.addToast({ title: 'Deleted', message: 'Class level deleted.', variant: 'success' }) }
+  catch (e) { uiStore.addToast({ title: 'Error', message: e?.response?.data?.message || 'Failed.', variant: 'error' }) }
+  finally { deleteLoading.value = new Set([...deleteLoading.value].filter((x) => x !== id)) }
 }
 
-const previousPage = () => {
-  if (currentPage.value > 1) {
-    currentPage.value--
-  }
-}
-const submitClassLevel = async (classLevelData) => {
+const submitClassLevel = async (data) => {
   isSaving.value = true
   try {
-    const payload = {
-      name: classLevelData.name
-    }
-    
-    if (classLevelData.id) {
-      await classLevelsStore.updateClassLevel(classLevelData.id, payload)
-    } else {
-      await classLevelsStore.createClassLevel(payload)
-    }
-    
-    uiStore.addToast({ title: 'Class level saved', message: 'Class level has been saved successfully.', variant: 'success' })
-    // Close modal after a short delay to ensure toast is visible
-    setTimeout(() => {
-      closeModal()
-    }, 100)
-  } catch (error) {
-    const message = error?.response?.data?.message || error?.message || 'Failed to save class level.'
-    uiStore.addToast({ title: 'Error', message, variant: 'error' })
-  } finally {
-    isSaving.value = false
-  }
+    data.id ? await classLevelsStore.updateClassLevel(data.id, { name: data.name }) : await classLevelsStore.createClassLevel({ name: data.name })
+    uiStore.addToast({ title: 'Saved', message: 'Class level saved.', variant: 'success' })
+    setTimeout(closeModal, 100)
+  } catch (e) { uiStore.addToast({ title: 'Error', message: e?.response?.data?.message || 'Failed.', variant: 'error' }) }
+  finally { isSaving.value = false }
 }
 
-const getClassesCount = (classLevel) => {
-  return classLevel.class_arms_count || 0
-}
-
+onMounted(async () => {
+  try { await classLevelsStore.fetchClassLevels() }
+  catch { uiStore.addToast({ title: 'Error', message: 'Failed to load class levels.', variant: 'error' }) }
+})
 </script>

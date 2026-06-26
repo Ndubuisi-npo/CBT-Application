@@ -1,7 +1,8 @@
 import { apiFetch } from '../../../../js/lib/api'
+import { buildAnswerPayload } from '../../../../types/question'
 
 const normalizeExam = (exam = {}) => ({
-  ...exam,                                    // preserve all raw fields (class_level, scheduled_start, etc.)
+  ...exam,
   id: exam.id,
   title: exam.title || exam.name || 'Exam',
   subject: exam.subject?.name || exam.subject || exam.subject_name || exam.subjectTitle || '',
@@ -21,7 +22,6 @@ export async function getAvailableExams(params = {}) {
 }
 
 export async function getStudentExam(examId) {
-  // Try the direct exam detail endpoint first
   try {
     const single = await apiFetch(`/api/student/exams/${examId}`)
     if (single && (single.id || single.data?.id)) {
@@ -31,7 +31,6 @@ export async function getStudentExam(examId) {
     // Fall through to available list lookup
   }
 
-  // Fall back: search within the available list
   const response = await apiFetch('/api/student/exams/available')
   const exams = Array.isArray(response) ? response : response?.data || []
   const found = exams.find((e) => String(e.id) === String(examId))
@@ -40,46 +39,70 @@ export async function getStudentExam(examId) {
 }
 
 export async function startStudentExam(examId) {
-  // spec: POST /api/student/exams/{examId}/start
-  return await apiFetch(`/api/student/exams/${examId}/start`, {
-    method: 'POST',
-  })
+  return await apiFetch(`/api/student/exams/${examId}/start`, { method: 'POST' })
 }
 
 export async function getStudentExamAttempt(examId) {
-  // spec: GET /api/student/exams/{examId}/attempt — returns 404 if no attempt
   return await apiFetch(`/api/student/exams/${examId}/attempt`)
 }
 
 export async function getStudentExamQuestions(attemptId) {
-  // spec: GET /api/student/exams/attempts/{attemptId}/questions
   const response = await apiFetch(`/api/student/exams/attempts/${attemptId}/questions`)
   return Array.isArray(response) ? response : response?.data || []
 }
 
+/**
+ * Save a single answer.
+ *
+ * Per the PDF contract:
+ *   - MCQ/TrueFalse: send { selected_option_ids, time_spent_seconds }
+ *   - FITB:          send { text_answer, time_spent_seconds }
+ * Never include both keys — server returns HTTP 422.
+ *
+ * @param {string} attemptId
+ * @param {string} questionId
+ * @param {{ type: string, answer: string|string[]|null, time_spent_seconds?: number }} payload
+ */
 export async function saveStudentAnswer(attemptId, questionId, payload) {
+  const { type, answer, time_spent_seconds } = payload
+
+  // Build type-correct payload — prevents 422 errors
+  const body = buildAnswerPayload(type, answer, time_spent_seconds ?? null)
+
   return await apiFetch(`/api/student/exams/attempts/${attemptId}/answers/${questionId}`, {
     method: 'PUT',
-    body: JSON.stringify(payload),
+    body: JSON.stringify(body),
   })
 }
 
-export async function bulkSaveAnswers(attemptId, payload) {
+/**
+ * Bulk-save answers.
+ *
+ * Validates each answer in the array against its question's type before sending.
+ * A single offending item would fail the entire batch (per PDF spec).
+ *
+ * @param {string} attemptId
+ * @param {Array<{ question_id: string, type: string, answer: string|string[]|null, time_spent_seconds?: number }>} answers
+ */
+export async function bulkSaveAnswers(attemptId, answers) {
+  const body = {
+    answers: answers.map(({ question_id, type, answer, time_spent_seconds }) => ({
+      question_id,
+      ...buildAnswerPayload(type, answer, time_spent_seconds ?? null),
+    })),
+  }
   return await apiFetch(`/api/student/exams/attempts/${attemptId}/bulk-save`, {
     method: 'POST',
-    body: JSON.stringify(payload),
+    body: JSON.stringify(body),
   })
 }
 
 export async function getTimeRemaining(attemptId) {
-  const response = await apiFetch(`/api/student/exams/attempts/${attemptId}/time-remaining`)
-  return response
+  return await apiFetch(`/api/student/exams/attempts/${attemptId}/time-remaining`)
 }
 
 export async function submitStudentAttempt(attemptId) {
-  return await apiFetch(`/api/student/exams/attempts/${attemptId}/submit`, {
-    method: 'POST',
-  })
+  return await apiFetch(`/api/student/exams/attempts/${attemptId}/submit`, { method: 'POST' })
 }
 
 export async function flagQuestion(attemptId, questionId) {
@@ -89,6 +112,5 @@ export async function flagQuestion(attemptId, questionId) {
 }
 
 export async function getAttemptResult(attemptId) {
-  const response = await apiFetch(`/api/student/exams/attempts/${attemptId}/result`)
-  return response
+  return await apiFetch(`/api/student/exams/attempts/${attemptId}/result`)
 }

@@ -1,4 +1,3 @@
-
 import { createRouter, createWebHistory } from 'vue-router'
 import { isAuthenticated, getAuthRole } from '../js/lib/auth'
 import { getTenantHandle } from '../js/lib/api'
@@ -7,7 +6,7 @@ import { getTenantHandle } from '../js/lib/api'
 import LandingPage from '../components/landingpage/landingPage.vue'
 import Onboarding from '../components/onboardingpage/onboarding.vue'
 
-// ─── School Admin (NO exam pages) ─────────────────────────────────────────────
+// ─── School Admin ─────────────────────────────────────────────────────────────
 import SchoolAdminRoot from '../components/schooladmincomponents/SchoolAdminRoot.vue'
 import SchoolAdminLogin from '../components/schooladmincomponents/Login.vue'
 import SchoolAdminLayout from '../components/schooladmincomponents/layouts/SchoolAdminLayout.vue'
@@ -18,7 +17,6 @@ import SchoolAdminClassLevels from '../components/schooladmincomponents/pages/Cl
 import SchoolAdminClassArms from '../components/schooladmincomponents/pages/ClassArmsPage.vue'
 import SchoolAdminTeachers from '../components/schooladmincomponents/pages/TeachersPage.vue'
 import SchoolAdminStudents from '../components/schooladmincomponents/pages/StudentsPage.vue'
-
 import SchoolAdminSubjects from '../components/schooladmincomponents/pages/SubjectsPage.vue'
 import SchoolAdminSubjectAssignTeacher from '../components/schooladmincomponents/pages/SubjectAssignTeacherPage.vue'
 import SchoolAdminSettings from '../components/schooladmincomponents/pages/SettingsPage.vue'
@@ -27,11 +25,13 @@ import SchoolAdminExamApprovals from '../components/schooladmincomponents/pages/
 import StudentImportPage from '../components/schooladmincomponents/pages/StudentImportPage.vue'
 import TeacherImportPage from '../components/schooladmincomponents/pages/TeacherImportPage.vue'
 
-// ─── Teacher (full exam lifecycle owner) ──────────────────────────────────────
+// ─── Teacher ──────────────────────────────────────────────────────────────────
 import TeachersDashboard from '../components/teacherscomponent/pages/TeachersDashboard.vue'
 import TeachersExamList from '../components/teacherscomponent/pages/ExamList.vue'
 import TeachersExamWizard from '../components/teacherscomponent/pages/ExamWizard.vue'
+import TeachersExamCreatePage from '../components/teacherscomponent/pages/ExamCreatePage.vue'
 import TeachersQuestionBank from '../components/teacherscomponent/pages/QuestionBank.vue'
+import TeachersQuestionCreatePage from '../components/teacherscomponent/pages/QuestionCreatePage.vue'
 import TeachersTopicsPage from '../components/teacherscomponent/pages/TopicsPage.vue'
 import TeachersResultsPage from '../components/teacherscomponent/pages/ResultsPage.vue'
 import TeachersSettingsPage from '../components/teacherscomponent/pages/TeachersSettingsPage.vue'
@@ -59,11 +59,9 @@ const routes = [
   { path: '/login', name: 'Login', component: SchoolAdminLogin },
   { path: '/signin', redirect: '/login' },
   { path: '/super-admin/login', redirect: '/login' },
-
-  // /dashboard redirects to the correct home for the logged-in role
   { path: '/dashboard', redirect: () => roleRedirectMap[getAuthRole()] || '/login' },
 
-  // ── School Admin (NO exam routes) ────────────────────────────────────────
+  // ── School Admin ─────────────────────────────────────────────────────────
   {
     path: '/school-admin',
     component: SchoolAdminRoot,
@@ -97,34 +95,30 @@ const routes = [
     ],
   },
 
-  // ── Teachers (full exam lifecycle) ───────────────────────────────────────
+  // ── Teachers ─────────────────────────────────────────────────────────────
   {
     path: '/teachers',
-    component: SchoolAdminRoot,           // Reuses the auth shell
+    component: SchoolAdminRoot,
     meta: { requiresAuth: true, role: 'teacher' },
     children: [
       { path: '', redirect: '/login' },
       {
         path: '',
-        component: SchoolAdminLayout,     // Reuses the layout (sidebar auto-switches to teacher nav)
+        component: SchoolAdminLayout,
         children: [
           { path: 'dashboard', name: 'TeachersDashboard', component: TeachersDashboard },
           { path: 'my-classes', name: 'TeachersMyClasses', component: TeachersMyClasses },
+
+          // Question Bank + Create Question page
           { path: 'questions', name: 'TeachersQuestionBank', component: TeachersQuestionBank },
+          { path: 'questions/create', name: 'TeachersQuestionCreate', component: TeachersQuestionCreatePage },
+
           { path: 'topics', name: 'TeachersTopicsPage', component: TeachersTopicsPage },
 
-          // ── Exam management (teacher-owned lifecycle) ──────────────────
-          {
-            path: 'exams',
-            name: 'TeachersExamList',
-            component: TeachersExamList,
-          },
-          {
-            path: 'exam-wizard',
-            name: 'TeachersExamWizard',
-            component: TeachersExamWizard,
-          },
-          // ── End exam management ────────────────────────────────────────
+          // Exam list + Create Exam page + Wizard
+          { path: 'exams', name: 'TeachersExamList', component: TeachersExamList },
+          { path: 'exams/create', name: 'TeachersExamCreate', component: TeachersExamCreatePage },
+          { path: 'exam-wizard', name: 'TeachersExamWizard', component: TeachersExamWizard },
 
           { path: 'students', name: 'TeachersStudentsPage', component: TeachersStudentsPage },
           { path: 'attendance', name: 'TeachersAttendancePage', component: TeachersAttendancePage },
@@ -189,18 +183,14 @@ const router = createRouter({
   routes,
 })
 
-// Role → home page mapping
 const roleRedirectMap = {
   super_admin: '/super-admin/dashboard',
-  school_admin: '/school-admin/dashboard',  // No longer /assessments
+  school_admin: '/school-admin/dashboard',
   teacher: '/teachers/dashboard',
   student: '/student/dashboard',
 }
 
-const buildRedirectUrl = (path) => {
-  // Respect origin for multi-tenant setups
-  return `${window.location.origin}${path}`
-}
+const buildRedirectUrl = (path) => `${window.location.origin}${path}`
 
 router.beforeEach((to, from, next) => {
   const requiresAuth =
@@ -212,31 +202,21 @@ router.beforeEach((to, from, next) => {
   const isLoginPage = to.path === '/login'
 
   if (requiresAuth && !isLoginPage) {
-    if (!isAuthenticated()) {
-      next('/login')
-      return
-    }
+    if (!isAuthenticated()) { next('/login'); return }
 
     const userRole = getAuthRole()
 
     if (to.path.startsWith('/super-admin') && userRole !== 'super_admin') {
-      next(buildRedirectUrl(roleRedirectMap[userRole] || '/login'))
-      return
+      next(buildRedirectUrl(roleRedirectMap[userRole] || '/login')); return
     }
-
     if (to.path.startsWith('/school-admin') && userRole !== 'school_admin') {
-      next(buildRedirectUrl(roleRedirectMap[userRole] || '/login'))
-      return
+      next(buildRedirectUrl(roleRedirectMap[userRole] || '/login')); return
     }
-
     if (to.path.startsWith('/teachers') && userRole !== 'teacher') {
-      next(buildRedirectUrl(roleRedirectMap[userRole] || '/login'))
-      return
+      next(buildRedirectUrl(roleRedirectMap[userRole] || '/login')); return
     }
-
     if (to.path.startsWith('/student') && userRole !== 'student') {
-      next(buildRedirectUrl(roleRedirectMap[userRole] || '/login'))
-      return
+      next(buildRedirectUrl(roleRedirectMap[userRole] || '/login')); return
     }
   }
 

@@ -46,7 +46,7 @@ export const useSchoolAdminTeachersStore = defineStore(
             async fetchTeachers(params = {}) {
                 this.loading = true;
                 try {
-                    const response = await getTeachers({ status: 'active', ...params });
+                    const response = await getTeachers({ status: 'active', include: 'teacherProfile,assignedClasses,assignedClasses.class_level,teacherAssignments,teacherAssignments.subject,teacherAssignments.class_level', ...params });
 
                     // Support either an array response (legacy/simple) or an object with `data` and `total`
                     if (Array.isArray(response)) {
@@ -68,6 +68,19 @@ export const useSchoolAdminTeachersStore = defineStore(
                 } finally {
                     this.loading = false;
                 }
+            },
+
+            async fetchTeacher(id) {
+                const record = await getTeacher(id);
+                if (record?.id) {
+                    this.teachers = this.teachers.map((item) =>
+                        item.id === record.id ? record : item,
+                    );
+                    this.archivedTeachers = this.archivedTeachers.map((item) =>
+                        item.id === record.id ? record : item,
+                    );
+                }
+                return record;
             },
 
             async saveTeacher(payload) {

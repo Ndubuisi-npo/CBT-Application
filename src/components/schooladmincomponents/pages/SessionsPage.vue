@@ -1,366 +1,182 @@
 <template>
   <div class="space-y-6">
-    <SectionCard title="Academic Sessions" subtitle="Manage session timelines and activate the current school year.">
-      <template #header>
-        <div class="flex gap-3">
-          <AppButton 
-            v-if="!isSelectMode" 
-            @click="openModal()" 
-            :icon="Plus" 
-            text="Create Session" 
-            variant="primary" 
-          />
-          <AppButton 
-            v-if="isSelectMode" 
-            @click="cancelSelectMode()" 
-            text="Cancel Select" 
-            variant="outline" 
-          />
-          <AppButton 
-            v-if="selectedSessions.size > 0" 
-            @click="deleteSelected()" 
-            text="Delete Selected" 
-            variant="danger" 
-          />
-          <AppButton 
-            v-if="!isSelectMode" 
-            @click="startSelectMode()" 
-            text="Select" 
-            variant="secondary" 
-          />
-        </div>
-      </template>
-      <SkeletonRows v-if="sessionsStore.loading" :columns="5" />
-      <div v-else-if="sessionsStore.sessions.length === 0" class="rounded-[24px] border border-slate-200 bg-white p-12 text-center">
-        <div class="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-slate-100">
-          <Calendar class="h-12 w-12 text-slate-400" />
-        </div>
-        <h3 class="mt-6 text-xl font-semibold text-slate-900">No Academic Sessions</h3>
-        <p class="mt-2 text-slate-600">Get started by creating your first academic session to manage your school year timeline.</p>
-        <div class="mt-8">
-          <AppButton @click="openModal()" :icon="Plus" text="Create Your First Session" variant="primary" size="lg" />
-        </div>
+    <div class="flex flex-wrap items-start justify-between gap-4">
+      <div>
+        <p class="text-xs font-semibold uppercase tracking-[0.28em] text-[#D4AF37]">School Admin</p>
+        <h1 class="mt-1 text-2xl font-semibold tracking-tight text-slate-900">Academic Sessions</h1>
+        <p class="mt-1 text-sm text-slate-500">Manage session timelines and activate the current school year.</p>
       </div>
-      <div v-else class="overflow-hidden rounded-[24px] border border-slate-200">
-        <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-slate-200 bg-white">
-            <thead class="bg-slate-50">
-              <tr>
-                <th v-if="isSelectMode" class="px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-                  <input 
-                    type="checkbox" 
-                    @change="toggleSelectAll($event.target.checked)"
-                    :checked="areAllSelected"
-                    class="rounded border-slate-300"
-                  />
-                </th>
-                <th v-for="heading in headings" :key="heading" class="px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">{{ heading }}</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100">
-              <tr v-for="session in paginatedSessions" :key="session.id" class="transition hover:bg-slate-50/80">
-                <td v-if="isSelectMode" class="px-5 py-4">
-                  <input 
-                    type="checkbox" 
-                    :checked="selectedSessions.has(session.id)"
-                    @change="toggleItemSelection(session.id, $event.target.checked)"
-                    class="rounded border-slate-300"
-                  />
-                </td>
-                <td class="px-5 py-4 font-semibold text-slate-900">{{ session.name }}</td>
-                <td class="px-5 py-4 text-sm text-slate-600">{{ getTermsCount(session) }} terms</td>
-                <td class="px-5 py-4 text-nowrap"><StatusBadge :status="sessionStatus(session)" /></td>
-                <td class="px-5 py-4 text-sm text-nowrap text-slate-600">{{ fmtDate(session.startDate || session.start_date || '-') }}</td>
-                <td class="px-5 py-4 text-sm text-nowrap text-slate-600">{{ fmtDate(session.endDate || session.end_date || '-') }}</td>
-                <td class="px-5 py-4">
-                  <div class="flex gap-2">
-                    <AppButton text="Edit" @click="openModal(session)" variant="outline" size="xs" />
-                    <ActionButton tag="RouterLink" :to="`/school-admin/terms/${session.id}`" text="View   Terms" variant="primary" size="xs" />
-                    <AppButton 
-                      :text="sessionStatus(session) === 'Current' ? 'Deactivate' : 'Activate'" 
-                      @click="toggleSession(session.id)" 
-                      :variant="sessionStatus(session) === 'Current' ? 'danger' : 'success'" 
-                      size="xs"
-                      :loadingText="sessionStatus(session) === 'Current' ? 'Deactivating...' : 'Activating...'"
-                      :processing="toggleLoading.has(session.id)"
-                      :disabled="toggleLoading.has(session.id)"
-                    />
-                    <AppButton 
-                      text="Delete" 
-                      @click="deleteSession(session.id)" 
-                      variant="danger" 
-                      size="xs"
-                      loadingText="Deleting..."
-                      :processing="deleteLoading.has(session.id)"
-                      :disabled="deleteLoading.has(session.id) || isSelectMode"
-                    />
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <div class="flex items-center justify-between border-t border-slate-200 bg-white px-5 py-4">
-          <div class="text-sm text-slate-600">Showing {{ startIndex }} to {{ endIndex }} of {{ sessionsStore.sessions.length }} sessions</div>
-          <div class="flex gap-2">
-            <AppButton 
-              text="Previous" 
-              @click="previousPage" 
-              variant="outline" 
-              size="xs"
-              :disabled="currentPage === 1"
-            />
-            <div class="flex items-center gap-2 px-3 py-2 text-sm text-slate-600">Page {{ currentPage }} of {{ totalPages }}</div>
-            <AppButton 
-              text="Next" 
-              @click="nextPage" 
-              variant="outline" 
-              size="xs"
-              :disabled="currentPage === totalPages"
-            />
-          </div>
-        </div>
+      <div class="flex flex-wrap items-center gap-2">
+        <AppButton v-if="selectedSessions.size" text="Delete Selected" variant="danger" size="sm" @click="deleteSelected" />
+        <AppButton v-if="isSelectMode" text="Cancel" variant="ghost" size="sm" @click="cancelSelectMode" />
+        <AppButton v-if="!isSelectMode" :icon="CheckSquare" text="Select" variant="ghost" size="sm" @click="startSelectMode" />
+        <AppButton :icon="Plus" text="Create Session" variant="primary" size="sm" @click="openModal()" />
       </div>
-    </SectionCard>
+    </div>
 
-    <SessionModal 
-      :show="showModal" 
-      :session="selectedSession"
-      @close="closeModal"
-      @submit="submitSession"
-    />
+    <section class="rounded-2xl border border-slate-200 bg-white">
+      <SkeletonRows v-if="sessionsStore.loading" :columns="5" />
+
+      <div v-else-if="!sessionsStore.sessions.length" class="px-5 py-16 text-center">
+        <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100">
+          <Calendar class="h-8 w-8 text-slate-400" />
+        </div>
+        <h3 class="mt-4 text-base font-semibold text-slate-900">No academic sessions</h3>
+        <p class="mt-1.5 text-sm text-slate-500">Create your first session to begin managing your school year.</p>
+        <div class="mt-5">
+          <AppButton :icon="Plus" text="Create First Session" variant="primary" size="sm" @click="openModal()" />
+        </div>
+      </div>
+
+      <div v-else class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-slate-100">
+          <thead>
+            <tr class="bg-slate-50">
+              <th v-if="isSelectMode" class="w-10 px-5 py-3">
+                <input type="checkbox" :checked="areAllSelected" class="h-4 w-4 rounded border-slate-300 text-[#D4AF37]" @change="toggleSelectAll($event.target.checked)" />
+              </th>
+              <th class="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">Session Name</th>
+              <th class="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">Status</th>
+              <th class="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">Start Date</th>
+              <th class="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">End Date</th>
+              <th class="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">Terms</th>
+              <th class="px-5 py-3"></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 bg-white">
+            <tr v-for="session in paginatedSessions" :key="session.id" class="group transition hover:bg-slate-50/70">
+              <td v-if="isSelectMode" class="px-5 py-3.5">
+                <input type="checkbox" :checked="selectedSessions.has(session.id)" class="h-4 w-4 rounded border-slate-300 text-[#D4AF37]" @change="toggleItemSelection(session.id, $event.target.checked)" />
+              </td>
+              <td class="px-5 py-3.5 font-semibold text-slate-900">{{ session.name }}</td>
+              <td class="px-5 py-3.5"><StatusBadge :status="sessionStatus(session)" /></td>
+              <td class="px-5 py-3.5 text-sm text-slate-600 whitespace-nowrap">{{ fmtDate(session.startDate || session.start_date || '—') }}</td>
+              <td class="px-5 py-3.5 text-sm text-slate-600 whitespace-nowrap">{{ fmtDate(session.endDate || session.end_date || '—') }}</td>
+              <td class="px-5 py-3.5 text-sm text-slate-600">{{ getTermsCount(session) }}</td>
+              <td class="px-5 py-3.5">
+                <div class="flex items-center gap-2 opacity-0 transition group-hover:opacity-100">
+                  <button class="rounded-lg px-2.5 py-1 text-xs font-medium text-slate-600 ring-1 ring-slate-200 transition hover:bg-slate-100" @click="openModal(session)">Edit</button>
+                  <RouterLink :to="`/school-admin/terms/${session.id}`" class="rounded-lg px-2.5 py-1 text-xs font-medium text-[#0B1F3A] ring-1 ring-slate-200 transition hover:bg-slate-100">Terms</RouterLink>
+                  <button
+                    class="rounded-lg px-2.5 py-1 text-xs font-medium transition ring-1"
+                    :class="sessionStatus(session) === 'Current' ? 'text-red-600 ring-red-200 hover:bg-red-50' : 'text-emerald-600 ring-emerald-200 hover:bg-emerald-50'"
+                    :disabled="toggleLoading.has(session.id)"
+                    @click="toggleSession(session.id)"
+                  >{{ toggleLoading.has(session.id) ? '…' : sessionStatus(session) === 'Current' ? 'Deactivate' : 'Activate' }}</button>
+                  <button class="rounded-lg px-2.5 py-1 text-xs font-medium text-red-600 ring-1 ring-red-200 transition hover:bg-red-50" :disabled="deleteLoading.has(session.id)" @click="deleteSession(session.id)">{{ deleteLoading.has(session.id) ? '…' : 'Delete' }}</button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div v-if="sessionsStore.sessions.length" class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-5 py-3.5">
+        <p class="text-xs text-slate-500">Showing {{ startIndex }}–{{ endIndex }} of {{ sessionsStore.sessions.length }}</p>
+        <div class="flex items-center gap-1.5">
+          <button class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 ring-1 ring-slate-200 transition hover:bg-slate-100 disabled:opacity-40" :disabled="currentPage === 1" @click="currentPage--"><ChevronLeft class="h-4 w-4" /></button>
+          <span class="px-2 text-xs font-medium text-slate-700">{{ currentPage }} / {{ totalPages }}</span>
+          <button class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 ring-1 ring-slate-200 transition hover:bg-slate-100 disabled:opacity-40" :disabled="currentPage === totalPages" @click="currentPage++"><ChevronRight class="h-4 w-4" /></button>
+        </div>
+      </div>
+    </section>
+
+    <SessionModal :show="showModal" :session="selectedSession" @close="closeModal" @submit="submitSession" />
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue'
-import { Calendar, Plus } from 'lucide-vue-next'
-import { useRoute, useRouter } from 'vue-router'
-import SectionCard from '../components/SectionCard.vue'
+import { computed, onMounted, ref } from 'vue'
+import { RouterLink } from 'vue-router'
+import { Calendar, CheckSquare, ChevronLeft, ChevronRight, Plus } from 'lucide-vue-next'
+import AppButton from '../../shared/AppButton.vue'
 import SkeletonRows from '../components/SkeletonRows.vue'
 import StatusBadge from '../components/StatusBadge.vue'
-import AppButton from '../../shared/AppButton.vue'
-import ActionButton from '../../shared/ActionButton.vue'
 import SessionModal from '../components/SessionModal.vue'
 import { useSchoolAdminSessionsStore } from '../stores/sessions'
 import { useSchoolAdminUiStore } from '../stores/ui'
 import { fmtDate } from '@/lib/helpers'
 
-const headings = ['Session Name', 'Status', 'Start Date', 'End Date', 'Terms', 'Actions']
 const sessionsStore = useSchoolAdminSessionsStore()
 const uiStore = useSchoolAdminUiStore()
 
-// Multi-select state
 const isSelectMode = ref(false)
 const selectedSessions = ref(new Set())
-
-// Modal state
 const showModal = ref(false)
 const selectedSession = ref(null)
-
-// Loading states
 const toggleLoading = ref(new Set())
 const deleteLoading = ref(new Set())
-
-// Pagination state
 const itemsPerPage = 10
 const currentPage = ref(1)
 
-// Computed properties for multi-select
-const areAllSelected = computed(() => {
-  return sessionsStore.sessions.length > 0 && 
-         sessionsStore.sessions.every(session => selectedSessions.value.has(session.id))
-})
-
-const hasAnySelected = computed(() => selectedSessions.value.size > 0)
-
-// Pagination computed properties
-const totalPages = computed(() => Math.ceil(sessionsStore.sessions.length / itemsPerPage))
-const startIndex = computed(() => (currentPage.value - 1) * itemsPerPage + 1)
+const areAllSelected = computed(() =>
+  sessionsStore.sessions.length > 0 && sessionsStore.sessions.every((s) => selectedSessions.value.has(s.id)),
+)
+const totalPages = computed(() => Math.max(1, Math.ceil(sessionsStore.sessions.length / itemsPerPage)))
+const startIndex = computed(() => sessionsStore.sessions.length ? (currentPage.value - 1) * itemsPerPage + 1 : 0)
 const endIndex = computed(() => Math.min(currentPage.value * itemsPerPage, sessionsStore.sessions.length))
-const paginatedSessions = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage
-  const end = start + itemsPerPage
-  return sessionsStore.sessions.slice(start, end)
-})
+const paginatedSessions = computed(() => sessionsStore.sessions.slice((currentPage.value - 1) * itemsPerPage, currentPage.value * itemsPerPage))
 
-onMounted(async () => {
-  try {
-    await sessionsStore.fetchSessions()
-  } catch (error) {
-    uiStore.addToast({ title: 'Error', message: 'Failed to load sessions. Please check your connection.', variant: 'error' })
-  }
-})
-
-const closeModal = () => {
-  showModal.value = false
-  selectedSession.value = null
+const sessionStatus = (s) => (s.current || s.is_current ? 'Current' : 'Not current')
+const getTermsCount = (s) => {
+  const t = Array.isArray(s.terms) ? s.terms : Array.isArray(s.terms?.data) ? s.terms.data : sessionsStore.terms?.[s.id]
+  return Array.isArray(t) ? `${t.length} term${t.length !== 1 ? 's' : ''}` : '—'
 }
 
-const openModal = (session) => {
-  selectedSession.value = session
-  showModal.value = true
-}
-
-const reset = () => {
-  selectedSession.value = null
-}
-
-const sessionStatus = (session) => (session.current ? 'Current' : 'Not current')
-
-// Multi-select functionality
-const startSelectMode = () => {
-  isSelectMode.value = true
-  selectedSessions.value.clear()
-}
-
-const cancelSelectMode = () => {
-  isSelectMode.value = false
-  selectedSessions.value.clear()
-}
-
+const startSelectMode = () => { isSelectMode.value = true; selectedSessions.value = new Set() }
+const cancelSelectMode = () => { isSelectMode.value = false; selectedSessions.value = new Set() }
 const toggleSelectAll = (checked) => {
-  if (checked) {
-    sessionsStore.sessions.forEach(session => {
-      selectedSessions.value.add(session.id)
-    })
-  } else {
-    selectedSessions.value.clear()
-  }
+  const next = new Set(); if (checked) sessionsStore.sessions.forEach((s) => next.add(s.id)); selectedSessions.value = next
+}
+const toggleItemSelection = (id, checked) => {
+  const next = new Set(selectedSessions.value); checked ? next.add(id) : next.delete(id); selectedSessions.value = next
 }
 
-const toggleItemSelection = (id, checked) => {
-  if (checked) {
-    selectedSessions.value.add(id)
-  } else {
-    selectedSessions.value.delete(id)
-  }
-}
+const openModal = (s) => { selectedSession.value = s || null; showModal.value = true }
+const closeModal = () => { showModal.value = false; selectedSession.value = null }
 
 const deleteSelected = async () => {
-  if (!confirm(`Are you sure you want to delete ${selectedSessions.value.size} selected academic session(s)? This action cannot be undone.`)) {
-    return
-  }
-
+  const ids = Array.from(selectedSessions.value)
+  if (!confirm(`Delete ${ids.length} session(s)? This cannot be undone.`)) return
   try {
-    for (const id of selectedSessions.value) {
-      deleteLoading.value.add(id)
-    }
-    
-    for (const id of selectedSessions.value) {
-      await sessionsStore.deleteSession(id)
-    }
-    
-    selectedSessions.value.clear()
-    isSelectMode.value = false
-    uiStore.addToast({ 
-      title: 'Sessions Deleted', 
-      message: `${selectedSessions.value.size} academic session(s) have been deleted successfully.`, 
-      variant: 'success' 
-    })
-  } catch (error) {
-    uiStore.addToast({ 
-      title: 'Error', 
-      message: 'Failed to delete selected sessions.', 
-      variant: 'error' 
-    })
-  } finally {
-    // Clear all loading states
-    deleteLoading.value.clear()
-  }
+    ids.forEach((id) => deleteLoading.value.add(id))
+    for (const id of ids) await sessionsStore.deleteSession(id)
+    cancelSelectMode()
+    uiStore.addToast({ title: 'Sessions deleted', message: `${ids.length} session(s) deleted.`, variant: 'success' })
+  } catch { uiStore.addToast({ title: 'Error', message: 'Failed to delete sessions.', variant: 'error' }) }
+  finally { deleteLoading.value = new Set() }
 }
 
 const toggleSession = async (id) => {
-  const session = sessionsStore.sessions.find(s => s.id === id)
+  const session = sessionsStore.sessions.find((s) => s.id === id)
   const isActive = sessionStatus(session) === 'Current'
-  
   toggleLoading.value = new Set([...toggleLoading.value, id])
-  
   try {
-    if (isActive) {
-      // Deactivate - set is_current to false
-      await sessionsStore.saveSession({ 
-        id,
-        is_current: false 
-      })
-      uiStore.addToast({ title: 'Session deactivated', message: 'Academic session has been deactivated.', variant: 'success' })
-    } else {
-      // Activate - use set-current endpoint
-      await sessionsStore.activateSession(id)
-      uiStore.addToast({ title: 'Session activated', message: 'Current academic session updated.', variant: 'success' })
-    }
-  } catch (error) {
-    uiStore.addToast({ title: 'Error', message: isActive ? 'Failed to deactivate session.' : 'Failed to activate session.', variant: 'error' })
-  } finally {
-    toggleLoading.value = new Set([...toggleLoading.value].filter(loadingId => loadingId !== id))
-  }
+    if (isActive) { await sessionsStore.saveSession({ id, is_current: false }); uiStore.addToast({ title: 'Deactivated', message: 'Session deactivated.', variant: 'success' }) }
+    else { await sessionsStore.activateSession(id); uiStore.addToast({ title: 'Activated', message: 'Session set as current.', variant: 'success' }) }
+  } catch { uiStore.addToast({ title: 'Error', message: 'Failed to update session.', variant: 'error' }) }
+  finally { toggleLoading.value = new Set([...toggleLoading.value].filter((x) => x !== id)) }
 }
 
 const deleteSession = async (id) => {
-  if (!confirm('Are you sure you want to delete this academic session? This action cannot be undone and will also delete all associated terms.')) {
-    return
-  }
-  
+  if (!confirm('Delete this session? All associated terms will also be deleted.')) return
   deleteLoading.value = new Set([...deleteLoading.value, id])
-  
+  try { await sessionsStore.deleteSession(id); uiStore.addToast({ title: 'Deleted', message: 'Session deleted.', variant: 'success' }) }
+  catch { uiStore.addToast({ title: 'Error', message: 'Failed to delete session.', variant: 'error' }) }
+  finally { deleteLoading.value = new Set([...deleteLoading.value].filter((x) => x !== id)) }
+}
+
+const submitSession = async (data) => {
   try {
-    await sessionsStore.deleteSession(id)
-    uiStore.addToast({ title: 'Session deleted', message: 'Academic session has been deleted.', variant: 'success' })
-  } catch (error) {
-    uiStore.addToast({ title: 'Error', message: 'Failed to delete session.', variant: 'error' })
-  } finally {
-    deleteLoading.value = new Set([...deleteLoading.value].filter(loadingId => loadingId !== id))
-  }
+    const payload = { name: data.name, start_date: data.startDate ?? data.start_date, end_date: data.endDate ?? data.end_date, is_current: Boolean(data.isCurrent ?? data.is_current) }
+    data.id ? await sessionsStore.saveSession({ id: data.id, ...payload }) : await sessionsStore.createSession(payload)
+    uiStore.addToast({ title: 'Session saved', message: 'Academic session saved.', variant: 'success' })
+    setTimeout(closeModal, 100)
+  } catch { uiStore.addToast({ title: 'Error', message: 'Failed to save session.', variant: 'error' }); setTimeout(closeModal, 100) }
 }
 
-const submitSession = async (sessionData) => {
-  try {
-    const payload = {
-      name: sessionData.name,
-      start_date: sessionData.startDate ?? sessionData.start_date,
-      end_date: sessionData.endDate ?? sessionData.end_date,
-      is_current: Boolean(sessionData.isCurrent ?? sessionData.is_current),
-    }
-
-    if (sessionData.id) {
-      await sessionsStore.saveSession({ id: sessionData.id, ...payload })
-    } else {
-      await sessionsStore.createSession(payload)
-    }
-    
-    uiStore.addToast({ title: 'Session saved', message: 'Academic session has been saved.', variant: 'success' })
-    // Close modal after a short delay to ensure toast is visible
-    setTimeout(() => {
-      closeModal()
-    }, 100)
-  } catch (error) {
-    uiStore.addToast({ title: 'Error', message: 'Failed to save session.', variant: 'error' })
-    // Close modal after error toast as well
-    setTimeout(() => {
-      closeModal()
-    }, 100)
-  }
-}
-
-const getTermsCount = (session) => {
-  const terms = Array.isArray(session.terms)
-    ? session.terms
-    : Array.isArray(session.terms?.data)
-      ? session.terms.data
-      : sessionsStore.terms[session.id]
-
-  return Array.isArray(terms) ? terms.length : 0
-}
-
-const nextPage = () => {
-  if (currentPage.value < totalPages.value) {
-    currentPage.value++
-  }
-}
-
-const previousPage = () => {
-  if (currentPage.value > 1) {
-    currentPage.value--
-  }
-}
+onMounted(async () => {
+  try { await sessionsStore.fetchSessions() }
+  catch { uiStore.addToast({ title: 'Error', message: 'Failed to load sessions.', variant: 'error' }) }
+})
 </script>

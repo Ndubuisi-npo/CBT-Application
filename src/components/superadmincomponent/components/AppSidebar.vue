@@ -6,7 +6,7 @@
   ></div>
 
   <aside
-    class="fixed inset-y-0 left-0 z-50 flex h-screen shrink-0 flex-col border-r border-white/60 bg-[#0B1F3A] text-white shadow-2xl shadow-[#0B1F3A]/15 transition-transform duration-300 lg:sticky lg:z-auto"
+    class="fixed inset-y-0 left-0 z-50 flex h-screen shrink-0 flex-col border-r border-white/60 bg-[#0B1F3A] text-white shadow-2xl shadow-[#0B1F3A]/15 transition-transform duration-300 lg:sticky lg:min-h-screen lg:top-0 lg:z-auto lg:shadow-none"
     :class="[
       collapsed ? 'w-24' : 'w-72',
       mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',

@@ -1,6 +1,7 @@
 import { defineStore } from "pinia";
 import {
     getStudents,
+    getStudent,
     saveStudent,
     updateStudent,
     createStudent,
@@ -45,7 +46,7 @@ export const useSchoolAdminStudentsStore = defineStore(
             async fetchStudents(params = {}) {
                 this.loading = true;
                 try {
-                    const response = await getStudents({ status: 'active', ...params });
+                    const response = await getStudents({ status: 'active', include: 'studentProfile,studentProfile.class_arm,studentProfile.class_arm.class_level,studentProfile.class_level', ...params });
 
                     // Support either an array response (legacy/simple) or an object with `data` and `total`
                     if (Array.isArray(response)) {
@@ -67,6 +68,20 @@ export const useSchoolAdminStudentsStore = defineStore(
                 } finally {
                     this.loading = false;
                 }
+            },
+
+            async fetchStudent(id) {
+                const response = await getStudent(id);
+                const record = response?.student || response;
+                if (record?.id) {
+                    this.students = this.students.map((item) =>
+                        item.id === record.id ? record : item,
+                    );
+                    this.archivedStudents = this.archivedStudents.map((item) =>
+                        item.id === record.id ? record : item,
+                    );
+                }
+                return record;
             },
 
             async saveStudent(payload) {

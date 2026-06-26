@@ -6,7 +6,7 @@
           <button type="button" class="rounded-full bg-slate-100 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-slate-600">
             {{ totalQuestions }} questions
           </button>
-          <AppButton :icon="Plus" text="Create Question" variant="primary" size="md" @click="openEditor()" />
+          <AppButton :icon="Plus" text="Create Question" variant="primary" size="md" @click="$router.push('/teachers/questions/create')" />
         </div>
       </template>
 
@@ -29,7 +29,7 @@
           <!-- Topic filter removed -->
         </div>
 
-        <div class="flex flex-wrap items-center justify-between gap-3 rounded-[24px] bg-slate-50 p-4">
+        <div class="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-slate-50 p-4">
           <div class="flex flex-wrap items-center gap-3 text-sm text-slate-600">
             <button type="button" class="rounded-full bg-white px-4 py-2 font-semibold text-slate-700 shadow-sm">
               {{ filteredQuestions.length }} filtered
@@ -50,7 +50,7 @@
     </SectionCard>
 
     <div v-if="isLoading" class="space-y-4">
-      <div v-for="item in 6" :key="item" class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
+      <div v-for="item in 6" :key="item" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <div class="animate-pulse space-y-4">
           <div class="h-5 w-1/4 rounded bg-slate-100"></div>
           <div class="h-4 rounded bg-slate-100"></div>
@@ -64,7 +64,7 @@
       </div>
     </div>
 
-    <div v-else-if="!paginatedQuestions.length" class="rounded-[28px] border border-dashed border-slate-300 bg-white px-6 py-16 text-center shadow-sm">
+    <div v-else-if="!paginatedQuestions.length" class="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center shadow-sm">
       <div class="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-slate-100">
         <FileQuestion class="h-10 w-10 text-slate-400" />
       </div>
@@ -74,7 +74,7 @@
       </p>
       <div class="mt-8 flex flex-wrap items-center justify-center gap-3">
         <AppButton text="Reset Filters" variant="outline" @click="clearFilters" />
-        <AppButton :icon="Plus" text="Create Question" variant="primary" @click="openEditor()" />
+        <AppButton :icon="Plus" text="Create Question" variant="primary" @click="$router.push('/teachers/questions/create')" />
       </div>
     </div>
 
@@ -82,7 +82,7 @@
       <article
         v-for="question in paginatedQuestions"
         :key="question.id"
-        class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm transition hover:border-[#D4AF37]/70 hover:shadow-md"
+        class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-[#D4AF37]/70 hover:shadow-md"
       >
         <div class="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
           <div class="flex min-w-0 flex-1 gap-4">
@@ -91,7 +91,7 @@
             </label>
             <div class="min-w-0 flex-1">
               <div class="flex flex-wrap items-center gap-2">
-                <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">Multiple Choice</span>
+                <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{{ getQuestionTypeLabel(question) }}</span>
                 <span class="rounded-full px-3 py-1 text-xs font-semibold" :class="question.status === 'Published' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'">
                   {{ question.status }}
                 </span>
@@ -105,7 +105,9 @@
                 <span class="rounded-full bg-slate-100 px-3 py-2">{{ getQuestionMarks(question) }} marks</span>
                 <span class="rounded-full bg-slate-100 px-3 py-2">Used {{ question.usageCount || question.usage_count || 0 }} times</span>
               </div>
-              <div v-if="question.options?.length" class="mt-4 grid gap-2 md:grid-cols-2">
+
+              <!-- MCQ / True-False: show options -->
+              <div v-if="isChoiceBasedQuestion(question) && question.options?.length" class="mt-4 grid gap-2 md:grid-cols-2">
                 <div
                   v-for="(option, idx) in (question.options || []).slice(0, 4)"
                   :key="option.id || idx"
@@ -116,18 +118,33 @@
                   <span v-if="isQuestionOptionCorrect(question, option)" class="shrink-0 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700">Correct</span>
                 </div>
               </div>
+
+              <!-- FITB: show acceptable answers -->
+              <div v-else-if="isFillInBlankQuestion(question)" class="mt-4">
+                <p class="text-xs font-semibold text-slate-500 mb-2">Acceptable answers:</p>
+                <div class="flex flex-wrap gap-2">
+                  <span
+                    v-for="(ans, idx) in (question.acceptable_answers || []).slice(0, 4)"
+                    :key="idx"
+                    class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-800"
+                  >
+                    {{ ans.content || ans }}
+                  </span>
+                  <span v-if="!(question.acceptable_answers?.length)" class="text-xs text-slate-400 italic">No answers configured</span>
+                </div>
+              </div>
             </div>
           </div>
 
           <div class="flex flex-wrap items-center gap-2 lg:justify-end">
             <AppButton :icon="Eye" text="Preview" variant="outline" size="sm" @click="previewQuestion(question)" />
-            <AppButton :icon="PencilLine" text="Edit" variant="secondary" size="sm" @click="openEditor(question)" />
+            <AppButton :icon="PencilLine" text="Edit" variant="secondary" size="sm" @click="$router.push(`/teachers/questions/create?edit=${question.id}`)" />
             <!-- <AppButton :icon="question.status === 'Published' ? FilePenLine : Send" :text="question.status === 'Published' ? 'Draft' : 'Publish'" variant="ghost" size="sm" @click="toggleStatus(question)" /> -->
           </div>
         </div>
       </article>
 
-      <div class="flex flex-col gap-3 rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+      <div class="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
         <p class="text-sm text-slate-500">Showing {{ pageStart }} - {{ pageEnd }} of {{ filteredQuestions.length }} questions</p>
         <div class="flex items-center gap-2">
           <AppButton text="Previous" variant="outline" size="sm" :disabled="currentPage === 1" @click="currentPage -= 1" />
@@ -146,164 +163,8 @@
       </div>
     </div>
 
-    <div v-if="showEditor" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 px-4 py-8">
-      <div class="max-h-[92vh] w-full max-w-5xl overflow-y-auto rounded-[28px] bg-white shadow-2xl">
-        <div class="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white px-6 py-5">
-          <div>
-            <p class="text-xs font-semibold uppercase tracking-[0.24em] text-[#D4AF37]">{{ editorModeLabel }}</p>
-            <h2 class="mt-1 text-2xl font-semibold text-slate-900">{{ form.id ? 'Refine Question' : 'Create New Question' }}</h2>
-          </div>
-          <AppButton :icon="X" variant="ghost" size="sm" @click="closeEditor" />
-        </div>
-
-        <div class="grid gap-6 p-6 xl:grid-cols-[1.2fr_0.8fr]">
-          <div class="space-y-6">
-            <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <div class="space-y-2 text-sm font-medium text-slate-700">
-                <span>Question Type</span>
-                <div class="question-filter !py-3 flex items-center font-semibold text-slate-600">Multiple Choice</div>
-              </div>
-              <label class="space-y-2 text-sm font-medium text-slate-700">
-                <span>Class Level</span>
-                <select v-model="form.class_level_id" class="question-filter !py-3" @change="onClassLevelChange">
-                  <option value="">Select class</option>
-                  <option v-for="classItem in modalClassLevels" :key="classItem.id" :value="classItem.id">{{ classItem.name }}</option>
-                </select>
-              </label>
-              <label class="space-y-2 text-sm font-medium text-slate-700">
-                <span>Class Arm</span>
-                <select v-model="form.class_arm_id" class="question-filter !py-3">
-                  <option value="">Select arm</option>
-                  <option v-for="arm in examsStore.classArms" :key="arm.id" :value="arm.id">{{ arm.name }}</option>
-                </select>
-              </label>
-              <label class="space-y-2 text-sm font-medium text-slate-700">
-                <span>Subject</span>
-                <select v-model="form.subject_id" class="question-filter !py-3" @change="onSubjectChange">
-                  <option value="">Select subject</option>
-                  <option v-for="subject in modalSubjects" :key="subject.id" :value="subject.id">{{ subject.name }}</option>
-                </select>
-              </label>
-              
-              <label class="space-y-2 text-sm font-medium text-slate-700">
-                <span>Marks</span>
-                <input v-model.number="form.marks" type="number" min="0.5" step="0.5" class="question-input" />
-              </label>
-            </div>
-
-            <label class="block space-y-2 text-sm font-medium text-slate-700">
-              <span>Question Content</span>
-              <div class="rounded-[24px] border border-slate-300 bg-white">
-                <div class="flex flex-wrap gap-2 border-b border-slate-200 px-4 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-                  <span class="rounded-full bg-slate-100 px-3 py-2">Objective Question</span>
-                  <span class="rounded-full bg-slate-100 px-3 py-2">Auto-Graded</span>
-                </div>
-                <textarea
-                  v-model="form.content"
-                  rows="6"
-                  class="min-h-[170px] w-full rounded-b-[24px] border-0 px-4 py-4 text-sm outline-none"
-                  placeholder="Type the full multiple choice question stem here."
-                ></textarea>
-              </div>
-            </label>
-
-            <div class="space-y-4">
-              <div class="flex items-center justify-between">
-                <div>
-                  <h3 class="text-lg font-semibold text-slate-900">Answer Options</h3>
-                  <p class="text-sm text-slate-500">Add options, label them (optional) and mark correct answers.</p>
-                </div>
-                <AppButton :icon="Plus" text="Add Option" variant="outline" size="sm" @click="addOption" />
-              </div>
-
-              <div class="space-y-3">
-                <div v-for="(option, index) in form.options" :key="index" class="grid grid-cols-[auto_1fr_auto] gap-3 items-center rounded-[24px] border border-slate-200 p-4">
-                  <div class="flex flex-col items-center">
-                    <input type="radio" :name="`correct-${form.id || 'new'}`" :checked="option.is_correct" @change="markCorrect(index)" class="h-4 w-4 text-[#0B1F3A]" />
-                    <div class="text-xs text-slate-500">{{ String.fromCharCode(65 + index) }}</div>
-                  </div>
-                  <div class="space-y-2">
-                    <input v-model="option.content" type="text" class="question-input w-full" placeholder="Option text" />
-                    <div class="flex items-center gap-2">
-                      <input v-model="option.label" maxlength="10" placeholder="Label (max 10)" class="question-input w-36" />
-                      <input v-model.number="option.order" type="number" placeholder="Order" class="question-input w-24" />
-                    </div>
-                  </div>
-                  <div class="flex items-start">
-                    <AppButton :icon="Trash2" variant="ghost" size="sm" @click="removeOption(index)" />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="space-y-6">
-            <div class="rounded-[24px] border border-slate-200 bg-slate-50 p-5">
-              <div class="flex items-center justify-between">
-                <h3 class="text-lg font-semibold text-slate-900">Preview</h3>
-                <button type="button" class="text-sm font-semibold text-[#0B1F3A] hover:text-[#D4AF37]" @click="previewQuestion(form)">Open full preview</button>
-              </div>
-              <div class="mt-5 rounded-[24px] bg-white p-5 shadow-sm">
-                <div class="flex flex-wrap gap-2">
-                  <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">Multiple Choice</span>
-                  <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{{ selectedSubjectName || 'Subject' }}</span>
-                  <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{{ selectedClassName || 'Class' }}</span>
-                  <span v-if="selectedArmName" class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{{ selectedArmName }}</span>
-                </div>
-                <p class="mt-4 text-sm leading-6 text-slate-800">{{ form.content || 'Your question preview will appear here once you start typing.' }}</p>
-                <div class="mt-4 space-y-2">
-                  <div
-                    v-for="(option, index) in form.options.filter(o => o && o.content && o.content.trim().length)"
-                    :key="index"
-                    class="rounded-2xl border px-4 py-3 text-sm"
-                    :class="option.is_correct ? 'border-emerald-300 bg-emerald-50 text-emerald-900 font-semibold shadow-sm' : 'border-slate-200 bg-slate-50 text-slate-600'"
-                  >
-                    {{ String.fromCharCode(65 + index) }}. {{ getOptionContent(option) }}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="rounded-[24px] border border-slate-200 bg-white p-5">
-              <h3 class="text-lg font-semibold text-slate-900">Validation</h3>
-              <ul class="mt-4 space-y-3 text-sm text-slate-600">
-                <li class="flex items-center gap-3">
-                  <span class="h-2.5 w-2.5 rounded-full" :class="form.subject_id ? 'bg-emerald-500' : 'bg-rose-400'"></span>
-                  Subject assigned
-                </li>
-                <li class="flex items-center gap-3">
-                  <span class="h-2.5 w-2.5 rounded-full" :class="form.content.trim().length ? 'bg-emerald-500' : 'bg-rose-400'"></span>
-                  Question stem added
-                </li>
-                <li class="flex items-center gap-3">
-                  <span class="h-2.5 w-2.5 rounded-full" :class="hasValidAnswer ? 'bg-emerald-500' : 'bg-rose-400'"></span>
-                  Correct option selected
-                </li>
-              </ul>
-            </div>
-
-            <div class="rounded-[24px] border border-slate-200 bg-white p-5">
-              <h3 class="text-lg font-semibold text-slate-900">Save State</h3>
-              <p class="mt-3 text-sm leading-6 text-slate-500">
-                Drafts are useful for questions awaiting moderation or diagrams. Published questions become available immediately in exam creation.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div class="sticky bottom-0 z-10 flex flex-col gap-3 border-t border-slate-200 bg-white px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
-          <p class="text-sm text-slate-500">All changes are kept in mock state for this showcase experience.</p>
-          <div class="flex flex-wrap items-center gap-2">
-            <AppButton text="Cancel" variant="ghost" @click="closeEditor" />
-            <AppButton text="Save Draft" variant="outline" @click="submitQuestion('Draft')" />
-            <AppButton :icon="Send" text="Publish Question" variant="primary" @click="submitQuestion('Published')" />
-          </div>
-        </div>
-      </div>
-    </div>
-
     <div v-if="previewItem" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 px-4">
-      <div class="w-full max-w-3xl rounded-[28px] bg-white p-6 shadow-2xl">
+      <div class="w-full max-w-3xl rounded-2xl bg-white p-6 shadow-2xl">
         <div class="flex items-start justify-between gap-4">
           <div>
             <p class="text-xs font-semibold uppercase tracking-[0.24em] text-[#D4AF37]">Question Preview</p>
@@ -311,13 +172,15 @@
           </div>
           <AppButton :icon="X" variant="ghost" @click="previewItem = null" />
         </div>
-        <div class="mt-6 rounded-[24px] bg-slate-50 p-5">
-            <div class="flex flex-wrap gap-2">
-            <span class="rounded-full bg-white px-3 py-2 text-xs font-semibold text-slate-600">Multiple Choice</span>
+        <div class="mt-6 rounded-2xl bg-slate-50 p-5">
+          <div class="flex flex-wrap gap-2">
+            <span class="rounded-full bg-white px-3 py-2 text-xs font-semibold text-slate-600">{{ getQuestionTypeLabel(previewItem) }}</span>
             <span class="rounded-full bg-white px-3 py-2 text-xs font-semibold text-slate-600">{{ previewItem.marks }} marks</span>
           </div>
           <p class="mt-5 text-sm leading-7 text-slate-800">{{ previewItem.content }}</p>
-          <div v-if="previewItem.options?.length" class="mt-5 space-y-3">
+
+          <!-- MCQ / True-False options -->
+          <div v-if="isChoiceBasedQuestion(previewItem) && previewItem.options?.length" class="mt-5 space-y-3">
             <div
               v-for="(option, index) in previewItem.options"
               :key="option.id || index"
@@ -327,9 +190,28 @@
               <span>{{ String.fromCharCode(65 + index) }}. {{ getOptionContent(option) }}</span>
               <span v-if="isQuestionOptionCorrect(previewItem, option)" class="ml-3 rounded-full bg-emerald-200 px-2.5 py-1 text-xs font-semibold text-emerald-800">Correct</span>
             </div>
+            <div class="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700">
+              Correct answer: {{ getQuestionCorrectAnswerText(previewItem) || 'Not set' }}
+            </div>
           </div>
-          <div class="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700">
-            Correct answer: {{ getQuestionCorrectAnswerText(previewItem) || 'Not set' }}
+
+          <!-- FITB acceptable answers -->
+          <div v-else-if="isFillInBlankQuestion(previewItem)" class="mt-5">
+            <div class="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-3 text-sm text-slate-400 text-center mb-4">
+              [ Student types their answer here ]
+            </div>
+            <p class="text-xs font-semibold text-slate-500 mb-2">Acceptable answers:</p>
+            <div class="flex flex-wrap gap-2">
+              <span
+                v-for="(ans, i) in (previewItem.acceptable_answers || [])"
+                :key="i"
+                class="rounded-full bg-emerald-100 px-3 py-1.5 text-xs font-medium text-emerald-800"
+              >
+                {{ ans.content || ans }}
+                <span v-if="ans.case_sensitive" class="ml-1 opacity-60">(case-sensitive)</span>
+              </span>
+              <span v-if="!previewItem.acceptable_answers?.length" class="text-xs text-slate-400 italic">No acceptable answers configured</span>
+            </div>
           </div>
         </div>
       </div>
@@ -338,7 +220,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onActivated, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { Eye, FilePenLine, FileQuestion, PencilLine, Plus, Search, Send, Trash2, X } from 'lucide-vue-next'
 import AppButton from '../../shared/AppButton.vue'
@@ -348,6 +230,13 @@ import SectionCard from '../components/SectionCard.vue'
 import { useTeachersQuestionsStore } from '../stores/questions'
 import { getSubjects, getClassLevels } from '../services/api/exams'
 import { getAuthUser } from '../../../js/lib/auth'
+import { isChoiceBased, isFillInBlank, QUESTION_TYPE_LABELS } from '../../../types/question'
+
+// Returns the API-canonical type string for a question
+const getQuestionApiType = (question) => question.type || ''
+const isChoiceBasedQuestion = (question) => isChoiceBased(getQuestionApiType(question))
+const isFillInBlankQuestion = (question) => isFillInBlank(getQuestionApiType(question))
+const getQuestionTypeLabel = (question) => QUESTION_TYPE_LABELS[getQuestionApiType(question)] || question.type || 'Multiple Choice'
 
 const uiStore = useSchoolAdminUiStore()
 const examsStore = useTeacherExamsStore()
@@ -434,7 +323,7 @@ const getQuestionTopic = (question) => questionStringValue(question.topic) || qu
 const getQuestionClassName = (question) => {
   return questionStringValue(question.className)
     || questionStringValue(question.class_name)
-    || questionStringValue(question.class_level)
+    || questionStringValue(question.class_level_name)
     || questionStringValue(question.classLevel)
     || questionStringValue(question.class)
     || ''
@@ -895,10 +784,26 @@ const onClassLevelChange = async () => {
   }
 }
 
+const loadQuestionBankPage = async () => {
+  try {
+    await questionsStore.fetchQuestions()
+  } catch (error) {
+    uiStore.addToast({
+      title: 'Unable to load questions',
+      message: error.message || 'Unable to load the question bank.',
+      variant: 'error',
+    })
+  }
+}
+
 onMounted(async () => {
-  await questionsStore.fetchQuestions()
-  await loadGlobalAssignments()
+  await Promise.all([
+    loadQuestionBankPage(),
+    loadGlobalAssignments(),
+  ])
 })
+
+onActivated(loadQuestionBankPage)
 </script>
 
 <style scoped>

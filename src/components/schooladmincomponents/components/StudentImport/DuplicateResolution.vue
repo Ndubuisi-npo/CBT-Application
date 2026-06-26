@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-3 rounded-[24px] border border-slate-200 bg-slate-50 p-4">
+  <div class="space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
     <p class="text-sm font-semibold text-slate-900">How would you like to handle duplicates?</p>
 
     <div class="space-y-3">

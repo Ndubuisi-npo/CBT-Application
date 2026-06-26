@@ -6,7 +6,7 @@
       </template>
 
       <div
-        class="rounded-[24px] border-2 border-dashed transition"
+        class="rounded-2xl border-2 border-dashed transition"
         :class="isDragging ? 'border-[#0B1F3A] bg-slate-50' : 'border-slate-300 bg-white'"
         @dragenter="handleDragEnter"
         @dragover="handleDragOver"

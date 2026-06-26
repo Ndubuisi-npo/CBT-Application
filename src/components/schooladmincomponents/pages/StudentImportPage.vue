@@ -11,7 +11,7 @@
     />
 
     <!-- Loading state: Spinner -->
-    <div v-if="state.page === 'file_selected'" class="rounded-[24px] border border-slate-200 bg-white p-12 text-center">
+    <div v-if="state.page === 'file_selected'" class="rounded-2xl border border-slate-200 bg-white p-12 text-center">
       <div class="flex justify-center">
         <div class="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-[#0B1F3A]"></div>
       </div>
@@ -44,7 +44,7 @@
     />
 
     <!-- Error panel -->
-    <div v-if="state.page === 'error'" class="rounded-[24px] border border-rose-200 bg-rose-50 p-6">
+    <div v-if="state.page === 'error'" class="rounded-2xl border border-rose-200 bg-rose-50 p-6">
       <div class="flex items-start gap-4">
         <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-rose-100">
           <AlertCircle class="h-6 w-6 text-rose-600" />

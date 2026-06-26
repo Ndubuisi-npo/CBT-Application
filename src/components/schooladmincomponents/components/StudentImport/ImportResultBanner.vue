@@ -1,5 +1,5 @@
 <template>
-  <div class="rounded-[24px] border border-emerald-200 bg-emerald-50 p-6">
+  <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-6">
     <div class="flex items-start justify-between gap-4">
       <div>
         <h3 class="text-lg font-semibold text-emerald-900">Import successful!</h3>

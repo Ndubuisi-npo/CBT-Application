@@ -2,7 +2,7 @@
   <div class="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
     <SectionCard title="Classes" subtitle="Manage classes and class levels.">
       <SkeletonRows v-if="classesStore.loading" :columns="3" />
-      <div v-else class="overflow-hidden rounded-[24px] border border-slate-200">
+      <div v-else class="overflow-hidden rounded-2xl border border-slate-200">
         <div class="overflow-x-auto">
           <table class="min-w-full divide-y divide-slate-200 bg-white">
             <thead class="bg-slate-50">

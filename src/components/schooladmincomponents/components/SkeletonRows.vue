@@ -1,14 +1,25 @@
 <template>
-  <div class="space-y-4">
-    <div v-for="row in rows" :key="row" class="grid gap-4 rounded-2xl border border-slate-100 bg-slate-50 p-4" :style="{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }">
-      <div v-for="column in columns" :key="column" class="h-5 animate-pulse rounded-xl bg-slate-200"></div>
-    </div>
+  <div class="overflow-x-auto">
+    <table class="min-w-full divide-y divide-slate-100">
+      <tbody class="divide-y divide-slate-100 bg-white">
+        <tr v-for="row in rows" :key="row">
+          <td v-for="col in columns" :key="col" class="px-5 py-4">
+            <div
+              class="h-4 animate-pulse rounded-lg bg-slate-100"
+              :style="{ width: widths[col % widths.length] }"
+            />
+          </td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 </template>
 
 <script setup>
-const props = defineProps({
+defineProps({
   rows: { type: Number, default: 5 },
   columns: { type: Number, default: 4 },
 })
+
+const widths = ['60%', '40%', '80%', '30%', '50%', '70%']
 </script>

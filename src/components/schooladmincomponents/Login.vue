@@ -52,7 +52,7 @@
           :class="showForgotPassword ? '-translate-x-full opacity-0 absolute' : 'translate-x-0 opacity-100 relative'"
         >
           <div class="mb-10 text-center">
-            <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-[24px] bg-[#0B1F3A] text-white shadow-lg shadow-[#0B1F3A]/20">
+            <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-[#0B1F3A] text-white shadow-lg shadow-[#0B1F3A]/20">
               <School class="h-8 w-8 text-[#D4AF37]" />
             </div>
 

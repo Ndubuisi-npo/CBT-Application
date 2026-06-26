@@ -1,4 +1,5 @@
 import { apiFetch, extractErrorMessage } from '../../../../js/lib/api'
+import { isChoiceBased, isFillInBlank, buildOptionPayload } from '../../../../types/question'
 
 export async function getQuestions(params = {}) {
   try {
@@ -16,28 +17,40 @@ export async function getQuestion(id) {
   }
 }
 
+/**
+ * Create a question.
+ *
+ * Per the PDF:
+ *   - MCQ/TrueFalse: options array with is_correct
+ *   - FITB: options array WITHOUT is_correct (server treats all as acceptable answers)
+ *
+ * The caller must pass `type` as one of: 'mcq' | 'true_false' | 'fill_in_blank'
+ */
 export async function createQuestion(payload) {
   try {
-    const body = {}
+    const type = payload.type || 'mcq'
 
-    body.class_level_id = payload.class_level_id || payload.className || payload.class || ''
-    if (!body.class_level_id) throw new Error('class_level_id is required')
-
-    body.content = (payload.content || payload.question_text || '').trim()
-    if (!body.content) throw new Error('content is required')
-
-    body.type = payload.type || 'Multiple Choice'
-
-    if (payload.subject_id) body.subject_id = payload.subject_id
-    else if (payload.subject) body.subject_id = payload.subject
-
-    if (payload.default_marks !== undefined || payload.marks !== undefined || payload.points !== undefined) {
-      body.default_marks = Number(payload.default_marks ?? payload.marks ?? payload.points)
+    const body = {
+      type,
+      content: (payload.content || payload.question_text || '').trim(),
+      class_level_id: payload.class_level_id || '',
     }
 
+    if (!body.content) throw new Error('content is required')
+    if (!body.class_level_id) throw new Error('class_level_id is required')
 
-    // Always include options array
-    body.options = Array.isArray(payload.options) ? payload.options : []
+    if (payload.subject_id) body.subject_id = payload.subject_id
+
+    if (payload.default_marks !== undefined || payload.marks !== undefined) {
+      body.default_marks = Number(payload.default_marks ?? payload.marks ?? 1)
+    }
+
+    if (payload.is_active !== undefined) body.is_active = payload.is_active
+    if (payload.status !== undefined) body.status = payload.status
+
+    // Build type-correct options payload
+    const rawOptions = Array.isArray(payload.options) ? payload.options : []
+    body.options = buildOptionPayload(type, rawOptions)
 
     return await apiFetch('/api/questions', {
       method: 'POST',
@@ -48,24 +61,30 @@ export async function createQuestion(payload) {
   }
 }
 
+/**
+ * Update a question.
+ * Applies the same type-based options logic as createQuestion.
+ */
 export async function updateQuestion(id, payload) {
   try {
-    // Use PUT per API spec; accept partial fields
     const body = {}
+
     if (payload.content !== undefined) body.content = payload.content
+    if (payload.type !== undefined) body.type = payload.type
     if (payload.default_marks !== undefined) body.default_marks = payload.default_marks
     else if (payload.marks !== undefined) body.default_marks = payload.marks
     if (payload.image_url !== undefined) body.image_url = payload.image_url
     if (payload.is_active !== undefined) body.is_active = payload.is_active
     if (payload.status !== undefined) body.status = payload.status
     if (payload.subject_id !== undefined) body.subject_id = payload.subject_id
-    else if (payload.subject !== undefined) body.subject_id = payload.subject
-    if (payload.topic_id !== undefined) body.topic_id = payload.topic_id
-    else if (payload.topic !== undefined) body.topic = payload.topic
     if (payload.class_level_id !== undefined) body.class_level_id = payload.class_level_id
-    else if (payload.className !== undefined) body.class_level_id = payload.className
-    // Always include options array if provided
-    if (payload.options !== undefined) body.options = Array.isArray(payload.options) ? payload.options : []
+
+    // Type-aware options payload
+    if (payload.options !== undefined) {
+      const type = payload.type || 'mcq'
+      const rawOptions = Array.isArray(payload.options) ? payload.options : []
+      body.options = buildOptionPayload(type, rawOptions)
+    }
 
     return await apiFetch(`/api/questions/${id}`, {
       method: 'PUT',
@@ -78,7 +97,6 @@ export async function updateQuestion(id, payload) {
 
 export async function addQuestionToExam(examId, payload) {
   try {
-    // payload: { question_id: string, marks_override?: number|null }
     const body = { question_id: payload.question_id }
     if (payload.marks_override !== undefined) body.marks_override = payload.marks_override
     return await apiFetch(`/api/exams/${examId}/questions`, {

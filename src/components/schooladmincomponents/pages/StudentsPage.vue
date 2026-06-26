@@ -1,342 +1,326 @@
 <template>
   <div class="space-y-6">
-    <SectionCard v-if="!showArchived" title="Students" subtitle="Manage student records, enrollment, academic progress, and class assignments.">
-      <template #header>
-        <div class="flex w-full min-w-0 flex-nowrap items-center justify-end gap-2 overflow-x-auto pb-1">
-          <div
-            class="overflow-hidden transition-all duration-300 ease-out"
-            :class="isSearchExpanded ? 'min-w-[180px] flex-1' : 'w-11 flex-none'"
-          >
-            <button
-              v-if="!isSearchExpanded"
-              type="button"
-              class="inline-flex h-11 w-11 items-center justify-center rounded-lg bg-slate-100 text-slate-700 transition hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:ring-offset-2"
-              title="Search students"
-              aria-label="Search students"
-              @click="expandSearch"
-            >
-              <Search class="h-4 w-4" />
-            </button>
-            <div v-else class="relative">
-              <Search class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <input
-                ref="searchInput"
-                v-model="searchQuery"
-                type="text"
-                class="h-11 w-full rounded-lg border-2 border-[#0B1F3A] bg-white py-2 pl-12 pr-11 text-sm text-slate-900 placeholder:text-slate-500 transition-colors duration-200 focus:border-[#D4AF37] focus:outline-none focus:ring-0"
-                placeholder="Search students..."
-                @keydown.esc="collapseSearch"
-              />
-              <button
-                type="button"
-                class="absolute right-3 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
-                title="Close search"
-                aria-label="Close search"
-                @click="collapseSearch"
-              >
-                <X class="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-          <AppButton
-            v-if="!isSelectMode"
-            @click="openModal()"
-            :icon="Plus"
-            :text="isSearchExpanded ? '' : 'Create Student'"
-            variant="primary"
-            size="base"
-            class="shrink-0 whitespace-nowrap"
-            title="Create student"
-            aria-label="Create student"
+
+    <!-- ── Page header ────────────────────────────────────────────────────── -->
+    <div class="flex flex-wrap items-start justify-between gap-4">
+      <div>
+        <p class="text-xs font-semibold uppercase tracking-[0.28em] text-[#D4AF37]">School Admin</p>
+        <h1 class="mt-1 text-2xl font-semibold tracking-tight text-slate-900">
+          {{ showArchived ? 'Archived Students' : 'Students' }}
+        </h1>
+        <p class="mt-1 text-sm text-slate-500">
+          {{ showArchived ? 'View and restore revoked student accounts.' : 'Manage enrollment, class assignments, and student records.' }}
+        </p>
+      </div>
+      <div v-if="!showArchived" class="flex flex-wrap items-center gap-2">
+        <AppButton :icon="UploadCloud" text="Import" variant="outline" size="sm" @click="goToImport" />
+        <AppButton :icon="Plus" text="Add Student" variant="primary" size="sm" @click="openModal()" />
+      </div>
+      <div v-else class="flex items-center gap-2">
+        <AppButton text="← Back to Active" variant="outline" size="sm" @click="toggleView" />
+      </div>
+    </div>
+
+    <!-- ── Active Students table ──────────────────────────────────────────── -->
+    <section v-if="!showArchived" class="rounded-2xl border border-slate-200 bg-white">
+
+      <!-- Table toolbar -->
+      <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
+        <!-- Search -->
+        <div class="relative w-full max-w-sm">
+          <Search class="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <input
+            v-model="searchQuery"
+            type="text"
+            placeholder="Search students…"
+            class="h-9 w-full rounded-lg border border-slate-200 bg-slate-50 pl-10 pr-4 text-sm text-slate-900 transition placeholder:text-slate-400 focus:border-[#0B1F3A] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#D4AF37]"
           />
+        </div>
+        <!-- Bulk / select actions -->
+        <div class="flex items-center gap-2">
+          <span v-if="selectedStudents.size" class="text-xs text-slate-500">{{ selectedStudents.size }} selected</span>
           <AppButton
-            v-if="!isSelectMode"
-            @click="goToImport"
-            :icon="UploadCloud"
-            :text="isSearchExpanded ? '' : 'Import Students'"
-            variant="outline"
-            size="base"
-            class="shrink-0 whitespace-nowrap"
-            title="Import students"
-            aria-label="Import students"
-          />
-          <AppButton 
-            v-if="!isSelectMode"
-            @click="toggleView" 
-            :icon="Archive"
-            :text="isSearchExpanded ? '' : 'Show Archived'"
-            variant="outline"
-            size="base"
-            class="shrink-0 whitespace-nowrap"
-            title="Show archived"
-            aria-label="Show archived"
-          />
-          <AppButton
-            v-if="!isSelectMode"
-            @click="startSelectMode"
-            :icon="CheckSquare"
-            :text="isSearchExpanded ? '' : 'Select'"
-            variant="secondary"
-            size="base"
-            class="shrink-0 whitespace-nowrap"
-            title="Select students"
-            aria-label="Select students"
+            v-if="selectedStudents.size"
+            text="Revoke Selected"
+            variant="warning"
+            size="sm"
+            :processing="isRevokingSelected"
+            @click="revokeSelectedStudents"
           />
           <AppButton
             v-if="isSelectMode"
+            text="Cancel"
+            variant="ghost"
+            size="sm"
             @click="cancelSelectMode"
-            text="Cancel Select"
-            variant="outline"
-            size="base"
-            class="shrink-0 whitespace-nowrap"
           />
           <AppButton
-            v-if="selectedStudents.size > 0"
-            @click="revokeSelectedStudents"
-            text="Revoke Selected"
-            variant="warning"
-            size="base"
-            loadingText="Revoking..."
-            :processing="isRevokingSelected"
-            :disabled="isRevokingSelected"
-            class="shrink-0 whitespace-nowrap"
-          />
-          
-        </div>
-      </template>
-      <SkeletonRows v-if="studentsStore.loading" :columns="5" />
-      <div v-else-if="filteredStudents.length === 0" class="rounded-[24px] border border-slate-200 bg-white p-12 text-center">
-        <div class="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-slate-100">
-          <GraduationCap class="h-12 w-12 text-slate-400" />
-        </div>
-        <h3 class="mt-6 text-xl font-semibold text-slate-900">{{ searchQuery ? 'No Students Found' : 'No Students' }}</h3>
-        <p class="mt-2 text-slate-600">
-          {{ searchQuery ? 'No students match your search criteria.' : 'Get started by adding your first student to manage your school enrollment.' }}
-        </p>
-        <div class="mt-8">
-          <AppButton v-if="!searchQuery" @click="openModal()" :icon="Plus" text="Add Your First Student" variant="primary" size="lg" />
-          <AppButton v-else @click="clearSearch" text="Clear Search" variant="outline" size="lg" />
-        </div>
-      </div>
-      <div v-else class="overflow-hidden rounded-[24px] border border-slate-200">
-        <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-slate-200 bg-white">
-            <thead class="bg-slate-50">
-              <tr>
-                <th v-if="isSelectMode" class="px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-                  <input
-                    type="checkbox"
-                    :checked="areAllVisibleStudentsSelected"
-                    class="rounded border-slate-300"
-                    @change="toggleVisibleStudents($event.target.checked)"
-                  />
-                </th>
-                <th v-for="heading in headings" :key="heading" class="px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">{{ heading }}</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100">
-              <tr v-for="student in paginatedStudents" :key="student.id" class="transition hover:bg-slate-50/80">
-                <td v-if="isSelectMode" class="px-5 py-4">
-                  <input
-                    type="checkbox"
-                    :checked="selectedStudents.has(student.id)"
-                    class="rounded border-slate-300"
-                    @change="toggleStudentSelection(student.id, $event.target.checked)"
-                  />
-                </td>
-                <td class="px-5 py-4 text-sm text-slate-600">{{ student?.first_name || '-' }}</td>
-                <td class="px-5 py-4 text-sm text-slate-600">{{ student?.last_name || '-' }}</td>
-                <td class="px-5 py-4 text-sm text-slate-600">{{ student?.email || '-' }}</td>
-                <td class="px-5 py-4 text-sm text-slate-600">{{ student?.phone || '-' }}</td>
-                <td class="px-5 py-4 text-sm text-slate-600">{{ student.studentProfile?.admission_number || '-' }}</td>
-                <td class="px-5 py-4 text-sm text-slate-600">{{ student.studentProfile?.class_level?.name || student.student_profile?.class_name || '-' }}</td>
-                <td class="px-5 py-4">
-                  <div class="flex flex-wrap gap-2">
-                    <AppButton text="View" @click="viewStudent(student)" variant="outline" size="xs" />
-                    <AppButton text="Edit" @click="editStudent(student)" variant="outline" size="xs" />
-                    <AppButton 
-                      text="Revoke" 
-                      @click="revokeStudent(student.id)" 
-                      variant="warning" 
-                      size="xs"
-                      loadingText="Revoking..."
-                      :processing="revokeLoading.has(student.id)"
-                      :disabled="revokeLoading.has(student.id) || isSelectMode"
-                    />
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <div class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 bg-white px-5 py-4">
-          <div class="text-sm text-slate-600">
-            Showing {{ studentsStartIndex }} to {{ studentsEndIndex }} of {{ filteredStudents.length }} students
-          </div>
-          <div class="flex items-center gap-2">
-            <AppButton
-              text="Previous"
-              @click="previousStudentsPage"
-              variant="outline"
-              size="xs"
-              :disabled="studentsPage === 1"
-            />
-            <div class="px-3 py-2 text-sm text-slate-600">Page {{ studentsPage }} of {{ studentsTotalPages }}</div>
-            <AppButton
-              text="Next"
-              @click="nextStudentsPage"
-              variant="outline"
-              size="xs"
-              :disabled="studentsPage === studentsTotalPages"
-            />
-          </div>
-        </div>
-      </div>
-    </SectionCard>
-
-    <SectionCard v-if="showArchived" title="Archived Students" subtitle="View and manage revoked students.">
-      <template #header>
-        <div class="flex w-full flex-wrap items-center justify-end gap-3">
-          <AppButton
-            v-if="!isArchivedSelectMode"
-            @click="startArchivedSelectMode"
+            v-if="!isSelectMode"
             :icon="CheckSquare"
             text="Select"
-            variant="secondary"
-            size="base"
-            class="shrink-0 whitespace-nowrap"
+            variant="ghost"
+            size="sm"
+            @click="startSelectMode"
+          />
+          <AppButton
+            :icon="Archive"
+            text="Archived"
+            variant="ghost"
+            size="sm"
+            @click="toggleView"
+          />
+        </div>
+      </div>
+
+      <!-- Skeleton -->
+      <SkeletonRows v-if="studentsStore.loading" :columns="5" />
+
+      <!-- Empty state -->
+      <div v-else-if="!filteredStudents.length" class="px-5 py-16 text-center">
+        <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100">
+          <GraduationCap class="h-8 w-8 text-slate-400" />
+        </div>
+        <h3 class="mt-4 text-base font-semibold text-slate-900">
+          {{ searchQuery ? 'No students found' : 'No students yet' }}
+        </h3>
+        <p class="mt-1.5 text-sm text-slate-500">
+          {{ searchQuery ? 'Try adjusting your search.' : 'Get started by adding your first student.' }}
+        </p>
+        <div class="mt-5 flex justify-center gap-2">
+          <AppButton v-if="searchQuery" text="Clear Search" variant="outline" size="sm" @click="searchQuery = ''" />
+          <AppButton v-if="!searchQuery" :icon="Plus" text="Add First Student" variant="primary" size="sm" @click="openModal()" />
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div v-else class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-slate-100">
+          <thead>
+            <tr class="bg-slate-50">
+              <th v-if="isSelectMode" class="w-10 px-5 py-3">
+                <input
+                  type="checkbox"
+                  :checked="areAllVisibleSelected"
+                  class="h-4 w-4 rounded border-slate-300 text-[#D4AF37] focus:ring-[#D4AF37]"
+                  @change="toggleVisibleStudents($event.target.checked)"
+                />
+              </th>
+              <th
+                v-for="col in columns"
+                :key="col.key"
+                class="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500"
+              >{{ col.label }}</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 bg-white">
+            <tr
+              v-for="student in paginatedStudents"
+              :key="student.id"
+              class="group transition hover:bg-slate-50/70"
+            >
+              <td v-if="isSelectMode" class="px-5 py-3.5">
+                <input
+                  type="checkbox"
+                  :checked="selectedStudents.has(student.id)"
+                  class="h-4 w-4 rounded border-slate-300 text-[#D4AF37] focus:ring-[#D4AF37]"
+                  @change="toggleStudentSelection(student.id, $event.target.checked)"
+                />
+              </td>
+              <!-- Name + avatar -->
+              <td class="px-5 py-3.5">
+                <div class="flex items-center gap-3">
+                  <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#0B1F3A]/10 text-xs font-semibold text-[#0B1F3A]">
+                    {{ initials(student) }}
+                  </div>
+                  <div>
+                    <p class="font-medium text-slate-900">{{ student.first_name }} {{ student.last_name }}</p>
+                    <p class="text-xs text-slate-500">{{ student.email || '—' }}</p>
+                  </div>
+                </div>
+              </td>
+              <td class="px-5 py-3.5 text-sm text-slate-600">{{ student.phone || '—' }}</td>
+              <td class="px-5 py-3.5 text-sm text-slate-600">{{ student.studentProfile?.admission_number || '—' }}</td>
+              <td class="px-5 py-3.5 text-sm text-slate-600">
+                {{ student.studentProfile?.class_arm?.name || student.student_profile?.class_name || '—' }}
+              </td>
+              <td class="px-5 py-3.5">
+                <div class="flex items-center gap-2 opacity-0 transition group-hover:opacity-100">
+                  <button
+                    class="rounded-lg px-2.5 py-1 text-xs font-medium text-slate-600 ring-1 ring-slate-200 transition hover:bg-slate-100"
+                    @click="viewStudent(student)"
+                  >View</button>
+                  <button
+                    class="rounded-lg px-2.5 py-1 text-xs font-medium text-slate-600 ring-1 ring-slate-200 transition hover:bg-slate-100"
+                    @click="editStudent(student)"
+                  >Edit</button>
+                  <button
+                    class="rounded-lg px-2.5 py-1 text-xs font-medium text-amber-600 ring-1 ring-amber-200 transition hover:bg-amber-50"
+                    :disabled="revokeLoading.has(student.id)"
+                    @click="revokeStudent(student.id)"
+                  >{{ revokeLoading.has(student.id) ? 'Revoking…' : 'Revoke' }}</button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div v-if="filteredStudents.length" class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-5 py-3.5">
+        <p class="text-xs text-slate-500">
+          Showing {{ studentsStartIndex }}–{{ studentsEndIndex }} of {{ filteredStudents.length }}
+        </p>
+        <div class="flex items-center gap-1.5">
+          <button
+            class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 ring-1 ring-slate-200 transition hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed"
+            :disabled="studentsPage === 1"
+            @click="studentsPage--"
+          ><ChevronLeft class="h-4 w-4" /></button>
+          <span class="px-2 text-xs font-medium text-slate-700">{{ studentsPage }} / {{ studentsTotalPages }}</span>
+          <button
+            class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 ring-1 ring-slate-200 transition hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed"
+            :disabled="studentsPage === studentsTotalPages"
+            @click="studentsPage++"
+          ><ChevronRight class="h-4 w-4" /></button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Archived Students table ─────────────────────────────────────────── -->
+    <section v-if="showArchived" class="rounded-2xl border border-slate-200 bg-white">
+      <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
+        <div class="flex items-center gap-2">
+          <span v-if="selectedArchivedStudents.size" class="text-xs text-slate-500">{{ selectedArchivedStudents.size }} selected</span>
+          <AppButton
+            v-if="selectedArchivedStudents.size"
+            text="Restore Selected"
+            variant="success"
+            size="sm"
+            :processing="isRestoringArchivedSelected"
+            @click="restoreSelectedArchivedStudents"
+          />
+          <AppButton
+            v-if="selectedArchivedStudents.size"
+            text="Delete Selected"
+            variant="danger"
+            size="sm"
+            :processing="isDeletingArchivedSelected"
+            @click="deleteSelectedArchivedStudents"
           />
           <AppButton
             v-if="isArchivedSelectMode"
-            @click="cancelArchivedSelectMode"
-            text="Cancel Select"
-            variant="outline"
-            size="base"
-            class="shrink-0 whitespace-nowrap"
-          />
-          <AppButton
-            v-if="selectedArchivedStudents.size > 0"
-            @click="restoreSelectedArchivedStudents"
-            text="Restore Selected"
-            variant="success"
-            size="base"
-            loadingText="Restoring..."
-            :processing="isRestoringArchivedSelected"
-            :disabled="isRestoringArchivedSelected || isDeletingArchivedSelected"
-            class="shrink-0 whitespace-nowrap"
-          />
-          <AppButton
-            v-if="selectedArchivedStudents.size > 0"
-            @click="deleteSelectedArchivedStudents"
-            text="Delete Selected"
-            variant="danger"
-            size="base"
-            loadingText="Deleting..."
-            :processing="isDeletingArchivedSelected"
-            :disabled="isRestoringArchivedSelected || isDeletingArchivedSelected"
-            class="shrink-0 whitespace-nowrap"
-          />
-          <AppButton 
-            @click="toggleView" 
-            text="Show Active"
-            variant="success"
+            text="Cancel"
+            variant="ghost"
             size="sm"
+            @click="cancelArchivedSelectMode"
+          />
+          <AppButton
+            v-if="!isArchivedSelectMode"
+            :icon="CheckSquare"
+            text="Select"
+            variant="ghost"
+            size="sm"
+            @click="startArchivedSelectMode"
           />
         </div>
-      </template>
-      <SkeletonRows v-if="studentsStore.loading" :columns="5" />
-      <div v-else-if="studentsStore.archivedStudents.length === 0" class="text-center py-12">
-        <div class="text-slate-400 text-lg">No students archived</div>
-        <div class="text-slate-500 text-sm mt-2">Students will appear here when their privileges are revoked</div>
       </div>
-      <div v-else class="overflow-hidden rounded-[24px] border border-slate-200">
-        <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-slate-200 bg-white">
-            <thead class="bg-slate-50">
-              <tr>
-                <th v-if="isArchivedSelectMode" class="px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-                  <input
-                    type="checkbox"
-                    :checked="areAllVisibleArchivedStudentsSelected"
-                    class="rounded border-slate-300"
-                    @change="toggleVisibleArchivedStudents($event.target.checked)"
-                  />
-                </th>
-                <th v-for="heading in headings" :key="heading" class="px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">{{ heading }}</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100">
-              <tr v-for="student in paginatedArchivedStudents" :key="student.id" class="transition hover:bg-slate-50/80 opacity-60">
-                <td v-if="isArchivedSelectMode" class="px-5 py-4">
-                  <input
-                    type="checkbox"
-                    :checked="selectedArchivedStudents.has(student.id)"
-                    class="rounded border-slate-300"
-                    @change="toggleArchivedStudentSelection(student.id, $event.target.checked)"
-                  />
-                </td>
-                <td class="px-5 py-4 text-sm text-slate-600">{{ student?.first_name || '-' }}</td>
-                <td class="px-5 py-4 text-sm text-slate-600">{{ student?.last_name || '-' }}</td>
-                <td class="px-5 py-4 text-sm text-slate-600">{{ student?.email || '-' }}</td>
-                <td class="px-5 py-4 text-sm text-slate-600">{{ student?.phone || '-' }}</td>
-                <td class="px-5 py-4 text-sm text-slate-600">{{ student.student_profile?.admission_number || '-' }}</td>
-                <td class="px-5 py-4 text-sm text-slate-600">{{ student.student_profile?.class_arm?.name || student.student_profile?.class_name || '-' }}</td>
-                <td class="px-5 py-4">
-                  <div class="flex flex-wrap gap-2">
-                    <AppButton text="View" @click="viewStudent(student)" variant="outline" size="xs" />
-                    <AppButton
-                      text="Restore"
-                      @click="restoreArchivedStudent(student.id)"
-                      variant="success"
-                      size="xs"
-                      loadingText="Restoring..."
-                      :processing="restoreLoading.has(student.id)"
-                      :disabled="restoreLoading.has(student.id) || deleteLoading.has(student.id) || isArchivedSelectMode"
-                    />
-                    <AppButton
-                      text="Delete"
-                      @click="deleteArchivedStudent(student.id)"
-                      variant="danger"
-                      size="xs"
-                      loadingText="Deleting..."
-                      :processing="deleteLoading.has(student.id)"
-                      :disabled="restoreLoading.has(student.id) || deleteLoading.has(student.id) || isArchivedSelectMode"
-                    />
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <div class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 bg-white px-5 py-4">
-          <div class="text-sm text-slate-600">
-            Showing {{ archivedStudentsStartIndex }} to {{ archivedStudentsEndIndex }} of {{ studentsStore.archivedStudents.length }} archived students
-          </div>
-          <div class="flex items-center gap-2">
-            <AppButton
-              text="Previous"
-              @click="previousArchivedStudentsPage"
-              variant="outline"
-              size="xs"
-              :disabled="archivedStudentsPage === 1"
-            />
-            <div class="px-3 py-2 text-sm text-slate-600">
-              Page {{ archivedStudentsPage }} of {{ archivedStudentsTotalPages }}
-            </div>
-            <AppButton
-              text="Next"
-              @click="nextArchivedStudentsPage"
-              variant="outline"
-              size="xs"
-              :disabled="archivedStudentsPage === archivedStudentsTotalPages"
-            />
-          </div>
-        </div>
-      </div>
-    </SectionCard>
 
-    <StudentModal 
-      :show="showModal" 
+      <SkeletonRows v-if="studentsStore.loading" :columns="5" />
+
+      <div v-else-if="!studentsStore.archivedStudents.length" class="px-5 py-16 text-center">
+        <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100">
+          <Archive class="h-8 w-8 text-slate-400" />
+        </div>
+        <h3 class="mt-4 text-base font-semibold text-slate-900">No archived students</h3>
+        <p class="mt-1.5 text-sm text-slate-500">Revoked students will appear here.</p>
+      </div>
+
+      <div v-else class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-slate-100">
+          <thead>
+            <tr class="bg-slate-50">
+              <th v-if="isArchivedSelectMode" class="w-10 px-5 py-3">
+                <input
+                  type="checkbox"
+                  :checked="areAllVisibleArchivedSelected"
+                  class="h-4 w-4 rounded border-slate-300 text-[#D4AF37] focus:ring-[#D4AF37]"
+                  @change="toggleVisibleArchivedStudents($event.target.checked)"
+                />
+              </th>
+              <th v-for="col in columns" :key="col.key" class="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">{{ col.label }}</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 bg-white">
+            <tr
+              v-for="student in paginatedArchivedStudents"
+              :key="student.id"
+              class="group opacity-60 transition hover:opacity-90"
+            >
+              <td v-if="isArchivedSelectMode" class="px-5 py-3.5">
+                <input
+                  type="checkbox"
+                  :checked="selectedArchivedStudents.has(student.id)"
+                  class="h-4 w-4 rounded border-slate-300"
+                  @change="toggleArchivedStudentSelection(student.id, $event.target.checked)"
+                />
+              </td>
+              <td class="px-5 py-3.5">
+                <div class="flex items-center gap-3">
+                  <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-200 text-xs font-semibold text-slate-500">
+                    {{ initials(student) }}
+                  </div>
+                  <div>
+                    <p class="font-medium text-slate-700">{{ student.first_name }} {{ student.last_name }}</p>
+                    <p class="text-xs text-slate-400">{{ student.email || '—' }}</p>
+                  </div>
+                </div>
+              </td>
+              <td class="px-5 py-3.5 text-sm text-slate-500">{{ student.phone || '—' }}</td>
+              <td class="px-5 py-3.5 text-sm text-slate-500">{{ student.student_profile?.admission_number || '—' }}</td>
+              <td class="px-5 py-3.5 text-sm text-slate-500">{{ student.student_profile?.class_arm?.name || student.student_profile?.class_name || '—' }}</td>
+              <td class="px-5 py-3.5">
+                <div class="flex items-center gap-2 opacity-0 transition group-hover:opacity-100">
+                  <button
+                    class="rounded-lg px-2.5 py-1 text-xs font-medium text-emerald-600 ring-1 ring-emerald-200 transition hover:bg-emerald-50"
+                    :disabled="restoreLoading.has(student.id)"
+                    @click="restoreArchivedStudent(student.id)"
+                  >{{ restoreLoading.has(student.id) ? 'Restoring…' : 'Restore' }}</button>
+                  <button
+                    class="rounded-lg px-2.5 py-1 text-xs font-medium text-red-600 ring-1 ring-red-200 transition hover:bg-red-50"
+                    :disabled="deleteLoading.has(student.id)"
+                    @click="deleteArchivedStudent(student.id)"
+                  >{{ deleteLoading.has(student.id) ? 'Deleting…' : 'Delete' }}</button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Archived Pagination -->
+      <div v-if="studentsStore.archivedStudents.length" class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-5 py-3.5">
+        <p class="text-xs text-slate-500">
+          Showing {{ archivedStudentsStartIndex }}–{{ archivedStudentsEndIndex }} of {{ studentsStore.archivedStudents.length }}
+        </p>
+        <div class="flex items-center gap-1.5">
+          <button
+            class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 ring-1 ring-slate-200 transition hover:bg-slate-100 disabled:opacity-40"
+            :disabled="archivedStudentsPage === 1"
+            @click="archivedStudentsPage--"
+          ><ChevronLeft class="h-4 w-4" /></button>
+          <span class="px-2 text-xs font-medium text-slate-700">{{ archivedStudentsPage }} / {{ archivedStudentsTotalPages }}</span>
+          <button
+            class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 ring-1 ring-slate-200 transition hover:bg-slate-100 disabled:opacity-40"
+            :disabled="archivedStudentsPage === archivedStudentsTotalPages"
+            @click="archivedStudentsPage++"
+          ><ChevronRight class="h-4 w-4" /></button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Drawer ──────────────────────────────────────────────────────────── -->
+    <StudentModal
+      :show="showModal"
       :student="selectedStudent"
       :mode="modalMode"
       @close="closeModal"
@@ -346,535 +330,238 @@
 </template>
 
 <script setup>
-import { nextTick, onMounted, reactive, computed, ref, watch } from "vue";
-import { useRouter } from "vue-router";
-import { Archive, CheckSquare, Plus, GraduationCap, Search, UploadCloud, X } from 'lucide-vue-next';
-import FormField from "../components/FormField.vue";
-import SectionCard from "../components/SectionCard.vue";
-import SkeletonRows from "../components/SkeletonRows.vue";
-import AppButton from '../../shared/AppButton.vue';
+import { computed, onMounted, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
+import { Archive, CheckSquare, ChevronLeft, ChevronRight, GraduationCap, Plus, Search, UploadCloud } from 'lucide-vue-next'
+import AppButton from '../../shared/AppButton.vue'
+import SkeletonRows from '../components/SkeletonRows.vue'
 import StudentModal from '../components/StudentModal.vue'
-import { useSchoolAdminStudentsStore } from "../stores/students";
-import { useSchoolAdminUiStore } from "../stores/ui";
+import { useSchoolAdminStudentsStore } from '../stores/students'
+import { useSchoolAdminUiStore } from '../stores/ui'
 
-const router = useRouter();
-const headings = [
-    "First Name",
-    "Last Name",
-    "Email",
-    "Phone",
-    "Admission Number",
-    "Class",
-    "Actions",
-];
-const studentsStore = useSchoolAdminStudentsStore();
-const uiStore = useSchoolAdminUiStore();
+const router = useRouter()
+const studentsStore = useSchoolAdminStudentsStore()
+const uiStore = useSchoolAdminUiStore()
 
-// Modal state
-const showModal = ref(false)
-const selectedStudent = ref(null)
-const modalMode = ref('edit')
+// ── Column definitions ─────────────────────────────────────────────────────
+const columns = [
+  { key: 'name',        label: 'Student' },
+  { key: 'phone',       label: 'Phone' },
+  { key: 'admission',   label: 'Admission No.' },
+  { key: 'class',       label: 'Class' },
+  { key: 'actions',     label: '' },
+]
 
-// Loading states
-const revokeLoading = ref(new Set())
+// ── State ──────────────────────────────────────────────────────────────────
+const showModal          = ref(false)
+const selectedStudent    = ref(null)
+const modalMode          = ref('edit')
+const showArchived       = ref(false)
+const searchQuery        = ref('')
+const isSelectMode       = ref(false)
+const selectedStudents   = ref(new Set())
+const isArchivedSelectMode       = ref(false)
+const selectedArchivedStudents   = ref(new Set())
+const revokeLoading  = ref(new Set())
 const restoreLoading = ref(new Set())
-const deleteLoading = ref(new Set())
-const isRevokingSelected = ref(false)
+const deleteLoading  = ref(new Set())
+const isRevokingSelected         = ref(false)
 const isRestoringArchivedSelected = ref(false)
-const isDeletingArchivedSelected = ref(false)
+const isDeletingArchivedSelected  = ref(false)
 
-// Multi-select state
-const isSelectMode = ref(false)
-const selectedStudents = ref(new Set())
-const isArchivedSelectMode = ref(false)
-const selectedArchivedStudents = ref(new Set())
-
-// Pagination state
-const itemsPerPage = 10
-const studentsPage = ref(1)
+const itemsPerPage       = 10
+const studentsPage       = ref(1)
 const archivedStudentsPage = ref(1)
 
-// Form state
-const form = reactive({ id: null, firstName: '', lastName: '', email: '', phone: '', admissionNumber: '', className: '' })
-const errors = reactive({ firstName: '', lastName: '', email: '', phone: '', admissionNumber: '', className: '' })
+// ── Helpers ────────────────────────────────────────────────────────────────
+const initials = (s) =>
+  `${s.first_name?.[0] || ''}${s.last_name?.[0] || ''}`.toUpperCase() || '?'
 
-// Toggle state for active/archived view
-const showArchived = ref(false);
-
-// Search state
-const searchQuery = ref('');
-const isSearchExpanded = ref(false)
-const searchInput = ref(null)
-
-// Computed property to determine which students to show
-const currentStudents = computed(() => {
-  return showArchived.value ? studentsStore.archivedStudents : studentsStore.students;
-});
-
+// ── Filtered data ──────────────────────────────────────────────────────────
 const filteredStudents = computed(() => {
-  if (!searchQuery.value.trim()) {
-    return currentStudents.value
-  }
-
-  const query = searchQuery.value.toLowerCase().trim()
-  return currentStudents.value.filter((student) => {
-    const firstName = student?.first_name?.toLowerCase() || ''
-    const lastName = student?.last_name?.toLowerCase() || ''
-    const fullName = `${student?.first_name || ''} ${student?.last_name || ''}`.toLowerCase()
-    const email = student?.email?.toLowerCase() || ''
-    const phone = student?.phone?.toLowerCase() || ''
-    const admissionNumber = student?.student_profile?.admission_number?.toLowerCase() || ''
-    const className = (
-      student?.student_profile?.class_arm?.name ||
-      student?.student_profile?.class_name ||
-      ''
-    ).toLowerCase()
-
-    return firstName.includes(query) ||
-      lastName.includes(query) ||
-      fullName.includes(query) ||
-      email.includes(query) ||
-      phone.includes(query) ||
-      admissionNumber.includes(query) ||
-      className.includes(query)
+  const q = searchQuery.value.toLowerCase().trim()
+  if (!q) return studentsStore.students
+  return studentsStore.students.filter((s) => {
+    const name = `${s.first_name || ''} ${s.last_name || ''}`.toLowerCase()
+    return (
+      name.includes(q) ||
+      (s.email || '').toLowerCase().includes(q) ||
+      (s.phone || '').toLowerCase().includes(q) ||
+      (s.studentProfile?.admission_number || s.student_profile?.admission_number || '').toLowerCase().includes(q) ||
+      (s.studentProfile?.class_arm?.name || s.student_profile?.class_name || '').toLowerCase().includes(q)
+    )
   })
 })
 
+// ── Pagination ─────────────────────────────────────────────────────────────
 const studentsTotalPages = computed(() => Math.max(1, Math.ceil(filteredStudents.value.length / itemsPerPage)))
 const archivedStudentsTotalPages = computed(() => Math.max(1, Math.ceil(studentsStore.archivedStudents.length / itemsPerPage)))
-
-const studentsStartIndex = computed(() => getStartIndex(studentsPage.value, filteredStudents.value.length))
-const studentsEndIndex = computed(() => getEndIndex(studentsPage.value, filteredStudents.value.length))
-const archivedStudentsStartIndex = computed(() => getStartIndex(archivedStudentsPage.value, studentsStore.archivedStudents.length))
-const archivedStudentsEndIndex = computed(() => getEndIndex(archivedStudentsPage.value, studentsStore.archivedStudents.length))
-
+const paginate = (items, page) => items.slice((page - 1) * itemsPerPage, page * itemsPerPage)
 const paginatedStudents = computed(() => paginate(filteredStudents.value, studentsPage.value))
 const paginatedArchivedStudents = computed(() => paginate(studentsStore.archivedStudents, archivedStudentsPage.value))
-const areAllVisibleStudentsSelected = computed(() => {
-  return paginatedStudents.value.length > 0 && paginatedStudents.value.every((student) => selectedStudents.value.has(student.id))
-})
-const areAllVisibleArchivedStudentsSelected = computed(() => {
-  return paginatedArchivedStudents.value.length > 0 && paginatedArchivedStudents.value.every((student) => selectedArchivedStudents.value.has(student.id))
-})
+const studentsStartIndex = computed(() => filteredStudents.value.length ? (studentsPage.value - 1) * itemsPerPage + 1 : 0)
+const studentsEndIndex = computed(() => Math.min(studentsPage.value * itemsPerPage, filteredStudents.value.length))
+const archivedStudentsStartIndex = computed(() => studentsStore.archivedStudents.length ? (archivedStudentsPage.value - 1) * itemsPerPage + 1 : 0)
+const archivedStudentsEndIndex = computed(() => Math.min(archivedStudentsPage.value * itemsPerPage, studentsStore.archivedStudents.length))
 
-const getStartIndex = (page, total) => {
-  if (total === 0) return 0
-  return (page - 1) * itemsPerPage + 1
-}
-
-const getEndIndex = (page, total) => Math.min(page * itemsPerPage, total)
-
-const paginate = (items, page) => {
-  const start = (page - 1) * itemsPerPage
-  return items.slice(start, start + itemsPerPage)
-}
-
-const nextStudentsPage = () => {
-  if (studentsPage.value < studentsTotalPages.value) studentsPage.value++
-}
-
-const previousStudentsPage = () => {
-  if (studentsPage.value > 1) studentsPage.value--
-}
-
-const nextArchivedStudentsPage = () => {
-  if (archivedStudentsPage.value < archivedStudentsTotalPages.value) archivedStudentsPage.value++
-}
-
-const previousArchivedStudentsPage = () => {
-  if (archivedStudentsPage.value > 1) archivedStudentsPage.value--
-}
-
-const expandSearch = async () => {
-  isSearchExpanded.value = true
-  await nextTick()
-  searchInput.value?.focus()
-}
-
-const collapseSearch = () => {
-  if (searchQuery.value) {
-    searchQuery.value = ''
-    return
-  }
-
-  isSearchExpanded.value = false
-}
-
-watch(searchQuery, () => {
-  studentsPage.value = 1
-  selectedStudents.value = new Set()
-  selectedArchivedStudents.value = new Set()
-})
-
-watch(studentsTotalPages, (totalPages) => {
-  if (studentsPage.value > totalPages) studentsPage.value = totalPages
-})
-
-watch(archivedStudentsTotalPages, (totalPages) => {
-  if (archivedStudentsPage.value > totalPages) archivedStudentsPage.value = totalPages
-})
-
-watch(showArchived, () => {
-  cancelSelectMode()
-  cancelArchivedSelectMode()
-})
-
-const startSelectMode = () => {
-  isSelectMode.value = true
-  selectedStudents.value = new Set()
-}
-
-const cancelSelectMode = () => {
-  isSelectMode.value = false
-  selectedStudents.value = new Set()
-}
-
-const startArchivedSelectMode = () => {
-  isArchivedSelectMode.value = true
-  selectedArchivedStudents.value = new Set()
-}
-
-const cancelArchivedSelectMode = () => {
-  isArchivedSelectMode.value = false
-  selectedArchivedStudents.value = new Set()
-}
+// ── Selection ──────────────────────────────────────────────────────────────
+const areAllVisibleSelected = computed(() =>
+  paginatedStudents.value.length > 0 && paginatedStudents.value.every((s) => selectedStudents.value.has(s.id)),
+)
+const areAllVisibleArchivedSelected = computed(() =>
+  paginatedArchivedStudents.value.length > 0 && paginatedArchivedStudents.value.every((s) => selectedArchivedStudents.value.has(s.id)),
+)
 
 const toggleVisibleStudents = (checked) => {
-  const nextSelection = new Set(selectedStudents.value)
-
-  paginatedStudents.value.forEach((student) => {
-    if (checked) {
-      nextSelection.add(student.id)
-    } else {
-      nextSelection.delete(student.id)
-    }
-  })
-
-  selectedStudents.value = nextSelection
+  const next = new Set(selectedStudents.value)
+  paginatedStudents.value.forEach((s) => (checked ? next.add(s.id) : next.delete(s.id)))
+  selectedStudents.value = next
 }
-
 const toggleStudentSelection = (id, checked) => {
-  const nextSelection = new Set(selectedStudents.value)
-
-  if (checked) {
-    nextSelection.add(id)
-  } else {
-    nextSelection.delete(id)
-  }
-
-  selectedStudents.value = nextSelection
+  const next = new Set(selectedStudents.value)
+  checked ? next.add(id) : next.delete(id)
+  selectedStudents.value = next
 }
-
 const toggleVisibleArchivedStudents = (checked) => {
-  const nextSelection = new Set(selectedArchivedStudents.value)
-
-  paginatedArchivedStudents.value.forEach((student) => {
-    if (checked) {
-      nextSelection.add(student.id)
-    } else {
-      nextSelection.delete(student.id)
-    }
-  })
-
-  selectedArchivedStudents.value = nextSelection
+  const next = new Set(selectedArchivedStudents.value)
+  paginatedArchivedStudents.value.forEach((s) => (checked ? next.add(s.id) : next.delete(s.id)))
+  selectedArchivedStudents.value = next
+}
+const toggleArchivedStudentSelection = (id, checked) => {
+  const next = new Set(selectedArchivedStudents.value)
+  checked ? next.add(id) : next.delete(id)
+  selectedArchivedStudents.value = next
 }
 
-const toggleArchivedStudentSelection = (id, checked) => {
-  const nextSelection = new Set(selectedArchivedStudents.value)
+// ── Select mode ────────────────────────────────────────────────────────────
+const startSelectMode = () => { isSelectMode.value = true; selectedStudents.value = new Set() }
+const cancelSelectMode = () => { isSelectMode.value = false; selectedStudents.value = new Set() }
+const startArchivedSelectMode = () => { isArchivedSelectMode.value = true; selectedArchivedStudents.value = new Set() }
+const cancelArchivedSelectMode = () => { isArchivedSelectMode.value = false; selectedArchivedStudents.value = new Set() }
 
-  if (checked) {
-    nextSelection.add(id)
-  } else {
-    nextSelection.delete(id)
+// ── Toggle view ────────────────────────────────────────────────────────────
+const toggleView = () => {
+  showArchived.value = !showArchived.value
+  studentsPage.value = 1
+  archivedStudentsPage.value = 1
+  cancelSelectMode()
+  cancelArchivedSelectMode()
+  if (showArchived.value) studentsStore.fetchArchivedStudents()
+}
+
+// ── Modal ──────────────────────────────────────────────────────────────────
+const openModal = (student) => { selectedStudent.value = student || null; modalMode.value = 'edit'; showModal.value = true }
+const viewStudent = (student) => { selectedStudent.value = student; modalMode.value = 'view'; showModal.value = true }
+const editStudent = (student) => { selectedStudent.value = student; modalMode.value = 'edit'; showModal.value = true }
+const closeModal = () => { showModal.value = false; selectedStudent.value = null; modalMode.value = 'edit' }
+
+const submitStudent = async (data) => {
+  try {
+    if (data.id) {
+      await studentsStore.updateStudent(data.id, data)
+    } else {
+      await studentsStore.createStudent({ ...data, password: 'Cbt@2026' })
+    }
+    uiStore.addToast({ title: 'Student saved', message: 'Student record has been saved.', variant: 'success' })
+    setTimeout(closeModal, 100)
+  } catch {
+    uiStore.addToast({ title: 'Error', message: 'Failed to save student.', variant: 'error' })
+    setTimeout(closeModal, 100)
   }
+}
 
-  selectedArchivedStudents.value = nextSelection
+// ── Revoke / restore / delete ──────────────────────────────────────────────
+const revokeStudent = async (id) => {
+  if (!confirm("Revoke this student's privileges? They will be moved to archive.")) return
+  revokeLoading.value = new Set([...revokeLoading.value, id])
+  try {
+    await studentsStore.revokeStudent(id)
+    uiStore.addToast({ title: 'Student revoked', message: 'Moved to archive.', variant: 'success' })
+  } catch (e) {
+    uiStore.addToast({ title: 'Error', message: e.message || 'Failed to revoke.', variant: 'error' })
+  } finally {
+    revokeLoading.value = new Set([...revokeLoading.value].filter((x) => x !== id))
+  }
 }
 
 const revokeSelectedStudents = async () => {
-  const selectedCount = selectedStudents.value.size
-  const selectedIds = Array.from(selectedStudents.value)
-
-  if (!confirm(`Are you sure you want to revoke ${selectedCount} selected student(s)? This will move them to the archived section.`)) {
-    return
-  }
-
+  const ids = Array.from(selectedStudents.value)
+  if (!confirm(`Revoke ${ids.length} student(s)?`)) return
   isRevokingSelected.value = true
-  revokeLoading.value = new Set([...revokeLoading.value, ...selectedIds])
-
   try {
-    for (const id of selectedIds) {
-      await studentsStore.revokeStudent(id)
-    }
-
-    selectedStudents.value = new Set()
-    isSelectMode.value = false
-    uiStore.addToast({
-      title: 'Students revoked',
-      message: `${selectedCount} student(s) have been revoked and moved to archive.`,
-      variant: 'success',
-    })
-  } catch (error) {
-    uiStore.addToast({
-      title: 'Error',
-      message: error.message || 'Failed to revoke selected students.',
-      variant: 'error',
-    })
+    for (const id of ids) await studentsStore.revokeStudent(id)
+    cancelSelectMode()
+    uiStore.addToast({ title: 'Students revoked', message: `${ids.length} student(s) moved to archive.`, variant: 'success' })
+  } catch (e) {
+    uiStore.addToast({ title: 'Error', message: e.message || 'Failed.', variant: 'error' })
   } finally {
-    revokeLoading.value = new Set([...revokeLoading.value].filter((loadingId) => !selectedIds.includes(loadingId)))
     isRevokingSelected.value = false
   }
 }
 
-const restoreSelectedArchivedStudents = async () => {
-  const selectedCount = selectedArchivedStudents.value.size
-  const selectedIds = Array.from(selectedArchivedStudents.value)
-
-  if (!confirm(`Are you sure you want to restore ${selectedCount} selected student(s)?`)) {
-    return
-  }
-
-  isRestoringArchivedSelected.value = true
-  restoreLoading.value = new Set([...restoreLoading.value, ...selectedIds])
-
+const restoreArchivedStudent = async (id) => {
+  if (!confirm('Restore this student?')) return
+  restoreLoading.value = new Set([...restoreLoading.value, id])
   try {
-    for (const id of selectedIds) {
-      await studentsStore.restoreStudent(id)
-    }
-
-    selectedArchivedStudents.value = new Set()
-    isArchivedSelectMode.value = false
-    uiStore.addToast({
-      title: 'Students restored',
-      message: `${selectedCount} student(s) have been restored successfully.`,
-      variant: 'success',
-    })
-  } catch (error) {
-    uiStore.addToast({
-      title: 'Error',
-      message: error.message || 'Failed to restore selected students.',
-      variant: 'error',
-    })
+    await studentsStore.restoreStudent(id)
+    uiStore.addToast({ title: 'Student restored', message: 'Student has been restored.', variant: 'success' })
+  } catch (e) {
+    uiStore.addToast({ title: 'Error', message: e.message || 'Failed.', variant: 'error' })
   } finally {
-    restoreLoading.value = new Set([...restoreLoading.value].filter((loadingId) => !selectedIds.includes(loadingId)))
+    restoreLoading.value = new Set([...restoreLoading.value].filter((x) => x !== id))
+  }
+}
+
+const restoreSelectedArchivedStudents = async () => {
+  const ids = Array.from(selectedArchivedStudents.value)
+  if (!confirm(`Restore ${ids.length} student(s)?`)) return
+  isRestoringArchivedSelected.value = true
+  try {
+    for (const id of ids) await studentsStore.restoreStudent(id)
+    cancelArchivedSelectMode()
+    uiStore.addToast({ title: 'Restored', message: `${ids.length} student(s) restored.`, variant: 'success' })
+  } catch (e) {
+    uiStore.addToast({ title: 'Error', message: e.message || 'Failed.', variant: 'error' })
+  } finally {
     isRestoringArchivedSelected.value = false
   }
 }
 
-const deleteSelectedArchivedStudents = async () => {
-  const selectedCount = selectedArchivedStudents.value.size
-  const selectedIds = Array.from(selectedArchivedStudents.value)
-
-  if (!confirm(`Are you sure you want to permanently delete ${selectedCount} selected student(s)? This action cannot be undone.`)) {
-    return
-  }
-
-  isDeletingArchivedSelected.value = true
-  deleteLoading.value = new Set([...deleteLoading.value, ...selectedIds])
-
+const deleteArchivedStudent = async (id) => {
+  if (!confirm('Permanently delete this student? This cannot be undone.')) return
+  deleteLoading.value = new Set([...deleteLoading.value, id])
   try {
-    for (const id of selectedIds) {
-      await studentsStore.deleteStudentFromStore(id)
-    }
-
-    selectedArchivedStudents.value = new Set()
-    isArchivedSelectMode.value = false
-    uiStore.addToast({
-      title: 'Students deleted',
-      message: `${selectedCount} student(s) have been permanently deleted.`,
-      variant: 'success',
-    })
-  } catch (error) {
-    uiStore.addToast({
-      title: 'Error',
-      message: error.message || 'Failed to delete selected students.',
-      variant: 'error',
-    })
+    await studentsStore.deleteStudentFromStore(id)
+    uiStore.addToast({ title: 'Student deleted', message: 'Student permanently deleted.', variant: 'success' })
+  } catch (e) {
+    uiStore.addToast({ title: 'Error', message: e.message || 'Failed.', variant: 'error' })
   } finally {
-    deleteLoading.value = new Set([...deleteLoading.value].filter((loadingId) => !selectedIds.includes(loadingId)))
+    deleteLoading.value = new Set([...deleteLoading.value].filter((x) => x !== id))
+  }
+}
+
+const deleteSelectedArchivedStudents = async () => {
+  const ids = Array.from(selectedArchivedStudents.value)
+  if (!confirm(`Permanently delete ${ids.length} student(s)? This cannot be undone.`)) return
+  isDeletingArchivedSelected.value = true
+  try {
+    for (const id of ids) await studentsStore.deleteStudentFromStore(id)
+    cancelArchivedSelectMode()
+    uiStore.addToast({ title: 'Deleted', message: `${ids.length} student(s) permanently deleted.`, variant: 'success' })
+  } catch (e) {
+    uiStore.addToast({ title: 'Error', message: e.message || 'Failed.', variant: 'error' })
+  } finally {
     isDeletingArchivedSelected.value = false
   }
 }
 
-const closeModal = () => {
-  showModal.value = false
-  selectedStudent.value = null
-  modalMode.value = 'edit'
-}
+const goToImport = () => router.push('/school-admin/students/import')
 
-const openModal = (student) => {
-  selectedStudent.value = student
-  modalMode.value = 'edit'
-  showModal.value = true
-}
+// ── Watchers ───────────────────────────────────────────────────────────────
+watch(searchQuery, () => { studentsPage.value = 1; selectedStudents.value = new Set() })
+watch(studentsTotalPages, (total) => { if (studentsPage.value > total) studentsPage.value = total })
+watch(archivedStudentsTotalPages, (total) => { if (archivedStudentsPage.value > total) archivedStudentsPage.value = total })
+watch(showArchived, () => { cancelSelectMode(); cancelArchivedSelectMode() })
 
-const viewStudent = (student) => {
-  selectedStudent.value = student
-  modalMode.value = 'view'
-  showModal.value = true
-}
-
-const goToImport = () => {
-  router.push('/school-admin/students/import')
-}
-
-const clearSearch = () => {
-  searchQuery.value = ''
-}
-
-const validate = () => {
-  errors.firstName = form.firstName ? '' : 'First name is required.'
-  errors.lastName = form.lastName ? '' : 'Last name is required.'
-  errors.email = form.email ? '' : 'Email is required.'
-  errors.phone = form.phone ? '' : 'Phone is required.'
-  errors.admissionNumber = form.admissionNumber ? '' : 'Admission number is required.'
-  errors.className = form.className ? '' : 'Class is required.'
-  return !errors.firstName && !errors.lastName && !errors.email && !errors.phone && !errors.admissionNumber && !errors.className
-}
-
-const submit = async () => {
-  if (!validate()) return
-  const savedStudent = await studentsStore.saveStudent({ ...form })
-  uiStore.addToast({ title: 'Student saved', message: 'Student configuration was updated.', variant: 'success' })
-  Object.assign(form, { id: null, firstName: '', lastName: '', email: '', phone: '', admissionNumber: '', className: '' })
-}
-
-const editStudent = (student) => {
-  selectedStudent.value = student
-  showModal.value = true
-}
-
-const submitStudent = async (studentData) => {
-  try {
-    const payload = {
-      first_name: studentData.first_name,
-      last_name: studentData.last_name,
-      email: studentData.email,
-      phone: studentData.phone,
-      admission_number: studentData.admission_number,
-      class_level_id: studentData.class_level_id,
-      class_arm_id: studentData.class_arm_id,
-      class_name: studentData.class_name
-    }
-    
-    if (studentData.id) {
-      await studentsStore.updateStudent(studentData.id, payload)
-    } else {
-      await studentsStore.createStudent({
-        ...payload,
-        password: 'Cbt@2026'
-      })
-    }
-    
-    uiStore.addToast({ title: 'Student saved', message: 'Student has been saved successfully.', variant: 'success' })
-    // Close modal after a short delay to ensure toast is visible
-    setTimeout(() => {
-      closeModal()
-    }, 100)
-  } catch (error) {
-    uiStore.addToast({ title: 'Error', message: 'Failed to save student.', variant: 'error' })
-    // Close modal after error toast as well
-    setTimeout(() => {
-      closeModal()
-    }, 100)
-  }
-}
-
-const toggleView = () => {
-  showArchived.value = !showArchived.value;
-  studentsPage.value = 1
-  archivedStudentsPage.value = 1
-  cancelSelectMode()
-  if (showArchived.value) {
-    studentsStore.fetchArchivedStudents();
-  }
-};
-
-const revokeStudent = async (id) => {
-    if (
-        !confirm(
-            "Are you sure you want to revoke this student's privileges? This will move them to the archived section.",
-        )
-    ) {
-        return;
-    }
-
-    revokeLoading.value = new Set([...revokeLoading.value, id])
-
-    try {
-        await studentsStore.revokeStudent(id);
-        uiStore.addToast({
-            title: "Student revoked",
-            message: "Student privileges have been revoked and moved to archive.",
-            variant: "success",
-        });
-    } catch (error) {
-        uiStore.addToast({
-            title: "Error",
-            message: error.message || "Failed to revoke student.",
-            variant: "error",
-        });
-    } finally {
-        revokeLoading.value = new Set([...revokeLoading.value].filter(loadingId => loadingId !== id))
-    }
-};
-
-const restoreArchivedStudent = async (id) => {
-    if (!confirm("Are you sure you want to restore this student?")) {
-        return;
-    }
-
-    restoreLoading.value = new Set([...restoreLoading.value, id])
-
-    try {
-        await studentsStore.restoreStudent(id);
-        uiStore.addToast({
-            title: "Student restored",
-            message: "Student has been restored successfully.",
-            variant: "success",
-        });
-    } catch (error) {
-        uiStore.addToast({
-            title: "Error",
-            message: error.message || "Failed to restore student.",
-            variant: "error",
-        });
-    } finally {
-        restoreLoading.value = new Set([...restoreLoading.value].filter(loadingId => loadingId !== id))
-    }
-};
-
-const deleteArchivedStudent = async (id) => {
-    if (!confirm("Are you sure you want to permanently delete this student? This action cannot be undone.")) {
-        return;
-    }
-
-    deleteLoading.value = new Set([...deleteLoading.value, id])
-
-    try {
-        await studentsStore.deleteStudentFromStore(id);
-        uiStore.addToast({
-            title: "Student deleted",
-            message: "Student has been permanently deleted.",
-            variant: "success",
-        });
-    } catch (error) {
-        uiStore.addToast({
-            title: "Error",
-            message: error.message || "Failed to delete student.",
-            variant: "error",
-        });
-    } finally {
-        deleteLoading.value = new Set([...deleteLoading.value].filter(loadingId => loadingId !== id))
-    }
-};
-
-const resetForm = () => {
-  Object.assign(form, { id: null, firstName: '', lastName: '', email: '', phone: '', admissionNumber: '', className: '' });
-  Object.assign(errors, { firstName: '', lastName: '', email: '', phone: '', admissionNumber: '', className: '' });
-};
-
-onMounted(() => {
-    studentsStore.fetchStudents();
-});
+onMounted(() => studentsStore.fetchStudents())
 </script>
