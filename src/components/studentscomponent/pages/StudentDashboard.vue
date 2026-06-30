@@ -8,8 +8,8 @@
           <p class="text-sm text-slate-500">{{ user.email || user.username || 'No email available' }}</p>
           <p v-if="studentClass" class="mt-1 text-sm text-slate-500">{{ studentClass }}</p>
         </div>
-
         <div class="flex flex-wrap items-center gap-3">
+          <AppButton text="My Results" variant="outline" size="sm" @click="router.push({ name: 'StudentResultsList' })" />
           <AppButton text="Logout" variant="secondary" size="sm" :processing="logoutLoading" loadingText="Logging out..." @click="handleLogout" />
         </div>
       </div>
@@ -74,146 +74,7 @@
       </div>
     </SectionCard>
 
-    <!-- Published results -->
-    <SectionCard title="My Results" subtitle="Published results you can review.">
-      <div v-if="resultsLoading" class="space-y-3 pt-6">
-        <div v-for="i in 2" :key="i" class="h-16 animate-pulse rounded-[20px] bg-slate-100" />
-      </div>
-
-      <div v-else-if="!publishedResults.length" class="rounded-[20px] border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-500 pt-6">
-        No published results yet.
-      </div>
-
-      <div v-else class="space-y-3 pt-6">
-        <div
-          v-for="result in publishedResults"
-          :key="result.attempt_id || result.id"
-          class="rounded-[20px] border border-slate-200 bg-white p-5"
-        >
-          <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h3 class="font-semibold text-slate-900">{{ getExamTitle(result) }}</h3>
-              <p class="mt-1 text-sm text-slate-500">{{ getExamSubject(result) }}</p>
-              <p class="mt-2 text-xs uppercase tracking-[0.2em] text-slate-400">Attempt {{ result.attempt_number ?? result.attemptNumber ?? 1 }} • {{ result.status || 'Graded' }}</p>
-            </div>
-
-            <div class="flex flex-col items-start gap-3 text-left sm:items-end">
-              <div>
-                <p class="text-2xl font-bold" :class="scoreClass(getPercentage(result))">
-                  {{ getPercentage(result) != null ? `${getPercentage(result)}%` : '—' }}
-                </p>
-                <p class="text-xs text-slate-500">{{ getScore(result) }} / {{ getTotalMarks(result) }}</p>
-              </div>
-              <AppButton text="View details" size="sm" variant="outline" @click="openResultModal(result)" />
-            </div>
-          </div>
-        </div>
-      </div>
-    </SectionCard>
-
-    <div v-if="showResultModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4">
-      <div class="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-[28px] bg-white shadow-2xl">
-        <div class="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-slate-200 bg-white px-6 py-5">
-          <div>
-            <p class="text-xs font-semibold uppercase tracking-[0.24em] text-[#D4AF37]">Result details</p>
-            <h2 class="mt-1 text-xl font-semibold text-slate-900">{{ getExamTitle(selectedResult) }}</h2>
-            <p class="mt-1 text-sm text-slate-500">{{ getExamSubject(selectedResult) }}</p>
-          </div>
-          <button type="button" class="text-xl font-semibold text-slate-500 hover:text-slate-700" @click="closeResultModal">×</button>
-        </div>
-
-        <div class="space-y-4 p-6">
-          <div v-if="detailLoading" class="rounded-[20px] border border-slate-200 bg-slate-50 p-8 text-center text-sm text-slate-500">
-            Loading question results...
-          </div>
-
-          <div v-else-if="detailError" class="rounded-[20px] border border-rose-200 bg-rose-50 p-6 text-sm text-rose-700">
-            {{ detailError }}
-          </div>
-
-          <div v-else>
-            <div class="grid gap-4 sm:grid-cols-2">
-              <div class="rounded-[20px] border border-slate-200 bg-slate-50 p-5">
-                <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Score</p>
-                <p class="mt-2 text-3xl font-semibold text-slate-900">{{ getScore(selectedResult) }} / {{ getTotalMarks(selectedResult) }}</p>
-              </div>
-              <div class="rounded-[20px] border border-slate-200 bg-slate-50 p-5">
-                <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Result</p>
-                <p class="mt-2 text-3xl font-semibold" :class="scoreClass(getPercentage(selectedResult))">{{ getPercentage(selectedResult) != null ? `${getPercentage(selectedResult)}%` : '—' }}</p>
-              </div>
-            </div>
-
-            <div v-if="!detailQuestions.length" class="rounded-[20px] border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-sm text-slate-500">
-              No question detail available for this attempt.
-            </div>
-
-            <div v-else class="space-y-4">
-              <article
-                v-for="(question, index) in detailQuestions"
-                :key="question.id || index"
-                :class="['rounded-[20px] border p-5', isQuestionCorrect(question) ? 'border-emerald-200 bg-emerald-50/70' : 'border-rose-200 bg-rose-50/70']"
-              >
-                <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                  <div>
-                    <div class="flex items-center gap-2 mb-1">
-                      <p class="text-sm font-semibold text-slate-900">Question {{ index + 1 }}</p>
-                      <span class="rounded-full px-2 py-0.5 text-xs font-semibold bg-slate-100 text-slate-600">
-                        {{ question.type === 'fill_in_blank' ? 'Fill in Blank' : question.type === 'true_false' ? 'True / False' : 'Multiple Choice' }}
-                      </span>
-                    </div>
-                    <p class="mt-2 text-base leading-7 text-slate-900">{{ getQuestionText(question) }}</p>
-                  </div>
-                  <div class="text-right text-sm shrink-0">
-                    <p :class="isQuestionCorrect(question) ? 'text-emerald-700' : 'text-rose-700'" class="font-semibold">
-                      {{ isQuestionCorrect(question) ? 'Correct' : 'Wrong' }}
-                    </p>
-                    <p v-if="question.marks_awarded != null" class="mt-1 text-xs text-slate-500">
-                      {{ question.marks_awarded }} / {{ question.marks_available ?? '?' }} marks
-                    </p>
-                  </div>
-                </div>
-
-                <!-- MCQ / True-False: show selected + correct options -->
-                <div v-if="question.type !== 'fill_in_blank'" class="mt-4 grid gap-3 sm:grid-cols-2">
-                  <div class="rounded-2xl border border-slate-200 bg-white p-4">
-                    <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Your answer</p>
-                    <p class="mt-2 text-sm text-slate-700">{{ getAnswerText(question, 'selected') || 'No answer given' }}</p>
-                  </div>
-                  <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
-                    <p class="text-xs uppercase tracking-[0.2em] text-emerald-600">Correct answer</p>
-                    <p class="mt-2 text-sm text-emerald-800 font-medium">{{ getAnswerText(question, 'correct') || 'Not available' }}</p>
-                  </div>
-                </div>
-
-                <!-- FITB: show text_answer + acceptable_answers -->
-                <div v-else class="mt-4 space-y-3">
-                  <div class="rounded-2xl border border-slate-200 bg-white p-4">
-                    <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Your answer</p>
-                    <p class="mt-2 text-sm text-slate-700 italic">
-                      "{{ getAnswerText(question, 'selected') || 'No answer given' }}"
-                    </p>
-                  </div>
-                  <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
-                    <p class="text-xs uppercase tracking-[0.2em] text-emerald-600">Acceptable answers</p>
-                    <div class="mt-2 flex flex-wrap gap-2">
-                      <span
-                        v-for="(acc, ai) in (question.acceptable_answers || [])"
-                        :key="ai"
-                        class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-800"
-                      >
-                        {{ typeof acc === 'object' ? acc.content : acc }}
-                        <span v-if="acc?.case_sensitive" class="opacity-60">(case-sensitive)</span>
-                      </span>
-                      <span v-if="!(question.acceptable_answers?.length)" class="text-xs text-slate-400">Not available</span>
-                    </div>
-                  </div>
-                </div>
-              </article>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    
   </div>
 </template>
 
@@ -222,7 +83,8 @@ import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import SectionCard from '../../schooladmincomponents/components/SectionCard.vue'
 import AppButton from '../../shared/AppButton.vue'
-import { getAvailableExams, getStudentExamAttempt, getAttemptResult } from '../services/api/studentExams'
+import { getAvailableExams, getStudentExamAttempt } from '../services/api/studentExams'
+import { getStudentResults } from '../services/api/studentResults'
 import { useSchoolAdminUiStore } from '../../schooladmincomponents/stores/ui'
 import { getAuthUser, logout } from '../../../js/lib/auth'
 
@@ -232,19 +94,9 @@ const uiStore = useSchoolAdminUiStore()
 const exams = ref([])
 const loading = ref(false)
 const logoutLoading = ref(false)
-const publishedResults = ref([])
+const allResults = ref([])
 const resultsLoading = ref(false)
 const inProgressAttempts = ref([])
-const selectedResult = ref(null)
-const selectedResultDetails = ref(null)
-const detailLoading = ref(false)
-const detailError = ref(null)
-const showResultModal = ref(false)
-const showProfile = ref(false)
-
-let pollTimer = null
-
-// ── Computed ───────────────────────────────────────────────────────────────
 
 const user = computed(() => getAuthUser() || {})
 const studentName = computed(() => {
@@ -255,10 +107,17 @@ const studentName = computed(() => {
     : user.value.name || user.value.full_name || 'Student'
 })
 
+const studentClass = computed(() => {
+  const profile = user.value.student_profile || user.value.studentProfile
+  return profile?.class_arm?.name || profile?.class_name || ''
+})
 
 const liveExams = computed(() =>
   exams.value.filter((e) => ['live', 'active'].includes((e.status || '').toLowerCase())),
 )
+
+// Show only 3 most recent results on dashboard
+const recentResults = computed(() => allResults.value.slice(0, 3))
 
 const scoreClass = (pct) => {
   if (pct == null) return 'text-slate-700'
@@ -270,90 +129,8 @@ const scoreClass = (pct) => {
 const getExamTitle = (result) => result?.exam?.title || result?.exam_title || result?.title || 'Exam result'
 const getExamSubject = (result) => result?.exam?.subject?.name || result?.subject?.name || result?.subject || result?.exam?.subject || ''
 const getScore = (result) => result?.total_score ?? result?.score ?? result?.score_obtained ?? 0
-const getTotalMarks = (result) => result?.total_marks ?? result?.exam?.total_marks ?? result?.exam?.total_marks ?? '—'
+const getTotalMarks = (result) => result?.total_marks ?? result?.exam?.total_marks ?? '—'
 const getPercentage = (result) => result?.percentage_score ?? result?.percentage ?? result?.score_percentage ?? null
-
-const getQuestionText = (question) => {
-  const src = question?.question || question
-  return src?.content || src?.question_text || src?.text || src?.title || 'Untitled question'
-}
-
-const getAnswerText = (question, type) => {
-  const qType = question?.type || ''
-
-  // ── FITB (Phase 4 ResultQuestion) ─────────────────────────────────────────
-  // text_answer is the student's typed input
-  // acceptable_answers holds the correct answers (no selected_options)
-  if (qType === 'fill_in_blank') {
-    if (type === 'selected') {
-      return question?.text_answer ?? question?.submitted_text ?? question?.answer ?? ''
-    }
-    if (type === 'correct') {
-      const acc = question?.acceptable_answers
-      if (Array.isArray(acc) && acc.length > 0) {
-        return acc.map((a) => (typeof a === 'object' ? a.content : a)).filter(Boolean).join(' / ')
-      }
-      return ''
-    }
-    return ''
-  }
-
-  // ── MCQ / True-False (Phase 4 ResultQuestion) ─────────────────────────────
-  // selected_options: what the student picked (options with content)
-  // options: full array with is_correct revealed
-
-  let selected = null
-  if (Array.isArray(question?.selected_options) && question.selected_options.length > 0) {
-    const s = question.selected_options[0]
-    selected = (typeof s === 'object') ? (s.content ?? s.label ?? s.id) : s
-  } else if (Array.isArray(question?.selected_option_ids) && question.selected_option_ids.length > 0) {
-    selected = question.selected_option_ids[0]
-  } else {
-    selected = question?.selected_answer ?? question?.selected_option ?? question?.answer ?? question?.submitted_answer ?? null
-  }
-
-  let correct = null
-  if (Array.isArray(question?.options) && question.options.length > 0) {
-    const c = question.options.find((o) => o && (o.is_correct === true || o.is_correct === 'true'))
-    if (c) correct = c.content ?? c.label ?? c.id
-  }
-  if (!correct) {
-    if (Array.isArray(question?.correct_option_ids) && question.correct_option_ids.length > 0) {
-      correct = question.correct_option_ids[0]
-    } else if (Array.isArray(question?.correct_options) && question.correct_options.length > 0) {
-      const c = question.correct_options[0]
-      correct = (typeof c === 'object') ? (c.content ?? c.label ?? c.id) : c
-    } else {
-      correct = question?.correct_answer ?? question?.correctOption ?? null
-    }
-  }
-
-  const fmt = (val) => {
-    if (val == null) return ''
-    if (typeof val === 'object') return val?.content ?? val?.label ?? JSON.stringify(val)
-    return String(val)
-  }
-
-  if (type === 'selected') return fmt(selected)
-  if (type === 'correct') return fmt(correct)
-  return ''
-}
-
-const getAttemptQuestions = (detail) => {
-  const questions = detail?.questions || detail?.items || detail?.answers || []
-  return Array.isArray(questions) ? questions : []
-}
-
-const isQuestionCorrect = (question) => {
-  if (question?.is_correct === true || question?.correct === true) return true
-  const selected = getAnswerText(question, 'selected')
-  const correct = getAnswerText(question, 'correct')
-  return selected && correct && selected === correct
-}
-
-const detailQuestions = computed(() => getAttemptQuestions(selectedResultDetails.value))
-
-// ── Load ───────────────────────────────────────────────────────────────────
 
 const loadExams = async () => {
   loading.value = true
@@ -361,19 +138,16 @@ const loadExams = async () => {
     const available = await getAvailableExams()
     exams.value = available
 
-    // Check each exam for an in-progress attempt (spec: GET /api/student/exams/{examId}/attempt)
     const attemptChecks = await Promise.allSettled(
       available.map(async (exam) => {
         try {
           const raw = await getStudentExamAttempt(exam.id)
-          // Normalise: response may be wrapped as { attempt, questions, ... } or direct attempt
           const attempt = raw?.attempt ?? raw
-          // If attempt exists and is in_progress, it's resumable
           if (attempt && attempt.id && (attempt.status === 'in_progress' || attempt.status === 'in-progress')) {
             return exam
           }
         } catch {
-          // 404 = no attempt, ignore
+          // 404 = no attempt
         }
         return null
       })
@@ -381,7 +155,7 @@ const loadExams = async () => {
     inProgressAttempts.value = attemptChecks
       .filter((r) => r.status === 'fulfilled' && r.value !== null)
       .map((r) => r.value)
-  } catch (err) {
+  } catch {
     uiStore.addToast({ title: 'Error', message: 'Failed to load exams.', variant: 'error' })
   } finally {
     loading.value = false
@@ -391,52 +165,13 @@ const loadExams = async () => {
 const loadResults = async () => {
   resultsLoading.value = true
   try {
-    const { apiFetch } = await import('../../../js/lib/api')
-    const response = await apiFetch('/api/students/results')
-    publishedResults.value = Array.isArray(response) ? response : (response?.data || [])
+    allResults.value = await getStudentResults()
   } catch {
-    publishedResults.value = []
+    allResults.value = []
   } finally {
     resultsLoading.value = false
   }
 }
-
-const openResultModal = async (result) => {
-  selectedResult.value = result
-  selectedResultDetails.value = null
-  detailError.value = null
-  detailLoading.value = true
-  showResultModal.value = true
-
-  try {
-    // Try the students/results endpoint (returns detailed attempt objects including questions, selected and correct answers)
-    const { apiFetch } = await import('../../../js/lib/api')
-    const allResults = await apiFetch('/api/students/results')
-    const list = Array.isArray(allResults) ? allResults : (allResults?.data || [])
-    const attemptId = result?.attempt_id || result?.id
-    const found = list.find((r) => String(r.attempt_id || r.id) === String(attemptId))
-    if (found) {
-      selectedResultDetails.value = found
-    } else {
-      // Fallback to the attempt result endpoint
-      const response = await getAttemptResult(attemptId)
-      selectedResultDetails.value = Array.isArray(response) ? { questions: response } : (response?.data ?? response)
-    }
-  } catch (err) {
-    detailError.value = err?.message || 'Unable to load question details.'
-  } finally {
-    detailLoading.value = false
-  }
-}
-
-const closeResultModal = () => {
-  showResultModal.value = false
-  selectedResult.value = null
-  selectedResultDetails.value = null
-  detailError.value = null
-}
-
-// ── Navigation ─────────────────────────────────────────────────────────────
 
 const startExam = (exam) => {
   router.push({ name: 'StudentExamInstructions', params: { id: exam.id } })

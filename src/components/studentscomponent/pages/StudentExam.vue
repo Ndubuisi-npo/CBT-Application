@@ -25,7 +25,7 @@
       </div>
     </div>
 
-    <!-- Main content -->
+    <!-- Loading -->
     <div v-if="loading" class="flex items-center justify-center py-24">
       <div class="text-center">
         <div class="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-[#0B1F3A] border-t-transparent" />
@@ -57,12 +57,21 @@
                 <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
                   Question {{ currentIndex + 1 }} of {{ questions.length }}
                 </p>
-                <span
-                  class="mt-1 inline-block rounded-full px-2 py-0.5 text-xs font-semibold"
-                  :class="typeChipClass(currentQuestion)"
-                >
-                  {{ getTypeLabel(currentQuestion) }}
-                </span>
+                <div class="mt-1 flex flex-wrap gap-2">
+                  <span
+                    class="inline-block rounded-full px-2 py-0.5 text-xs font-semibold"
+                    :class="typeChipClass(currentQuestion)"
+                  >
+                    {{ getTypeLabel(currentQuestion) }}
+                  </span>
+                  <!-- Multiple answer badge -->
+                  <span
+                    v-if="isMultipleAnswerQuestion(currentQuestion)"
+                    class="inline-block rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-700"
+                  >
+                    ☑ Select all that apply
+                  </span>
+                </div>
                 <div v-if="savedIndicator" class="mt-1 text-xs text-emerald-600 font-medium">✓ Saved</div>
               </div>
               <button
@@ -78,30 +87,62 @@
 
             <div class="mt-4 rounded-xl bg-slate-50 p-4">
               <p class="text-base font-semibold leading-7 text-slate-900">{{ getQuestionText(currentQuestion) }}</p>
+              <!-- Question image -->
+              <img
+                v-if="getQuestionImage(currentQuestion)"
+                :src="getQuestionImage(currentQuestion)"
+                alt="Question image"
+                class="mt-3 max-h-60 rounded-lg object-contain"
+              />
             </div>
 
-            <!-- MCQ / True-False: radio options -->
-            <div v-if="isChoiceQuestion(currentQuestion)" class="mt-5 space-y-3">
+            <!-- MCQ Single Answer: radio buttons -->
+            <div v-if="isChoiceQuestion(currentQuestion) && !isMultipleAnswerQuestion(currentQuestion)" class="mt-5 space-y-3">
               <label
                 v-for="(opt, idx) in getOptions(currentQuestion)"
                 :key="opt.id || idx"
                 class="flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition"
-                :class="isSelected(currentQuestion, opt)
+                :class="isSingleSelected(currentQuestion, opt)
                   ? 'border-[#0B1F3A] bg-[#0B1F3A]/5'
                   : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'"
               >
                 <input
                   type="radio"
                   :name="`q-${getQId(currentQuestion)}`"
-                  :checked="isSelected(currentQuestion, opt)"
+                  :checked="isSingleSelected(currentQuestion, opt)"
                   class="mt-0.5 h-4 w-4 cursor-pointer text-[#0B1F3A]"
-                  @change="selectChoiceAnswer(currentQuestion, opt)"
+                  @change="selectSingleAnswer(currentQuestion, opt)"
                 />
                 <span class="text-sm leading-6 text-slate-900">
                   <span class="font-semibold">{{ String.fromCharCode(65 + idx) }}.</span>
                   {{ getOptionText(opt) }}
                 </span>
               </label>
+            </div>
+
+            <!-- MCQ Multiple Answer: checkboxes -->
+            <div v-else-if="isChoiceQuestion(currentQuestion) && isMultipleAnswerQuestion(currentQuestion)" class="mt-5 space-y-3">
+              <p class="text-xs text-blue-700 font-medium">Select all correct answers:</p>
+              <div
+                v-for="(opt, idx) in getOptions(currentQuestion)"
+                :key="opt.id || idx"
+                class="flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition"
+                :class="isMultiSelected(currentQuestion, opt)
+                  ? 'border-[#0B1F3A] bg-[#0B1F3A]/5'
+                  : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'"
+                @click="toggleMultiAnswer(currentQuestion, opt)"
+              >
+                <input
+                  type="checkbox"
+                  :checked="isMultiSelected(currentQuestion, opt)"
+                  class="mt-0.5 h-4 w-4 cursor-pointer border border-slate-300 text-[#0B1F3A] focus:ring-[#0B1F3A] focus:ring-offset-0 rounded"
+                  @click.stop
+                />
+                <span class="text-sm leading-6 text-slate-900">
+                  <span class="font-semibold">{{ String.fromCharCode(65 + idx) }}.</span>
+                  {{ getOptionText(opt) }}
+                </span>
+              </div>
             </div>
 
             <!-- Fill-in-the-Blank: text input -->
@@ -220,7 +261,7 @@ import {
 } from '../services/api/studentExams'
 import { useSchoolAdminUiStore } from '../../schooladmincomponents/stores/ui'
 import { fmtDateTime } from '../../../js/lib/helpers'
-import { isChoiceBased, isFillInBlank, QUESTION_TYPE_LABELS } from '../../../types/question'
+import { isChoiceBased, isFillInBlank, isMultipleAnswer, QUESTION_TYPE_LABELS, buildAnswerPayload } from '../../../types/question'
 
 const route = useRoute()
 const router = useRouter()
@@ -233,7 +274,12 @@ const exam = ref(null)
 const questions = ref([])
 const currentIndex = ref(0)
 const attemptId = ref(null)
-// answers: { [questionId]: string }  — option ID for MCQ/TF, text for FITB
+/**
+ * answers: { [questionId]: string | string[] }
+ * - Single MCQ / TF: string (optionId)
+ * - Multiple MCQ: string[] (optionIds)
+ * - FITB: string (text)
+ */
 const answers = reactive({})
 const flagged = reactive({})
 const loading = ref(true)
@@ -317,10 +363,6 @@ const onVisibilityChange = () => {
 
 // ── Question type helpers ─────────────────────────────────────────────────
 
-/**
- * Get the API type discriminant for a question.
- * Handles Phase 3 DTO shapes (StudentQuestion variants).
- */
 const getQuestionType = (q) => {
   const src = q?.question || q?.question_details || q
   return src?.type || q?.type || ''
@@ -328,6 +370,16 @@ const getQuestionType = (q) => {
 
 const isChoiceQuestion = (q) => isChoiceBased(getQuestionType(q))
 const isFitbQuestion = (q) => isFillInBlank(getQuestionType(q))
+
+/**
+ * Determine if a question is multiple-answer MCQ.
+ * Checks the question object's allow_multiple_answers flag or counts correct options.
+ */
+const isMultipleAnswerQuestion = (q) => {
+  if (!q) return false
+  const src = q?.question || q?.question_details || q
+  return isMultipleAnswer(src)
+}
 
 const getTypeLabel = (q) => {
   const t = getQuestionType(q)
@@ -349,6 +401,7 @@ const currentQuestion = computed(() => questions.value[currentIndex.value] || nu
 const answeredCount = computed(() =>
   Object.keys(answers).filter((k) => {
     const v = answers[k]
+    if (Array.isArray(v)) return v.length > 0
     return v !== undefined && v !== null && v !== ''
   }).length,
 )
@@ -368,10 +421,11 @@ const getQuestionText = (q) => {
   return src?.content || src?.question_text || src?.text || 'Untitled question'
 }
 
-/**
- * Returns the options array for MCQ/TrueFalse questions.
- * Per the Phase 3 DTO, FITB questions have NO options key — always check isChoiceQuestion first.
- */
+const getQuestionImage = (q) => {
+  const src = q?.question || q?.question_details || q
+  return src?.image_url || src?.image || null
+}
+
 const getOptions = (q) => {
   if (!isChoiceQuestion(q)) return []
   const src = q?.question || q?.question_details || q
@@ -388,14 +442,21 @@ const getOptionId = (opt) => opt?.id || String(opt)
 
 // ── Selection helpers ──────────────────────────────────────────────────────
 
-const isSelected = (q, opt) => {
+/** Single-answer MCQ / True-False selection check */
+const isSingleSelected = (q, opt) => {
   const qId = getQId(q)
   return answers[qId] === getOptionId(opt)
 }
 
-/**
- * Get the stored text answer for a FITB question.
- */
+/** Multiple-answer MCQ selection check */
+const isMultiSelected = (q, opt) => {
+  const qId = getQId(q)
+  const stored = answers[qId]
+  if (!Array.isArray(stored)) return false
+  return stored.includes(getOptionId(opt))
+}
+
+/** Get the stored text answer for a FITB question. */
 const getFitbAnswer = (q) => {
   const qId = getQId(q)
   return answers[qId] ?? ''
@@ -403,25 +464,30 @@ const getFitbAnswer = (q) => {
 
 const isFlagged = (q) => !!flagged[getQId(q)]
 
-const navDotClass = (q, idx) => {
+const isAnswered = (q, idx) => {
   const qId = getQId(q, idx)
+  const v = answers[qId]
+  if (Array.isArray(v)) return v.length > 0
+  return v !== undefined && v !== null && v !== ''
+}
+
+const navDotClass = (q, idx) => {
   const isCurrent = idx === currentIndex.value
-  const isAnswered = answers[qId] !== undefined && answers[qId] !== null && answers[qId] !== ''
-  const isFlag = flagged[qId]
+  const answered = isAnswered(q, idx)
+  const isFlag = flagged[getQId(q, idx)]
 
   if (isCurrent) return 'bg-[#0B1F3A] text-white border-[#0B1F3A]'
   if (isFlag) return 'border-amber-400 bg-amber-50 text-amber-700'
-  if (isAnswered) return 'border-emerald-400 bg-emerald-50 text-emerald-700'
+  if (answered) return 'border-emerald-400 bg-emerald-50 text-emerald-700'
   return 'border-slate-200 text-slate-600 hover:border-slate-400'
 }
 
 // ── Actions ────────────────────────────────────────────────────────────────
 
 /**
- * Handle MCQ/TrueFalse option selection.
- * Sends { selected_option_ids: [id], time_spent_seconds } — never text_answer.
+ * Handle single-answer MCQ / True-False option selection.
  */
-const selectChoiceAnswer = async (q, opt) => {
+const selectSingleAnswer = async (q, opt) => {
   const qId = getQId(q)
   const optId = getOptionId(opt)
   answers[qId] = optId
@@ -444,9 +510,51 @@ const selectChoiceAnswer = async (q, opt) => {
 }
 
 /**
- * Handle FITB text input (debounced auto-save).
- * Sends { text_answer, time_spent_seconds } — never selected_option_ids.
+ * Handle multiple-answer MCQ checkbox toggle.
+ * Sends selected_option_ids: [id1, id2, ...]
+ * Debounced to prevent rapid-fire requests.
  */
+let multiAnswerSaveTimer = null
+const toggleMultiAnswer = async (q, opt) => {
+  const qId = getQId(q)
+  const optId = getOptionId(opt)
+
+  if (!Array.isArray(answers[qId])) {
+    answers[qId] = []
+  }
+
+  const idx = answers[qId].indexOf(optId)
+  if (idx === -1) {
+    answers[qId] = [...answers[qId], optId]
+  } else {
+    answers[qId] = answers[qId].filter((id) => id !== optId)
+  }
+
+  if (attemptId.value) {
+    // Clear any pending save
+    if (multiAnswerSaveTimer) {
+      clearTimeout(multiAnswerSaveTimer)
+    }
+
+    // Debounce save by 400ms
+    multiAnswerSaveTimer = setTimeout(async () => {
+      try {
+        const elapsedSec = questionStartAt.value ? Math.round((Date.now() - questionStartAt.value) / 1000) : null
+        await saveStudentAnswer(attemptId.value, qId, {
+          type: getQuestionType(q),
+          answer: answers[qId],
+          time_spent_seconds: elapsedSec,
+        })
+        savedIndicator.value = true
+        setTimeout(() => { savedIndicator.value = false }, 2000)
+      } catch {
+        // Non-blocking
+      }
+    }, 400)
+  }
+}
+
+/** Handle FITB text input (debounced auto-save). */
 let fitbSaveTimer = null
 
 const onFitbInput = (q, event) => {
@@ -454,7 +562,6 @@ const onFitbInput = (q, event) => {
   const text = event.target.value
   answers[qId] = text
 
-  // Debounce: save 800ms after user stops typing
   clearTimeout(fitbSaveTimer)
   fitbSaveTimer = setTimeout(async () => {
     if (!attemptId.value) return
@@ -563,14 +670,20 @@ onMounted(async () => {
       return q
     })
 
-    // Restore saved answers — handle both choice-based and FITB
+    // Restore saved answers — handle both single and multi choice
     const savedAnswers = attempt.answers ?? raw?.answers
     if (savedAnswers && typeof savedAnswers === 'object') {
       if (Array.isArray(savedAnswers)) {
         savedAnswers.forEach((a) => {
           if (!a?.question_id) return
           if (a.selected_option_ids?.length) {
-            answers[a.question_id] = a.selected_option_ids[0]
+            // If multiple ids, store as array; if single, still use array for multi-answer qs
+            const q = questions.value.find((q) => String(getQId(q)) === String(a.question_id))
+            if (q && isMultipleAnswerQuestion(q)) {
+              answers[a.question_id] = a.selected_option_ids
+            } else {
+              answers[a.question_id] = a.selected_option_ids[0]
+            }
           } else if (a.text_answer !== undefined && a.text_answer !== null) {
             answers[a.question_id] = a.text_answer
           }

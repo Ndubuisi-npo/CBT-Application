@@ -139,7 +139,7 @@
                   {{ getExamSubjectName(exam) }} · {{ getExamClassLevelName(exam) }}
                 </p>
               </div>
-              <AppButton text="View Results" variant="outline" size="sm" @click="goTo('/teachers/exams')" />
+              <AppButton text="View Results" variant="outline" size="sm" @click="goTo('/teachers/students')" />
             </div>
           </div>
         </section>

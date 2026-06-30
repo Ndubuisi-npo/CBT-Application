@@ -68,7 +68,7 @@
               <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Class</th>
               <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Phone</th>
               <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Status</th>
-              <th class="px-5 py-3"></th>
+              <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Actions</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100 bg-white">
@@ -115,12 +115,20 @@
                 </span>
               </td>
               <td class="px-5 py-3.5">
-                <button
-                  class="rounded-lg px-2.5 py-1 text-xs font-medium text-slate-600 ring-1 ring-slate-200 opacity-0 transition hover:bg-slate-100 group-hover:opacity-100"
-                  @click="viewStudent(student)"
-                >
-                  View
-                </button>
+                <div class="flex items-center gap-2">
+                  <button
+                    class="rounded-lg px-2.5 py-1 text-xs font-medium text-slate-600 ring-1 ring-slate-200 transition hover:bg-slate-100"
+                    @click="viewStudent(student)"
+                  >
+                    View
+                  </button>
+                  <button
+                    class="rounded-lg px-2.5 py-1 text-xs font-medium text-[#0B1F3A] ring-1 ring-[#0B1F3A]/20 transition hover:bg-[#0B1F3A]/5"
+                    @click="viewResults(student)"
+                  >
+                    Results
+                  </button>
+                </div>
               </td>
             </tr>
           </tbody>
@@ -204,7 +212,7 @@
             </div>
             <div v-else class="space-y-6">
 
-              <!-- A. Personal Information -->
+              <!-- Personal Information -->
               <div>
                 <p class="mb-3 text-xs font-semibold uppercase tracking-widest text-slate-400">Personal Information</p>
                 <div class="grid grid-cols-2 gap-3">
@@ -228,14 +236,10 @@
                     <p class="text-xs font-medium text-slate-400">Gender</p>
                     <p class="mt-0.5 text-xs font-semibold text-slate-900">{{ sp?.gender || 'N/A' }}</p>
                   </div>
-                  <div class="rounded-xl bg-slate-50 px-4 py-3">
-                    <p class="text-xs font-medium text-slate-400">Date of Birth</p>
-                    <p class="mt-0.5 text-xs font-semibold text-slate-900">{{ sp?.date_of_birth || 'N/A' }}</p>
-                  </div>
                 </div>
               </div>
 
-              <!-- B. Academic Information -->
+              <!-- Academic Information -->
               <div>
                 <p class="mb-3 text-xs font-semibold uppercase tracking-widest text-slate-400">Academic Information</p>
                 <div class="grid grid-cols-2 gap-3">
@@ -244,57 +248,23 @@
                     <p class="mt-0.5 text-xs font-semibold text-slate-900">{{ sp?.admission_number || 'N/A' }}</p>
                   </div>
                   <div class="rounded-xl bg-slate-50 px-4 py-3">
-                    <p class="text-xs font-medium text-slate-400">Admission Date</p>
-                    <p class="mt-0.5 text-xs font-semibold text-slate-900">{{ sp?.admission_date || 'N/A' }}</p>
-                  </div>
-                  <div class="rounded-xl bg-slate-50 px-4 py-3">
                     <p class="text-xs font-medium text-slate-400">Class</p>
                     <p class="mt-0.5 text-xs font-semibold text-slate-900">{{ sp?.class_arm?.name || 'N/A' }}</p>
                   </div>
-                  <div class="rounded-xl bg-slate-50 px-4 py-3">
-                    <p class="text-xs font-medium text-slate-400">Class Level</p>
-                    <p class="mt-0.5 text-xs font-semibold text-slate-900">{{ sp?.class_arm?.class_level?.name || sp?.class_level?.name || 'N/A' }}</p>
-                  </div>
                 </div>
               </div>
 
-              <!-- C. Guardian Information -->
+              <!-- Quick Actions -->
               <div>
-                <p class="mb-3 text-xs font-semibold uppercase tracking-widest text-slate-400">Guardian Information</p>
-                <div v-if="sp?.guardian_name || sp?.guardian_email || sp?.guardian_phone" class="grid grid-cols-2 gap-3">
-                  <div class="rounded-xl bg-slate-50 px-4 py-3 col-span-2">
-                    <p class="text-xs font-medium text-slate-400">Guardian Name</p>
-                    <p class="mt-0.5 text-xs font-semibold text-slate-900">{{ sp?.guardian_name || 'N/A' }}</p>
-                  </div>
-                  <div class="rounded-xl bg-slate-50 px-4 py-3">
-                    <p class="text-xs font-medium text-slate-400">Guardian Email</p>
-                    <p class="mt-0.5 text-xs font-semibold text-slate-900">{{ sp?.guardian_email || 'N/A' }}</p>
-                  </div>
-                  <div class="rounded-xl bg-slate-50 px-4 py-3">
-                    <p class="text-xs font-medium text-slate-400">Guardian Phone</p>
-                    <p class="mt-0.5 text-xs font-semibold text-slate-900">{{ sp?.guardian_phone || 'N/A' }}</p>
-                  </div>
-                </div>
-                <div v-else class="rounded-xl border border-dashed border-slate-200 py-6 text-center text-xs text-slate-400">
-                  No guardian information on file.
-                </div>
+                <p class="mb-3 text-xs font-semibold uppercase tracking-widest text-slate-400">Quick Actions</p>
+                <button
+                  class="flex w-full items-center gap-3 rounded-xl border border-[#0B1F3A]/20 bg-[#0B1F3A]/5 px-4 py-3 text-sm font-medium text-[#0B1F3A] transition hover:bg-[#0B1F3A]/10"
+                  @click="() => { closeDrawer(); viewResults(selectedStudent) }"
+                >
+                  <BarChart2 class="h-4 w-4" />
+                  View Exam Results
+                </button>
               </div>
-
-              <!-- D. Additional Information -->
-              <div>
-                <p class="mb-3 text-xs font-semibold uppercase tracking-widest text-slate-400">Additional Information</p>
-                <div class="grid grid-cols-2 gap-3">
-                  <div class="rounded-xl bg-slate-50 px-4 py-3">
-                    <p class="text-xs font-medium text-slate-400">State of Origin</p>
-                    <p class="mt-0.5 text-xs font-semibold text-slate-900">{{ sp?.state_of_origin || 'N/A' }}</p>
-                  </div>
-                  <div class="rounded-xl bg-slate-50 px-4 py-3">
-                    <p class="text-xs font-medium text-slate-400">Blood Group</p>
-                    <p class="mt-0.5 text-xs font-semibold text-slate-900">{{ sp?.blood_group || 'N/A' }}</p>
-                  </div>
-                </div>
-              </div>
-
             </div>
           </div>
 
@@ -316,14 +286,15 @@
 
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
-import { ChevronLeft, ChevronRight, GraduationCap, Search, X } from 'lucide-vue-next'
+import { useRouter } from 'vue-router'
+import { BarChart2, ChevronLeft, ChevronRight, GraduationCap, Search, X } from 'lucide-vue-next'
 import { useSchoolAdminUiStore } from '../../schooladmincomponents/stores/ui'
 import { getStudents } from '../../schooladmincomponents/services/api/students'
 import { getAuthUser } from '../../../js/lib/auth'
 
 const uiStore = useSchoolAdminUiStore()
+const router = useRouter()
 
-// ── State ────────────────────────────────────────────────────────────────────
 const searchQuery = ref('')
 const allStudents = ref([])
 const loading = ref(false)
@@ -332,7 +303,6 @@ const page = ref(1)
 const drawerOpen = ref(false)
 const selectedStudent = ref(null)
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
 const initials = (s) => {
   const fn = s?.first_name || s?.user?.first_name || ''
   const ln = s?.last_name || s?.user?.last_name || ''
@@ -344,7 +314,6 @@ const getClassName = (student) => {
   return sp?.class_arm?.name || sp?.class_arm?.class_level?.name || sp?.class_name || 'N/A'
 }
 
-// Shorthand for selected student profile
 const sp = computed(() => {
   if (!selectedStudent.value) return null
   return selectedStudent.value.studentProfile || selectedStudent.value.student_profile || null
@@ -357,7 +326,6 @@ const drawerFullName = computed(() => {
   return `${fn} ${ln}`.trim()
 })
 
-// ── Filtered & paginated ─────────────────────────────────────────────────────
 const filteredStudents = computed(() => {
   const q = searchQuery.value.toLowerCase().trim()
   if (!q) return allStudents.value
@@ -385,7 +353,6 @@ const endIndex = computed(() =>
 watch(searchQuery, () => { page.value = 1 })
 watch(totalPages, (t) => { if (page.value > t) page.value = t })
 
-// ── Drawer ───────────────────────────────────────────────────────────────────
 const viewStudent = (student) => {
   selectedStudent.value = student
   drawerOpen.value = true
@@ -396,7 +363,10 @@ const closeDrawer = () => {
   selectedStudent.value = null
 }
 
-// ── Load ─────────────────────────────────────────────────────────────────────
+const viewResults = (student) => {
+  router.push({ name: 'TeacherStudentHistory', params: { studentId: student.id } })
+}
+
 const loadStudents = async () => {
   loading.value = true
   try {

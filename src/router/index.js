@@ -40,6 +40,8 @@ import TeachersStudentsPage from '../components/teacherscomponent/pages/Students
 import TeachersAttendancePage from '../components/teacherscomponent/pages/AttendancePage.vue'
 import TeachersGradingPage from '../components/teacherscomponent/pages/GradingPage.vue'
 import TeachersTimetablePage from '../components/teacherscomponent/pages/TimetablePage.vue'
+import TeacherStudentHistoryPage from '../components/teacherscomponent/pages/TeacherStudentHistoryPage.vue'
+import TeacherStudentResultDetailPage from '../components/teacherscomponent/pages/TeacherStudentResultDetailPage.vue'
 
 // ─── Super Admin ───────────────────────────────────────────────────────────────
 import SuperAdminRoot from '../components/superadmincomponent/SuperAdminRoot.vue'
@@ -120,7 +122,21 @@ const routes = [
           { path: 'exams/create', name: 'TeachersExamCreate', component: TeachersExamCreatePage },
           { path: 'exam-wizard', name: 'TeachersExamWizard', component: TeachersExamWizard },
 
+          // Students + Student Results (Features 2 & 3)
           { path: 'students', name: 'TeachersStudentsPage', component: TeachersStudentsPage },
+          {
+            path: 'students/:studentId/results',
+            name: 'TeacherStudentHistory',
+            component: TeacherStudentHistoryPage,
+            props: true,
+          },
+          {
+            path: 'students/:studentId/results/:examId/:attemptId',
+            name: 'TeacherStudentResultDetail',
+            component: TeacherStudentResultDetailPage,
+            props: true,
+          },
+
           { path: 'attendance', name: 'TeachersAttendancePage', component: TeachersAttendancePage },
           { path: 'grading', name: 'TeachersGradingPage', component: TeachersGradingPage },
           { path: 'results', name: 'TeachersResultsPage', component: TeachersResultsPage },
@@ -173,6 +189,20 @@ const routes = [
     path: '/student/exam/:id',
     name: 'StudentExam',
     component: () => import('../components/studentscomponent/pages/StudentExam.vue'),
+    props: true,
+    meta: { requiresAuth: true, role: 'student' },
+  },
+  // Feature 2: Student Results pages
+  {
+    path: '/student/results',
+    name: 'StudentResultsList',
+    component: () => import('../components/studentscomponent/pages/StudentResultsPage.vue'),
+    meta: { requiresAuth: true, role: 'student' },
+  },
+  {
+    path: '/student/results/:attemptId',
+    name: 'StudentResultDetail',
+    component: () => import('../components/studentscomponent/pages/StudentResultDetailPage.vue'),
     props: true,
     meta: { requiresAuth: true, role: 'student' },
   },

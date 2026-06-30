@@ -1,0 +1,254 @@
+<template>
+  <div class="space-y-6">
+
+    <!-- Breadcrumb + header -->
+    <div>
+      <nav class="flex items-center gap-1.5 text-xs text-slate-500">
+        <RouterLink to="/teachers/students" class="transition hover:text-slate-900">Students</RouterLink>
+        <span class="text-slate-300">/</span>
+        <span class="font-medium text-slate-700">Exam History</span>
+      </nav>
+      <div class="mt-3 flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-widest text-[#D4AF37]">Teacher Portal</p>
+          <h1 class="mt-1 text-2xl font-semibold tracking-tight text-slate-900">
+            {{ studentName || 'Student' }} — Exam History
+          </h1>
+          <p class="mt-1 text-sm text-slate-500">
+            All exams taken by this student.
+          </p>
+        </div>
+        <RouterLink
+          to="/teachers/students"
+          class="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+        >
+          ← Back to Students
+        </RouterLink>
+      </div>
+    </div>
+
+    <!-- Student info card -->
+    <div v-if="student" class="rounded-2xl border border-slate-200 bg-white p-5">
+      <div class="flex flex-wrap items-center gap-4">
+        <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#0B1F3A]/10 text-xl font-bold text-[#0B1F3A]">
+          {{ studentInitials }}
+        </div>
+        <div>
+          <p class="font-semibold text-slate-900">{{ studentName }}</p>
+          <p class="text-sm text-slate-500">{{ student.email || student.user?.email || 'N/A' }}</p>
+          <p class="text-xs text-slate-400 mt-0.5">
+            {{ admissionNumber }} • {{ studentClass }}
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <div v-if="loading" class="rounded-2xl border border-slate-200 bg-white">
+      <div class="divide-y divide-slate-100">
+        <div v-for="i in 5" :key="i" class="flex items-center gap-4 px-5 py-4">
+          <div class="flex-1 space-y-2">
+            <div class="h-4 w-48 animate-pulse rounded bg-slate-100" />
+            <div class="h-3 w-32 animate-pulse rounded bg-slate-100" />
+          </div>
+          <div class="h-4 w-16 animate-pulse rounded bg-slate-100" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Error -->
+    <div v-else-if="loadError" class="rounded-2xl border border-red-200 bg-red-50 p-6 text-sm text-red-700">
+      {{ loadError }}
+      <button class="ml-2 font-semibold underline" @click="loadHistory">Retry</button>
+    </div>
+
+    <!-- Empty -->
+    <div v-else-if="!results.length" class="rounded-2xl border border-dashed border-slate-200 bg-white p-16 text-center">
+      <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100">
+        <FileText class="h-8 w-8 text-slate-400" />
+      </div>
+      <h3 class="mt-4 text-base font-semibold text-slate-900">No exams yet</h3>
+      <p class="mt-1.5 text-sm text-slate-500">This student hasn't completed any exams.</p>
+    </div>
+
+    <!-- Results table -->
+    <div v-else class="rounded-2xl border border-slate-200 bg-white overflow-hidden">
+      <div class="border-b border-slate-100 px-5 py-4">
+        <h2 class="text-sm font-semibold text-slate-900">{{ results.length }} Result{{ results.length !== 1 ? 's' : '' }}</h2>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-slate-100">
+          <thead class="bg-slate-50">
+            <tr>
+              <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Exam</th>
+              <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Subject</th>
+              <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Attempt</th>
+              <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Submitted</th>
+              <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Score</th>
+              <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">%</th>
+              <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Grade</th>
+              <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Status</th>
+              <th class="px-5 py-3"></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 bg-white">
+            <tr
+              v-for="result in paginatedResults"
+              :key="result.attempt_id || result.id"
+              class="group transition hover:bg-slate-50/70"
+            >
+              <td class="px-5 py-4 text-sm font-medium text-slate-900">{{ getExamTitle(result) }}</td>
+              <td class="px-5 py-4 text-sm text-slate-600">{{ getExamSubject(result) || '—' }}</td>
+              <td class="px-5 py-4 text-sm text-slate-600">#{{ result.attempt_number ?? 1 }}</td>
+              <td class="px-5 py-4 text-sm text-slate-600">{{ fmtDate(result.submitted_at || result.completed_at) || '—' }}</td>
+              <td class="px-5 py-4 text-sm text-slate-600">{{ getScore(result) }} / {{ getTotalMarks(result) }}</td>
+              <td class="px-5 py-4">
+                <span class="text-sm font-semibold" :class="scoreColorClass(getPercentage(result))">
+                  {{ getPercentage(result) != null ? `${getPercentage(result)}%` : '—' }}
+                </span>
+              </td>
+              <td class="px-5 py-4 text-sm font-semibold text-slate-700">{{ result.grade || '—' }}</td>
+              <td class="px-5 py-4">
+                <span
+                  class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize"
+                  :class="statusClass(result.status)"
+                >
+                  {{ result.status || 'Graded' }}
+                </span>
+              </td>
+              <td class="px-5 py-4">
+                <button
+                  class="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 opacity-0 transition hover:bg-slate-100 group-hover:opacity-100"
+                  @click="viewResult(result)"
+                >
+                  View Result
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div v-if="results.length > itemsPerPage" class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-5 py-3.5">
+        <p class="text-xs text-slate-500">Showing {{ startIndex }}–{{ endIndex }} of {{ results.length }}</p>
+        <div class="flex items-center gap-1.5">
+          <button
+            class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 ring-1 ring-slate-200 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+            :disabled="page === 1"
+            @click="page--"
+          >
+            <ChevronLeft class="h-4 w-4" />
+          </button>
+          <span class="px-2 text-xs font-medium text-slate-700">{{ page }} / {{ totalPages }}</span>
+          <button
+            class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 ring-1 ring-slate-200 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+            :disabled="page === totalPages"
+            @click="page++"
+          >
+            <ChevronRight class="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { computed, onMounted, ref } from 'vue'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { ChevronLeft, ChevronRight, FileText } from 'lucide-vue-next'
+import { getStudentResultsForTeacher } from '../services/api/teacherStudentResults'
+import { getStudents } from '../../schooladmincomponents/services/api/students'
+import { fmtDate } from '../../../js/lib/helpers'
+import { scoreColorClass } from '../../../types/question'
+
+const route = useRoute()
+const router = useRouter()
+const studentId = route.params.studentId
+
+const student = ref(null)
+const results = ref([])
+const loading = ref(false)
+const loadError = ref('')
+const page = ref(1)
+const itemsPerPage = 10
+
+// ── Student info ──────────────────────────────────────────────────────────────
+const studentName = computed(() => {
+  if (!student.value) return ''
+  const fn = student.value.first_name || student.value.user?.first_name || ''
+  const ln = student.value.last_name || student.value.user?.last_name || ''
+  return `${fn} ${ln}`.trim() || 'Student'
+})
+
+const studentInitials = computed(() => {
+  const fn = student.value?.first_name || student.value?.user?.first_name || ''
+  const ln = student.value?.last_name || student.value?.user?.last_name || ''
+  return `${fn[0] || ''}${ln[0] || ''}`.toUpperCase() || '?'
+})
+
+const admissionNumber = computed(() => {
+  const sp = student.value?.studentProfile || student.value?.student_profile
+  return sp?.admission_number ? `Adm: ${sp.admission_number}` : ''
+})
+
+const studentClass = computed(() => {
+  const sp = student.value?.studentProfile || student.value?.student_profile
+  return sp?.class_arm?.name || sp?.class_name || ''
+})
+
+// ── Pagination ────────────────────────────────────────────────────────────────
+const totalPages = computed(() => Math.max(1, Math.ceil(results.value.length / itemsPerPage)))
+const paginatedResults = computed(() =>
+  results.value.slice((page.value - 1) * itemsPerPage, page.value * itemsPerPage),
+)
+const startIndex = computed(() => results.value.length ? (page.value - 1) * itemsPerPage + 1 : 0)
+const endIndex = computed(() => Math.min(page.value * itemsPerPage, results.value.length))
+
+// ── Data helpers ──────────────────────────────────────────────────────────────
+const getExamTitle = (r) => r?.exam?.title || r?.exam_title || r?.title || 'Exam'
+const getExamSubject = (r) => r?.exam?.subject?.name || r?.subject?.name || r?.subject || ''
+const getScore = (r) => r?.total_score ?? r?.score ?? 0
+const getTotalMarks = (r) => r?.total_marks ?? r?.exam?.total_marks ?? '—'
+const getPercentage = (r) => r?.percentage_score ?? r?.percentage ?? null
+
+const statusClass = (status) => {
+  const s = (status || '').toLowerCase()
+  if (s === 'published' || s === 'graded') return 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200'
+  if (s === 'completed') return 'bg-blue-50 text-blue-700 ring-1 ring-blue-200'
+  return 'bg-slate-100 text-slate-600'
+}
+
+// ── Navigation ────────────────────────────────────────────────────────────────
+const viewResult = (result) => {
+  const attemptId = result.attempt_id || result.id
+  const examId = result.exam_id || result.exam?.id
+  router.push({ name: 'TeacherStudentResultDetail', params: { studentId, examId, attemptId } })
+}
+
+// ── Load ──────────────────────────────────────────────────────────────────────
+const loadHistory = async () => {
+  loading.value = true
+  loadError.value = ''
+  try {
+    results.value = await getStudentResultsForTeacher(studentId)
+  } catch (err) {
+    loadError.value = err?.message || 'Failed to load student exam history.'
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(async () => {
+  // Try to load the student record from the students list
+  try {
+    const allStudents = await getStudents({})
+    const list = Array.isArray(allStudents) ? allStudents : (allStudents?.data || allStudents?.students || [])
+    student.value = list.find((s) => String(s.id) === String(studentId)) || null
+  } catch {
+    // Non-critical
+  }
+  await loadHistory()
+})
+</script>

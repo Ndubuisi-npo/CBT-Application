@@ -61,7 +61,6 @@
         <section class="rounded-2xl border border-slate-200 bg-white p-6">
           <h2 class="mb-5 text-base font-semibold text-slate-900">Question Metadata</h2>
           <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <!-- Question type selector -->
             <div>
               <label class="block text-sm font-medium text-slate-700">
                 Type <span class="text-red-500">*</span>
@@ -113,11 +112,37 @@
               Question Stem <span class="text-red-500">*</span>
             </label>
             <div class="mt-1.5 overflow-hidden rounded-xl border border-slate-300 bg-white focus-within:border-[#D4AF37] focus-within:ring-2 focus-within:ring-[#D4AF37]/20">
-              <div class="flex flex-wrap gap-2 border-b border-slate-200 bg-slate-50 px-4 py-2">
-                <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-500">{{ typeLabel || 'Select a type above' }}</span>
-                <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-500">Auto-Graded</span>
+              <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 bg-slate-50 px-4 py-2">
+                <div class="flex flex-wrap gap-2">
+                  <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-500">{{ typeLabel || 'Select a type above' }}</span>
+                  <span v-if="form.type === 'mcq' && form.allow_multiple_answers" class="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">Multiple Answer</span>
+                  <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-500">Auto-Graded</span>
+                </div>
+                <button
+                  type="button"
+                  class="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-200"
+                  @click="showMathKeyboard = !showMathKeyboard"
+                >
+                  <span>∑</span>
+                  {{ showMathKeyboard ? 'Hide Math Keyboard' : 'Show Math Keyboard' }}
+                </button>
               </div>
+              
+              <!-- MathLive Math Field -->
+              <div v-if="showMathKeyboard" class="border-b border-slate-200 bg-slate-50 p-4">
+                <label class="block text-xs font-medium text-slate-600 mb-2">Math Editor (for equations, symbols, functions)</label>
+                <div ref="mathFieldRef" class="mathfield border border-slate-300 rounded-lg bg-white p-3 min-h-[60px] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20" />
+                <button
+                  type="button"
+                  class="mt-2 text-xs font-medium text-[#0B1F3A] hover:underline"
+                  @click="insertMathToContent"
+                >
+                  Insert into Question Stem →
+                </button>
+              </div>
+
               <textarea
+                ref="textareaRef"
                 v-model="form.content"
                 rows="6"
                 class="block min-h-[140px] w-full rounded-b-xl border-0 bg-white px-4 py-4 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none"
@@ -127,21 +152,46 @@
           </div>
         </section>
 
-        <!-- MCQ: Answer options -->
+        <!-- MCQ: Multiple answer toggle + Answer options -->
         <section v-if="form.type === 'mcq'" class="rounded-2xl border border-slate-200 bg-white p-6">
-          <div class="mb-5 flex items-center justify-between">
-            <div>
-              <h2 class="text-base font-semibold text-slate-900">Answer Options</h2>
-              <p class="mt-0.5 text-sm text-slate-500">Add options and mark the correct answer.</p>
+          <div class="mb-5 space-y-4">
+            <div class="flex items-start justify-between">
+              <div>
+                <h2 class="text-base font-semibold text-slate-900">Answer Options</h2>
+                <p class="mt-0.5 text-sm text-slate-500">Add options and mark the correct answer(s).</p>
+              </div>
+              <button
+                type="button"
+                class="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                @click="addOption"
+              >
+                <Plus class="h-4 w-4" />
+                Add Option
+              </button>
             </div>
-            <button
-              type="button"
-              class="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-              @click="addOption"
-            >
-              <Plus class="h-4 w-4" />
-              Add Option
-            </button>
+
+            <!-- Multiple Answer Toggle -->
+            <div class="flex items-center gap-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+              <div class="flex-1">
+                <p class="text-sm font-medium text-slate-900">Allow Multiple Answers</p>
+                <p class="text-xs text-slate-500 mt-0.5">
+                  When ON, students can select more than one correct answer. Minimum 2 correct answers required.
+                </p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                :aria-checked="form.allow_multiple_answers"
+                class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:ring-offset-2"
+                :class="form.allow_multiple_answers ? 'bg-[#0B1F3A]' : 'bg-slate-300'"
+                @click="toggleMultipleAnswers"
+              >
+                <span
+                  class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+                  :class="form.allow_multiple_answers ? 'translate-x-5' : 'translate-x-0'"
+                />
+              </button>
+            </div>
           </div>
 
           <div class="space-y-3">
@@ -152,12 +202,21 @@
               :class="option.is_correct ? 'border-emerald-300 bg-emerald-50/50' : 'border-slate-200 bg-slate-50/30'"
             >
               <div class="flex flex-col items-center gap-1 pt-1">
+                <!-- Single answer: radio; Multiple answer: checkbox -->
                 <input
+                  v-if="!form.allow_multiple_answers"
                   type="radio"
                   :name="`correct-${form.id || 'new'}`"
                   :checked="option.is_correct"
                   class="h-4 w-4 text-[#0B1F3A]"
                   @change="markCorrect(index)"
+                />
+                <input
+                  v-else
+                  type="checkbox"
+                  :checked="option.is_correct"
+                  class="h-4 w-4 rounded text-[#0B1F3A]"
+                  @change="toggleCorrect(index)"
                 />
                 <span class="text-xs font-bold text-slate-400">{{ String.fromCharCode(65 + index) }}</span>
               </div>
@@ -183,7 +242,10 @@
             </div>
           </div>
 
-          <p v-if="!hasMcqCorrectAnswer" class="mt-3 text-xs text-amber-600">
+          <p v-if="form.allow_multiple_answers && correctAnswerCount < 2" class="mt-3 text-xs text-amber-600">
+            Select at least 2 options as correct answers for a multiple-answer question.
+          </p>
+          <p v-else-if="!form.allow_multiple_answers && !hasMcqCorrectAnswer" class="mt-3 text-xs text-amber-600">
             Select one option as the correct answer before publishing.
           </p>
         </section>
@@ -216,7 +278,6 @@
         </section>
 
         <!-- Fill in the Blank: Acceptable answers -->
-        <!-- NOTE: is_correct is intentionally hidden for FITB per API contract -->
         <section v-if="form.type === 'fill_in_blank'" class="rounded-2xl border border-slate-200 bg-white p-6">
           <div class="mb-5 flex items-center justify-between">
             <div>
@@ -276,6 +337,7 @@
           <div class="rounded-xl border border-slate-200 bg-slate-50 p-5">
             <div class="flex flex-wrap gap-2">
               <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{{ typeLabel || '—' }}</span>
+              <span v-if="form.type === 'mcq' && form.allow_multiple_answers" class="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">Multiple Answer</span>
               <span v-if="selectedSubjectName" class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{{ selectedSubjectName }}</span>
               <span v-if="selectedClassName" class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{{ selectedClassName }}</span>
             </div>
@@ -285,14 +347,19 @@
 
             <!-- MCQ preview -->
             <div v-if="form.type === 'mcq'" class="mt-4 space-y-2">
+              <p v-if="form.allow_multiple_answers" class="text-xs font-semibold text-blue-700 mb-2">
+                ☑ Select all correct answers
+              </p>
               <div
                 v-for="(option, index) in form.options.filter(o => o?.content?.trim())"
                 :key="index"
-                class="rounded-xl border px-4 py-3 text-sm"
+                class="flex items-center gap-3 rounded-xl border px-4 py-3 text-sm"
                 :class="option.is_correct ? 'border-emerald-300 bg-emerald-50 font-semibold text-emerald-900' : 'border-slate-200 bg-white text-slate-700'"
               >
+                <span v-if="form.allow_multiple_answers" class="h-4 w-4 rounded border-2 shrink-0" :class="option.is_correct ? 'border-emerald-500 bg-emerald-500' : 'border-slate-300'" />
+                <span v-else class="h-4 w-4 rounded-full border-2 shrink-0" :class="option.is_correct ? 'border-emerald-500 bg-emerald-500' : 'border-slate-300'" />
                 {{ String.fromCharCode(65 + index) }}. {{ option.content }}
-                <span v-if="option.is_correct" class="ml-2 text-xs text-emerald-600">✓ Correct</span>
+                <span v-if="option.is_correct" class="ml-2 text-xs text-emerald-600">✓</span>
               </div>
               <div v-if="!form.options.some(o => o?.content?.trim())" class="rounded-xl border border-dashed border-slate-200 px-4 py-3 text-sm text-slate-400">
                 Add options to see preview
@@ -341,8 +408,12 @@
             <ValidationItem :valid="!!form.subject_id" label="Subject assigned" />
             <ValidationItem :valid="!!form.class_level_id" label="Class level set" />
             <ValidationItem :valid="form.content.trim().length > 0" label="Question stem added" />
-            <template v-if="form.type === 'mcq'">
+            <template v-if="form.type === 'mcq' && !form.allow_multiple_answers">
               <ValidationItem :valid="hasMcqCorrectAnswer" label="Correct option selected" />
+              <ValidationItem :valid="form.options.filter(o => o?.content?.trim()).length >= 2" label="At least 2 options" />
+            </template>
+            <template v-if="form.type === 'mcq' && form.allow_multiple_answers">
+              <ValidationItem :valid="correctAnswerCount >= 2" label="At least 2 correct options" />
               <ValidationItem :valid="form.options.filter(o => o?.content?.trim()).length >= 2" label="At least 2 options" />
             </template>
             <template v-if="form.type === 'true_false'">
@@ -368,7 +439,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { RouterLink, useRouter, useRoute } from 'vue-router'
 import { AlertCircle, Check, LoaderCircle, Plus, Send, Trash2 } from 'lucide-vue-next'
 import { useTeacherExamsStore } from '../stores/exams'
@@ -383,6 +454,7 @@ import {
   defaultTrueFalseOptions,
   defaultFitbAnswer,
 } from '../../../types/question'
+import { MathfieldElement } from 'mathlive'
 
 // Inline validation item component
 const ValidationItem = {
@@ -413,6 +485,12 @@ const classLevels = ref([])
 const classArms = ref([])
 const subjects = ref([])
 
+// MathLive state
+const showMathKeyboard = ref(false)
+const mathFieldRef = ref(null)
+const textareaRef = ref(null)
+let mathField = null
+
 const questionId = computed(() => route.query.edit || null)
 const isEditing = computed(() => !!questionId.value)
 const teacherClassLevel = computed(() => getAuthUser()?.teacher_profile?.class_level || null)
@@ -433,6 +511,7 @@ const form = reactive({
   class_arm_id: '',
   subject_id: '',
   marks: 1,
+  allow_multiple_answers: false,
   // MCQ
   options: [
     { content: '', label: '', order: 1, is_correct: false },
@@ -441,7 +520,7 @@ const form = reactive({
     { content: '', label: '', order: 4, is_correct: false },
   ],
   // True/False
-  true_false_correct: '', // 'True' | 'False'
+  true_false_correct: '',
   // FITB
   acceptable_answers: [{ content: '', case_sensitive: false }],
 })
@@ -449,7 +528,7 @@ const form = reactive({
 // ── Computed validators ──────────────────────────────────────────────────────
 
 const hasMcqCorrectAnswer = computed(() => form.options.some((o) => o.is_correct && o.content?.trim()))
-
+const correctAnswerCount = computed(() => form.options.filter((o) => o.is_correct && o.content?.trim()).length)
 const hasFitbAnswers = computed(() => form.acceptable_answers.some((a) => a.content?.trim()))
 
 const selectedSubjectName = computed(() => subjects.value.find((s) => s.id === form.subject_id)?.name || '')
@@ -458,7 +537,6 @@ const selectedClassName = computed(() => classLevels.value.find((c) => c.id === 
 // ── Type change handler ──────────────────────────────────────────────────────
 
 const onTypeChange = () => {
-  // Reset type-specific fields when type changes so stale data doesn't leak
   form.options = form.type === 'true_false'
     ? defaultTrueFalseOptions().map((o) => ({ ...o }))
     : [
@@ -469,6 +547,15 @@ const onTypeChange = () => {
       ]
   form.true_false_correct = ''
   form.acceptable_answers = [{ content: '', case_sensitive: false }]
+  form.allow_multiple_answers = false
+}
+
+// ── Multiple answer toggle ──────────────────────────────────────────────────
+
+const toggleMultipleAnswers = () => {
+  form.allow_multiple_answers = !form.allow_multiple_answers
+  // Reset all correct marks when switching modes
+  form.options.forEach((o) => { o.is_correct = false })
 }
 
 // ── MCQ helpers ──────────────────────────────────────────────────────────────
@@ -482,8 +569,14 @@ const removeOption = (index) => {
   form.options.splice(index, 1)
 }
 
+/** Single-answer: radio — only one can be correct */
 const markCorrect = (index) => {
   form.options.forEach((o, i) => { o.is_correct = i === index })
+}
+
+/** Multiple-answer: checkbox — toggle individual option */
+const toggleCorrect = (index) => {
+  form.options[index].is_correct = !form.options[index].is_correct
 }
 
 // ── FITB helpers ─────────────────────────────────────────────────────────────
@@ -496,6 +589,47 @@ const removeFitbAnswer = (index) => {
   if (form.acceptable_answers.length <= 1) return
   form.acceptable_answers.splice(index, 1)
 }
+
+// ── MathLive Math Keyboard ─────────────────────────────────────────────────────
+
+const initMathField = () => {
+  if (!mathFieldRef.value) return
+  mathField = new MathfieldElement()
+  mathFieldRef.value.appendChild(mathField)
+  mathField.value = ''
+}
+
+const insertMathToContent = () => {
+  if (!mathField || !textareaRef.value) return
+  const latex = mathField.value
+  if (!latex) return
+  
+  // Insert LaTeX wrapped in $$ for display math
+  const mathContent = `$$${latex}$$`
+  
+  // Insert at cursor position or append
+  const textarea = textareaRef.value
+  const start = textarea.selectionStart
+  const end = textarea.selectionEnd
+  const text = form.content
+  
+  form.content = text.substring(0, start) + mathContent + text.substring(end)
+  
+  // Clear math field
+  mathField.value = ''
+  
+  // Focus back on textarea
+  textarea.focus()
+  textarea.setSelectionRange(start + mathContent.length, start + mathContent.length)
+}
+
+// Watch for keyboard visibility changes to initialize/cleanup
+watch(showMathKeyboard, (isVisible) => {
+  if (isVisible && !mathField) {
+    // Small delay to ensure DOM is ready
+    setTimeout(() => initMathField(), 100)
+  }
+})
 
 // ── Metadata loading ─────────────────────────────────────────────────────────
 
@@ -533,7 +667,14 @@ const validateForm = () => {
   if (!form.content?.trim()) { error.value = 'Question content is required.'; return false }
 
   if (form.type === 'mcq') {
-    if (!hasMcqCorrectAnswer.value) { error.value = 'Please mark one option as correct.'; return false }
+    if (form.allow_multiple_answers) {
+      if (correctAnswerCount.value < 2) {
+        error.value = 'Multiple-answer questions require at least 2 correct options.'
+        return false
+      }
+    } else {
+      if (!hasMcqCorrectAnswer.value) { error.value = 'Please mark one option as correct.'; return false }
+    }
     if (form.options.filter((o) => o?.content?.trim()).length < 2) {
       error.value = 'Please provide at least 2 answer options.'
       return false
@@ -594,6 +735,8 @@ const submitQuestion = async (status) => {
       marks: form.marks || 1,
       status,
       options,
+      // Send allow_multiple_answers for MCQ
+      ...(form.type === 'mcq' ? { allow_multiple_answers: form.allow_multiple_answers } : {}),
     }
 
     if (isEditing.value) {
@@ -629,7 +772,6 @@ onMounted(async () => {
         form.marks = existing.marks || existing.default_marks || 1
 
         if (existing.type === 'fill_in_blank') {
-          // Restore acceptable_answers (from acceptable_answers array in Phase 2 DTO)
           if (existing.acceptable_answers?.length) {
             form.acceptable_answers = existing.acceptable_answers.map((a) => ({
               content: a.content || '',
@@ -650,6 +792,9 @@ onMounted(async () => {
               is_correct: !!(o.is_correct || o.isCorrect),
             }))
           }
+          // Detect multiple answer
+          const correctCount = form.options.filter((o) => o.is_correct).length
+          form.allow_multiple_answers = existing.allow_multiple_answers === true || correctCount > 1
         }
 
         if (form.class_level_id) await onClassLevelChange()
@@ -657,6 +802,13 @@ onMounted(async () => {
     } catch (e) {
       console.error('Could not pre-fill question', e)
     }
+  }
+})
+
+onUnmounted(() => {
+  if (mathField && mathFieldRef.value) {
+    mathFieldRef.value.removeChild(mathField)
+    mathField = null
   }
 })
 </script>
