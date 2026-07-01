@@ -75,6 +75,10 @@
             <p class="mt-2 text-2xl font-bold text-red-600">{{ wrongCount }}</p>
           </div>
           <div class="rounded-2xl border border-slate-200 bg-white p-5">
+            <p class="text-xs font-semibold uppercase tracking-widest text-slate-400">Skipped</p>
+            <p class="mt-2 text-2xl font-bold text-slate-500">{{ skippedCount }}</p>
+          </div>
+          <div class="rounded-2xl border border-slate-200 bg-white p-5">
             <p class="text-xs font-semibold uppercase tracking-widest text-slate-400">Time Spent</p>
             <p class="mt-2 text-2xl font-bold text-slate-900">{{ fmtDuration(result.time_spent_seconds) }}</p>
           </div>
@@ -166,6 +170,14 @@ const correctCount = computed(() =>
 const wrongCount = computed(() =>
   questions.value.filter((q) => q?.is_correct === false || q?.correct === false || (q?.marks_awarded != null && Number(q.marks_awarded) === 0)).length,
 )
+const skippedCount = computed(() => {
+  return questions.value.filter((q) => {
+    const hasNoSelection = !Array.isArray(q?.selected_option_ids) && !q?.selected_option_ids?.length && 
+                           !Array.isArray(q?.selected_options) && !q?.selected_options?.length && 
+                           !q?.text_answer
+    return hasNoSelection
+  }).length
+})
 
 // ── Load ──────────────────────────────────────────────────────────────────────
 const loadDetail = async () => {

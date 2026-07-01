@@ -210,7 +210,9 @@ const wrongCount = computed(() =>
 )
 const skippedCount = computed(() => {
   return questions.value.filter((q) => {
-    const hasNoSelection = !Array.isArray(q?.selected_option_ids) && !q?.selected_option_ids?.length && !q?.text_answer
+    const hasNoSelection = !Array.isArray(q?.selected_option_ids) && !q?.selected_option_ids?.length && 
+                           !Array.isArray(q?.selected_options) && !q?.selected_options?.length && 
+                           !q?.text_answer
     return hasNoSelection
   }).length
 })

@@ -86,7 +86,7 @@
             </div>
 
             <div class="mt-4 rounded-xl bg-slate-50 p-4">
-              <p class="text-base font-semibold leading-7 text-slate-900">{{ getQuestionText(currentQuestion) }}</p>
+              <p class="text-base font-semibold leading-7 text-slate-900" v-html="renderQuestionText(currentQuestion)"></p>
               <!-- Question image -->
               <img
                 v-if="getQuestionImage(currentQuestion)"
@@ -262,6 +262,8 @@ import {
 import { useSchoolAdminUiStore } from '../../schooladmincomponents/stores/ui'
 import { fmtDateTime } from '../../../js/lib/helpers'
 import { isChoiceBased, isFillInBlank, isMultipleAnswer, QUESTION_TYPE_LABELS, buildAnswerPayload } from '../../../types/question'
+import katex from 'katex'
+import 'katex/dist/katex.min.css'
 
 const route = useRoute()
 const router = useRouter()
@@ -419,6 +421,19 @@ const getQId = (q, fallback = 0) => q?.id || q?.question_id || `q-${fallback}`
 const getQuestionText = (q) => {
   const src = q?.question || q?.question_details || q
   return src?.content || src?.question_text || src?.text || 'Untitled question'
+}
+
+const renderQuestionText = (q) => {
+  const text = getQuestionText(q)
+  if (!text) return ''
+  try {
+    return katex.renderToString(text, {
+      throwOnError: false,
+      displayMode: false,
+    })
+  } catch {
+    return text
+  }
 }
 
 const getQuestionImage = (q) => {

@@ -148,6 +148,12 @@
                 class="block min-h-[140px] w-full rounded-b-xl border-0 bg-white px-4 py-4 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none"
                 :placeholder="contentPlaceholder"
               />
+
+              <!-- LaTeX Preview -->
+              <div v-if="form.content" class="border-t border-slate-200 bg-slate-50 px-4 py-3">
+                <p class="text-xs font-medium text-slate-600 mb-2">Preview:</p>
+                <div class="text-sm text-slate-900" v-html="renderedContent" />
+              </div>
             </div>
           </div>
         </section>
@@ -455,6 +461,8 @@ import {
   defaultFitbAnswer,
 } from '../../../types/question'
 import { MathfieldElement } from 'mathlive'
+import katex from 'katex'
+import 'katex/dist/katex.min.css'
 
 // Inline validation item component
 const ValidationItem = {
@@ -501,6 +509,18 @@ const contentPlaceholder = computed(() => {
   if (form.type === 'fill_in_blank') return 'Use ___ to indicate the blank. E.g. "The capital of Nigeria is ___."'
   if (form.type === 'true_false') return 'Write a statement that is either True or False…'
   return 'Type the full question stem here…'
+})
+
+const renderedContent = computed(() => {
+  if (!form.content) return ''
+  try {
+    return katex.renderToString(form.content, {
+      throwOnError: false,
+      displayMode: false,
+    })
+  } catch {
+    return form.content
+  }
 })
 
 const form = reactive({
@@ -604,8 +624,8 @@ const insertMathToContent = () => {
   const latex = mathField.value
   if (!latex) return
   
-  // Insert LaTeX wrapped in $$ for display math
-  const mathContent = `$$${latex}$$`
+  // Insert LaTeX directly without wrapper
+  const mathContent = latex
   
   // Insert at cursor position or append
   const textarea = textareaRef.value
