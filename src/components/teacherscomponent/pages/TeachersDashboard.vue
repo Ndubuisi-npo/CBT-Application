@@ -10,7 +10,7 @@
             Good {{ timeOfDay }}, {{ userName }}
           </h1>
           <p class="mt-2 max-w-md text-sm leading-6 text-slate-300">
-            You own the full exam lifecycle — create, launch, and publish results directly from here.
+            You own the full exam lifecycle N/A create, launch, and publish results directly from here.
           </p>
         </div>
         <div class="flex flex-wrap gap-2 sm:shrink-0">
@@ -28,7 +28,7 @@
       </div>
     </div>
 
-    <!-- Stat cards — fixed responsive grid -->
+    <!-- Stat cards N/A fixed responsive grid -->
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <div class="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-50">
@@ -90,7 +90,7 @@
     <!-- Main content grid -->
     <div class="grid gap-6 xl:grid-cols-3">
 
-      <!-- Left: exam sections — 2/3 -->
+      <!-- Left: exam sections N/A 2/3 -->
       <div class="space-y-6 xl:col-span-2">
 
         <!-- Live exams -->
@@ -183,7 +183,7 @@
                   </span>
                 </div>
                 <p class="mt-0.5 truncate text-xs text-slate-500">
-                  {{ getExamSubjectName(exam) }} · {{ getExamClassLevelName(exam) }} · {{ exam.duration_minutes || exam.duration || '—' }} min
+                  {{ getExamSubjectName(exam) }} · {{ getExamClassLevelName(exam) }} · {{ exam.duration_minutes || exam.duration || 'N/A' }} min
                 </p>
               </div>
               <AppButton text="Open" variant="outline" size="sm" @click="goTo('/teachers/exams')" />
@@ -192,7 +192,7 @@
         </section>
       </div>
 
-      <!-- Right panel — 1/3 -->
+      <!-- Right panel N/A 1/3 -->
       <div class="space-y-6">
         <!-- Scope summary -->
         <section class="rounded-2xl border border-slate-200 bg-white p-6">
@@ -293,8 +293,8 @@ const concludedCount = computed(() => gradingExams.value.length)
 
 const teacherClassLevelName = computed(() => getAuthUser()?.teacher_profile?.class_level?.name || '')
 
-const getExamSubjectName = (exam) => exam?.subject?.name || exam?.subject_name || '—'
-const getExamClassLevelName = (exam) => exam?.class_level?.name || exam?.classLevel?.name || exam?.class_level_name || '—'
+const getExamSubjectName = (exam) => exam?.subject?.name || exam?.subject_name || 'N/A'
+const getExamClassLevelName = (exam) => exam?.class_level?.name || exam?.classLevel?.name || exam?.class_level_name || 'N/A'
 
 const recentExams = computed(() =>
   [...examsStore.exams]

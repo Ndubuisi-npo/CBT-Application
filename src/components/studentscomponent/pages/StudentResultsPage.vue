@@ -80,19 +80,19 @@
                 <td class="px-5 py-4">
                   <p class="font-medium text-slate-900 text-sm">{{ getExamTitle(result) }}</p>
                 </td>
-                <td class="px-5 py-4 text-sm text-slate-600">{{ getExamSubject(result) || '—' }}</td>
+                <td class="px-5 py-4 text-sm text-slate-600">{{ getExamSubject(result) || 'N/A' }}</td>
                 <td class="px-5 py-4 text-sm text-slate-600">#{{ result.attempt_number ?? result.attemptNumber ?? 1 }}</td>
-                <td class="px-5 py-4 text-sm text-slate-600">{{ fmtDate(result.submitted_at || result.completed_at) || '—' }}</td>
+                <td class="px-5 py-4 text-sm text-slate-600">{{ fmtDate(result.submitted_at || result.completed_at) || 'N/A' }}</td>
                 <td class="px-5 py-4 text-sm text-slate-600">{{ fmtDuration(result.time_spent_seconds) }}</td>
                 <td class="px-5 py-4 text-sm text-slate-600">
                   {{ getScore(result) }} / {{ getTotalMarks(result) }}
                 </td>
                 <td class="px-5 py-4">
                   <span class="text-sm font-semibold" :class="scoreColorClass(getPercentage(result))">
-                    {{ getPercentage(result) != null ? `${getPercentage(result)}%` : '—' }}
+                    {{ getPercentage(result) != null ? `${getPercentage(result)}%` : 'N/A' }}
                   </span>
                 </td>
-                <td class="px-5 py-4 text-sm font-semibold text-slate-700">{{ result.grade || '—' }}</td>
+                <td class="px-5 py-4 text-sm font-semibold text-slate-700">{{ result.grade || 'N/A' }}</td>
                 <td class="px-5 py-4">
                   <span
                     class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize"
@@ -168,7 +168,7 @@ const endIndex = computed(() => Math.min(page.value * itemsPerPage, results.valu
 const getExamTitle = (r) => r?.exam?.title || r?.exam_title || r?.title || 'Exam'
 const getExamSubject = (r) => r?.exam?.subject?.name || r?.subject?.name || r?.subject || r?.exam_subject || ''
 const getScore = (r) => r?.total_score ?? r?.score ?? r?.score_obtained ?? 0
-const getTotalMarks = (r) => r?.total_marks ?? r?.exam?.total_marks ?? '—'
+const getTotalMarks = (r) => r?.total_marks ?? r?.exam?.total_marks ?? 'N/A'
 const getPercentage = (r) => r?.percentage_score ?? r?.percentage ?? r?.score_percentage ?? null
 
 const statusClass = (status) => {

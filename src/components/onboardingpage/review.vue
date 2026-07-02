@@ -141,14 +141,14 @@ onMounted(async () => {
   }
 })
 
-const display = (value: string) => value?.trim() || '-'
+const display = (value: string) => value?.trim() || 'N/A'
 const getPlanName = (planId: string) => {
   const plan = plans.value.find((p) => p.id === planId)
   return plan ? plan.name : planId
 }
 const displayLocation = computed(() => {
   const pieces = [props.formData.address, props.formData.city, props.formData.state].filter(Boolean)
-  return pieces.length ? pieces.join(', ') : '-'
+  return pieces.length ? pieces.join(', ') : 'N/A'
 })
 
 const schoolInfo = computed(() => [

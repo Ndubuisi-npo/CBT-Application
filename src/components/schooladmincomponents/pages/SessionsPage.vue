@@ -50,8 +50,8 @@
               </td>
               <td class="px-5 py-3.5 font-semibold text-slate-900">{{ session.name }}</td>
               <td class="px-5 py-3.5"><StatusBadge :status="sessionStatus(session)" /></td>
-              <td class="px-5 py-3.5 text-sm text-slate-600 whitespace-nowrap">{{ fmtDate(session.startDate || session.start_date || '—') }}</td>
-              <td class="px-5 py-3.5 text-sm text-slate-600 whitespace-nowrap">{{ fmtDate(session.endDate || session.end_date || '—') }}</td>
+              <td class="px-5 py-3.5 text-sm text-slate-600 whitespace-nowrap">{{ fmtDate(session.startDate || session.start_date || 'N/A') }}</td>
+              <td class="px-5 py-3.5 text-sm text-slate-600 whitespace-nowrap">{{ fmtDate(session.endDate || session.end_date || 'N/A') }}</td>
               <td class="px-5 py-3.5 text-sm text-slate-600">{{ getTermsCount(session) }}</td>
               <td class="px-5 py-3.5">
                 <div class="flex items-center gap-2 opacity-0 transition group-hover:opacity-100">
@@ -120,7 +120,7 @@ const paginatedSessions = computed(() => sessionsStore.sessions.slice((currentPa
 const sessionStatus = (s) => (s.current || s.is_current ? 'Current' : 'Not current')
 const getTermsCount = (s) => {
   const t = Array.isArray(s.terms) ? s.terms : Array.isArray(s.terms?.data) ? s.terms.data : sessionsStore.terms?.[s.id]
-  return Array.isArray(t) ? `${t.length} term${t.length !== 1 ? 's' : ''}` : '—'
+  return Array.isArray(t) ? `${t.length} term${t.length !== 1 ? 's' : ''}` : 'N/A'
 }
 
 const startSelectMode = () => { isSelectMode.value = true; selectedSessions.value = new Set() }

@@ -19,7 +19,7 @@ const label = computed(() => {
     rejected: 'Rejected', archived: 'Archived', inactive: 'Inactive',
     'not current': 'Not Current',
   }
-  return map[s] || props.status || '—'
+  return map[s] || props.status || 'N/A'
 })
 
 const variant = computed(() => {

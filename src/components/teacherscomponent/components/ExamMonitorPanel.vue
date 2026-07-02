@@ -37,7 +37,7 @@
             <tbody class="divide-y divide-slate-100">
               <tr v-for="attempt in attempts" :key="attempt.id" class="hover:bg-slate-50/80">
                 <td class="px-5 py-4">
-                  <p class="font-semibold text-slate-900">{{ attempt.student_name || attempt.student?.name || '—' }}</p>
+                  <p class="font-semibold text-slate-900">{{ attempt.student_name || attempt.student?.name || 'N/A' }}</p>
                   <p class="text-xs text-slate-500">{{ attempt.student?.email || attempt.student_email || '' }}</p>
                 </td>
                 <td class="px-5 py-4">
@@ -48,7 +48,7 @@
                         :style="{ width: `${getProgress(attempt)}%` }"
                       />
                     </div>
-                    <span class="text-sm text-slate-600">{{ attempt.answered_count ?? 0 }}/{{ attempt.total_questions ?? '—' }}</span>
+                    <span class="text-sm text-slate-600">{{ attempt.answered_count ?? 0 }}/{{ attempt.total_questions ?? 'N/A' }}</span>
                   </div>
                 </td>
                 <td class="px-5 py-4 text-sm text-slate-600">{{ attempt.flagged_count ?? 0 }}</td>
@@ -106,7 +106,7 @@ const getProgress = (attempt) => {
 }
 
 const formatTime = (seconds) => {
-  if (seconds == null) return '—'
+  if (seconds == null) return 'N/A'
   const m = Math.floor(seconds / 60)
   const s = seconds % 60
   return `${m}:${String(s).padStart(2, '0')}`

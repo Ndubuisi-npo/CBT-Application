@@ -297,7 +297,7 @@ function formatColumnLabel(column) {
 }
 
 function formatCell(value) {
-  if (value === null || value === undefined || value === '') return '-'
+  if (value === null || value === undefined || value === '') return 'N/A'
   return Array.isArray(value) ? value.join(', ') : value
 }
 

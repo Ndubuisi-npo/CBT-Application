@@ -50,7 +50,7 @@
               <td class="px-5 py-3.5 font-semibold text-slate-900">{{ subject.name }}</td>
               <td class="px-5 py-3.5">
                 <span v-if="subject.code" class="font-mono text-xs font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded">{{ subject.code }}</span>
-                <span v-else class="text-slate-400">—</span>
+                <span v-else class="text-slate-400">N/A</span>
               </td>
               <td class="px-5 py-3.5 text-sm text-slate-600">{{ formatClassLevels(subject) }}</td>
               <td class="px-5 py-3.5 text-sm text-slate-600">{{ formatAssignedTeachers(subject) }}</td>
@@ -110,12 +110,12 @@ const paginatedSubjects = computed(() => subjectsStore.subjects.slice((currentPa
 
 const formatClassLevels = (s) => {
   const levels = Array.isArray(s.class_levels) ? s.class_levels : Array.isArray(s.classLevels) ? s.classLevels : []
-  return levels.length ? levels.map((l) => l.name).join(', ') : '—'
+  return levels.length ? levels.map((l) => l.name).join(', ') : 'N/A'
 }
 const formatAssignedTeachers = (s) => {
   const assignments = Array.isArray(s.teacher_assignments) ? s.teacher_assignments : Array.isArray(s.teacherAssignments) ? s.teacherAssignments : []
   const names = assignments.map((a) => a.user ? `${a.user.first_name} ${a.user.last_name}`.trim() : null).filter(Boolean)
-  return names.length ? names.join(', ') : '—'
+  return names.length ? names.join(', ') : 'N/A'
 }
 
 const startSelectMode = () => { isSelectMode.value = true; selectedSubjects.value = new Set() }

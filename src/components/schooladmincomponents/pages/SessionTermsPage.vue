@@ -25,8 +25,8 @@
             <tbody class="divide-y divide-slate-100">
               <tr v-for="term in paginatedTerms" :key="term.id" class="transition hover:bg-slate-50/80">
                 <td class="px-5 py-4 font-semibold text-slate-900 text-nowrap">{{ term.name }}</td>
-                <td class="px-5 py-4 text-sm text-slate-600 text-nowrap">{{ fmtDate(term.startDate || term.start_date || '-') }}</td>
-                <td class="px-5 py-4 text-sm text-slate-600 text-nowrap">{{ fmtDate(term.endDate || term.end_date || '-') }}</td>
+                <td class="px-5 py-4 text-sm text-slate-600 text-nowrap">{{ fmtDate(term.startDate || term.start_date) || 'N/A' }}</td>
+                <td class="px-5 py-4 text-sm text-slate-600 text-nowrap">{{ fmtDate(term.endDate || term.end_date) || 'N/A' }}</td>
                 <td class="px-5 py-4">
                   <div class="flex gap-2">
                     <AppButton text="Edit" @click="editTerm(term)" variant="outline" size="xs" />

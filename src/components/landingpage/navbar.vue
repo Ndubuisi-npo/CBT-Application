@@ -11,8 +11,7 @@
       <nav class="hidden items-center gap-8 text-base text-slate-600 md:flex font-medium underline underline-offset-4">
         <button type="button" class="cursor-pointer hover:text-slate-900" @click="scrollToSection('features')">Features</button>
         <button type="button" class="cursor-pointer hover:text-slate-900" @click="scrollToSection('how-it-works')">How It Works</button>
-        <!-- <a href="#" class="cursor-pointer hover:text-slate-900">Pricing</a>
-        <a href="#" class="cursor-pointer hover:text-slate-900">FAQ</a> -->
+        <Link to="/pricing" class="cursor-pointer hover:text-slate-900">Pricing</Link>
       </nav>
 
       <Link

@@ -42,8 +42,8 @@
                   <span class="inline-flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
                   <h3 class="truncate text-lg font-semibold text-slate-900">{{ exam.title }}</h3>
                 </div>
-                <p class="mt-1 text-sm text-slate-500">{{ exam.subject || '—' }} • {{ exam.class_level?.name || '—' }}</p>
-                <p class="mt-2 text-sm text-slate-600">Duration: {{ exam.duration || '—' }} min</p>
+                <p class="mt-1 text-sm text-slate-500">{{ exam.subject || 'N/A' }} • {{ exam.class_level?.name || 'N/A' }}</p>
+                <p class="mt-2 text-sm text-slate-600">Duration: {{ exam.duration || 'N/A' }} min</p>
               </div>
               <div class="flex flex-col items-end gap-2 shrink-0">
                 <span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">Live</span>
@@ -129,7 +129,7 @@ const scoreClass = (pct) => {
 const getExamTitle = (result) => result?.exam?.title || result?.exam_title || result?.title || 'Exam result'
 const getExamSubject = (result) => result?.exam?.subject?.name || result?.subject?.name || result?.subject || result?.exam?.subject || ''
 const getScore = (result) => result?.total_score ?? result?.score ?? result?.score_obtained ?? 0
-const getTotalMarks = (result) => result?.total_marks ?? result?.exam?.total_marks ?? '—'
+const getTotalMarks = (result) => result?.total_marks ?? result?.exam?.total_marks ?? 'N/A'
 const getPercentage = (result) => result?.percentage_score ?? result?.percentage ?? result?.score_percentage ?? null
 
 const loadExams = async () => {

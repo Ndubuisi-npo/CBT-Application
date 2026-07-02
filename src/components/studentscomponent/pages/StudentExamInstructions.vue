@@ -10,7 +10,7 @@
       <div class="rounded-[24px] bg-[#0B1F3A] p-6 text-white">
         <p class="text-xs font-semibold uppercase tracking-[0.28em] text-[#D4AF37]">Exam Instructions</p>
         <h1 class="mt-3 text-2xl font-semibold">{{ exam.title }}</h1>
-        <p class="mt-2 text-sm text-slate-300">{{ exam.subject || '—' }} • {{ exam.class_level?.name || '—' }}</p>
+        <p class="mt-2 text-sm text-slate-300">{{ exam.subject || 'N/A' }} • {{ exam.class_level?.name || 'N/A' }}</p>
       </div>
 
       <!-- Exam details -->
@@ -22,7 +22,7 @@
         </div>
         <div class="rounded-[20px] border border-slate-200 bg-white p-4 text-center">
           <p class="text-xs uppercase tracking-[0.18em] text-slate-400">Questions</p>
-          <p class="mt-2 text-xl font-bold text-slate-900">{{ exam.questions?.length || '—' }}</p>
+          <p class="mt-2 text-xl font-bold text-slate-900">{{ exam.questions?.length || 'N/A' }}</p>
           <p class="text-xs text-slate-500">total</p>
         </div>
         <div class="rounded-[20px] border border-slate-200 bg-white p-4 text-center">
@@ -142,7 +142,7 @@ const beginExam = async () => {
     const status = err?.status || 0
 
     if (status === 409) {
-      // Attempt already exists — resume
+      // Attempt already exists N/A resume
       router.push({ name: 'StudentExam', params: { id: examId } })
       return
     }

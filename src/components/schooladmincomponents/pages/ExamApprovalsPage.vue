@@ -49,7 +49,7 @@
                 <StatusBadge :status="normalizeStatus(exam.status)" />
               </div>
               <p class="mt-1 text-sm text-slate-500">
-                {{ exam.subject?.name || exam.subject || '—' }} · {{ exam.classLevel?.name || '—' }} · {{ exam.classArm?.name || '—' }}
+                {{ exam.subject?.name || exam.subject || 'N/A' }} · {{ exam.classLevel?.name || 'N/A' }} · {{ exam.classArm?.name || 'N/A' }}
               </p>
               <div class="mt-3 flex flex-wrap gap-3">
                 <div class="rounded-lg bg-white px-3 py-2 text-xs ring-1 ring-slate-200">
@@ -107,7 +107,7 @@
                 <StatusBadge :status="normalizeStatus(exam.status)" />
               </div>
               <p class="mt-1 text-sm text-slate-500">
-                {{ exam.subject?.name || exam.subject || '—' }} · {{ exam.classLevel?.name || '—' }} · {{ exam.classArm?.name || '—' }}
+                {{ exam.subject?.name || exam.subject || 'N/A' }} · {{ exam.classLevel?.name || 'N/A' }} · {{ exam.classArm?.name || 'N/A' }}
               </p>
             </div>
             <div class="flex flex-wrap items-center gap-2 lg:shrink-0">
@@ -145,6 +145,7 @@ import ConfirmModal from '../../teacherscomponent/components/ConfirmModal.vue'
 import ExamPreviewModal from '../../teacherscomponent/components/ExamPreviewModal.vue'
 import { useTeacherExamsStore } from '../../teacherscomponent/stores/exams'
 import { useSchoolAdminUiStore } from '../stores/ui'
+import { displayOrNA } from '../../../js/lib/utils'
 
 const store = useTeacherExamsStore()
 const uiStore = useSchoolAdminUiStore()
@@ -169,8 +170,34 @@ const activeCount = computed(() => activeExams.value.length)
 const completedCount = computed(() => completedExams.value.length)
 const completedPublishedCount = computed(() => completedPublishedExams.value.length)
 
-const getExpectedAttempts = (e) => e.expected_attempts ?? e.total_students ?? e.class_arm?.student_count ?? e.class_level?.student_count ?? e.students?.length ?? 0
-const getCompletedAttempts = (e) => e.completed_attempts ?? e.submitted_attempts ?? e.attempts_count ?? e.attempts?.filter((a) => ['submitted', 'completed'].includes((a?.status || '').toLowerCase())).length ?? 0
+const getExpectedAttempts = (e) => {
+  return (
+    e.expected_attempts ??
+    e.total_students ??
+    e.student_count ??
+    e.class_arm?.student_count ??
+    e.classArm?.student_count ??
+    e.class_level?.student_count ??
+    e.classLevel?.student_count ??
+    e.class_arm?.students?.length ??
+    e.classArm?.students?.length ??
+    e.class_level?.students?.length ??
+    e.classLevel?.students?.length ??
+    e.students?.length ??
+    0
+  )
+}
+const getCompletedAttempts = (e) => {
+  return (
+    e.completed_attempts ??
+    e.submitted_attempts ??
+    e.attempts_count ??
+    e.completedAttempts ??
+    e.submittedAttempts ??
+    e.attempts?.filter((a) => ['submitted', 'completed'].includes((a?.status || '').toLowerCase())).length ??
+    0
+  )
+}
 const canDeleteExam = (status) => !['active', 'published', 'draft'].includes(normalizeStatus(status))
 const getQuestionCount = (exam) => {
   const explicit = [exam.question_count, exam.questions_count, exam.questionsCount, exam.questionCount].find((v) => v != null && v !== '')

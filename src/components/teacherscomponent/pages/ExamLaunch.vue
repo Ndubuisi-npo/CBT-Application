@@ -10,15 +10,15 @@
       <div class="grid gap-4 pt-6 md:grid-cols-3">
         <div class="rounded-2xl bg-slate-50 p-4 text-sm">
           <p class="text-slate-400 text-xs uppercase tracking-wider">Subject</p>
-          <p class="mt-2 font-semibold text-slate-900">{{ exam?.subject || '-' }}</p>
+          <p class="mt-2 font-semibold text-slate-900">{{ displayOrNA(exam?.subject) }}</p>
         </div>
         <div class="rounded-2xl bg-slate-50 p-4 text-sm">
           <p class="text-slate-400 text-xs uppercase tracking-wider">Class</p>
-          <p class="mt-2 font-semibold text-slate-900">{{ exam?.className || '-' }}</p>
+          <p class="mt-2 font-semibold text-slate-900">{{ displayOrNA(exam?.className) }}</p>
         </div>
         <div class="rounded-2xl bg-slate-50 p-4 text-sm">
           <p class="text-slate-400 text-xs uppercase tracking-wider">Duration</p>
-          <p class="mt-2 font-semibold text-slate-900">{{ exam?.duration || '-' }} min</p>
+          <p class="mt-2 font-semibold text-slate-900">{{ displayOrNA(exam?.duration) }} min</p>
         </div>
       </div>
     </SectionCard>
@@ -32,7 +32,7 @@
           </div>
           <div class="rounded-2xl bg-slate-50 p-4 text-sm">
             <p class="text-slate-400 text-xs uppercase tracking-wider">Total Marks</p>
-            <p class="mt-2 font-semibold text-slate-900">{{ exam?.total_marks ?? exam?.totalMarks ?? '—' }}</p>
+            <p class="mt-2 font-semibold text-slate-900">{{ exam?.total_marks ?? exam?.totalMarks ?? 'N/A' }}</p>
           </div>
           <div class="rounded-2xl bg-slate-50 p-4 text-sm">
             <p class="text-slate-400 text-xs uppercase tracking-wider">Scheduled Start</p>
@@ -72,6 +72,7 @@ import SectionCard from '../components/SectionCard.vue'
 import { useTeacherExamsStore } from '../stores/exams'
 import { useSchoolAdminUiStore } from '../../schooladmincomponents/stores/ui'
 import { fmtDateTime } from '../../../js/lib/helpers'
+import { displayOrNA } from '../../../js/lib/utils'
 
 const route = useRoute()
 const router = useRouter()

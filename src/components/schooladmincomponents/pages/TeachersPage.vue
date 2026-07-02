@@ -84,13 +84,13 @@
                   </div>
                   <div>
                     <p class="font-medium text-slate-900">{{ teacher.first_name }} {{ teacher.last_name }}</p>
-                    <p class="text-xs text-slate-500">{{ teacher.email || '—' }}</p>
+                    <p class="text-xs text-slate-500">{{ teacher.email || 'N/A' }}</p>
                   </div>
                 </div>
               </td>
-              <td class="px-5 py-3.5 text-sm text-slate-600">{{ teacher.teacherProfile?.staff_id || teacher.teacher_profile?.staff_id || '—' }}</td>
-              <td class="px-5 py-3.5 text-sm text-slate-600">{{ teacher.phone || '—' }}</td>
-              <td class="px-5 py-3.5 text-sm text-slate-600">{{ teacher.teacherProfile?.qualification || teacher.teacher_profile?.qualification || '—' }}</td>
+              <td class="px-5 py-3.5 text-sm text-slate-600">{{ teacher.teacherProfile?.staff_id || teacher.teacher_profile?.staff_id || 'N/A' }}</td>
+              <td class="px-5 py-3.5 text-sm text-slate-600">{{ teacher.phone || 'N/A' }}</td>
+              <td class="px-5 py-3.5 text-sm text-slate-600">{{ teacher.teacherProfile?.qualification || teacher.teacher_profile?.qualification || 'N/A' }}</td>
               <td class="px-5 py-3.5">
                 <div class="flex items-center gap-2 opacity-0 transition group-hover:opacity-100">
                   <button class="rounded-lg px-2.5 py-1 text-xs font-medium text-slate-600 ring-1 ring-slate-200 transition hover:bg-slate-100" @click="viewTeacher(teacher)">View</button>
@@ -159,12 +159,12 @@
                   <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-200 text-xs font-semibold text-slate-500">{{ initials(teacher) }}</div>
                   <div>
                     <p class="font-medium text-slate-700">{{ teacher.first_name }} {{ teacher.last_name }}</p>
-                    <p class="text-xs text-slate-400">{{ teacher.email || '—' }}</p>
+                    <p class="text-xs text-slate-400">{{ teacher.email || 'N/A' }}</p>
                   </div>
                 </div>
               </td>
-              <td class="px-5 py-3.5 text-sm text-slate-500">{{ teacher.teacherProfile?.staff_id || teacher.teacher_profile?.staff_id || '—' }}</td>
-              <td class="px-5 py-3.5 text-sm text-slate-500">{{ teacher.phone || '—' }}</td>
+              <td class="px-5 py-3.5 text-sm text-slate-500">{{ teacher.teacherProfile?.staff_id || teacher.teacher_profile?.staff_id || 'N/A' }}</td>
+              <td class="px-5 py-3.5 text-sm text-slate-500">{{ teacher.phone || 'N/A' }}</td>
               <td class="px-5 py-3.5">
                 <div class="flex items-center gap-2 opacity-0 transition group-hover:opacity-100">
                   <button class="rounded-lg px-2.5 py-1 text-xs font-medium text-emerald-600 ring-1 ring-emerald-200 transition hover:bg-emerald-50" :disabled="restoreLoading.has(teacher.id)" @click="restoreArchivedTeacher(teacher.id)">{{ restoreLoading.has(teacher.id) ? 'Restoring…' : 'Restore' }}</button>

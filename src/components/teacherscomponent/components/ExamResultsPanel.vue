@@ -35,18 +35,18 @@
             <tbody class="divide-y divide-slate-100">
               <tr v-for="result in results" :key="result.id" class="hover:bg-slate-50/80">
                 <td class="px-5 py-4">
-                  <p class="font-semibold text-slate-900">{{ result.student_name || result.student?.name || '—' }}</p>
+                  <p class="font-semibold text-slate-900">{{ result.student_name || result.student?.name || 'N/A' }}</p>
                 </td>
-                <td class="px-5 py-4 text-sm text-slate-700">{{ result.score ?? '—' }} / {{ result.total_marks ?? '—' }}</td>
+                <td class="px-5 py-4 text-sm text-slate-700">{{ result.score ?? 'N/A' }} / {{ result.total_marks ?? 'N/A' }}</td>
                 <td class="px-5 py-4 text-sm font-semibold" :class="pctClass(result.percentage)">
-                  {{ result.percentage != null ? `${result.percentage}%` : '—' }}
+                  {{ result.percentage != null ? `${result.percentage}%` : 'N/A' }}
                 </td>
                 <td class="px-5 py-4">
                   <span class="rounded-full px-3 py-1 text-xs font-semibold bg-slate-100 text-slate-700">
-                    {{ result.grade || '—' }}
+                    {{ result.grade || 'N/A' }}
                   </span>
                 </td>
-                <td class="px-5 py-4 text-sm text-slate-500">{{ result.status || '—' }}</td>
+                <td class="px-5 py-4 text-sm text-slate-500">{{ result.status || 'N/A' }}</td>
               </tr>
             </tbody>
           </table>

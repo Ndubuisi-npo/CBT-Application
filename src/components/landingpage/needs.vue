@@ -29,13 +29,13 @@
             {{ feature.description }}
           </p>
 
-          <a
-            href="#"
+          <RouterLink
+            :to="`/features/${feature.slug}`"
             class="lp-link mt-auto inline-flex items-center gap-2 pt-5 text-sm font-semibold text-amber-300 hover:text-amber-500"
             >
             Learn more
             <ArrowRight class="h-4 w-4" />
-            </a>
+          </RouterLink>
         </article>
       </div>
     </div>
@@ -44,30 +44,35 @@
 
 <script setup lang="ts">
 import { ArrowRight, BarChart3, BookOpen, Building2, Users } from 'lucide-vue-next'
+import { RouterLink } from 'vue-router'
 
 const features = [
   {
-    title: 'Student Management',
-    description: 'Track attendance, grades, and behavior in one unified profile.',
-    icon: Users,
+    title: 'Exam Management',
+    description: 'Create exams, submit them for admin approval, and activate them for students.',
+    icon: BookOpen,
+    slug: 'exam-management',
     cardClass: 'bg-rose-50/60',
   },
   {
-    title: 'Curriculum Planning',
-    description: 'Collaborative lesson planning and resource sharing for teachers.',
-    icon: BookOpen,
+    title: 'Results Tracking',
+    description: 'Monitor completed exams and publish results for students with confidence.',
+    icon: BarChart3,
+    slug: 'results-tracking',
     cardClass: 'bg-indigo-50/70',
   },
   {
-    title: 'Staff Portal',
-    description: 'Streamline HR, payroll, and professional development.',
+    title: 'Academic Management',
+    description: 'Organize sessions, classes, and subjects across your school in one place.',
     icon: Building2,
+    slug: 'academic-management',
     cardClass: 'bg-emerald-50/60',
   },
   {
-    title: 'Analytics Dashboard',
-    description: 'Real-time insights into school performance and student success.',
-    icon: BarChart3,
+    title: 'Staff & Student Management',
+    description: 'Manage teachers, students, and class assignments easily from the dashboard.',
+    icon: Users,
+    slug: 'staff-student-management',
     cardClass: 'bg-amber-50/50',
   },
 ]

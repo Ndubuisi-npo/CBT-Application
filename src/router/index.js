@@ -5,6 +5,8 @@ import { getTenantHandle } from '../js/lib/api'
 // ─── Landing & Onboarding ─────────────────────────────────────────────────────
 import LandingPage from '../components/landingpage/landingPage.vue'
 import Onboarding from '../components/onboardingpage/onboarding.vue'
+import PricingPage from '../components/landingpage/PricingPage.vue'
+import FeatureDetailPage from '../components/landingpage/FeatureDetailPage.vue'
 
 // ─── School Admin ─────────────────────────────────────────────────────────────
 import SchoolAdminRoot from '../components/schooladmincomponents/SchoolAdminRoot.vue'
@@ -57,6 +59,8 @@ import SuperAdminSettings from '../components/superadmincomponent/pages/Settings
 const routes = [
   // ── Public ──────────────────────────────────────────────────────────────
   { path: '/', name: 'LandingPage', component: LandingPage },
+  { path: '/pricing', name: 'PricingPage', component: PricingPage },
+  { path: '/features/:slug', name: 'FeatureDetailPage', component: FeatureDetailPage, props: true },
   { path: '/onboarding', name: 'Onboarding', component: Onboarding },
   { path: '/login', name: 'Login', component: SchoolAdminLogin },
   { path: '/signin', redirect: '/login' },

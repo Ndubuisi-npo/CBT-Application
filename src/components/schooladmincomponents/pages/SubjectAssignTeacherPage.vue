@@ -143,7 +143,7 @@ const getSessionName = (sessionId) => {
 }
 
 const formatDate = (dateString) => {
-  if (!dateString) return '-'
+  if (!dateString) return 'N/A'
   return new Date(dateString).toLocaleDateString()
 }
 

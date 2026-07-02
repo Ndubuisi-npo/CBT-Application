@@ -1,6 +1,6 @@
 <template>
   <div class="space-y-6">
-    <SectionCard :title="`Exam Monitor — ${exam?.title || '…'}`" subtitle="This monitoring view has been simplified for the new lifecycle.">
+    <SectionCard :title="`Exam Monitor N/A ${exam?.title || '…'}`" subtitle="This monitoring view has been simplified for the new lifecycle.">
       <template #header>
         <div class="flex items-center gap-3">
           <AppButton text="← Back" variant="ghost" @click="$router.push('/teachers/exams')" />

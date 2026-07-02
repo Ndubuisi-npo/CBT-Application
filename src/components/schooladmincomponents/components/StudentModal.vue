@@ -225,7 +225,7 @@ const isView = computed(() => props.mode === 'view')
 const displayValue = (value) => (value === null || value === undefined || value === '' ? 'N/A' : value)
 const firstValue = (...values) => values.find((value) => value !== null && value !== undefined && value !== '')
 
-// Student profile shorthand — check both camelCase and snake_case
+// Student profile shorthand N/A check both camelCase and snake_case
 const sp = computed(() => {
   if (!props.student) return null
   return props.student.studentProfile

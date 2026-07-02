@@ -30,7 +30,7 @@
     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <AppStatCard
         label="Total Students"
-        :value="studentsStore.students?.length ?? '—'"
+        :value="studentsStore.students?.length ?? 'N/A'"
         :loading="studentsStore.loading"
         :icon="GraduationCap"
         icon-bg="bg-blue-50"
@@ -39,7 +39,7 @@
       />
       <AppStatCard
         label="Total Teachers"
-        :value="teachersStore.teachers?.length ?? '—'"
+        :value="teachersStore.teachers?.length ?? 'N/A'"
         :loading="teachersStore.loading"
         :icon="Users"
         icon-bg="bg-emerald-50"
@@ -48,7 +48,7 @@
       />
       <AppStatCard
         label="Class Levels"
-        :value="classLevelsStore.classLevels?.length ?? '—'"
+        :value="classLevelsStore.classLevels?.length ?? 'N/A'"
         :loading="classLevelsStore.loading"
         :icon="Columns3"
         icon-bg="bg-violet-50"
@@ -57,7 +57,7 @@
       />
       <AppStatCard
         label="Subjects"
-        :value="subjectsStore.subjects?.length ?? '—'"
+        :value="subjectsStore.subjects?.length ?? 'N/A'"
         :loading="subjectsStore.loading"
         :icon="Shapes"
         icon-bg="bg-amber-50"
@@ -69,7 +69,7 @@
     <!-- ── Main content grid ───────────────────────────────────────────────── -->
     <div class="grid gap-6 xl:grid-cols-3">
 
-      <!-- Quick nav cards — 2/3 width -->
+      <!-- Quick nav cards N/A 2/3 width -->
       <div class="xl:col-span-2 space-y-6">
         <section class="rounded-2xl border border-slate-200 bg-white p-6">
           <div class="mb-5 flex items-center justify-between">
@@ -105,13 +105,13 @@
             <p class="text-sm font-semibold text-blue-900">Exam management is owned by teachers</p>
             <p class="mt-1 text-sm text-blue-700">
               Teachers create, configure, launch, and publish results for all exams. As school admin, you define the
-              academic structure — classes, subjects, and sessions — that teachers build on.
+              academic structure N/A classes, subjects, and sessions N/A that teachers build on.
             </p>
           </div>
         </div>
       </div>
 
-      <!-- Activity sidebar — 1/3 width -->
+      <!-- Activity sidebar N/A 1/3 width -->
       <section class="rounded-2xl border border-slate-200 bg-white p-6">
         <div class="mb-5 flex items-center justify-between">
           <h2 class="text-lg font-semibold text-slate-900">System Summary</h2>
@@ -256,7 +256,7 @@ const navCards = [
 const summaryItems = computed(() => [
   {
     label: 'Students',
-    value: studentsStore.students?.length ?? '—',
+    value: studentsStore.students?.length ?? 'N/A',
     loading: studentsStore.loading,
     icon: GraduationCap,
     iconBg: 'bg-blue-50',
@@ -264,7 +264,7 @@ const summaryItems = computed(() => [
   },
   {
     label: 'Teachers',
-    value: teachersStore.teachers?.length ?? '—',
+    value: teachersStore.teachers?.length ?? 'N/A',
     loading: teachersStore.loading,
     icon: Users,
     iconBg: 'bg-emerald-50',
@@ -272,7 +272,7 @@ const summaryItems = computed(() => [
   },
   {
     label: 'Class Levels',
-    value: classLevelsStore.classLevels?.length ?? '—',
+    value: classLevelsStore.classLevels?.length ?? 'N/A',
     loading: classLevelsStore.loading,
     icon: Columns3,
     iconBg: 'bg-violet-50',
@@ -280,7 +280,7 @@ const summaryItems = computed(() => [
   },
   {
     label: 'Subjects',
-    value: subjectsStore.subjects?.length ?? '—',
+    value: subjectsStore.subjects?.length ?? 'N/A',
     loading: subjectsStore.loading,
     icon: Shapes,
     iconBg: 'bg-amber-50',

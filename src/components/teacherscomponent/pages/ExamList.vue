@@ -76,12 +76,12 @@
                 </span>
               </div>
               <p class="text-sm text-slate-500">
-                {{ exam.subject?.name || exam.subject || '—' }} &nbsp;|&nbsp; {{ exam.classLevel?.name || '—' }} &nbsp;|&nbsp; {{ exam.classArm?.name || '—' }} &nbsp;|&nbsp; {{ exam.type || 'exam' }}
+                {{ exam.subject?.name || exam.subject || 'N/A' }} &nbsp;|&nbsp; {{ exam.classLevel?.name || 'N/A' }} &nbsp;|&nbsp; {{ exam.classArm?.name || 'N/A' }} &nbsp;|&nbsp; {{ exam.type || 'exam' }}
               </p>
               <div class="grid gap-3 md:grid-cols-4">
                 <div class="rounded-2xl bg-slate-50 px-4 py-3 text-sm">
                   <p class="text-xs uppercase tracking-[0.18em] text-slate-400">Duration</p>
-                  <p class="mt-2 font-medium text-slate-900">{{ exam.duration_minutes || exam.duration || '—' }} min</p>
+                  <p class="mt-2 font-medium text-slate-900">{{ displayOrNA(exam.duration_minutes ?? exam.duration) }} min</p>
                 </div>
                 <div class="rounded-2xl bg-slate-50 px-4 py-3 text-sm">
                   <p class="text-xs uppercase tracking-[0.18em] text-slate-400">Questions</p>
@@ -89,7 +89,7 @@
                 </div>
                 <div class="rounded-2xl bg-slate-50 px-4 py-3 text-sm">
                   <p class="text-xs uppercase tracking-[0.18em] text-slate-400">Pass Mark</p>
-                  <p class="mt-2 font-medium text-slate-900">{{ exam.pass_mark ?? exam.passMark ?? '—' }}%</p>
+                  <p class="mt-2 font-medium text-slate-900">{{ exam.pass_mark ?? exam.passMark ?? 'N/A' }}%</p>
                 </div>
               </div>
             </div>
@@ -99,13 +99,13 @@
               <!-- Always available -->
               <AppButton :icon="Eye" text="Preview" variant="ghost" size="sm" @click="previewExam(exam)" />
 
-              <!-- Edit/Questions — only for draft -->
+              <!-- Edit/Questions N/A only for draft -->
               <template v-if="store.canEdit(exam)">
                 <AppButton :icon="Edit3" text="Continue Draft" variant="outline" size="sm" @click="$router.push(`/teachers/exams/create?edit=${exam.id}`)" />
                 <AppButton :icon="ListChecks" text="Questions" variant="secondary" size="sm" @click="manageQuestions(exam)" />
               </template>
 
-              <!-- Results — completed exams only -->
+              <!-- Results N/A completed exams only -->
               <!-- <template v-if="(exam.status || '').toLowerCase() === 'completed'">
                 <AppButton :icon="BarChart2" text="Results" variant="outline" size="sm" @click="viewResults(exam)" />
               </template> -->
@@ -121,7 +121,7 @@
                 />
               </template>
 
-              <!-- Delete — only for draft/locked -->
+              <!-- Delete N/A only for draft/locked -->
               <template v-if="store.canDelete(exam)">
                 <AppButton :icon="Trash2" text="Delete" variant="danger" size="sm" @click="confirmDelete(exam)" />
               </template>
@@ -193,6 +193,7 @@ import { computed, onMounted, ref } from 'vue'
 import { BarChart2, Edit3, Eye, FileQuestion, ListChecks, Plus, Trash2 } from 'lucide-vue-next'
 import AppButton from '../../shared/AppButton.vue'
 import SectionCard from '../components/SectionCard.vue'
+import { displayOrNA } from '../../../js/lib/utils'
 import ConfirmModal from '../components/ConfirmModal.vue'
 import ExamFormModal from '../components/ExamFormModal.vue'
 import ExamQuestionsPanel from '../components/ExamQuestionsPanel.vue'
@@ -328,7 +329,7 @@ const handleLifecycleAction = (exam, actionDef) => {
     const config = {
       examId: exam.id,
       action: actionDef.action,
-      title: `${actionDef.label} — "${exam.title}"?`,
+      title: `${actionDef.label} N/A "${exam.title}"?`,
       message: actionDef.description,
       confirmLabel: actionDef.confirmLabel || actionDef.label,
       variant: actionDef.variant === 'danger' ? 'danger' : 'primary',

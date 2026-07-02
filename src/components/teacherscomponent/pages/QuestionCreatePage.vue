@@ -288,7 +288,7 @@
           <div class="mb-5 flex items-center justify-between">
             <div>
               <h2 class="text-base font-semibold text-slate-900">Acceptable Answers</h2>
-              <p class="mt-0.5 text-sm text-slate-500">All entries are treated as correct. Do not mark a "correct" answer — the API rejects it.</p>
+              <p class="mt-0.5 text-sm text-slate-500">All entries are treated as correct. Do not mark a "correct" answer N/A the API rejects it.</p>
             </div>
             <button
               type="button"
@@ -342,7 +342,7 @@
           <h2 class="mb-4 text-base font-semibold text-slate-900">Live Preview</h2>
           <div class="rounded-xl border border-slate-200 bg-slate-50 p-5">
             <div class="flex flex-wrap gap-2">
-              <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{{ typeLabel || '—' }}</span>
+              <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{{ typeLabel || 'N/A' }}</span>
               <span v-if="form.type === 'mcq' && form.allow_multiple_answers" class="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">Multiple Answer</span>
               <span v-if="selectedSubjectName" class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{{ selectedSubjectName }}</span>
               <span v-if="selectedClassName" class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{{ selectedClassName }}</span>
@@ -435,8 +435,8 @@
         <section class="rounded-2xl border border-slate-200 bg-white p-5">
           <h2 class="text-sm font-semibold text-slate-900">Save Status</h2>
           <p class="mt-2 text-xs leading-5 text-slate-500">
-            <strong>Draft</strong> — keeps the question private until reviewed.<br />
-            <strong>Published</strong> — makes it available for use in exam creation immediately.
+            <strong>Draft</strong> N/A keeps the question private until reviewed.<br />
+            <strong>Published</strong> N/A makes it available for use in exam creation immediately.
           </p>
         </section>
       </div>
@@ -589,12 +589,12 @@ const removeOption = (index) => {
   form.options.splice(index, 1)
 }
 
-/** Single-answer: radio — only one can be correct */
+/** Single-answer: radio N/A only one can be correct */
 const markCorrect = (index) => {
   form.options.forEach((o, i) => { o.is_correct = i === index })
 }
 
-/** Multiple-answer: checkbox — toggle individual option */
+/** Multiple-answer: checkbox N/A toggle individual option */
 const toggleCorrect = (index) => {
   form.options[index].is_correct = !form.options[index].is_correct
 }
@@ -737,7 +737,7 @@ const submitQuestion = async (status) => {
         { content: 'False', is_correct: form.true_false_correct === 'False' },
       ]
     } else {
-      // fill_in_blank — is_correct must NOT be included (server rejects with 422)
+      // fill_in_blank N/A is_correct must NOT be included (server rejects with 422)
       options = form.acceptable_answers
         .filter((a) => a.content?.trim())
         .map((a) => ({

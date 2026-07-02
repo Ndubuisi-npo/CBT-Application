@@ -6,8 +6,8 @@
           <p class="text-xs font-semibold uppercase tracking-[0.24em] text-[#D4AF37]">Preview</p>
           <h2 class="mt-1 text-xl font-semibold text-slate-900">{{ exam.title }}</h2>
           <p class="mt-1 text-sm text-slate-500">
-            {{ exam.subject?.name || exam.subject || '—' }} &nbsp;|&nbsp;
-            {{ exam.classLevel?.name || exam.class_arm?.name || exam.class_name || exam.className || '—' }} &nbsp;|&nbsp;
+            {{ exam.subject?.name || exam.subject || 'N/A' }} &nbsp;|&nbsp;
+            {{ exam.classLevel?.name || exam.class_arm?.name || exam.class_name || exam.className || 'N/A' }} &nbsp;|&nbsp;
             {{ questionCount }} questions
           </p>
         </div>

@@ -40,7 +40,7 @@ import { TrendingUp, TrendingDown } from 'lucide-vue-next'
 
 const props = defineProps({
   label: { type: String, required: true },
-  value: { type: [String, Number], default: '—' },
+  value: { type: [String, Number], default: 'N/A' },
   sub: { type: String, default: '' },
   icon: { type: [Object, Function], required: true },
   iconBg: { type: String, default: 'bg-blue-50' },

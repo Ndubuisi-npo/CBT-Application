@@ -58,11 +58,11 @@
             </div>
             <div class="rounded-xl bg-slate-50 px-4 py-3">
               <p class="text-xs text-slate-400">Admission No.</p>
-              <p class="mt-0.5 text-sm font-semibold text-slate-900">{{ admissionNumber || '—' }}</p>
+              <p class="mt-0.5 text-sm font-semibold text-slate-900">{{ admissionNumber || 'N/A' }}</p>
             </div>
             <div class="rounded-xl bg-slate-50 px-4 py-3">
               <p class="text-xs text-slate-400">Class</p>
-              <p class="mt-0.5 text-sm font-semibold text-slate-900">{{ studentClass || '—' }}</p>
+              <p class="mt-0.5 text-sm font-semibold text-slate-900">{{ studentClass || 'N/A' }}</p>
             </div>
           </div>
         </div>
@@ -78,10 +78,10 @@
           </div>
           <div class="text-right">
             <p class="text-3xl font-bold" :class="scoreColorClass(percentage)">
-              {{ percentage != null ? `${percentage}%` : '—' }}
+              {{ percentage != null ? `${percentage}%` : 'N/A' }}
             </p>
             <p class="text-sm text-slate-500">{{ totalScore }} / {{ totalMarks }} marks</p>
-            <p class="mt-1 text-lg font-semibold text-slate-700">{{ result.grade || '—' }}</p>
+            <p class="mt-1 text-lg font-semibold text-slate-700">{{ result.grade || 'N/A' }}</p>
           </div>
         </div>
 
@@ -92,7 +92,7 @@
           </div>
           <div class="rounded-xl bg-slate-50 px-4 py-3">
             <p class="text-xs text-slate-400">Submitted</p>
-            <p class="mt-0.5 text-sm font-semibold text-slate-900">{{ fmtDate(result.submitted_at || result.completed_at) || '—' }}</p>
+            <p class="mt-0.5 text-sm font-semibold text-slate-900">{{ fmtDate(result.submitted_at || result.completed_at) || 'N/A' }}</p>
           </div>
           <div class="rounded-xl bg-slate-50 px-4 py-3">
             <p class="text-xs text-slate-400">Time Spent</p>
@@ -190,7 +190,7 @@ const studentClass = computed(() => {
 const examTitle = computed(() => result.value?.exam?.title || result.value?.exam_title || 'Exam Result')
 const examSubject = computed(() => result.value?.exam?.subject?.name || result.value?.subject?.name || result.value?.subject || '')
 const totalScore = computed(() => result.value?.total_score ?? result.value?.score ?? 0)
-const totalMarks = computed(() => result.value?.total_marks ?? result.value?.exam?.total_marks ?? '—')
+const totalMarks = computed(() => result.value?.total_marks ?? result.value?.exam?.total_marks ?? 'N/A')
 const percentage = computed(() => result.value?.percentage_score ?? result.value?.percentage ?? null)
 
 // ── Questions ─────────────────────────────────────────────────────────────────

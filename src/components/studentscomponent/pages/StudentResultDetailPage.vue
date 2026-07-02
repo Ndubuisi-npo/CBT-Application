@@ -42,7 +42,7 @@
             </div>
             <div class="text-right">
               <p class="text-3xl font-bold" :class="scoreColorClass(percentage)">
-                {{ percentage != null ? `${percentage}%` : '—' }}
+                {{ percentage != null ? `${percentage}%` : 'N/A' }}
               </p>
               <p class="text-sm text-slate-500">{{ totalScore }} / {{ totalMarks }} marks</p>
               <p class="mt-1 text-lg font-semibold text-slate-700">{{ grade }}</p>
@@ -59,7 +59,7 @@
           <div class="rounded-2xl border border-slate-200 bg-white p-5">
             <p class="text-xs font-semibold uppercase tracking-widest text-slate-400">Percentage</p>
             <p class="mt-2 text-2xl font-bold" :class="scoreColorClass(percentage)">
-              {{ percentage != null ? `${percentage}%` : '—' }}
+              {{ percentage != null ? `${percentage}%` : 'N/A' }}
             </p>
           </div>
           <div class="rounded-2xl border border-slate-200 bg-white p-5">
@@ -94,7 +94,7 @@
             </div>
             <div class="rounded-xl bg-slate-50 px-4 py-3">
               <p class="text-xs text-slate-400">Submitted</p>
-              <p class="mt-0.5 text-sm font-semibold text-slate-900">{{ fmtDate(result.submitted_at || result.completed_at) || '—' }}</p>
+              <p class="mt-0.5 text-sm font-semibold text-slate-900">{{ fmtDate(result.submitted_at || result.completed_at) || 'N/A' }}</p>
             </div>
             <div class="rounded-xl bg-slate-50 px-4 py-3">
               <p class="text-xs text-slate-400">Status</p>
@@ -143,7 +143,7 @@ const loadError = ref('')
 const examTitle = computed(() => result.value?.exam?.title || result.value?.exam_title || 'Exam Result')
 const examSubject = computed(() => result.value?.exam?.subject?.name || result.value?.subject?.name || result.value?.subject || '')
 const totalScore = computed(() => result.value?.total_score ?? result.value?.score ?? 0)
-const totalMarks = computed(() => result.value?.total_marks ?? result.value?.exam?.total_marks ?? '—')
+const totalMarks = computed(() => result.value?.total_marks ?? result.value?.exam?.total_marks ?? 'N/A')
 const percentage = computed(() => result.value?.percentage_score ?? result.value?.percentage ?? null)
 
 const questions = computed(() => {
@@ -156,7 +156,7 @@ const questions = computed(() => {
 
 const grade = computed(() => {
   const pct = percentage.value
-  if (pct == null) return result.value?.grade || '—'
+  if (pct == null) return result.value?.grade || 'N/A'
   if (pct >= 70) return 'A'
   if (pct >= 60) return 'B'
   if (pct >= 50) return 'C'

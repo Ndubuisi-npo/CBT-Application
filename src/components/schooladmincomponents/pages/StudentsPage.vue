@@ -134,14 +134,14 @@
                   </div>
                   <div>
                     <p class="font-medium text-slate-900">{{ student.first_name }} {{ student.last_name }}</p>
-                    <p class="text-xs text-slate-500">{{ student.email || '—' }}</p>
+                    <p class="text-xs text-slate-500">{{ student.email || 'N/A' }}</p>
                   </div>
                 </div>
               </td>
-              <td class="px-5 py-3.5 text-sm text-slate-600">{{ student.phone || '—' }}</td>
-              <td class="px-5 py-3.5 text-sm text-slate-600">{{ student.studentProfile?.admission_number || '—' }}</td>
+              <td class="px-5 py-3.5 text-sm text-slate-600">{{ student.phone || 'N/A' }}</td>
+              <td class="px-5 py-3.5 text-sm text-slate-600">{{ student.studentProfile?.admission_number || 'N/A' }}</td>
               <td class="px-5 py-3.5 text-sm text-slate-600">
-                {{ student.studentProfile?.class_arm?.name || student.student_profile?.class_name || '—' }}
+                {{ student.studentProfile?.class_arm?.name || student.student_profile?.class_name || 'N/A' }}
               </td>
               <td class="px-5 py-3.5">
                 <div class="flex items-center gap-2 opacity-0 transition group-hover:opacity-100">
@@ -271,13 +271,13 @@
                   </div>
                   <div>
                     <p class="font-medium text-slate-700">{{ student.first_name }} {{ student.last_name }}</p>
-                    <p class="text-xs text-slate-400">{{ student.email || '—' }}</p>
+                    <p class="text-xs text-slate-400">{{ student.email || 'N/A' }}</p>
                   </div>
                 </div>
               </td>
-              <td class="px-5 py-3.5 text-sm text-slate-500">{{ student.phone || '—' }}</td>
-              <td class="px-5 py-3.5 text-sm text-slate-500">{{ student.student_profile?.admission_number || '—' }}</td>
-              <td class="px-5 py-3.5 text-sm text-slate-500">{{ student.student_profile?.class_arm?.name || student.student_profile?.class_name || '—' }}</td>
+              <td class="px-5 py-3.5 text-sm text-slate-500">{{ student.phone || 'N/A' }}</td>
+              <td class="px-5 py-3.5 text-sm text-slate-500">{{ student.student_profile?.admission_number || 'N/A' }}</td>
+              <td class="px-5 py-3.5 text-sm text-slate-500">{{ student.student_profile?.class_arm?.name || student.student_profile?.class_name || 'N/A' }}</td>
               <td class="px-5 py-3.5">
                 <div class="flex items-center gap-2 opacity-0 transition group-hover:opacity-100">
                   <button
