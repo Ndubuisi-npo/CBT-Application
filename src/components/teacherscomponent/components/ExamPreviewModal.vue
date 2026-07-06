@@ -32,7 +32,7 @@
             </span>
             <div class="min-w-0 flex-1 space-y-4">
               <div class="flex items-center gap-2 flex-wrap">
-                <p class="text-base font-semibold leading-7 text-slate-900">{{ getQuestionText(question) }}</p>
+                <div class="text-base font-semibold leading-7 text-slate-900" v-html="renderQuestionText(getQuestionText(question))" />
               </div>
               <span class="inline-block rounded-full bg-slate-100 px-3 py-0.5 text-xs font-semibold text-slate-600">{{ getTypeLabel(question) }}</span>
 
@@ -44,7 +44,7 @@
                   class="rounded-xl border px-4 py-3 text-sm"
                   :class="isCorrect(question, opt, i) ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-slate-200 bg-slate-50 text-slate-600'"
                 >
-                  <span class="font-semibold">{{ String.fromCharCode(65 + i) }}.</span> {{ getOptionText(opt) }}
+                  <span class="font-semibold">{{ String.fromCharCode(65 + i) }}.</span> <span v-html="renderOptionText(getOptionText(opt))" />
                 </div>
               </div>
 
@@ -79,6 +79,8 @@ import { computed, onMounted, ref } from 'vue'
 import { useTeacherExamsStore } from '../stores/exams'
 import { useSchoolAdminUiStore } from '../../schooladmincomponents/stores/ui'
 import { isChoiceBased, isFillInBlank, QUESTION_TYPE_LABELS } from '../../../types/question'
+import katex from 'katex'
+import 'katex/dist/katex.min.css'
 
 const props = defineProps({ exam: { type: Object, required: true } })
 defineEmits(['close'])
@@ -89,6 +91,59 @@ const questions = ref([])
 const loading = ref(false)
 
 const questionCount = computed(() => questions.value.length)
+
+const escapeHtml = (unsafe = '') => {
+  return String(unsafe)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+const renderMathContent = (value = '') => {
+  if (!value) return ''
+
+  try {
+    const mathOrTextRegex = /(\$\$[\s\S]+?\$\$|\$[^$]+\$)/g
+    let lastIndex = 0
+    const parts = []
+    let match
+
+    while ((match = mathOrTextRegex.exec(value)) !== null) {
+      const idx = match.index
+      if (idx > lastIndex) {
+        const textSegment = value.slice(lastIndex, idx)
+        parts.push(escapeHtml(textSegment).replace(/\n/g, '<br/>'))
+      }
+
+      const token = match[0]
+      if (token.startsWith('$$') && token.endsWith('$$')) {
+        const inner = token.slice(2, -2)
+        parts.push(katex.renderToString(inner, { throwOnError: false, displayMode: true }))
+      } else if (token.startsWith('$') && token.endsWith('$')) {
+        const inner = token.slice(1, -1)
+        parts.push(katex.renderToString(inner, { throwOnError: false, displayMode: false }))
+      } else {
+        parts.push(escapeHtml(token))
+      }
+
+      lastIndex = mathOrTextRegex.lastIndex
+    }
+
+    if (lastIndex < value.length) {
+      const tail = value.slice(lastIndex)
+      parts.push(escapeHtml(tail).replace(/\n/g, '<br/>'))
+    }
+
+    return parts.join('')
+  } catch {
+    return escapeHtml(value).replace(/\n/g, '<br/>')
+  }
+}
+
+const renderQuestionText = (value) => renderMathContent(String(value ?? ''))
+const renderOptionText = (value) => renderMathContent(String(value ?? ''))
 
 const getQuestionText = (q) => {
   const src = q?.question || q?.question_details || q

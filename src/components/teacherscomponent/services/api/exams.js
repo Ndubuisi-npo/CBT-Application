@@ -73,7 +73,7 @@ export async function activateExam(id) {
 }
 export async function publishExam(id) {
   try {
-    return await apiFetch(`/api/exams/${id}/publish`, { method: 'POST' })
+    return await apiFetch(`/api/exams/${id}/publish-results`, { method: 'POST' })
   } catch (error) {
     throw new Error(extractErrorMessage(error, 'Unable to publish exam results.'))
   }

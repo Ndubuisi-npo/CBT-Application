@@ -38,14 +38,14 @@
       <h4 class="text-sm font-medium text-slate-700">Pricing</h4>
       <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <div>
-          <label class="block text-sm font-medium text-slate-700">Monthly Price ($)</label>
-          <input v-model.number="localForm.price_monthly" type="number" min="0" step="0.01" class="w-full rounded-lg border-2 border-[#0B1F3A] bg-white px-4 py-2.5 text-slate-900 placeholder:text-slate-400 focus:border-[#D4AF37] focus:outline-none focus:ring-0 transition" placeholder="29.99" />
+          <label class="block text-sm font-medium text-slate-700">Monthly Price (₦)</label>
+          <input v-model.number="localForm.price_monthly" type="number" min="0" step="0.01" class="w-full rounded-lg border-2 border-[#0B1F3A] bg-white px-4 py-2.5 text-slate-900 placeholder:text-slate-400 focus:border-[#D4AF37] focus:outline-none focus:ring-0 transition" placeholder="29999" />
           <p v-if="errors.price_monthly" class="text-sm text-red-600 font-medium">{{ errors.price_monthly }}</p>
         </div>
         
         <div>
-          <label class="block text-sm font-medium text-slate-700">Yearly Price ($)</label>
-          <input v-model.number="localForm.price_yearly" type="number" min="0" step="0.01" class="w-full rounded-lg border-2 border-[#0B1F3A] bg-white px-4 py-2.5 text-slate-900 placeholder:text-slate-400 focus:border-[#D4AF37] focus:outline-none focus:ring-0 transition" placeholder="299.99" />
+          <label class="block text-sm font-medium text-slate-700">Yearly Price (₦)</label>
+          <input v-model.number="localForm.price_yearly" type="number" min="0" step="0.01" class="w-full rounded-lg border-2 border-[#0B1F3A] bg-white px-4 py-2.5 text-slate-900 placeholder:text-slate-400 focus:border-[#D4AF37] focus:outline-none focus:ring-0 transition" placeholder="299999" />
           <p v-if="errors.price_yearly" class="text-sm text-red-600 font-medium">{{ errors.price_yearly }}</p>
         </div>
       </div>

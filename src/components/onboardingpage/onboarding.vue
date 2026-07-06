@@ -1,8 +1,8 @@
 <template>
   
   <section class="min-h-screen bg-[#f7f9fc] text-slate-900">
-    <div class="mx-auto max-w-6xl px-6 py-10 lg:px-10">
-      <header class="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between">
+    <div class="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-10 lg:px-10">
+      <header class="flex flex-col gap-6 sm:gap-8 lg:flex-row lg:items-start lg:justify-between">
         <div class="w-full max-w-4xl">
           <div class="flex items-center gap-4">
             <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-base font-bold text-black-400 shadow-sm">
@@ -12,7 +12,7 @@
           </div>
 
           <div class="mt-10">
-            <div class="grid grid-cols-2 gap-4 text-center text-sm text-slate-400 sm:grid-cols-3 lg:grid-cols-5">
+            <div class="grid grid-cols-2 gap-2 text-center text-xs text-slate-400 sm:grid-cols-3 sm:gap-4 sm:text-sm lg:grid-cols-5">
               <div
                 v-for="(step, index) in steps"
                 :key="step"

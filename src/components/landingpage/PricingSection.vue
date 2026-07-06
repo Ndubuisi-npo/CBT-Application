@@ -1,42 +1,111 @@
 <template>
-  <section id="pricing" class="mx-auto max-w-6xl py-16 px-6 lg:px-0">
-    <div class="text-center">
-      <h2 class="text-4xl font-extrabold text-slate-900">Simple, transparent pricing</h2>
-      <p class="mt-3 text-lg text-slate-600">Plans that grow with your school. See full pricing during onboarding.</p>
-    </div>
+  <section id="pricing" class="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:px-0 lg:py-20">
+    <div class="rounded-[28px] border border-slate-200 bg-white p-5 shadow-[0_12px_40px_rgba(15,23,42,0.06)] sm:p-10">
+      <div class="mx-auto max-w-4xl text-center">
+        <h2 class="text-3xl font-bold tracking-tight text-slate-800 sm:text-4xl">Simple, transparent pricing</h2>
+        <p class="mt-5 text-base leading-relaxed text-slate-600 sm:text-lg">Plans that grow with your school.</p>
 
-    <div class="mt-10 grid gap-6 lg:grid-cols-3">
-      <article
-        v-for="(plan, idx) in plans"
-        :key="plan.id || plan.name || idx"
-        :class="cardClass(idx) + ' rounded-2xl border p-8 shadow-sm transition'"
-      >
-        <div class="flex items-center justify-between">
-          <div>
-            <h3 class="text-lg font-semibold text-slate-900">{{ plan.name }}</h3>
-            <p class="mt-1 text-sm text-slate-500">{{ plan.range }}</p>
+        <div class="mt-8 flex flex-wrap items-center justify-center gap-3 text-base">
+          <span :class="isAnnual ? 'text-slate-400' : 'text-slate-800'" class="transition">Monthly</span>
+          <button
+            type="button"
+            class="relative flex h-8 w-14 items-center rounded-full bg-slate-200 p-1 transition"
+            @click="isAnnual = !isAnnual"
+          >
+            <span
+              class="h-6 w-6 rounded-full bg-slate-800 transition-transform duration-300"
+              :class="isAnnual ? 'translate-x-6' : 'translate-x-0'"
+            ></span>
+          </button>
+          <span :class="isAnnual ? 'text-slate-800' : 'text-slate-400'" class="transition">Annually</span>
+          <span class="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-1 text-sm font-medium text-emerald-600">
+            Save 20%
+          </span>
+        </div>
+      </div>
+
+      <div class="mt-12 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+        <article
+          v-for="(plan, idx) in plans"
+          :key="plan.id || plan.name || idx"
+          :class="[
+            'relative flex min-h-full flex-col rounded-2xl border p-5 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-md sm:p-6',
+            idx === 1
+              ? 'border-[#D4AF37] bg-amber-50 shadow-lg border-2'
+              : 'bg-white border-slate-200'
+          ]"
+        >
+          <div
+            v-if="idx === 1"
+            class="absolute left-1/2 top-5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-slate-800 px-4 py-1 text-sm font-semibold text-amber-400"
+          >
+            Most Popular
           </div>
-          <div v-if="plan.badge" class="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">{{ plan.badge }}</div>
-        </div>
 
-        <div class="mt-6">
-          <p :class="priceClass(idx)">{{ formatPrice(plan.price) }}<span class="text-base font-medium text-slate-500">/mo</span></p>
-        </div>
+          <div>
+            <h3 class="text-2xl font-bold tracking-tight text-slate-800">{{ plan.name }}</h3>
+            <p class="mt-2 text-base text-slate-500">{{ plan.range }}</p>
+          </div>
 
-        <ul class="mt-6 space-y-3 text-slate-700">
-          <li v-for="(feature, fidx) in plan.features" :key="fidx" class="flex items-start gap-3">
-            <svg class="mt-1 h-4 w-4 text-amber-500" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 00-1.414 0L8 12.586 4.707 9.293a1 1 0 00-1.414 1.414l4 4a1 1 0 001.414 0l8-8a1 1 0 000-1.414z" clip-rule="evenodd"/></svg>
-            <span>{{ feature }}</span>
-          </li>
-        </ul>
+          <div class="mt-8">
+            <div class="flex items-end gap-2">
+              <span class="text-2xl font-bold tracking-tight text-slate-800">
+                {{ displayPrice(plan) }}
+              </span>
+              <span class="pb-1 text-lg text-slate-500">/{{ isAnnual ? 'yr' : 'mo' }}</span>
+            </div>
+            <p class="mt-2 text-base font-medium text-emerald-600">
+              {{ isAnnual ? 'Billed annually' : 'Billed monthly' }}
+            </p>
+          </div>
 
-        <button type="button" class="mt-6 w-full rounded-2xl px-4 py-3 font-semibold" :class="buttonClass(idx)" @click="goToOnboarding(plan)">
-          Start Free Trial
-        </button>
-      </article>
+          <div class="mt-6 grid gap-2 text-sm text-slate-600">
+            <div class="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2">
+              <span>Students</span>
+              <span class="font-semibold text-slate-800">{{ plan.max_students ? `Up to ${plan.max_students}` : 'Unlimited' }}</span>
+            </div>
+            <div class="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2">
+              <span>Teachers</span>
+              <span class="font-semibold text-slate-800">{{ plan.max_teachers ? `Up to ${plan.max_teachers}` : 'Unlimited' }}</span>
+            </div>
+            <div class="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2">
+              <span>Exams / term</span>
+              <span class="font-semibold text-slate-800">{{ plan.max_exams_per_term ? `Up to ${plan.max_exams_per_term}` : 'Unlimited' }}</span>
+            </div>
+          </div>
+
+          <ul class="mt-8 flex-1 space-y-4">
+            <li
+              v-for="feature in plan.features"
+              :key="feature"
+              class="flex items-start gap-3 text-base text-slate-700"
+            >
+              <span class="mt-1 flex h-5 w-5 items-center justify-center rounded-full bg-amber-50 text-amber-500 flex-shrink-0">
+                <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 00-1.414 0L8 12.586 4.707 9.293a1 1 0 00-1.414 1.414l4 4a1 1 0 001.414 0l8-8a1 1 0 000-1.414z" clip-rule="evenodd"/></svg>
+              </span>
+              <span class="break-words">{{ feature }}</span>
+            </li>
+          </ul>
+
+          <button
+            type="button"
+            @click="goToOnboarding(plan)"
+            :class="[
+              'mt-10 min-h-[44px] w-full cursor-pointer rounded-xl px-5 py-4 text-base font-semibold shadow-sm transition duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2',
+              idx === 1
+                ? 'bg-[#D4AF37] text-white hover:bg-[#B8941F] focus:ring-[#D4AF37]'
+                : 'border-2 border-slate-300 bg-white text-slate-800 hover:bg-slate-50 focus:ring-[#D4AF37]'
+            ]"
+          >
+            Start Free Trial
+          </button>
+        </article>
+      </div>
+
+      <div class="mt-10 flex items-center justify-center gap-3 text-base text-slate-500">
+        <span>30-day free trial. You will be requested for your card details only after your 30-day free trial is over.</span>
+      </div>
     </div>
-
-    <p class="mt-8 text-center text-sm text-slate-500">Not sure? Choose any plan — start a free trial. <span class="font-semibold text-amber-600">Cancel Anytime</span></p>
   </section>
 </template>
 
@@ -44,41 +113,23 @@
 import { ref, onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
 import { fetchPlans } from '../onboardingpage/api/plans'
+import { normalizePlanFeatures } from '../../js/lib/plans'
 
 const plans = ref([])
+const isAnnual = ref(false)
 
 const formatPrice = (price) => {
-  if (price == null || price === '') return 'N/A'
+  if (price == null || price === '') return 'Custom'
   const rounded = Math.round(Number(price))
-  return `₦${rounded.toLocaleString('en-NG')}`
+  return `₦${rounded.toLocaleString('en-US')}`
 }
 
-const featureLabelMap = {
-  cbt_exams: 'Auto-gradable CBT exams',
-  api_access: 'API access & integrations',
-  custom_branding: 'Custom branding',
-  priority_support: 'Priority support',
-  multi_campus: 'Multi-campus support',
+const displayPrice = (plan) => {
+  if (!plan) return 'Custom'
+  const price = isAnnual.value ? plan.price_yearly : plan.price_monthly
+  if (!price) return 'Custom'
+  return formatPrice(price)
 }
-
-const featuresFromObject = (obj) => {
-  if (!obj || typeof obj !== 'object') return []
-  return Object.keys(obj)
-    .filter((k) => obj[k])
-    .map((k) => featureLabelMap[k] || k.replace(/_/g, ' '))
-}
-
-
-const cardClass = (idx) => {
-  // highlight center card with gold accent
-  return idx === 1
-    ? 'border-amber-200 bg-amber-50/20 text-slate-900'
-    : 'border-slate-200 bg-white text-slate-700'
-}
-
-const priceClass = (idx) => (idx === 1 ? 'text-4xl font-extrabold text-[#0B1F3A]' : 'text-3xl font-extrabold text-slate-900')
-
-const buttonClass = (idx) => (idx === 1 ? 'bg-[#D4AF37] text-white hover:brightness-95' : 'bg-white border border-slate-200 text-slate-900 hover:bg-slate-50')
 
 const goToOnboarding = (plan) => {
   // navigate to onboarding with optional plan slug as query
@@ -89,25 +140,25 @@ const goToOnboarding = (plan) => {
 onMounted(async () => {
   try {
     const apiPlans = await fetchPlans()
+    console.log('API Plans:', apiPlans)
     plans.value = Array.isArray(apiPlans)
       ? apiPlans.map((p) => ({
           id: p.id,
           slug: p.slug,
           name: p.name || 'Plan',
           range: p.max_students ? `Up to ${p.max_students} students` : 'Unlimited students',
-          price: p.price_monthly ?? p.price ?? null,
-          features: Array.isArray(p.features) ? p.features : featuresFromObject(p.features),
-          badge: p.popular ? 'Most Popular' : '',
+          price_monthly: p.price_monthly ?? null,
+          price_yearly: p.price_yearly ?? null,
+          max_students: p.max_students ?? null,
+          max_teachers: p.max_teachers ?? null,
+          max_exams_per_term: p.max_exams_per_term ?? null,
+          features: normalizePlanFeatures(p.features),
         }))
       : []
   } catch (err) {
+    console.error('Error fetching plans:', err)
     plans.value = []
   }
 })
 </script>
 
-<style scoped>
-.price-highlight {
-  color: #0b1f3a;
-}
-</style>

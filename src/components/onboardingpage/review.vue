@@ -90,6 +90,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { ArrowLeft, ArrowRight, BadgeCheck } from 'lucide-vue-next'
 import { fetchPlans } from './api/plans'
+import { normalizePlanFeatures } from '../../js/lib/plans'
 
 interface Plan {
   id: string
@@ -132,7 +133,7 @@ onMounted(async () => {
           name: plan.name,
           range: plan.max_students ? `Up to ${plan.max_students} students` : 'Unlimited students',
           price: plan.price_monthly || plan.price || null,
-          features: plan.features || [],
+          features: normalizePlanFeatures(plan.features),
           id: plan.id
         }))
       : []

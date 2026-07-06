@@ -22,7 +22,7 @@
         </div>
         <div class="rounded-[20px] border border-slate-200 bg-white p-4 text-center">
           <p class="text-xs uppercase tracking-[0.18em] text-slate-400">Questions</p>
-          <p class="mt-2 text-xl font-bold text-slate-900">{{ exam.questions?.length || 'N/A' }}</p>
+          <p class="mt-2 text-xl font-bold text-slate-900">{{ questionCount ?? 'N/A' }}</p>
           <p class="text-xs text-slate-500">total</p>
         </div>
         <div class="rounded-[20px] border border-slate-200 bg-white p-4 text-center">
@@ -121,6 +121,22 @@ const defaultInstructions = `• This is a timed exam. The timer starts when you
 • Flag questions you want to review later.
 • Your answers auto-save after each selection.
 • Submit when you are ready, or the exam will auto-submit when time runs out.`
+
+const questionCount = computed(() => {
+  const explicit = [
+    exam.value?.question_count,
+    exam.value?.questions_count,
+    exam.value?.questionsCount,
+    exam.value?.questionCount,
+  ].find((value) => value != null && value !== '')
+
+  if (explicit != null && explicit !== '') {
+    const parsed = Number(explicit)
+    return Number.isFinite(parsed) ? parsed : 0
+  }
+
+  return Array.isArray(exam.value?.questions) ? exam.value.questions.length : 0
+})
 
 onMounted(async () => {
   try {

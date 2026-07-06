@@ -1,5 +1,5 @@
 import { apiFetch, extractErrorMessage } from '../../../../js/lib/api'
-import { isChoiceBased, isFillInBlank, buildOptionPayload } from '../../../../types/question'
+import { isChoiceBased, isFillInBlank, buildOptionPayload, detectContentFormat } from '../../../../types/question'
 
 export async function getQuestions(params = {}) {
   try {
@@ -30,10 +30,12 @@ export async function createQuestion(payload) {
   try {
     const type = payload.type || 'mcq'
 
+    const content = (payload.content || payload.question_text || '').trim()
     const body = {
       type,
-      content: (payload.content || payload.question_text || '').trim(),
+      content,
       class_level_id: payload.class_level_id || '',
+      content_format: detectContentFormat(content),
     }
 
     if (!body.content) throw new Error('content is required')
@@ -69,7 +71,10 @@ export async function updateQuestion(id, payload) {
   try {
     const body = {}
 
-    if (payload.content !== undefined) body.content = payload.content
+    if (payload.content !== undefined) {
+      body.content = payload.content
+      body.content_format = detectContentFormat(payload.content)
+    }
     if (payload.type !== undefined) body.type = payload.type
     if (payload.default_marks !== undefined) body.default_marks = payload.default_marks
     else if (payload.marks !== undefined) body.default_marks = payload.marks

@@ -23,6 +23,13 @@ export const QUESTION_TYPE_LABELS = {
   fill_in_blank: 'Fill in the Blank',
 }
 
+export function detectContentFormat(content = '') {
+  const text = String(content ?? '')
+  if (!text.trim()) return 'text'
+  const hasMathDelimiters = /\$\$[\s\S]+?\$\$|\$[^$]+\$/.test(text)
+  return hasMathDelimiters ? 'latex' : 'text'
+}
+
 /**
  * Returns true if the question type uses option-based selection (MCQ or T/F).
  */
@@ -91,10 +98,13 @@ export function buildAnswerPayload(type, answer, timeSpentSeconds = null) {
  * @param {Array<{content: string, is_correct?: boolean, match_pair?: string}>} rawOptions
  */
 export function buildOptionPayload(type, rawOptions = []) {
+  const normalizeContentFormat = (content) => detectContentFormat(content)
+
   if (isFillInBlank(type)) {
     return rawOptions.map(({ content, match_pair }) => ({
       content,
       ...(match_pair !== undefined ? { match_pair } : {}),
+      ...(normalizeContentFormat(content) === 'latex' ? { content_format: 'latex' } : {}),
     }))
   }
 
@@ -104,6 +114,7 @@ export function buildOptionPayload(type, rawOptions = []) {
     is_correct: !!is_correct,
     ...(label !== undefined ? { label } : {}),
     ...(order !== undefined ? { order } : {}),
+    ...(normalizeContentFormat(content) === 'latex' ? { content_format: 'latex' } : {}),
   }))
 }
 

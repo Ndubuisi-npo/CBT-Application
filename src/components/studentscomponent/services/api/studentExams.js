@@ -1,6 +1,24 @@
 import { apiFetch } from '../../../../js/lib/api'
 import { buildAnswerPayload } from '../../../../types/question'
 
+const getQuestionCountValue = (exam = {}) => {
+  const explicit = [
+    exam.question_count,
+    exam.questions_count,
+    exam.questionsCount,
+    exam.questionCount,
+    exam.total_questions,
+    exam.totalQuestions,
+  ].find((value) => value != null && value !== '')
+
+  if (explicit != null && explicit !== '') {
+    const parsed = Number(explicit)
+    return Number.isFinite(parsed) ? parsed : 0
+  }
+
+  return Array.isArray(exam.questions) ? exam.questions.length : 0
+}
+
 const normalizeExam = (exam = {}) => ({
   ...exam,
   id: exam.id,
@@ -12,8 +30,29 @@ const normalizeExam = (exam = {}) => ({
   instructions: exam.instructions || exam.instructions_text || exam.instruction || '',
   remaining_attempts: exam.remaining_attempts ?? exam.remainingAttempts ?? exam.remaining_attempts_count ?? null,
   start_time: exam.start_time || exam.startTime || exam.scheduled_start || null,
+  question_count: getQuestionCountValue(exam),
+  questionCount: getQuestionCountValue(exam),
   questions: Array.isArray(exam.questions) ? exam.questions : [],
 })
+
+const getExamPayload = (payload = {}) => {
+  if (!payload || typeof payload !== 'object') return null
+
+  if (payload.exam && typeof payload.exam === 'object') return payload.exam
+
+  if (payload.data && typeof payload.data === 'object') {
+    if (payload.data.exam && typeof payload.data.exam === 'object') return payload.data.exam
+    if (payload.data.id || payload.data.title || payload.data.instructions || payload.data.question_count != null) {
+      return payload.data
+    }
+  }
+
+  if (payload.id || payload.title || payload.instructions || payload.question_count != null || payload.questions != null) {
+    return payload
+  }
+
+  return null
+}
 
 export async function getAvailableExams(params = {}) {
   const response = await apiFetch('/api/student/exams/available', { params })
@@ -24,8 +63,9 @@ export async function getAvailableExams(params = {}) {
 export async function getStudentExam(examId) {
   try {
     const single = await apiFetch(`/api/student/exams/${examId}`)
-    if (single && (single.id || single.data?.id)) {
-      return normalizeExam(single.data ?? single)
+    const examPayload = getExamPayload(single)
+    if (examPayload) {
+      return normalizeExam(examPayload)
     }
   } catch {
     // Fall through to available list lookup

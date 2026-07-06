@@ -86,9 +86,7 @@
             </div>
 
             <div class="mt-4 rounded-xl bg-slate-50 p-4 question-content">
-              <p class="whitespace-pre-wrap text-base font-semibold leading-7 text-slate-900">
-                {{ renderQuestionText(currentQuestion) }}
-              </p>
+              <div class="whitespace-pre-wrap text-base font-semibold leading-7 text-slate-900 question-content-rendered" v-html="renderQuestionText(currentQuestion)" />
               <!-- Question image -->
               <img
                 v-if="getQuestionImage(currentQuestion)"
@@ -117,7 +115,7 @@
                 />
                 <span class="text-sm leading-6 text-slate-900">
                   <span class="font-semibold">{{ String.fromCharCode(65 + idx) }}.</span>
-                  {{ getOptionText(opt) }}
+                  <span v-html="renderOptionText(getOptionText(opt))" />
                 </span>
               </label>
             </div>
@@ -142,7 +140,7 @@
                 />
                 <span class="text-sm leading-6 text-slate-900">
                   <span class="font-semibold">{{ String.fromCharCode(65 + idx) }}.</span>
-                  {{ getOptionText(opt) }}
+                  <span v-html="renderOptionText(getOptionText(opt))" />
                 </span>
               </div>
             </div>
@@ -265,6 +263,8 @@ import { useSchoolAdminUiStore } from '../../schooladmincomponents/stores/ui'
 import { fmtDateTime } from '../../../js/lib/helpers'
 import { normalizeQuestionText } from '../../../js/lib/questionText'
 import { isChoiceBased, isFillInBlank, isMultipleAnswer, QUESTION_TYPE_LABELS, buildAnswerPayload } from '../../../types/question'
+import katex from 'katex'
+import 'katex/dist/katex.min.css'
 
 const route = useRoute()
 const router = useRouter()
@@ -424,9 +424,64 @@ const getQuestionText = (q) => {
   return src?.content || src?.question_text || src?.text || 'Untitled question'
 }
 
+const escapeHtml = (unsafe = '') => {
+  return String(unsafe)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+const renderMathContent = (value = '') => {
+  if (!value) return ''
+
+  try {
+    const mathOrTextRegex = /(\$\$[\s\S]+?\$\$|\$[^$]+\$)/g
+    let lastIndex = 0
+    const parts = []
+    let match
+
+    while ((match = mathOrTextRegex.exec(value)) !== null) {
+      const idx = match.index
+      if (idx > lastIndex) {
+        const textSegment = value.slice(lastIndex, idx)
+        parts.push(escapeHtml(textSegment).replace(/\n/g, '<br/>'))
+      }
+
+      const token = match[0]
+      if (token.startsWith('$$') && token.endsWith('$$')) {
+        const inner = token.slice(2, -2)
+        parts.push(katex.renderToString(inner, { throwOnError: false, displayMode: true }))
+      } else if (token.startsWith('$') && token.endsWith('$')) {
+        const inner = token.slice(1, -1)
+        parts.push(katex.renderToString(inner, { throwOnError: false, displayMode: false }))
+      } else {
+        parts.push(escapeHtml(token))
+      }
+
+      lastIndex = mathOrTextRegex.lastIndex
+    }
+
+    if (lastIndex < value.length) {
+      const tail = value.slice(lastIndex)
+      parts.push(escapeHtml(tail).replace(/\n/g, '<br/>'))
+    }
+
+    return parts.join('')
+  } catch {
+    return escapeHtml(value).replace(/\n/g, '<br/>')
+  }
+}
+
 const renderQuestionText = (q) => {
   const text = normalizeQuestionText(getQuestionText(q))
-  return text || ''
+  return renderMathContent(text) || ''
+}
+
+const renderOptionText = (value) => {
+  const text = normalizeQuestionText(String(value ?? ''))
+  return renderMathContent(text) || ''
 }
 
 const getQuestionImage = (q) => {
@@ -755,4 +810,12 @@ onUnmounted(() => {
 }
 
 .question-content img { max-width: 100%; height: auto; }
+
+.question-content-rendered .katex,
+.question-content-rendered .katex *,
+.question-content-rendered .katex-html {
+  font-family: inherit !important;
+  color: inherit !important;
+  background: transparent !important;
+}
 </style>

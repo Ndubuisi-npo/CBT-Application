@@ -1,16 +1,59 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
+import { Rate, Counter } from 'k6/metrics';
 import exec from 'k6/execution';
+import { SharedArray } from 'k6/data';
 
 const DEFAULT_BASE_URL = 'https://cbt-application-ufyd.onrender.com';
 const BASE_URL = (__ENV.BASE_URL || __ENV.VITE_API_BASE_URL || DEFAULT_BASE_URL).replace(/\/+$/, '');
-const STUDENT_VUS = Number(__ENV.STUDENTS_VUS || 30);
+// Load credential CSVs (place them under load-tests/k6/data/ by default)
+const STUDENTS_CSV = __ENV.STUDENTS_CSV || 'data/students.csv';
+const TEACHERS_CSV = __ENV.TEACHERS_CSV || 'data/teachers.csv';
+
+function parseCsvContent(csv) {
+  const lines = csv.split(/\r?\n/).filter((l) => l.trim());
+  if (!lines.length) return [];
+  const headers = lines.shift().split(',').map((h) => h.trim());
+  return lines.map((line) => {
+    const cols = line.split(',');
+    const obj = {};
+    headers.forEach((h, i) => {
+      obj[h] = (cols[i] || '').trim();
+    });
+    return obj;
+  });
+}
+
+const studentsData = new SharedArray('students', function () {
+  try {
+    const csv = open(STUDENTS_CSV);
+    return parseCsvContent(csv);
+  } catch (e) {
+    console.error('Failed to load students CSV:', e.message);
+    return [];
+  }
+});
+
+const teachersData = new SharedArray('teachers', function () {
+  try {
+    const csv = open(TEACHERS_CSV);
+    return parseCsvContent(csv);
+  } catch (e) {
+    console.error('Failed to load teachers CSV:', e.message);
+    return [];
+  }
+});
+
+const DEFAULT_STUDENT_PASS = __ENV.STUDENT_PASS || 'Cbt@2026';
+const DEFAULT_TEACHER_PASS = __ENV.TEACHER_PASS || 'teach12345';
+
+let STUDENT_VUS = Number(__ENV.STUDENTS_VUS || studentsData.length || 48);
 const STUDENT_ITERATIONS = Number(__ENV.STUDENT_ITERATIONS || 100); // exams per student VU
-const TEACHER_VUS = Number(__ENV.TEACHERS_VUS || 30);
-const SUPERADMIN_VUS = Number(__ENV.SUPERADMINS_VUS || 30);
+let TEACHER_VUS = Number(__ENV.TEACHERS_VUS || teachersData.length || 50);
+const SCHOOLADMIN_VUS = 1; // always test exactly one schooladmin user
 const QUESTIONS_PER_EXAM = Number(__ENV.QUESTIONS_PER_EXAM || 100);
 const TEACHER_DURATION = __ENV.TEACHER_DURATION || '5m';
-const SUPERADMIN_DURATION = __ENV.SUPERADMIN_DURATION || '5m';
+const SCHOOLADMIN_DURATION = __ENV.SCHOOLADMIN_DURATION || '5m';
 const HTTP_REQ_DURATION_THRESHOLD = __ENV.HTTP_REQ_DURATION_THRESHOLD || 'p(95)<2000';
 const DEBUG_LOGIN = __ENV.DEBUG_LOGIN === '1';
 const DEBUG_REQUESTS = __ENV.DEBUG_REQUESTS === '1';
@@ -19,10 +62,20 @@ const LOGIN_RETRY_SLEEP_SECONDS = Number(__ENV.LOGIN_RETRY_SLEEP_SECONDS || 2);
 const LOGIN_STAGGER_MAX_SECONDS = Number(__ENV.LOGIN_STAGGER_MAX_SECONDS || 30);
 const AUTH_FAILURE_SLEEP_SECONDS = Number(__ENV.AUTH_FAILURE_SLEEP_SECONDS || 5);
 const TENANT_HANDLE = __ENV.TENANT_HANDLE || __ENV.X_TENANT || '';
-const SHARED_AUTH = __ENV.SHARED_AUTH !== '0';
+const SHARED_AUTH = false;
 
 const authTokens = {};
 const authFailures = {};
+
+const studentLoginAttempts = new Counter('student_login_attempts');
+const studentLoginSuccess = new Counter('student_login_successes');
+const studentLoginFailure = new Counter('student_login_failures');
+const teacherLoginAttempts = new Counter('teacher_login_attempts');
+const teacherLoginSuccess = new Counter('teacher_login_successes');
+const teacherLoginFailure = new Counter('teacher_login_failures');
+const schooladminLoginAttempts = new Counter('schooladmin_login_attempts');
+const schooladminLoginSuccess = new Counter('schooladmin_login_successes');
+const schooladminLoginFailure = new Counter('schooladmin_login_failures');
 
 const scenarios = {};
 
@@ -44,11 +97,11 @@ if (TEACHER_VUS > 0) {
   };
 }
 
-if (SUPERADMIN_VUS > 0) {
-  scenarios.superadmins = {
+if (SCHOOLADMIN_VUS > 0) {
+  scenarios.schooladmin = {
     executor: 'constant-vus',
-    vus: SUPERADMIN_VUS,
-    duration: SUPERADMIN_DURATION,
+    vus: SCHOOLADMIN_VUS,
+    duration: SCHOOLADMIN_DURATION,
     startTime: '0s',
   };
 }
@@ -125,20 +178,26 @@ function logUnexpectedResponse(checkName, res, okStatuses) {
 }
 
 function credentialsFor(roleIndex, role) {
-  return {
-    student: {
-      identifier: __ENV.STUDENT_USER || `student${roleIndex}@example.com`,
-      password: __ENV.STUDENT_PASS || 'password',
-    },
-    teacher: {
-      identifier: __ENV.TEACHER_USER || `teacher${roleIndex}@example.com`,
-      password: __ENV.TEACHER_PASS || 'password',
-    },
-    superadmin: {
-      identifier: __ENV.SUPERADMIN_USER || 'admin@example.com',
-      password: __ENV.SUPERADMIN_PASS || 'password',
-    },
-  }[role];
+  if (role === 'student') {
+    if (!studentsData.length) {
+      return { identifier: __ENV.STUDENT_USER || `student${roleIndex}@example.com`, password: DEFAULT_STUDENT_PASS };
+    }
+    const idx = ((roleIndex - 1) % studentsData.length + studentsData.length) % studentsData.length;
+    const s = studentsData[idx];
+    const id = (s.admission_number || '').trim() || (s.email || '').trim() || `student${roleIndex}@example.com`;
+    return { identifier: id, password: DEFAULT_STUDENT_PASS };
+  }
+
+  if (role === 'teacher') {
+    if (!teachersData.length) {
+      return { identifier: __ENV.TEACHER_USER || `teacher${roleIndex}@example.com`, password: DEFAULT_TEACHER_PASS };
+    }
+    const idx = ((roleIndex - 1) % teachersData.length + teachersData.length) % teachersData.length;
+    const t = teachersData[idx];
+    return { identifier: t.email || t.email?.trim() || (`teacher${roleIndex}@example.com`), password: DEFAULT_TEACHER_PASS };
+  }
+
+  return { identifier: __ENV.SCHOOLADMIN_USER || 'admin@premier.com', password: __ENV.SCHOOLADMIN_PASS || '12345678' };
 }
 
 // Helper: minimal login flow. Configure valid credentials via environment variables.
@@ -147,13 +206,17 @@ function login(roleIndex, role) {
     ...credentialsFor(roleIndex, role),
   };
 
+  if (role === 'student') studentLoginAttempts.add(1);
+  if (role === 'teacher') teacherLoginAttempts.add(1);
+  if (role === 'schooladmin') schooladminLoginAttempts.add(1);
+
   const url = `${BASE_URL}/api/auth/login`;
   for (let attempt = 1; attempt <= LOGIN_RETRIES + 1; attempt++) {
     const res = http.post(url, JSON.stringify({ identifier: creds.identifier, password: creds.password }), {
       headers: {
         Accept: 'application/json',
         'Content-Type': 'application/json',
-        ...(TENANT_HANDLE && role !== 'superadmin' ? { 'X-Tenant': TENANT_HANDLE } : {}),
+        ...(TENANT_HANDLE && role !== 'schooladmin' ? { 'X-Tenant': TENANT_HANDLE } : {}),
       },
       tags: { endpoint: 'login', role },
     });
@@ -162,8 +225,23 @@ function login(roleIndex, role) {
       console.log(`${role} login attempt=${attempt} status=${res.status} error=${res.error || ''} body=${res.body}`);
     }
 
-    check(res, { 'logged in': (r) => r.status === 200 });
-    if (res.status === 200) {
+    const checkName = `${role}_logged_in`;
+    check(res, { [checkName]: (r) => r.status === 200 });
+    const success = res.status === 200;
+    if (role === 'student') {
+      studentLoginSuccess.add(success ? 1 : 0);
+      studentLoginFailure.add(success ? 0 : 1);
+    }
+    if (role === 'teacher') {
+      teacherLoginSuccess.add(success ? 1 : 0);
+      teacherLoginFailure.add(success ? 0 : 1);
+    }
+    if (role === 'schooladmin') {
+      schooladminLoginSuccess.add(success ? 1 : 0);
+      schooladminLoginFailure.add(success ? 0 : 1);
+    }
+
+    if (success) {
       const data = unwrapData(parseJson(res));
       return data?.token || data?.access_token || data?.auth_token || null;
     }
@@ -181,25 +259,7 @@ function login(roleIndex, role) {
 }
 
 export function setup() {
-  if (!SHARED_AUTH) {
-    return {};
-  }
-
-  const tokens = {};
-
-  if (STUDENT_VUS > 0) {
-    tokens.student = login(1, 'student');
-  }
-
-  if (TEACHER_VUS > 0) {
-    tokens.teacher = login(1, 'teacher');
-  }
-
-  if (SUPERADMIN_VUS > 0) {
-    tokens.superadmin = login(1, 'superadmin');
-  }
-
-  return { tokens };
+  return {};
 }
 
 function getToken(roleIndex, role, setupData = {}) {
@@ -208,16 +268,12 @@ function getToken(roleIndex, role, setupData = {}) {
     return sharedToken;
   }
 
-  if (SHARED_AUTH) {
-    sleep(AUTH_FAILURE_SLEEP_SECONDS);
-    return null;
+  const tokenKey = `${role}:${roleIndex}`;
+  if (authTokens[tokenKey]) {
+    return authTokens[tokenKey];
   }
 
-  if (authTokens[role]) {
-    return authTokens[role];
-  }
-
-  if (authFailures[role]) {
+  if (authFailures[tokenKey]) {
     sleep(AUTH_FAILURE_SLEEP_SECONDS);
     return null;
   }
@@ -228,9 +284,9 @@ function getToken(roleIndex, role, setupData = {}) {
 
   const token = login(roleIndex, role);
   if (token) {
-    authTokens[role] = token;
+    authTokens[tokenKey] = token;
   } else {
-    authFailures[role] = true;
+    authFailures[tokenKey] = true;
     sleep(AUTH_FAILURE_SLEEP_SECONDS);
   }
 
@@ -360,21 +416,22 @@ function teacherFlow(vu, setupData) {
   sleep(1);
 }
 
-function superadminFlow(vu, setupData) {
-  const token = getToken(vu, 'superadmin', setupData);
+function schooladminFlow(vu, setupData) {
+  const token = getToken(vu, 'schooladmin', setupData);
   if (!token) return;
 
   const authHeaders = authParams(token);
 
+  // Replace these schooladmin API requests with the actual school admin workload you want to test.
   getJson(
-    `${BASE_URL}/api/super-admin/tenants`,
-    { ...authHeaders, tags: { endpoint: 'superadmin.tenants' } },
-    'superadmin tenants loaded',
+    `${BASE_URL}/api/school-admin/dashboard`,
+    { ...authHeaders, tags: { endpoint: 'schooladmin.dashboard' } },
+    'schooladmin dashboard loaded',
   );
   getJson(
-    `${BASE_URL}/api/super-admin/plans`,
-    { ...authHeaders, tags: { endpoint: 'superadmin.plans' } },
-    'superadmin plans loaded',
+    `${BASE_URL}/api/school-admin/settings`,
+    { ...authHeaders, tags: { endpoint: 'schooladmin.settings' } },
+    'schooladmin settings loaded',
   );
   sleep(1);
 }
@@ -386,6 +443,6 @@ export default function (setupData) {
   } else if (scenario === 'teachers') {
     teacherFlow(__VU, setupData);
   } else {
-    superadminFlow(__VU, setupData);
+    schooladminFlow(__VU, setupData);
   }
 }

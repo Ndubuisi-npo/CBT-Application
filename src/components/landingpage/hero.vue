@@ -1,6 +1,6 @@
 <template>
   <section class="lp-reveal-section lp-section overflow-hidden bg-[#f6f7fb]">
-    <div class="mx-auto grid grid-cols-1 gap-10 px-20 pb-20 pt-28 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+    <div class="mx-auto grid grid-cols-1 gap-10 px-4 pb-16 pt-24 sm:px-6 sm:pt-28 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:px-20 lg:pb-20">
       <div>
         <div class="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-4 py-2 text-xs font-semibold text-amber-700 transition duration-300 hover:border-amber-300 hover:bg-amber-100/80">
           <span class="flex h-5 w-5 items-center justify-center rounded-full bg-white text-amber-600">
@@ -9,34 +9,34 @@
           The #1 School Management Platform
         </div>
 
-        <h1 class="mt-6 text-4xl font-black leading-tight text-slate-900 lg:text-7xl">
+        <h1 class="mt-6 text-3xl font-black leading-tight text-slate-900 sm:text-4xl lg:text-7xl">
           Manage your<br class="hidden sm:block" />
           school with joy.
         </h1>
 
-        <p class="mt-5 max-w-xl text-lg leading-relaxed text-slate-600">
+        <p class="mt-5 max-w-xl text-base leading-relaxed text-slate-600 sm:text-lg">
           EduCBT simplifies administration, engages students, and empowers teachers. All in one
           beautiful, easy-to-use platform.
         </p>
 
-        <div class="mt-8 flex flex-wrap items-center gap-4">
+        <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
           <RouterLink
             to="/onboarding"
-            class="lp-button cursor-pointer rounded-xl bg-slate-900 px-8 py-6 text-base font-semibold text-white shadow-lg shadow-slate-900/10 hover:bg-slate-800"
+            class="lp-button flex min-h-[44px] items-center justify-center rounded-xl bg-slate-900 px-6 py-4 text-base font-semibold text-white shadow-lg shadow-slate-900/10 transition hover:bg-slate-800 sm:px-8 sm:py-6"
           >
             Onboard Your School
             <ArrowRight class="ml-2 inline h-4 w-4" />
           </RouterLink>
           <button
             type="button"
-            class="lp-button cursor-pointer rounded-xl border border-slate-200 bg-white px-8 py-6 text-base font-semibold text-slate-700 shadow-sm hover:border-slate-300"
+            class="lp-button flex min-h-[44px] items-center justify-center rounded-xl border border-slate-200 bg-white px-6 py-4 text-base font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 sm:px-8 sm:py-6"
             @click="scrollToSection('features')"
           >
             Explore Features
           </button>
         </div>
 
-        <div class="mt-8 flex items-center gap-3 text-sm text-slate-500">
+        <div class="mt-8 flex flex-wrap items-center gap-3 text-sm text-slate-500">
           <div class="flex -space-x-2">
             <div class="lp-icon-chip flex h-8 w-8 items-center justify-center rounded-full border border-white bg-amber-100 text-xs">
               <Building2 class="h-4 w-4" />
@@ -55,21 +55,21 @@
         </div>
       </div>
 
-      <div class="relative mx-auto flex items-center justify-center">
+      <div class="relative mx-auto flex w-full max-w-[560px] items-center justify-center lg:w-full">
         <div class="absolute -inset-6 rounded-[32px] bg-white/70 blur-xl"></div>
-        <div class="lp-card relative h-102 rounded-[28px] border border-slate-200 bg-white p-6 shadow-xl">
-          <div class="h-90 rounded-2xl border border-slate-200 bg-slate-50 p-6">
+        <div class="lp-card relative w-full rounded-[28px] border border-slate-200 bg-white p-4 shadow-xl sm:p-6">
+          <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-6">
             <div class="flex items-center gap-3">
               <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-white shadow-sm">
                 <Building2 class="h-5 w-5 text-slate-900" />
               </div>
               <div>
-                <p class="text-lg font-semibold text-slate-800">University</p>
+                <p class="text-lg font-semibold text-slate-800">Secondary School</p>
                 <p class="text-sm text-slate-500">Active Dashboard</p>
               </div>
             </div>
 
-            <div class="mt-6 grid grid-cols-2 gap-4">
+            <div class="mt-6 grid grid-cols-2 gap-3 sm:gap-4">
               <div class="lp-card rounded-xl bg-white px-4 py-3 shadow-sm">
                 <p class="text-xs text-slate-400">Total Students</p>
                 <p class="text-sm font-semibold text-slate-800">1,284</p>
@@ -90,7 +90,7 @@
           </div>
 
           <div
-            class="lp-card absolute -right-10 -top-6 w-64 rotate-[var(--teacher-rotate)] rounded-2xl border border-slate-200 bg-white p-4 shadow-xl"
+            class="lp-card absolute -right-2 top-4 hidden w-48 rotate-[var(--teacher-rotate)] rounded-2xl border border-slate-200 bg-white p-4 shadow-xl sm:block lg:-right-10 lg:-top-6 lg:w-64"
             :style="{ '--teacher-rotate': teacherCardRotation }"
           >
             <div class="flex items-center gap-3">
@@ -109,7 +109,7 @@
           </div>
 
           <div
-            class="lp-card absolute -left-15 bottom-4 w-64 rotate-[var(--teacher-rotate)] rounded-2xl border border-slate-200 bg-white p-4 shadow-xl"
+            class="lp-card absolute -left-2 bottom-4 hidden w-48 rotate-[var(--teacher-rotate)] rounded-2xl border border-slate-200 bg-white p-4 shadow-xl sm:block lg:-left-15 lg:w-64"
             style="--teacher-rotate: 0deg"
           >
             <div class="flex items-center justify-between">

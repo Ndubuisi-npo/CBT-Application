@@ -43,7 +43,7 @@
                 <h3 class="mt-2 text-2xl font-semibold">{{ plan.name }}</h3>
               </div>
               <div class="rounded-2xl bg-white/10 px-3 py-2 text-sm font-semibold text-[#D4AF37]">
-                ${{ plan.price_monthly || 0 }}/mo
+                ₦{{ plan.price_monthly || 0 }}/mo
               </div>
             </div>
           </div>

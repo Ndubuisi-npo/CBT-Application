@@ -229,6 +229,25 @@
                   class="sa-input"
                   :placeholder="`Option ${String.fromCharCode(65 + index)} text`"
                 />
+                <div class="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    class="text-xs font-medium text-[#0B1F3A] transition hover:underline"
+                    @click="toggleOptionMath(index)"
+                  >
+                    ∑ {{ optionMathOpen[String(index)] ? 'Hide Math Keyboard' : 'Math Keyboard' }}
+                  </button>
+                </div>
+                <div v-if="optionMathOpen[String(index)]" class="rounded-lg border border-slate-200 bg-white p-3">
+                  <div :ref="(el) => setOptionMathFieldRef(el, index)" class="mathfield min-h-[60px] rounded-lg border border-slate-300 bg-slate-50 p-3" />
+                  <button
+                    type="button"
+                    class="mt-2 text-xs font-medium text-[#0B1F3A] hover:underline"
+                    @click="insertMathIntoOption(index)"
+                  >
+                    Insert into Option →
+                  </button>
+                </div>
                 <span v-if="option.is_correct" class="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700">
                   <Check class="h-3 w-3" /> Correct Answer
                 </span>
@@ -360,7 +379,7 @@
               >
                 <span v-if="form.allow_multiple_answers" class="h-4 w-4 rounded border-2 shrink-0" :class="option.is_correct ? 'border-emerald-500 bg-emerald-500' : 'border-slate-300'" />
                 <span v-else class="h-4 w-4 rounded-full border-2 shrink-0" :class="option.is_correct ? 'border-emerald-500 bg-emerald-500' : 'border-slate-300'" />
-                {{ String.fromCharCode(65 + index) }}. {{ option.content }}
+                {{ String.fromCharCode(65 + index) }}. <span v-html="renderContentHtml(option.content)" />
                 <span v-if="option.is_correct" class="ml-2 text-xs text-emerald-600">✓</span>
               </div>
               <div v-if="!form.options.some(o => o?.content?.trim())" class="rounded-xl border border-dashed border-slate-200 px-4 py-3 text-sm text-slate-400">
@@ -441,7 +460,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { RouterLink, useRouter, useRoute } from 'vue-router'
 import { AlertCircle, Check, LoaderCircle, Plus, Send, Trash2 } from 'lucide-vue-next'
 import { useTeacherExamsStore } from '../stores/exams'
@@ -493,6 +512,9 @@ const subjects = ref([])
 const showMathKeyboard = ref(false)
 const mathFieldRef = ref(null)
 const textareaRef = ref(null)
+const optionMathFieldRefs = ref({})
+const optionMathFields = ref({})
+const optionMathOpen = ref({})
 let mathField = null
 
 const questionId = computed(() => route.query.edit || null)
@@ -516,13 +538,10 @@ const escapeHtml = (unsafe = '') => {
     .replace(/'/g, '&#39;')
 }
 
-// Render content: plain text is escaped; math segments wrapped in $...$ or $$...$$ are rendered via KaTeX
-const renderedContent = computed(() => {
-  const src = form.content || ''
+const renderContentHtml = (src = '') => {
   if (!src) return ''
 
   try {
-    // Match $$...$$ (display) or $...$ (inline). Use non-greedy matching.
     const mathOrTextRegex = /(\$\$[\s\S]+?\$\$|\$[^$]+\$)/g
     let lastIndex = 0
     const parts = []
@@ -556,10 +575,12 @@ const renderedContent = computed(() => {
 
     return parts.join('')
   } catch (e) {
-    // Fallback to escaped plain text
     return escapeHtml(src).replace(/\n/g, '<br/>')
   }
-})
+}
+
+// Render content: plain text is escaped; math segments wrapped in $...$ or $$...$$ are rendered via KaTeX
+const renderedContent = computed(() => renderContentHtml(form.content || ''))
 
 const form = reactive({
   id: null,
@@ -662,23 +683,59 @@ const insertMathToContent = () => {
   const latex = mathField.value
   if (!latex) return
 
-  // Ensure inserted math is wrapped in $...$ so preview renders with KaTeX
   const mathContent = latex.startsWith('$') ? latex : `$${latex}$`
-  
-  // Insert at cursor position or append
   const textarea = textareaRef.value
   const start = textarea.selectionStart
   const end = textarea.selectionEnd
   const text = form.content
-  
+
   form.content = text.substring(0, start) + mathContent + text.substring(end)
-  
-  // Clear math field
   mathField.value = ''
-  
-  // Focus back on textarea
   textarea.focus()
   textarea.setSelectionRange(start + mathContent.length, start + mathContent.length)
+}
+
+const setOptionMathFieldRef = (el, index) => {
+  const key = String(index)
+  if (el) {
+    optionMathFieldRefs.value[key] = el
+    if (optionMathOpen.value[key] && !optionMathFields.value[key]) {
+      nextTick(() => initOptionMathField(index))
+    }
+  }
+}
+
+const initOptionMathField = (index) => {
+  const key = String(index)
+  const container = optionMathFieldRefs.value[key]
+  if (!container) return
+  if (optionMathFields.value[key]) return
+  const field = new MathfieldElement()
+  container.appendChild(field)
+  optionMathFields.value[key] = field
+  field.value = ''
+}
+
+const toggleOptionMath = (index) => {
+  const key = String(index)
+  const isOpen = !!optionMathOpen.value[key]
+  optionMathOpen.value[key] = !isOpen
+  if (!isOpen) {
+    nextTick(() => initOptionMathField(index))
+  }
+}
+
+const insertMathIntoOption = (index) => {
+  const key = String(index)
+  const field = optionMathFields.value[key]
+  if (!field) return
+  const latex = field.value
+  if (!latex) return
+
+  const mathContent = latex.startsWith('$') ? latex : `$${latex}$`
+  const current = form.options[index]?.content || ''
+  form.options[index].content = `${current}${current ? ' ' : ''}${mathContent}`
+  field.value = ''
 }
 
 // Watch for keyboard visibility changes to initialize/cleanup
@@ -868,6 +925,15 @@ onUnmounted(() => {
     mathFieldRef.value.removeChild(mathField)
     mathField = null
   }
+
+  Object.entries(optionMathFields.value).forEach(([index, field]) => {
+    const container = optionMathFieldRefs.value[index]
+    if (container && field) {
+      container.removeChild(field)
+    }
+  })
+  optionMathFields.value = {}
+  optionMathFieldRefs.value = {}
 })
 </script>
 

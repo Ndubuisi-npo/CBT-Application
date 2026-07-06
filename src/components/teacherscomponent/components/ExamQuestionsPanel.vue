@@ -56,7 +56,7 @@
               :key="q.id"
               class="rounded-xl border border-slate-200 bg-white p-4"
             >
-              <p class="text-sm font-medium text-slate-900 leading-5">{{ getQuestionText(q) }}</p>
+              <div class="text-sm font-medium text-slate-900 leading-5" v-html="renderQuestionText(getQuestionText(q))" />
               <p class="mt-1 text-xs text-slate-400">{{ q.topic || q.subject?.name || q.subject || '' }} {{ q.class_level?.name ? '• ' + q.class_level.name : '' }} {{ q.class_arm?.name ? '• ' + q.class_arm.name : '' }}</p>
               <div class="mt-3 flex items-center gap-3">
                 <input
@@ -113,7 +113,7 @@
                   {{ idx + 1 }}
                 </span>
                 <div class="min-w-0 flex-1">
-                  <p class="text-sm font-medium text-slate-900 leading-5">{{ getQuestionText(q) }}</p>
+                  <div class="text-sm font-medium text-slate-900 leading-5" v-html="renderQuestionText(getQuestionText(q))" />
                   <div class="mt-2 flex items-center gap-3 flex-wrap">
                     <label class="flex items-center gap-2 text-xs text-slate-500">
                       Marks:
@@ -156,6 +156,8 @@ import { onMounted, ref, computed } from 'vue'
 import AppButton from '../../shared/AppButton.vue'
 import { useTeacherExamsStore } from '../stores/exams'
 import { useSchoolAdminUiStore } from '../../schooladmincomponents/stores/ui'
+import katex from 'katex'
+import 'katex/dist/katex.min.css'
 
 const props = defineProps({
   exam: { type: Object, required: true },
@@ -181,10 +183,62 @@ const examQuestions = ref([])
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
+const escapeHtml = (unsafe = '') => {
+  return String(unsafe)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+const renderMathContent = (value = '') => {
+  if (!value) return ''
+
+  try {
+    const mathOrTextRegex = /(\$\$[\s\S]+?\$\$|\$[^$]+\$)/g
+    let lastIndex = 0
+    const parts = []
+    let match
+
+    while ((match = mathOrTextRegex.exec(value)) !== null) {
+      const idx = match.index
+      if (idx > lastIndex) {
+        const textSegment = value.slice(lastIndex, idx)
+        parts.push(escapeHtml(textSegment).replace(/\n/g, '<br/>'))
+      }
+
+      const token = match[0]
+      if (token.startsWith('$$') && token.endsWith('$$')) {
+        const inner = token.slice(2, -2)
+        parts.push(katex.renderToString(inner, { throwOnError: false, displayMode: true }))
+      } else if (token.startsWith('$') && token.endsWith('$')) {
+        const inner = token.slice(1, -1)
+        parts.push(katex.renderToString(inner, { throwOnError: false, displayMode: false }))
+      } else {
+        parts.push(escapeHtml(token))
+      }
+
+      lastIndex = mathOrTextRegex.lastIndex
+    }
+
+    if (lastIndex < value.length) {
+      const tail = value.slice(lastIndex)
+      parts.push(escapeHtml(tail).replace(/\n/g, '<br/>'))
+    }
+
+    return parts.join('')
+  } catch {
+    return escapeHtml(value).replace(/\n/g, '<br/>')
+  }
+}
+
 const getQuestionText = (q) => {
   const src = q?.question || q?.question_details || q
   return src?.content || src?.question_text || src?.text || q?.content || 'Untitled question'
 }
+
+const renderQuestionText = (value) => renderMathContent(String(value ?? ''))
 
 const isAlreadyAdded = (questionId) =>
   examQuestions.value.some((q) => q.question_id === questionId || q.id === questionId)

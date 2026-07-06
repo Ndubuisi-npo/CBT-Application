@@ -96,7 +96,7 @@
                   {{ question.status }}
                 </span>
               </div>
-              <h2 class="mt-4 text-lg font-semibold text-slate-900">{{ getQuestionText(question) }}</h2>
+              <div class="mt-4 text-lg font-semibold text-slate-900" v-html="renderQuestionText(getQuestionText(question))" />
               <div class="mt-3 flex flex-wrap gap-2 text-xs text-slate-500">
                 <span class="rounded-full bg-slate-100 px-3 py-2">{{ getQuestionSubject(question) || 'No subject' }}</span>
                 <!-- topic removed -->
@@ -114,7 +114,7 @@
                   class="flex items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-sm"
                   :class="isQuestionOptionCorrect(question, option) ? 'border-emerald-300 bg-emerald-50 text-emerald-800 font-semibold shadow-sm' : 'border-slate-200 bg-slate-50 text-slate-600'"
                 >
-                  <span>{{ String.fromCharCode(65 + idx) }}. {{ getOptionContent(option) }}</span>
+                  <span>{{ String.fromCharCode(65 + idx) }}. <span v-html="renderOptionContent(getOptionContent(option))" /></span>
                   <span v-if="isQuestionOptionCorrect(question, option)" class="shrink-0 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700">Correct</span>
                 </div>
               </div>
@@ -177,7 +177,7 @@
             <span class="rounded-full bg-white px-3 py-2 text-xs font-semibold text-slate-600">{{ getQuestionTypeLabel(previewItem) }}</span>
             <span class="rounded-full bg-white px-3 py-2 text-xs font-semibold text-slate-600">{{ previewItem.marks }} marks</span>
           </div>
-          <p class="mt-5 text-sm leading-7 text-slate-800">{{ previewItem.content }}</p>
+          <div class="mt-5 text-sm leading-7 text-slate-800" v-html="renderQuestionText(previewItem.content)" />
 
           <!-- MCQ / True-False options -->
           <div v-if="isChoiceBasedQuestion(previewItem) && previewItem.options?.length" class="mt-5 space-y-3">
@@ -187,7 +187,7 @@
               class="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm"
               :class="isQuestionOptionCorrect(previewItem, option) ? 'border-emerald-300 bg-emerald-100 text-emerald-900 font-semibold shadow-sm' : 'text-slate-700'"
             >
-              <span>{{ String.fromCharCode(65 + index) }}. {{ getOptionContent(option) }}</span>
+              <span>{{ String.fromCharCode(65 + index) }}. <span v-html="renderOptionContent(getOptionContent(option))" /></span>
               <span v-if="isQuestionOptionCorrect(previewItem, option)" class="ml-3 rounded-full bg-emerald-200 px-2.5 py-1 text-xs font-semibold text-emerald-800">Correct</span>
             </div>
             <div class="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700">
@@ -231,6 +231,8 @@ import { useTeachersQuestionsStore } from '../stores/questions'
 import { getSubjects, getClassLevels } from '../services/api/exams'
 import { getAuthUser } from '../../../js/lib/auth'
 import { isChoiceBased, isFillInBlank, QUESTION_TYPE_LABELS } from '../../../types/question'
+import katex from 'katex'
+import 'katex/dist/katex.min.css'
 
 // Returns the API-canonical type string for a question
 const getQuestionApiType = (question) => question.type || ''
@@ -317,7 +319,59 @@ const normalizeClass = (classItem) => {
 
 const getTeacherClassLevel = () => getAuthUser()?.teacher_profile?.class_level || null
 
+const escapeHtml = (unsafe = '') => {
+  return String(unsafe)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+const renderMathContent = (value = '') => {
+  if (!value) return ''
+
+  try {
+    const mathOrTextRegex = /(\$\$[\s\S]+?\$\$|\$[^$]+\$)/g
+    let lastIndex = 0
+    const parts = []
+    let match
+
+    while ((match = mathOrTextRegex.exec(value)) !== null) {
+      const idx = match.index
+      if (idx > lastIndex) {
+        const textSegment = value.slice(lastIndex, idx)
+        parts.push(escapeHtml(textSegment).replace(/\n/g, '<br/>'))
+      }
+
+      const token = match[0]
+      if (token.startsWith('$$') && token.endsWith('$$')) {
+        const inner = token.slice(2, -2)
+        parts.push(katex.renderToString(inner, { throwOnError: false, displayMode: true }))
+      } else if (token.startsWith('$') && token.endsWith('$')) {
+        const inner = token.slice(1, -1)
+        parts.push(katex.renderToString(inner, { throwOnError: false, displayMode: false }))
+      } else {
+        parts.push(escapeHtml(token))
+      }
+
+      lastIndex = mathOrTextRegex.lastIndex
+    }
+
+    if (lastIndex < value.length) {
+      const tail = value.slice(lastIndex)
+      parts.push(escapeHtml(tail).replace(/\n/g, '<br/>'))
+    }
+
+    return parts.join('')
+  } catch {
+    return escapeHtml(value).replace(/\n/g, '<br/>')
+  }
+}
+
 const getQuestionText = (question) => question.content || question.question_text || ''
+const renderQuestionText = (value) => renderMathContent(String(value ?? ''))
+const renderOptionContent = (value) => renderMathContent(String(value ?? ''))
 const getQuestionSubject = (question) => questionStringValue(question.subject) || question.subject_name || ''
 const getQuestionTopic = (question) => questionStringValue(question.topic) || question.topic_name || ''
 const getQuestionClassName = (question) => {
