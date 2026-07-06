@@ -9,6 +9,7 @@
           <p v-if="studentClass" class="mt-1 text-sm text-slate-500">{{ studentClass }}</p>
         </div>
         <div class="flex flex-wrap items-center gap-3">
+          <NotificationBell />
           <AppButton text="My Results" variant="outline" size="sm" @click="router.push({ name: 'StudentResultsList' })" />
           <AppButton text="Logout" variant="secondary" size="sm" :processing="logoutLoading" loadingText="Logging out..." @click="handleLogout" />
         </div>
@@ -83,6 +84,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import SectionCard from '../../schooladmincomponents/components/SectionCard.vue'
 import AppButton from '../../shared/AppButton.vue'
+import NotificationBell from '../../shared/NotificationBell.vue'
 import { getAvailableExams, getStudentExamAttempt } from '../services/api/studentExams'
 import { getStudentResults } from '../services/api/studentResults'
 import { useSchoolAdminUiStore } from '../../schooladmincomponents/stores/ui'

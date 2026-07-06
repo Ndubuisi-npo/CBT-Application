@@ -85,8 +85,10 @@
               </button>
             </div>
 
-            <div class="mt-4 rounded-xl bg-slate-50 p-4">
-              <p class="text-base font-semibold leading-7 text-slate-900" v-html="renderQuestionText(currentQuestion)"></p>
+            <div class="mt-4 rounded-xl bg-slate-50 p-4 question-content">
+              <p class="whitespace-pre-wrap text-base font-semibold leading-7 text-slate-900">
+                {{ renderQuestionText(currentQuestion) }}
+              </p>
               <!-- Question image -->
               <img
                 v-if="getQuestionImage(currentQuestion)"
@@ -261,9 +263,8 @@ import {
 } from '../services/api/studentExams'
 import { useSchoolAdminUiStore } from '../../schooladmincomponents/stores/ui'
 import { fmtDateTime } from '../../../js/lib/helpers'
+import { normalizeQuestionText } from '../../../js/lib/questionText'
 import { isChoiceBased, isFillInBlank, isMultipleAnswer, QUESTION_TYPE_LABELS, buildAnswerPayload } from '../../../types/question'
-import katex from 'katex'
-import 'katex/dist/katex.min.css'
 
 const route = useRoute()
 const router = useRouter()
@@ -424,16 +425,8 @@ const getQuestionText = (q) => {
 }
 
 const renderQuestionText = (q) => {
-  const text = getQuestionText(q)
-  if (!text) return ''
-  try {
-    return katex.renderToString(text, {
-      throwOnError: false,
-      displayMode: false,
-    })
-  } catch {
-    return text
-  }
+  const text = normalizeQuestionText(getQuestionText(q))
+  return text || ''
 }
 
 const getQuestionImage = (q) => {
@@ -738,4 +731,28 @@ onUnmounted(() => {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.5; }
 }
+
+/* Ensure student-facing question text uses default font and neutral color
+   in case stored content contains HTML or KaTeX-produced styles. */
+.question-content {
+  font-family: inherit;
+  color: inherit;
+}
+.question-content .katex,
+.question-content .katex *,
+.question-content [class*="text-"] {
+  font-family: inherit !important;
+  color: inherit !important;
+  background: transparent !important;
+}
+
+/* Neutralize util classes inside student-facing content */
+.question-content [class*="font-"] {
+  font-weight: inherit !important;
+}
+.question-content [class*="bg-"] {
+  background: transparent !important;
+}
+
+.question-content img { max-width: 100%; height: auto; }
 </style>

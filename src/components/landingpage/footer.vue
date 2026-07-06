@@ -16,9 +16,9 @@
                   </a>
                 </template>
                 <template v-else-if="item === 'Pricing'">
-                  <RouterLink to="/pricing" class="lp-link text-base text-slate-500 hover:text-amber-800">
+                  <a href="#pricing" class="lp-link text-base text-slate-500 hover:text-amber-800" @click.prevent="scrollTo('pricing')">
                     {{ item }}
-                  </RouterLink>
+                  </a>
                 </template>
                 <template v-else>
                   <a href="#" class="lp-link text-base text-slate-500 hover:text-amber-800">
@@ -59,7 +59,10 @@
 
 <script setup lang="ts">
 import { Facebook, Instagram, Linkedin, Twitter } from 'lucide-vue-next'
-import { RouterLink } from 'vue-router'
+
+const scrollTo = (id: string) => {
+  document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
 
 const footerGroups = [
   {

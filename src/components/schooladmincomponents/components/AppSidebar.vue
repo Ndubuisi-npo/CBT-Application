@@ -73,6 +73,9 @@
               :class="isActive(item.to) ? 'text-[#D4AF37]' : 'text-white/50 group-hover:text-white/80'"
             />
             <span v-if="!collapsed" class="truncate">{{ item.label }}</span>
+            <span v-if="!collapsed && item.count > 0" class="ml-auto rounded-full bg-[#D4AF37]/90 px-2 py-0.5 text-[10px] font-semibold text-white">
+              {{ item.count }}
+            </span>
           </button>
         </RouterLink>
       </template>
@@ -115,6 +118,7 @@ import {
   Users,
 } from 'lucide-vue-next'
 import { useSchoolAdminProfileStore } from '../stores/profile'
+import { useNotificationStore } from '../../shared/stores/notifications'
 
 defineProps({
   collapsed: { type: Boolean, default: false },
@@ -126,6 +130,14 @@ const route = useRoute()
 const profileStore = useSchoolAdminProfileStore()
 const profile = computed(() => profileStore.profile || {})
 const isTeacherSection = computed(() => route.path.startsWith('/teachers'))
+const notificationStore = useNotificationStore()
+
+const teacherStudentNotifications = computed(() => notificationStore.unreadByCategory('students', 'teacher'))
+const teacherExamNotifications = computed(() => notificationStore.unreadByCategory('exams', 'teacher'))
+const adminStudentNotifications = computed(() => notificationStore.unreadByCategory('students', 'school_admin'))
+const adminTeacherNotifications = computed(() => notificationStore.unreadByCategory('teachers', 'school_admin'))
+const adminExamNotifications = computed(() => notificationStore.unreadByCategory('exams', 'school_admin'))
+const adminSessionNotifications = computed(() => notificationStore.unreadByCategory('academic_sessions', 'school_admin'))
 
 const navGroups = computed(() => {
   if (isTeacherSection.value) {
@@ -139,14 +151,14 @@ const navGroups = computed(() => {
       {
         label: 'Exams',
         items: [
-          { label: 'My Exams', to: '/teachers/exams', icon: ClipboardList },
+          { label: 'My Exams', to: '/teachers/exams', icon: ClipboardList, count: teacherExamNotifications.value },
           { label: 'Question Bank', to: '/teachers/questions', icon: FileQuestion },
         ],
       },
       {
         label: 'People',
         items: [
-          { label: 'Students', to: '/teachers/students', icon: GraduationCap },
+          { label: 'Students', to: '/teachers/students', icon: GraduationCap, count: teacherStudentNotifications.value },
         ],
       },
       {
@@ -168,7 +180,7 @@ const navGroups = computed(() => {
     {
       label: 'Academics',
       items: [
-        { label: 'Sessions', to: '/school-admin/sessions', icon: CalendarRange },
+        { label: 'Sessions', to: '/school-admin/sessions', icon: CalendarRange, count: adminSessionNotifications.value },
         { label: 'Class Levels', to: '/school-admin/class-levels', icon: Columns3 },
         { label: 'Subjects', to: '/school-admin/subjects', icon: Shapes },
       ],
@@ -176,14 +188,14 @@ const navGroups = computed(() => {
     {
       label: 'People',
       items: [
-        { label: 'Teachers', to: '/school-admin/teachers', icon: Users },
-        { label: 'Students', to: '/school-admin/students', icon: GraduationCap },
+        { label: 'Teachers', to: '/school-admin/teachers', icon: Users, count: adminTeacherNotifications.value },
+        { label: 'Students', to: '/school-admin/students', icon: GraduationCap, count: adminStudentNotifications.value },
       ],
     },
     {
       label: 'Oversight',
       items: [
-        { label: 'Exam Approvals', to: '/school-admin/exams', icon: ClipboardList },
+        { label: 'Exam Approvals', to: '/school-admin/exams', icon: ClipboardList, count: adminExamNotifications.value },
       ],
     },
     {

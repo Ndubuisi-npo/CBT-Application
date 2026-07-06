@@ -24,6 +24,7 @@
 
       <!-- Right: profile -->
       <div class="flex shrink-0 items-center gap-2">
+        <NotificationBell />
         <ProfileDropdown />
       </div>
     </div>
@@ -35,6 +36,7 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { ChevronRight, Menu } from 'lucide-vue-next'
 import ProfileDropdown from './ProfileDropdown.vue'
+import NotificationBell from '../../shared/NotificationBell.vue'
 
 defineEmits(['toggle-sidebar'])
 
@@ -58,11 +60,13 @@ const titles = {
   '/school-admin/settings': 'Settings',
   '/school-admin/profile': 'Profile',
   '/school-admin/exams': 'Exam Approvals',
+  '/school-admin/notifications': 'Notifications',
   '/teachers/dashboard': 'Dashboard',
   '/teachers/my-classes': 'My Classes',
   '/teachers/questions': 'Question Bank',
   '/teachers/exam-wizard': 'Exam Wizard',
   '/teachers/exams': 'My Exams',
+  '/teachers/notifications': 'Notifications',
   '/teachers/students': 'Students',
   '/teachers/attendance': 'Attendance',
   '/teachers/grading': 'Grading',

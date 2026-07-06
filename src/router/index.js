@@ -5,7 +5,6 @@ import { getTenantHandle } from '../js/lib/api'
 // ─── Landing & Onboarding ─────────────────────────────────────────────────────
 import LandingPage from '../components/landingpage/landingPage.vue'
 import Onboarding from '../components/onboardingpage/onboarding.vue'
-import PricingPage from '../components/landingpage/PricingPage.vue'
 import FeatureDetailPage from '../components/landingpage/FeatureDetailPage.vue'
 
 // ─── School Admin ─────────────────────────────────────────────────────────────
@@ -55,11 +54,11 @@ import SuperAdminTenantEdit from '../components/superadmincomponent/pages/Tenant
 import SuperAdminPlans from '../components/superadmincomponent/pages/PlansPage.vue'
 import SuperAdminAuditLogs from '../components/superadmincomponent/pages/AuditLogsPage.vue'
 import SuperAdminSettings from '../components/superadmincomponent/pages/SettingsPage.vue'
+import NotificationsPage from '../components/shared/NotificationsPage.vue'
 
 const routes = [
   // ── Public ──────────────────────────────────────────────────────────────
   { path: '/', name: 'LandingPage', component: LandingPage },
-  { path: '/pricing', name: 'PricingPage', component: PricingPage },
   { path: '/features/:slug', name: 'FeatureDetailPage', component: FeatureDetailPage, props: true },
   { path: '/onboarding', name: 'Onboarding', component: Onboarding },
   { path: '/login', name: 'Login', component: SchoolAdminLogin },
@@ -96,6 +95,7 @@ const routes = [
           },
           { path: 'settings', name: 'SchoolAdminSettings', component: SchoolAdminSettings },
           { path: 'profile', name: 'SchoolAdminProfile', component: SchoolAdminProfile },
+          { path: 'notifications', name: 'SchoolAdminNotifications', component: NotificationsPage },
         ],
       },
     ],
@@ -147,6 +147,7 @@ const routes = [
           { path: 'timetable', name: 'TeachersTimetablePage', component: TeachersTimetablePage },
           { path: 'settings', name: 'TeachersSettings', component: TeachersSettingsPage },
           { path: 'profile', name: 'TeachersProfile', component: SchoolAdminProfile },
+          { path: 'notifications', name: 'TeachersNotifications', component: NotificationsPage },
         ],
       },
     ],
@@ -183,6 +184,12 @@ const routes = [
     meta: { requiresAuth: true, role: 'student' },
   },
   {
+    path: '/student/notifications',
+    name: 'StudentNotifications',
+    component: NotificationsPage,
+    meta: { requiresAuth: true, role: 'student' },
+  },
+  {
     path: '/student/instructions/:id',
     name: 'StudentExamInstructions',
     component: () => import('../components/studentscomponent/pages/StudentExamInstructions.vue'),
@@ -210,6 +217,17 @@ const routes = [
     props: true,
     meta: { requiresAuth: true, role: 'student' },
   },
+  {
+    path: '/notifications',
+    redirect: () => {
+      const role = getAuthRole()
+      if (role === 'school_admin') return '/school-admin/notifications'
+      if (role === 'teacher') return '/teachers/notifications'
+      if (role === 'student') return '/student/notifications'
+      return '/notifications'
+    },
+    meta: { requiresAuth: true },
+  },
 ]
 
 const router = createRouter({
@@ -231,7 +249,8 @@ router.beforeEach((to, from, next) => {
     to.path.startsWith('/school-admin') ||
     to.path.startsWith('/super-admin') ||
     to.path.startsWith('/teachers') ||
-    to.path.startsWith('/student')
+    to.path.startsWith('/student') ||
+    to.path.startsWith('/notifications')
 
   const isLoginPage = to.path === '/login'
 

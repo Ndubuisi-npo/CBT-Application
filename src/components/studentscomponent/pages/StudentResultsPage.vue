@@ -14,6 +14,7 @@
           <h1 class="text-2xl font-semibold tracking-tight text-slate-900">My Results</h1>
           <p class="mt-1 text-sm text-slate-500">All your completed exam results in one place.</p>
         </div>
+        <NotificationBell />
       </div>
 
       <!-- Loading -->
@@ -144,6 +145,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ArrowLeft, ChevronLeft, ChevronRight, FileText } from 'lucide-vue-next'
+import NotificationBell from '../../shared/NotificationBell.vue'
 import { getStudentResults } from '../services/api/studentResults'
 import { fmtDate } from '../../../js/lib/helpers'
 import { scoreColorClass, fmtDuration } from '../../../types/question'

@@ -12,6 +12,7 @@
       <GetStarted />
     </div>
     <Feedback />
+    <PricingSection />
     <Loop />
     <Onboard />
     <Footer />
@@ -31,6 +32,7 @@ import Needs from './needs.vue'
 import Onboard from './onboard.vue'
 import Tracking from './tracking.vue'
 import Trusted from './trusted.vue'
+import PricingSection from './PricingSection.vue'
 
 const landingPageRef = ref<HTMLElement | null>(null)
 let sectionObserver: IntersectionObserver | null = null

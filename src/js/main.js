@@ -5,6 +5,7 @@ import App from '../App.vue';
 import router from '../router/index';
 import { initializeApiState } from './lib/api';
 import { initializeAuthState } from './lib/auth';
+import { initializeRealtimeNotifications } from './echoNotifications';
 import '../css/app.css';
 
 // Initialize auth state first, then API state (auth sets the token)
@@ -17,3 +18,5 @@ const pinia = createPinia();
 app.use(pinia);
 app.use(router);
 app.mount('#app');
+
+initializeRealtimeNotifications();

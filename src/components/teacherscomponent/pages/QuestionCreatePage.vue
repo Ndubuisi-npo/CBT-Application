@@ -149,11 +149,7 @@
                 :placeholder="contentPlaceholder"
               />
 
-              <!-- LaTeX Preview -->
-              <div v-if="form.content" class="border-t border-slate-200 bg-slate-50 px-4 py-3">
-                <p class="text-xs font-medium text-slate-600 mb-2">Preview:</p>
-                <div class="text-sm text-slate-900" v-html="renderedContent" />
-              </div>
+              <!-- removed separate LaTeX preview — live preview now renders KaTeX -->
             </div>
           </div>
         </section>
@@ -347,9 +343,9 @@
               <span v-if="selectedSubjectName" class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{{ selectedSubjectName }}</span>
               <span v-if="selectedClassName" class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{{ selectedClassName }}</span>
             </div>
-            <p class="mt-4 text-sm leading-6 text-slate-800">
-              {{ form.content || 'Your question preview will appear here once you start typing…' }}
-            </p>
+            <div class="mt-4 text-sm leading-6 text-slate-800 preview-reset">
+              <div v-html="form.content ? renderedContent : 'Your question preview will appear here once you start typing…'" />
+            </div>
 
             <!-- MCQ preview -->
             <div v-if="form.type === 'mcq'" class="mt-4 space-y-2">
@@ -511,15 +507,57 @@ const contentPlaceholder = computed(() => {
   return 'Type the full question stem here…'
 })
 
+const escapeHtml = (unsafe = '') => {
+  return String(unsafe)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+// Render content: plain text is escaped; math segments wrapped in $...$ or $$...$$ are rendered via KaTeX
 const renderedContent = computed(() => {
-  if (!form.content) return ''
+  const src = form.content || ''
+  if (!src) return ''
+
   try {
-    return katex.renderToString(form.content, {
-      throwOnError: false,
-      displayMode: false,
-    })
-  } catch {
-    return form.content
+    // Match $$...$$ (display) or $...$ (inline). Use non-greedy matching.
+    const mathOrTextRegex = /(\$\$[\s\S]+?\$\$|\$[^$]+\$)/g
+    let lastIndex = 0
+    const parts = []
+    let match
+
+    while ((match = mathOrTextRegex.exec(src)) !== null) {
+      const idx = match.index
+      if (idx > lastIndex) {
+        const textSegment = src.slice(lastIndex, idx)
+        parts.push(escapeHtml(textSegment).replace(/\n/g, '<br/>'))
+      }
+
+      const token = match[0]
+      if (token.startsWith('$$') && token.endsWith('$$')) {
+        const inner = token.slice(2, -2)
+        parts.push(katex.renderToString(inner, { throwOnError: false, displayMode: true }))
+      } else if (token.startsWith('$') && token.endsWith('$')) {
+        const inner = token.slice(1, -1)
+        parts.push(katex.renderToString(inner, { throwOnError: false, displayMode: false }))
+      } else {
+        parts.push(escapeHtml(token))
+      }
+
+      lastIndex = mathOrTextRegex.lastIndex
+    }
+
+    if (lastIndex < src.length) {
+      const tail = src.slice(lastIndex)
+      parts.push(escapeHtml(tail).replace(/\n/g, '<br/>'))
+    }
+
+    return parts.join('')
+  } catch (e) {
+    // Fallback to escaped plain text
+    return escapeHtml(src).replace(/\n/g, '<br/>')
   }
 })
 
@@ -623,9 +661,9 @@ const insertMathToContent = () => {
   if (!mathField || !textareaRef.value) return
   const latex = mathField.value
   if (!latex) return
-  
-  // Insert LaTeX directly without wrapper
-  const mathContent = latex
+
+  // Ensure inserted math is wrapped in $...$ so preview renders with KaTeX
+  const mathContent = latex.startsWith('$') ? latex : `$${latex}$`
   
   // Insert at cursor position or append
   const textarea = textareaRef.value
@@ -832,3 +870,56 @@ onUnmounted(() => {
   }
 })
 </script>
+
+<style scoped>
+/* Ensure the preview uses the app's default font and neutral colors
+   Prevent KaTeX or inserted HTML from bringing in custom fonts/colors
+   and avoid text overflow from long tokens. */
+.preview-reset {
+  font-family: inherit;
+  color: inherit;
+  line-height: 1.5;
+  white-space: pre-wrap; /* preserve line breaks */
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+.preview-reset img { max-width: 100%; height: auto; }
+
+/* Target common KaTeX classes and force default font/color */
+.preview-reset .katex,
+.preview-reset .katex *,
+.preview-reset .katex-html {
+  font-family: inherit !important;
+  color: inherit !important;
+  background: transparent !important;
+}
+
+/* Prevent inline color classes from changing text color inside preview */
+.preview-reset [class*="text-"] {
+  color: inherit !important;
+}
+
+/* Neutralize common utility classes that may affect fonts or background */
+.preview-reset [class*="font-"] {
+  font-weight: inherit !important;
+  font-style: inherit !important;
+}
+.preview-reset [class*="bg-"] {
+  background: transparent !important;
+}
+.preview-reset [class*="leading-"] {
+  line-height: inherit !important;
+}
+
+/* KaTeX sometimes creates wide inline elements; force wrapping and limit width */
+.preview-reset .katex {
+  max-width: 100%;
+  display: inline-block;
+  vertical-align: baseline;
+  overflow-wrap: anywhere;
+}
+.preview-reset .katex .katex-html {
+  overflow-wrap: anywhere;
+}
+
+</style>
