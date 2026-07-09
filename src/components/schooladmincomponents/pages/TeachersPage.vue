@@ -43,67 +43,94 @@
         </div>
       </div>
 
-      <SkeletonRows v-if="teachersStore.loading" :columns="5" />
+      <SkeletonRows v-if="teachersStore.loading" :columns="5" class="hidden lg:block" />
+      <div v-if="teachersStore.loading" class="grid gap-3 p-4 sm:grid-cols-2 lg:hidden">
+        <div v-for="i in 4" :key="i" class="h-36 animate-pulse rounded-2xl bg-slate-100" />
+      </div>
 
-      <div v-else-if="!filteredTeachers.length" class="px-5 py-16 text-center">
-        <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100">
-          <Users class="h-8 w-8 text-slate-400" />
-        </div>
-        <h3 class="mt-4 text-base font-semibold text-slate-900">{{ searchQuery ? 'No teachers found' : 'No teachers yet' }}</h3>
-        <p class="mt-1.5 text-sm text-slate-500">{{ searchQuery ? 'Try adjusting your search.' : 'Add your first staff member.' }}</p>
-        <div class="mt-5 flex justify-center gap-2">
+      <AppEmptyState
+        v-else-if="!filteredTeachers.length"
+        :icon="Users"
+        :title="searchQuery ? 'No teachers found' : 'No teachers yet'"
+        :description="searchQuery ? 'Try adjusting your search.' : 'Add your first staff member.'"
+        class="m-4 border-0"
+      >
+        <template #actions>
           <AppButton v-if="searchQuery" text="Clear Search" variant="outline" size="sm" @click="searchQuery = ''" />
           <AppButton v-if="!searchQuery" :icon="Plus" text="Add First Teacher" variant="primary" size="sm" @click="openModal()" />
-        </div>
-      </div>
+        </template>
+      </AppEmptyState>
 
-      <div v-else class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-slate-100">
-          <thead>
-            <tr class="bg-slate-50">
-              <th v-if="isSelectMode" class="w-10 px-5 py-3">
-                <input type="checkbox" :checked="areAllVisibleSelected" class="h-4 w-4 rounded border-slate-300 text-[#D4AF37] focus:ring-[#D4AF37]" @change="toggleVisibleTeachers($event.target.checked)" />
-              </th>
-              <th class="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">Teacher</th>
-              <th class="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">Staff ID</th>
-              <th class="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">Phone</th>
-              <th class="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">Qualification</th>
-              <th class="px-5 py-3"></th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-slate-100 bg-white">
-            <tr v-for="teacher in paginatedTeachers" :key="teacher.id" class="group transition hover:bg-slate-50/70">
-              <td v-if="isSelectMode" class="px-5 py-3.5">
-                <input type="checkbox" :checked="selectedTeachers.has(teacher.id)" class="h-4 w-4 rounded border-slate-300 text-[#D4AF37] focus:ring-[#D4AF37]" @change="toggleTeacherSelection(teacher.id, $event.target.checked)" />
-              </td>
-              <!-- Name + avatar -->
-              <td class="px-5 py-3.5">
-                <div class="flex items-center gap-3">
-                  <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-xs font-semibold text-emerald-700">
-                    {{ initials(teacher) }}
+      <template v-else>
+        <!-- Desktop table (lg and up) -->
+        <div class="hidden overflow-x-auto lg:block">
+          <table class="min-w-full divide-y divide-slate-100">
+            <thead>
+              <tr class="bg-slate-50">
+                <th v-if="isSelectMode" class="w-10 px-5 py-3">
+                  <input type="checkbox" :checked="areAllVisibleSelected" class="h-4 w-4 rounded border-slate-300 text-[#D4AF37] focus:ring-[#D4AF37]" @change="toggleVisibleTeachers($event.target.checked)" />
+                </th>
+                <th class="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">Teacher</th>
+                <th class="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">Staff ID</th>
+                <th class="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">Phone</th>
+                <th class="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">Qualification</th>
+                <th class="px-5 py-3"></th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 bg-white">
+              <tr v-for="teacher in paginatedTeachers" :key="teacher.id" class="group transition hover:bg-slate-50/70">
+                <td v-if="isSelectMode" class="px-5 py-3.5">
+                  <input type="checkbox" :checked="selectedTeachers.has(teacher.id)" class="h-4 w-4 rounded border-slate-300 text-[#D4AF37] focus:ring-[#D4AF37]" @change="toggleTeacherSelection(teacher.id, $event.target.checked)" />
+                </td>
+                <!-- Name + avatar -->
+                <td class="px-5 py-3.5">
+                  <div class="flex items-center gap-3">
+                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-xs font-semibold text-emerald-700">
+                      {{ initials(teacher) }}
+                    </div>
+                    <div>
+                      <p class="font-medium text-slate-900">{{ teacher.first_name }} {{ teacher.last_name }}</p>
+                      <p class="text-xs text-slate-500">{{ teacher.email || 'N/A' }}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p class="font-medium text-slate-900">{{ teacher.first_name }} {{ teacher.last_name }}</p>
-                    <p class="text-xs text-slate-500">{{ teacher.email || 'N/A' }}</p>
-                  </div>
-                </div>
-              </td>
-              <td class="px-5 py-3.5 text-sm text-slate-600">{{ teacher.teacherProfile?.staff_id || teacher.teacher_profile?.staff_id || 'N/A' }}</td>
-              <td class="px-5 py-3.5 text-sm text-slate-600">{{ teacher.phone || 'N/A' }}</td>
-              <td class="px-5 py-3.5 text-sm text-slate-600">{{ teacher.teacherProfile?.qualification || teacher.teacher_profile?.qualification || 'N/A' }}</td>
-              <td class="px-5 py-3.5">
-                <div class="flex items-center gap-2 opacity-0 transition group-hover:opacity-100">
-                  <button class="rounded-lg px-2.5 py-1 text-xs font-medium text-slate-600 ring-1 ring-slate-200 transition hover:bg-slate-100" @click="viewTeacher(teacher)">View</button>
-                  <button class="rounded-lg px-2.5 py-1 text-xs font-medium text-slate-600 ring-1 ring-slate-200 transition hover:bg-slate-100" @click="editTeacher(teacher)">Edit</button>
-                  <button class="rounded-lg px-2.5 py-1 text-xs font-medium text-amber-600 ring-1 ring-amber-200 transition hover:bg-amber-50" :disabled="revokeLoading.has(teacher.id)" @click="revokeTeacher(teacher.id)">
-                    {{ revokeLoading.has(teacher.id) ? 'Revoking…' : 'Revoke' }}
-                  </button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+                </td>
+                <td class="px-5 py-3.5 text-sm text-slate-600">{{ teacher.teacherProfile?.staff_id || teacher.teacher_profile?.staff_id || 'N/A' }}</td>
+                <td class="px-5 py-3.5 text-sm text-slate-600">{{ teacher.phone || 'N/A' }}</td>
+                <td class="px-5 py-3.5 text-sm text-slate-600">{{ teacher.teacherProfile?.qualification || teacher.teacher_profile?.qualification || 'N/A' }}</td>
+                <td class="px-5 py-3.5">
+                  <ResponsiveTableActions :actions="teacherActions(teacher)" :entity-label="teacherFullName(teacher)" />
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Tablet & mobile cards (below lg) -->
+        <div class="grid gap-3 p-4 sm:grid-cols-2 lg:hidden">
+          <ResponsiveDataCard
+            v-for="teacher in paginatedTeachers"
+            :key="teacher.id"
+            :avatar-text="initials(teacher)"
+            avatar-color="bg-emerald-50 text-emerald-700"
+            :title="teacherFullName(teacher)"
+            :subtitle="teacher.email || 'N/A'"
+            :fields="[
+              { label: 'Staff ID', value: teacher.teacherProfile?.staff_id || teacher.teacher_profile?.staff_id || 'N/A' },
+              { label: 'Phone', value: teacher.phone || 'N/A' },
+              { label: 'Qualification', value: teacher.teacherProfile?.qualification || teacher.teacher_profile?.qualification || 'N/A', span: 2 },
+            ]"
+            clickable
+            @click="viewTeacher(teacher)"
+          >
+            <template #badge>
+              <AppBadge :label="teacher.is_active !== false ? 'Active' : 'Inactive'" :variant="teacher.is_active !== false ? 'success' : 'danger'" dot />
+            </template>
+            <template #actions>
+              <ResponsiveTableActions :actions="teacherActions(teacher)" :entity-label="teacherFullName(teacher)" always-visible />
+            </template>
+          </ResponsiveDataCard>
+        </div>
+      </template>
 
       <!-- Pagination -->
       <div v-if="filteredTeachers.length" class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-5 py-3.5">
@@ -126,55 +153,82 @@
         <AppButton v-if="!isArchivedSelectMode" :icon="CheckSquare" text="Select" variant="ghost" size="sm" @click="startArchivedSelectMode" />
       </div>
 
-      <SkeletonRows v-if="teachersStore.loading" :columns="5" />
-
-      <div v-else-if="!teachersStore.archivedTeachers.length" class="px-5 py-16 text-center">
-        <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100">
-          <Archive class="h-8 w-8 text-slate-400" />
-        </div>
-        <h3 class="mt-4 text-base font-semibold text-slate-900">No archived teachers</h3>
-        <p class="mt-1.5 text-sm text-slate-500">Revoked teachers will appear here.</p>
+      <SkeletonRows v-if="teachersStore.loading" :columns="5" class="hidden lg:block" />
+      <div v-if="teachersStore.loading" class="grid gap-3 p-4 sm:grid-cols-2 lg:hidden">
+        <div v-for="i in 4" :key="i" class="h-28 animate-pulse rounded-2xl bg-slate-100" />
       </div>
 
-      <div v-else class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-slate-100">
-          <thead>
-            <tr class="bg-slate-50">
-              <th v-if="isArchivedSelectMode" class="w-10 px-5 py-3">
-                <input type="checkbox" :checked="areAllVisibleArchivedSelected" class="h-4 w-4 rounded border-slate-300" @change="toggleVisibleArchivedTeachers($event.target.checked)" />
-              </th>
-              <th class="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">Teacher</th>
-              <th class="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">Staff ID</th>
-              <th class="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">Phone</th>
-              <th class="px-5 py-3"></th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-slate-100 bg-white">
-            <tr v-for="teacher in paginatedArchivedTeachers" :key="teacher.id" class="group opacity-60 transition hover:opacity-90">
-              <td v-if="isArchivedSelectMode" class="px-5 py-3.5">
-                <input type="checkbox" :checked="selectedArchivedTeachers.has(teacher.id)" class="h-4 w-4 rounded border-slate-300" @change="toggleArchivedTeacherSelection(teacher.id, $event.target.checked)" />
-              </td>
-              <td class="px-5 py-3.5">
-                <div class="flex items-center gap-3">
-                  <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-200 text-xs font-semibold text-slate-500">{{ initials(teacher) }}</div>
-                  <div>
-                    <p class="font-medium text-slate-700">{{ teacher.first_name }} {{ teacher.last_name }}</p>
-                    <p class="text-xs text-slate-400">{{ teacher.email || 'N/A' }}</p>
+      <AppEmptyState
+        v-else-if="!teachersStore.archivedTeachers.length"
+        :icon="Archive"
+        title="No archived teachers"
+        description="Revoked teachers will appear here."
+        class="m-4 border-0"
+      />
+
+      <template v-else>
+        <!-- Desktop table -->
+        <div class="hidden overflow-x-auto lg:block">
+          <table class="min-w-full divide-y divide-slate-100">
+            <thead>
+              <tr class="bg-slate-50">
+                <th v-if="isArchivedSelectMode" class="w-10 px-5 py-3">
+                  <input type="checkbox" :checked="areAllVisibleArchivedSelected" class="h-4 w-4 rounded border-slate-300" @change="toggleVisibleArchivedTeachers($event.target.checked)" />
+                </th>
+                <th class="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">Teacher</th>
+                <th class="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">Staff ID</th>
+                <th class="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">Phone</th>
+                <th class="px-5 py-3"></th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 bg-white">
+              <tr v-for="teacher in paginatedArchivedTeachers" :key="teacher.id" class="group opacity-60 transition hover:opacity-90">
+                <td v-if="isArchivedSelectMode" class="px-5 py-3.5">
+                  <input type="checkbox" :checked="selectedArchivedTeachers.has(teacher.id)" class="h-4 w-4 rounded border-slate-300" @change="toggleArchivedTeacherSelection(teacher.id, $event.target.checked)" />
+                </td>
+                <td class="px-5 py-3.5">
+                  <div class="flex items-center gap-3">
+                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-200 text-xs font-semibold text-slate-500">{{ initials(teacher) }}</div>
+                    <div>
+                      <p class="font-medium text-slate-700">{{ teacher.first_name }} {{ teacher.last_name }}</p>
+                      <p class="text-xs text-slate-400">{{ teacher.email || 'N/A' }}</p>
+                    </div>
                   </div>
-                </div>
-              </td>
-              <td class="px-5 py-3.5 text-sm text-slate-500">{{ teacher.teacherProfile?.staff_id || teacher.teacher_profile?.staff_id || 'N/A' }}</td>
-              <td class="px-5 py-3.5 text-sm text-slate-500">{{ teacher.phone || 'N/A' }}</td>
-              <td class="px-5 py-3.5">
-                <div class="flex items-center gap-2 opacity-0 transition group-hover:opacity-100">
-                  <button class="rounded-lg px-2.5 py-1 text-xs font-medium text-emerald-600 ring-1 ring-emerald-200 transition hover:bg-emerald-50" :disabled="restoreLoading.has(teacher.id)" @click="restoreArchivedTeacher(teacher.id)">{{ restoreLoading.has(teacher.id) ? 'Restoring…' : 'Restore' }}</button>
-                  <button class="rounded-lg px-2.5 py-1 text-xs font-medium text-red-600 ring-1 ring-red-200 transition hover:bg-red-50" :disabled="deleteLoading.has(teacher.id)" @click="deleteArchivedTeacher(teacher.id)">{{ deleteLoading.has(teacher.id) ? 'Deleting…' : 'Delete' }}</button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+                </td>
+                <td class="px-5 py-3.5 text-sm text-slate-500">{{ teacher.teacherProfile?.staff_id || teacher.teacher_profile?.staff_id || 'N/A' }}</td>
+                <td class="px-5 py-3.5 text-sm text-slate-500">{{ teacher.phone || 'N/A' }}</td>
+                <td class="px-5 py-3.5">
+                  <ResponsiveTableActions :actions="archivedTeacherActions(teacher)" :entity-label="teacherFullName(teacher)" />
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Tablet & mobile cards -->
+        <div class="grid gap-3 p-4 sm:grid-cols-2 lg:hidden">
+          <ResponsiveDataCard
+            v-for="teacher in paginatedArchivedTeachers"
+            :key="teacher.id"
+            :avatar-text="initials(teacher)"
+            avatar-color="bg-slate-200 text-slate-500"
+            :title="teacherFullName(teacher)"
+            :subtitle="teacher.email || 'N/A'"
+            class="opacity-75"
+            :fields="[
+              { label: 'Staff ID', value: teacher.teacherProfile?.staff_id || teacher.teacher_profile?.staff_id || 'N/A' },
+              { label: 'Phone', value: teacher.phone || 'N/A' },
+            ]"
+          >
+            <template #badge>
+              <AppBadge label="Archived" variant="default" />
+            </template>
+            <template #actions>
+              <ResponsiveTableActions :actions="archivedTeacherActions(teacher)" :entity-label="teacherFullName(teacher)" always-visible />
+            </template>
+          </ResponsiveDataCard>
+        </div>
+      </template>
 
       <div v-if="teachersStore.archivedTeachers.length" class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-5 py-3.5">
         <p class="text-xs text-slate-500">Showing {{ archivedTeachersStartIndex }}–{{ archivedTeachersEndIndex }} of {{ teachersStore.archivedTeachers.length }}</p>
@@ -187,10 +241,10 @@
     </section>
 
     <!-- ── Drawer ──────────────────────────────────────────────────────────── -->
-    <TeacherModal
+    <TeacherFormDrawer
       :show="showModal"
       :teacher="selectedTeacher"
-      :mode="modalMode"
+      :saving="savingTeacher"
       @close="closeModal"
       @submit="submitTeacher"
     />
@@ -200,10 +254,14 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { Archive, CheckSquare, ChevronLeft, ChevronRight, Plus, Search, UploadCloud, Users } from 'lucide-vue-next'
+import { Archive, Ban, CheckSquare, ChevronLeft, ChevronRight, Eye, Pencil, Plus, RotateCcw, Search, Trash2, UploadCloud, Users } from 'lucide-vue-next'
 import AppButton from '../../shared/AppButton.vue'
+import AppBadge from '../../shared/AppBadge.vue'
+import AppEmptyState from '../../shared/AppEmptyState.vue'
+import ResponsiveTableActions from '../../shared/ResponsiveTableActions.vue'
+import ResponsiveDataCard from '../../shared/ResponsiveDataCard.vue'
 import SkeletonRows from '../components/SkeletonRows.vue'
-import TeacherModal from '../components/TeacherModal.vue'
+import TeacherFormDrawer from '../components/TeacherFormDrawer.vue'
 import { useSchoolAdminTeachersStore } from '../stores/teachers'
 import { useSchoolAdminUiStore } from '../stores/ui'
 import { isNameTakenError } from '../../../js/lib/api'
@@ -215,7 +273,7 @@ const uiStore = useSchoolAdminUiStore()
 // ── State ──────────────────────────────────────────────────────────────────
 const showModal           = ref(false)
 const selectedTeacher     = ref(null)
-const modalMode           = ref('edit')
+const savingTeacher        = ref(false)
 const showArchived        = ref(false)
 const searchQuery         = ref('')
 const isSelectMode        = ref(false)
@@ -234,6 +292,42 @@ const archivedTeachersPage = ref(1)
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 const initials = (t) => `${t.first_name?.[0] || ''}${t.last_name?.[0] || ''}`.toUpperCase() || '?'
+const teacherFullName = (t) => `${t.first_name || ''} ${t.last_name || ''}`.trim() || 'Teacher'
+
+const teacherActions = (teacher) => [
+  { key: 'view', label: 'View', icon: Eye, onClick: () => viewTeacher(teacher) },
+  { key: 'edit', label: 'Edit', icon: Pencil, onClick: () => editTeacher(teacher) },
+  {
+    key: 'revoke',
+    label: 'Revoke',
+    icon: Ban,
+    variant: 'warning',
+    loading: revokeLoading.value.has(teacher.id),
+    loadingLabel: 'Revoking…',
+    onClick: () => revokeTeacher(teacher.id),
+  },
+]
+
+const archivedTeacherActions = (teacher) => [
+  {
+    key: 'restore',
+    label: 'Restore',
+    icon: RotateCcw,
+    variant: 'success',
+    loading: restoreLoading.value.has(teacher.id),
+    loadingLabel: 'Restoring…',
+    onClick: () => restoreArchivedTeacher(teacher.id),
+  },
+  {
+    key: 'delete',
+    label: 'Delete',
+    icon: Trash2,
+    variant: 'danger',
+    loading: deleteLoading.value.has(teacher.id),
+    loadingLabel: 'Deleting…',
+    onClick: () => deleteArchivedTeacher(teacher.id),
+  },
+]
 
 // ── Filtered ───────────────────────────────────────────────────────────────
 const filteredTeachers = computed(() => {
@@ -287,12 +381,13 @@ const toggleView = () => {
 }
 
 // ── Modal ──────────────────────────────────────────────────────────────────
-const openModal = (t) => { selectedTeacher.value = t || null; modalMode.value = 'edit'; showModal.value = true }
-const viewTeacher = (t) => { selectedTeacher.value = t; modalMode.value = 'view'; showModal.value = true }
-const editTeacher = (t) => { selectedTeacher.value = t; modalMode.value = 'edit'; showModal.value = true }
-const closeModal = () => { showModal.value = false; selectedTeacher.value = null; modalMode.value = 'edit' }
+const openModal = (t) => { selectedTeacher.value = t || null; showModal.value = true }
+const viewTeacher = (t) => router.push({ name: 'SchoolAdminTeacherProfile', params: { id: t.id } })
+const editTeacher = (t) => { selectedTeacher.value = t; showModal.value = true }
+const closeModal = () => { showModal.value = false; selectedTeacher.value = null }
 
 const submitTeacher = async (data) => {
+  savingTeacher.value = true
   try {
     const payload = { first_name: data.first_name, last_name: data.last_name, email: data.email, phone: data.phone, qualification: data.qualification, staff_id: data.staff_id }
     if (data.id) {
@@ -301,13 +396,15 @@ const submitTeacher = async (data) => {
       await teachersStore.createTeacher({ ...payload, password: 'teach12345' })
     }
     uiStore.addToast({ title: 'Teacher saved', message: 'Teacher has been saved successfully.', variant: 'success' })
-    setTimeout(closeModal, 100)
+    closeModal()
   } catch (error) {
     if (isNameTakenError(error)) {
       uiStore.addToast({ title: 'Name taken', message: 'That name has already been taken.', variant: 'error' })
     } else {
       uiStore.addToast({ title: 'Error', message: error?.response?.data?.message || error?.message || 'Failed to save teacher.', variant: 'error' })
     }
+  } finally {
+    savingTeacher.value = false
   }
 }
 

@@ -73,97 +73,111 @@
       </div>
 
       <!-- Skeleton -->
-      <SkeletonRows v-if="studentsStore.loading" :columns="5" />
+      <SkeletonRows v-if="studentsStore.loading" :columns="5" class="hidden lg:block" />
+      <div v-if="studentsStore.loading" class="grid gap-3 p-4 sm:grid-cols-2 lg:hidden">
+        <div v-for="i in 4" :key="i" class="h-36 animate-pulse rounded-2xl bg-slate-100" />
+      </div>
 
       <!-- Empty state -->
-      <div v-else-if="!filteredStudents.length" class="px-5 py-16 text-center">
-        <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100">
-          <GraduationCap class="h-8 w-8 text-slate-400" />
-        </div>
-        <h3 class="mt-4 text-base font-semibold text-slate-900">
-          {{ searchQuery ? 'No students found' : 'No students yet' }}
-        </h3>
-        <p class="mt-1.5 text-sm text-slate-500">
-          {{ searchQuery ? 'Try adjusting your search.' : 'Get started by adding your first student.' }}
-        </p>
-        <div class="mt-5 flex justify-center gap-2">
+      <AppEmptyState
+        v-else-if="!filteredStudents.length"
+        :icon="GraduationCap"
+        :title="searchQuery ? 'No students found' : 'No students yet'"
+        :description="searchQuery ? 'Try adjusting your search.' : 'Get started by adding your first student.'"
+        class="m-4 border-0"
+      >
+        <template #actions>
           <AppButton v-if="searchQuery" text="Clear Search" variant="outline" size="sm" @click="searchQuery = ''" />
           <AppButton v-if="!searchQuery" :icon="Plus" text="Add First Student" variant="primary" size="sm" @click="openModal()" />
-        </div>
-      </div>
+        </template>
+      </AppEmptyState>
 
-      <!-- Table -->
-      <div v-else class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-slate-100">
-          <thead>
-            <tr class="bg-slate-50">
-              <th v-if="isSelectMode" class="w-10 px-5 py-3">
-                <input
-                  type="checkbox"
-                  :checked="areAllVisibleSelected"
-                  class="h-4 w-4 rounded border-slate-300 text-[#D4AF37] focus:ring-[#D4AF37]"
-                  @change="toggleVisibleStudents($event.target.checked)"
-                />
-              </th>
-              <th
-                v-for="col in columns"
-                :key="col.key"
-                class="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500"
-              >{{ col.label }}</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-slate-100 bg-white">
-            <tr
-              v-for="student in paginatedStudents"
-              :key="student.id"
-              class="group transition hover:bg-slate-50/70"
-            >
-              <td v-if="isSelectMode" class="px-5 py-3.5">
-                <input
-                  type="checkbox"
-                  :checked="selectedStudents.has(student.id)"
-                  class="h-4 w-4 rounded border-slate-300 text-[#D4AF37] focus:ring-[#D4AF37]"
-                  @change="toggleStudentSelection(student.id, $event.target.checked)"
-                />
-              </td>
-              <!-- Name + avatar -->
-              <td class="px-5 py-3.5">
-                <div class="flex items-center gap-3">
-                  <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#0B1F3A]/10 text-xs font-semibold text-[#0B1F3A]">
-                    {{ initials(student) }}
+      <template v-else>
+        <!-- Desktop table (lg and up) -->
+        <div class="hidden overflow-x-auto lg:block">
+          <table class="min-w-full divide-y divide-slate-100">
+            <thead>
+              <tr class="bg-slate-50">
+                <th v-if="isSelectMode" class="w-10 px-5 py-3">
+                  <input
+                    type="checkbox"
+                    :checked="areAllVisibleSelected"
+                    class="h-4 w-4 rounded border-slate-300 text-[#D4AF37] focus:ring-[#D4AF37]"
+                    @change="toggleVisibleStudents($event.target.checked)"
+                  />
+                </th>
+                <th
+                  v-for="col in columns"
+                  :key="col.key"
+                  class="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500"
+                >{{ col.label }}</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 bg-white">
+              <tr
+                v-for="student in paginatedStudents"
+                :key="student.id"
+                class="group transition hover:bg-slate-50/70"
+              >
+                <td v-if="isSelectMode" class="px-5 py-3.5">
+                  <input
+                    type="checkbox"
+                    :checked="selectedStudents.has(student.id)"
+                    class="h-4 w-4 rounded border-slate-300 text-[#D4AF37] focus:ring-[#D4AF37]"
+                    @change="toggleStudentSelection(student.id, $event.target.checked)"
+                  />
+                </td>
+                <!-- Name + avatar -->
+                <td class="px-5 py-3.5">
+                  <div class="flex items-center gap-3">
+                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#0B1F3A]/10 text-xs font-semibold text-[#0B1F3A]">
+                      {{ initials(student) }}
+                    </div>
+                    <div>
+                      <p class="font-medium text-slate-900">{{ student.first_name }} {{ student.last_name }}</p>
+                      <p class="text-xs text-slate-500">{{ student.email || 'N/A' }}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p class="font-medium text-slate-900">{{ student.first_name }} {{ student.last_name }}</p>
-                    <p class="text-xs text-slate-500">{{ student.email || 'N/A' }}</p>
-                  </div>
-                </div>
-              </td>
-              <td class="px-5 py-3.5 text-sm text-slate-600">{{ student.phone || 'N/A' }}</td>
-              <td class="px-5 py-3.5 text-sm text-slate-600">{{ student.studentProfile?.admission_number || 'N/A' }}</td>
-              <td class="px-5 py-3.5 text-sm text-slate-600">
-                {{ student.studentProfile?.class_arm?.name || student.student_profile?.class_name || 'N/A' }}
-              </td>
-              <td class="px-5 py-3.5">
-                <div class="flex items-center gap-2 opacity-0 transition group-hover:opacity-100">
-                  <button
-                    class="rounded-lg px-2.5 py-1 text-xs font-medium text-slate-600 ring-1 ring-slate-200 transition hover:bg-slate-100"
-                    @click="viewStudent(student)"
-                  >View</button>
-                  <button
-                    class="rounded-lg px-2.5 py-1 text-xs font-medium text-slate-600 ring-1 ring-slate-200 transition hover:bg-slate-100"
-                    @click="editStudent(student)"
-                  >Edit</button>
-                  <button
-                    class="rounded-lg px-2.5 py-1 text-xs font-medium text-amber-600 ring-1 ring-amber-200 transition hover:bg-amber-50"
-                    :disabled="revokeLoading.has(student.id)"
-                    @click="revokeStudent(student.id)"
-                  >{{ revokeLoading.has(student.id) ? 'Revoking…' : 'Revoke' }}</button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+                </td>
+                <td class="px-5 py-3.5 text-sm text-slate-600">{{ student.phone || 'N/A' }}</td>
+                <td class="px-5 py-3.5 text-sm text-slate-600">{{ student.studentProfile?.admission_number || 'N/A' }}</td>
+                <td class="px-5 py-3.5 text-sm text-slate-600">
+                  {{ student.studentProfile?.class_arm?.name || student.student_profile?.class_name || 'N/A' }}
+                </td>
+                <td class="px-5 py-3.5">
+                  <ResponsiveTableActions :actions="studentActions(student)" :entity-label="studentFullName(student)" />
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Tablet & mobile cards (below lg) -->
+        <div class="grid gap-3 p-4 sm:grid-cols-2 lg:hidden">
+          <ResponsiveDataCard
+            v-for="student in paginatedStudents"
+            :key="student.id"
+            :avatar-text="initials(student)"
+            avatar-color="bg-[#0B1F3A]/10 text-[#0B1F3A]"
+            :title="studentFullName(student)"
+            :subtitle="student.email || 'N/A'"
+            :fields="[
+              { label: 'Admission No.', value: student.studentProfile?.admission_number || 'N/A' },
+              { label: 'Phone', value: student.phone || 'N/A' },
+              { label: 'Class', value: student.studentProfile?.class_arm?.name || student.student_profile?.class_name || 'N/A', span: 2 },
+            ]"
+            clickable
+            @click="viewStudent(student)"
+          >
+            <template #badge>
+              <AppBadge :label="student.is_active !== false ? 'Active' : 'Inactive'" :variant="student.is_active !== false ? 'success' : 'danger'" dot />
+            </template>
+            <template #actions>
+              <ResponsiveTableActions :actions="studentActions(student)" :entity-label="studentFullName(student)" always-visible />
+            </template>
+          </ResponsiveDataCard>
+        </div>
+      </template>
 
       <!-- Pagination -->
       <div v-if="filteredStudents.length" class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-5 py-3.5">
@@ -225,77 +239,96 @@
         </div>
       </div>
 
-      <SkeletonRows v-if="studentsStore.loading" :columns="5" />
+      <SkeletonRows v-if="studentsStore.loading" :columns="5" class="hidden lg:block" />
+      <div v-if="studentsStore.loading" class="grid gap-3 p-4 sm:grid-cols-2 lg:hidden">
+        <div v-for="i in 4" :key="i" class="h-28 animate-pulse rounded-2xl bg-slate-100" />
+      </div>
 
-      <div v-else-if="!studentsStore.archivedStudents.length" class="px-5 py-16 text-center">
-        <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100">
-          <Archive class="h-8 w-8 text-slate-400" />
+      <AppEmptyState
+        v-else-if="!studentsStore.archivedStudents.length"
+        :icon="Archive"
+        title="No archived students"
+        description="Revoked students will appear here."
+        class="m-4 border-0"
+      />
+
+      <template v-else>
+        <!-- Desktop table -->
+        <div class="hidden overflow-x-auto lg:block">
+          <table class="min-w-full divide-y divide-slate-100">
+            <thead>
+              <tr class="bg-slate-50">
+                <th v-if="isArchivedSelectMode" class="w-10 px-5 py-3">
+                  <input
+                    type="checkbox"
+                    :checked="areAllVisibleArchivedSelected"
+                    class="h-4 w-4 rounded border-slate-300 text-[#D4AF37] focus:ring-[#D4AF37]"
+                    @change="toggleVisibleArchivedStudents($event.target.checked)"
+                  />
+                </th>
+                <th v-for="col in columns" :key="col.key" class="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">{{ col.label }}</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 bg-white">
+              <tr
+                v-for="student in paginatedArchivedStudents"
+                :key="student.id"
+                class="group opacity-60 transition hover:opacity-90"
+              >
+                <td v-if="isArchivedSelectMode" class="px-5 py-3.5">
+                  <input
+                    type="checkbox"
+                    :checked="selectedArchivedStudents.has(student.id)"
+                    class="h-4 w-4 rounded border-slate-300"
+                    @change="toggleArchivedStudentSelection(student.id, $event.target.checked)"
+                  />
+                </td>
+                <td class="px-5 py-3.5">
+                  <div class="flex items-center gap-3">
+                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-200 text-xs font-semibold text-slate-500">
+                      {{ initials(student) }}
+                    </div>
+                    <div>
+                      <p class="font-medium text-slate-700">{{ student.first_name }} {{ student.last_name }}</p>
+                      <p class="text-xs text-slate-400">{{ student.email || 'N/A' }}</p>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-5 py-3.5 text-sm text-slate-500">{{ student.phone || 'N/A' }}</td>
+                <td class="px-5 py-3.5 text-sm text-slate-500">{{ student.student_profile?.admission_number || 'N/A' }}</td>
+                <td class="px-5 py-3.5 text-sm text-slate-500">{{ student.student_profile?.class_arm?.name || student.student_profile?.class_name || 'N/A' }}</td>
+                <td class="px-5 py-3.5">
+                  <ResponsiveTableActions :actions="archivedStudentActions(student)" :entity-label="studentFullName(student)" />
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
-        <h3 class="mt-4 text-base font-semibold text-slate-900">No archived students</h3>
-        <p class="mt-1.5 text-sm text-slate-500">Revoked students will appear here.</p>
-      </div>
 
-      <div v-else class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-slate-100">
-          <thead>
-            <tr class="bg-slate-50">
-              <th v-if="isArchivedSelectMode" class="w-10 px-5 py-3">
-                <input
-                  type="checkbox"
-                  :checked="areAllVisibleArchivedSelected"
-                  class="h-4 w-4 rounded border-slate-300 text-[#D4AF37] focus:ring-[#D4AF37]"
-                  @change="toggleVisibleArchivedStudents($event.target.checked)"
-                />
-              </th>
-              <th v-for="col in columns" :key="col.key" class="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">{{ col.label }}</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-slate-100 bg-white">
-            <tr
-              v-for="student in paginatedArchivedStudents"
-              :key="student.id"
-              class="group opacity-60 transition hover:opacity-90"
-            >
-              <td v-if="isArchivedSelectMode" class="px-5 py-3.5">
-                <input
-                  type="checkbox"
-                  :checked="selectedArchivedStudents.has(student.id)"
-                  class="h-4 w-4 rounded border-slate-300"
-                  @change="toggleArchivedStudentSelection(student.id, $event.target.checked)"
-                />
-              </td>
-              <td class="px-5 py-3.5">
-                <div class="flex items-center gap-3">
-                  <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-200 text-xs font-semibold text-slate-500">
-                    {{ initials(student) }}
-                  </div>
-                  <div>
-                    <p class="font-medium text-slate-700">{{ student.first_name }} {{ student.last_name }}</p>
-                    <p class="text-xs text-slate-400">{{ student.email || 'N/A' }}</p>
-                  </div>
-                </div>
-              </td>
-              <td class="px-5 py-3.5 text-sm text-slate-500">{{ student.phone || 'N/A' }}</td>
-              <td class="px-5 py-3.5 text-sm text-slate-500">{{ student.student_profile?.admission_number || 'N/A' }}</td>
-              <td class="px-5 py-3.5 text-sm text-slate-500">{{ student.student_profile?.class_arm?.name || student.student_profile?.class_name || 'N/A' }}</td>
-              <td class="px-5 py-3.5">
-                <div class="flex items-center gap-2 opacity-0 transition group-hover:opacity-100">
-                  <button
-                    class="rounded-lg px-2.5 py-1 text-xs font-medium text-emerald-600 ring-1 ring-emerald-200 transition hover:bg-emerald-50"
-                    :disabled="restoreLoading.has(student.id)"
-                    @click="restoreArchivedStudent(student.id)"
-                  >{{ restoreLoading.has(student.id) ? 'Restoring…' : 'Restore' }}</button>
-                  <button
-                    class="rounded-lg px-2.5 py-1 text-xs font-medium text-red-600 ring-1 ring-red-200 transition hover:bg-red-50"
-                    :disabled="deleteLoading.has(student.id)"
-                    @click="deleteArchivedStudent(student.id)"
-                  >{{ deleteLoading.has(student.id) ? 'Deleting…' : 'Delete' }}</button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+        <!-- Tablet & mobile cards -->
+        <div class="grid gap-3 p-4 sm:grid-cols-2 lg:hidden">
+          <ResponsiveDataCard
+            v-for="student in paginatedArchivedStudents"
+            :key="student.id"
+            :avatar-text="initials(student)"
+            avatar-color="bg-slate-200 text-slate-500"
+            :title="studentFullName(student)"
+            :subtitle="student.email || 'N/A'"
+            class="opacity-75"
+            :fields="[
+              { label: 'Admission No.', value: student.student_profile?.admission_number || 'N/A' },
+              { label: 'Phone', value: student.phone || 'N/A' },
+            ]"
+          >
+            <template #badge>
+              <AppBadge label="Archived" variant="default" />
+            </template>
+            <template #actions>
+              <ResponsiveTableActions :actions="archivedStudentActions(student)" :entity-label="studentFullName(student)" always-visible />
+            </template>
+          </ResponsiveDataCard>
+        </div>
+      </template>
 
       <!-- Archived Pagination -->
       <div v-if="studentsStore.archivedStudents.length" class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-5 py-3.5">
@@ -319,10 +352,10 @@
     </section>
 
     <!-- ── Drawer ──────────────────────────────────────────────────────────── -->
-    <StudentModal
+    <StudentFormDrawer
       :show="showModal"
       :student="selectedStudent"
-      :mode="modalMode"
+      :saving="savingStudent"
       @close="closeModal"
       @submit="submitStudent"
     />
@@ -332,10 +365,14 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { Archive, CheckSquare, ChevronLeft, ChevronRight, GraduationCap, Plus, Search, UploadCloud } from 'lucide-vue-next'
+import { Archive, Ban, CheckSquare, ChevronLeft, ChevronRight, Eye, GraduationCap, Pencil, Plus, RotateCcw, Search, Trash2, UploadCloud } from 'lucide-vue-next'
 import AppButton from '../../shared/AppButton.vue'
+import AppBadge from '../../shared/AppBadge.vue'
+import AppEmptyState from '../../shared/AppEmptyState.vue'
+import ResponsiveTableActions from '../../shared/ResponsiveTableActions.vue'
+import ResponsiveDataCard from '../../shared/ResponsiveDataCard.vue'
 import SkeletonRows from '../components/SkeletonRows.vue'
-import StudentModal from '../components/StudentModal.vue'
+import StudentFormDrawer from '../components/StudentFormDrawer.vue'
 import { useSchoolAdminStudentsStore } from '../stores/students'
 import { useSchoolAdminUiStore } from '../stores/ui'
 
@@ -355,7 +392,7 @@ const columns = [
 // ── State ──────────────────────────────────────────────────────────────────
 const showModal          = ref(false)
 const selectedStudent    = ref(null)
-const modalMode          = ref('edit')
+const savingStudent      = ref(false)
 const showArchived       = ref(false)
 const searchQuery        = ref('')
 const isSelectMode       = ref(false)
@@ -376,6 +413,42 @@ const archivedStudentsPage = ref(1)
 // ── Helpers ────────────────────────────────────────────────────────────────
 const initials = (s) =>
   `${s.first_name?.[0] || ''}${s.last_name?.[0] || ''}`.toUpperCase() || '?'
+const studentFullName = (s) => `${s.first_name || ''} ${s.last_name || ''}`.trim() || 'Student'
+
+const studentActions = (student) => [
+  { key: 'view', label: 'View', icon: Eye, onClick: () => viewStudent(student) },
+  { key: 'edit', label: 'Edit', icon: Pencil, onClick: () => editStudent(student) },
+  {
+    key: 'revoke',
+    label: 'Revoke',
+    icon: Ban,
+    variant: 'warning',
+    loading: revokeLoading.value.has(student.id),
+    loadingLabel: 'Revoking…',
+    onClick: () => revokeStudent(student.id),
+  },
+]
+
+const archivedStudentActions = (student) => [
+  {
+    key: 'restore',
+    label: 'Restore',
+    icon: RotateCcw,
+    variant: 'success',
+    loading: restoreLoading.value.has(student.id),
+    loadingLabel: 'Restoring…',
+    onClick: () => restoreArchivedStudent(student.id),
+  },
+  {
+    key: 'delete',
+    label: 'Delete',
+    icon: Trash2,
+    variant: 'danger',
+    loading: deleteLoading.value.has(student.id),
+    loadingLabel: 'Deleting…',
+    onClick: () => deleteArchivedStudent(student.id),
+  },
+]
 
 // ── Filtered data ──────────────────────────────────────────────────────────
 const filteredStudents = computed(() => {
@@ -450,23 +523,26 @@ const toggleView = () => {
 }
 
 // ── Modal ──────────────────────────────────────────────────────────────────
-const openModal = (student) => { selectedStudent.value = student || null; modalMode.value = 'edit'; showModal.value = true }
-const viewStudent = (student) => { selectedStudent.value = student; modalMode.value = 'view'; showModal.value = true }
-const editStudent = (student) => { selectedStudent.value = student; modalMode.value = 'edit'; showModal.value = true }
-const closeModal = () => { showModal.value = false; selectedStudent.value = null; modalMode.value = 'edit' }
+const openModal = (student) => { selectedStudent.value = student || null; showModal.value = true }
+const viewStudent = (student) => router.push({ name: 'SchoolAdminStudentProfile', params: { id: student.id } })
+const editStudent = (student) => { selectedStudent.value = student; showModal.value = true }
+const closeModal = () => { showModal.value = false; selectedStudent.value = null }
 
 const submitStudent = async (data) => {
+  savingStudent.value = true
   try {
-    if (data.id) {
-      await studentsStore.updateStudent(data.id, data)
+    const { id, ...payload } = data
+    if (id) {
+      await studentsStore.updateStudent(id, payload)
     } else {
-      await studentsStore.createStudent({ ...data, password: 'Cbt@2026' })
+      await studentsStore.createStudent({ ...payload, password: 'Cbt@2026' })
     }
     uiStore.addToast({ title: 'Student saved', message: 'Student record has been saved.', variant: 'success' })
-    setTimeout(closeModal, 100)
-  } catch {
-    uiStore.addToast({ title: 'Error', message: 'Failed to save student.', variant: 'error' })
-    setTimeout(closeModal, 100)
+    closeModal()
+  } catch (error) {
+    uiStore.addToast({ title: 'Error', message: error?.response?.data?.message || error?.message || 'Failed to save student.', variant: 'error' })
+  } finally {
+    savingStudent.value = false
   }
 }
 

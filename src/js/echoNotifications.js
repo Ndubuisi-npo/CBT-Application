@@ -38,6 +38,9 @@ export function initializeRealtimeNotifications() {
         roles: role ? [role] : [],
         unread: true,
         time: notification.time || notification.data?.time || new Date().toLocaleTimeString(),
+        createdAt: notification.created_at || notification.data?.created_at || new Date().toISOString(),
+        priority: notification.priority || notification.data?.priority || 'normal',
+        sender: notification.sender || notification.data?.sender || 'System',
         link: notification.link || notification.data?.link || { to: '/notifications' },
       }
 

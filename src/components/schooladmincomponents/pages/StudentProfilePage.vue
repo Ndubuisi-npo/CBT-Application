@@ -1,0 +1,333 @@
+<!--
+  StudentProfilePage.vue
+  ────────────────────────────────────────────────────────────────────────
+  Route: /school-admin/students/:id
+  Replaces the old "View Student" drawer with a full CRM-style profile
+  page. Edit still happens in the shared AppDrawer (StudentFormDrawer);
+  only the read-only "view" experience moved to a dedicated page.
+
+  Data availability note: the student API returns first/last name, email,
+  phone, is_active, and studentProfile{admission_number, gender,
+  date_of_birth, class_arm, guardian_name/phone/email, ...}. There is
+  currently no admin-facing endpoint for a student's attendance record or
+  exam/result history (the only existing results endpoint is scoped to
+  the logged-in teacher, via getStudentResultsForTeacher). Those sections
+  are built out and ready to receive data, but show an honest "not
+  available yet" state rather than fabricated numbers until that backend
+  endpoint exists.
+-->
+<template>
+  <div class="space-y-6 pb-10">
+    <!-- Breadcrumb -->
+    <nav class="flex items-center gap-1.5 text-xs text-slate-500" aria-label="Breadcrumb">
+      <RouterLink to="/school-admin/students" class="transition hover:text-[#0B1F3A]">Students</RouterLink>
+      <ChevronRight class="h-3 w-3 text-slate-300" />
+      <span class="font-medium text-slate-700">{{ loading ? 'Loading…' : fullName }}</span>
+    </nav>
+
+    <!-- Loading state -->
+    <div v-if="loading" class="space-y-6">
+      <div class="h-40 animate-pulse rounded-2xl bg-slate-100" />
+      <div class="grid gap-6 lg:grid-cols-3">
+        <div class="h-64 animate-pulse rounded-2xl bg-slate-100 lg:col-span-2" />
+        <div class="h-64 animate-pulse rounded-2xl bg-slate-100" />
+      </div>
+    </div>
+
+    <!-- Not found -->
+    <AppEmptyState
+      v-else-if="!student"
+      :icon="UserX"
+      title="Student not found"
+      description="This student may have been removed, or the link is out of date."
+    >
+      <template #actions>
+        <AppButton text="Back to Students" variant="primary" size="sm" @click="router.push('/school-admin/students')" />
+      </template>
+    </AppEmptyState>
+
+    <template v-else>
+      <!-- ── Header card ─────────────────────────────────────────────────── -->
+      <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div class="h-20 bg-gradient-to-r from-[#0B1F3A] to-[#0B1F3A]/80" />
+        <div class="px-5 pb-5 sm:px-6">
+          <div class="flex flex-wrap items-end justify-between gap-4 -mt-10">
+            <div class="flex items-end gap-4">
+              <div class="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl border-4 border-white bg-[#0B1F3A]/10 text-xl font-bold text-[#0B1F3A] shadow-sm">
+                {{ initials }}
+              </div>
+              <div class="pb-1">
+                <div class="flex flex-wrap items-center gap-2">
+                  <h1 class="text-xl font-semibold tracking-tight text-slate-900">{{ fullName }}</h1>
+                  <AppBadge :label="statusLabel" :variant="student.is_active !== false ? 'success' : 'danger'" dot />
+                </div>
+                <p class="mt-0.5 text-sm text-slate-500">{{ studentId }} &middot; {{ admissionNumber }}</p>
+              </div>
+            </div>
+            <div class="flex shrink-0 flex-wrap items-center gap-2 pb-1">
+              <AppButton :icon="Pencil" text="Edit" variant="outline" size="sm" @click="showEditDrawer = true" />
+              <AppButton :icon="ArrowUpCircle" text="Promote" variant="outline" size="sm" @click="showPromoteDrawer = true" />
+              <AppButton :icon="Trash2" text="Delete" variant="danger" size="sm" :processing="deleting" @click="handleDelete" />
+            </div>
+          </div>
+
+          <!-- Quick meta row -->
+          <div class="mt-5 grid grid-cols-2 gap-4 border-t border-slate-100 pt-4 sm:grid-cols-3 lg:grid-cols-6">
+            <div>
+              <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Class</p>
+              <p class="mt-0.5 truncate text-sm font-medium text-slate-700">{{ classArmName }}</p>
+            </div>
+            <div>
+              <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Arm</p>
+              <p class="mt-0.5 truncate text-sm font-medium text-slate-700">{{ armOnly }}</p>
+            </div>
+            <div>
+              <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Session</p>
+              <p class="mt-0.5 truncate text-sm font-medium text-slate-700">{{ session }}</p>
+            </div>
+            <div>
+              <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Parent Name</p>
+              <p class="mt-0.5 truncate text-sm font-medium text-slate-700">{{ guardianName }}</p>
+            </div>
+            <div>
+              <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Email</p>
+              <p class="mt-0.5 truncate text-sm font-medium text-slate-700">{{ email }}</p>
+            </div>
+            <div>
+              <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Phone</p>
+              <p class="mt-0.5 truncate text-sm font-medium text-slate-700">{{ phone }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Attendance & Exam statistics ────────────────────────────────── -->
+      <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        <AppStatCard label="Attendance Rate" value="—" sub="Not tracked yet" :icon="CalendarCheck" icon-bg="bg-blue-50" icon-color="text-blue-600" />
+        <AppStatCard label="Days Present" value="—" sub="Not tracked yet" :icon="CalendarCheck" icon-bg="bg-blue-50" icon-color="text-blue-600" />
+        <AppStatCard label="Exams Taken" value="—" sub="Not tracked yet" :icon="FileText" icon-bg="bg-amber-50" icon-color="text-amber-600" />
+        <AppStatCard label="Average Score" value="—" sub="Not tracked yet" :icon="Percent" icon-bg="bg-purple-50" icon-color="text-purple-600" />
+        <AppStatCard label="Highest Score" value="—" sub="Not tracked yet" :icon="TrendingUp" icon-bg="bg-emerald-50" icon-color="text-emerald-600" />
+        <AppStatCard label="Pass Rate" value="—" sub="Not tracked yet" :icon="ClipboardCheck" icon-bg="bg-slate-100" icon-color="text-slate-600" />
+      </div>
+
+      <!-- ── Main grid ───────────────────────────────────────────────────── -->
+      <div class="grid gap-6 lg:grid-cols-3">
+        <!-- Left column -->
+        <div class="space-y-6 lg:col-span-2">
+          <!-- Personal Information -->
+          <section class="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
+            <h2 class="text-sm font-semibold text-slate-900">Personal Information</h2>
+            <dl class="mt-4 grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
+              <InfoField label="Full Name" :value="fullName" />
+              <InfoField label="Email" :value="email" />
+              <InfoField label="Phone" :value="phone" />
+              <InfoField label="Gender" :value="gender" />
+              <InfoField label="Date of Birth" :value="dob" />
+              <InfoField label="Blood Group" :value="bloodGroup" />
+              <InfoField label="State of Origin" :value="stateOfOrigin" />
+            </dl>
+          </section>
+
+          <!-- Academic Information -->
+          <section class="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
+            <h2 class="text-sm font-semibold text-slate-900">Academic Information</h2>
+            <dl class="mt-4 grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
+              <InfoField label="Class" :value="classArmName" />
+              <InfoField label="Arm" :value="armOnly" />
+              <InfoField label="Session" :value="session" />
+              <InfoField label="Admission Number" :value="admissionNumber" />
+              <InfoField label="Enrollment Date" :value="admissionDate" />
+            </dl>
+          </section>
+
+          <!-- Results -->
+          <section class="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
+            <h2 class="text-sm font-semibold text-slate-900">Results</h2>
+            <p class="mt-4 rounded-xl border border-dashed border-slate-200 py-8 text-center text-sm text-slate-400">
+              Result history isn't available from this admin view yet — this requires a per-student results endpoint that doesn't currently exist outside the teacher portal.
+            </p>
+          </section>
+
+          <!-- Recent Exams -->
+          <section class="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
+            <h2 class="text-sm font-semibold text-slate-900">Recent Exams</h2>
+            <p class="mt-4 rounded-xl border border-dashed border-slate-200 py-8 text-center text-sm text-slate-400">
+              No exam history available yet.
+            </p>
+          </section>
+        </div>
+
+        <!-- Right column -->
+        <div class="space-y-6">
+          <!-- Parent / Guardian -->
+          <section class="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
+            <h2 class="text-sm font-semibold text-slate-900">Parent / Guardian</h2>
+            <dl class="mt-4 space-y-4">
+              <InfoField label="Parent Name" :value="guardianName" />
+              <InfoField label="Phone" :value="guardianPhone" />
+              <InfoField label="Email" :value="guardianEmail" />
+            </dl>
+          </section>
+
+          <!-- Action bar -->
+          <section class="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
+            <h2 class="text-sm font-semibold text-slate-900">Actions</h2>
+            <div class="mt-4 space-y-2">
+              <AppButton :icon="Pencil" text="Edit" variant="outline" full-width class="justify-start" @click="showEditDrawer = true" />
+              <AppButton :icon="ArrowUpCircle" text="Promote" variant="outline" full-width class="justify-start" @click="showPromoteDrawer = true" />
+              <AppButton :icon="KeyRound" text="Reset Password" variant="outline" full-width class="justify-start" :processing="resettingPassword" @click="handleResetPassword" />
+              <AppButton :icon="Trash2" text="Delete" variant="danger" full-width class="justify-start" :processing="deleting" @click="handleDelete" />
+            </div>
+          </section>
+        </div>
+      </div>
+    </template>
+
+    <StudentFormDrawer :show="showEditDrawer" :student="student" :saving="savingStudent" @close="showEditDrawer = false" @submit="handleUpdate" />
+    <PromoteStudentDrawer :show="showPromoteDrawer" :student="student" :saving="promoting" @close="showPromoteDrawer = false" @submit="handlePromote" />
+  </div>
+</template>
+
+<script setup>
+import { computed, h, onMounted, ref } from 'vue'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
+import {
+  ArrowUpCircle, CalendarCheck, ChevronRight, ClipboardCheck, FileText,
+  KeyRound, Pencil, Percent, TrendingUp, Trash2, UserX,
+} from 'lucide-vue-next'
+import AppBadge from '../../shared/AppBadge.vue'
+import AppButton from '../../shared/AppButton.vue'
+import AppEmptyState from '../../shared/AppEmptyState.vue'
+import AppStatCard from '../../shared/AppStatCard.vue'
+import StudentFormDrawer from '../components/StudentFormDrawer.vue'
+import PromoteStudentDrawer from '../components/PromoteStudentDrawer.vue'
+import { useSchoolAdminStudentsStore } from '../stores/students'
+import { useSchoolAdminUiStore } from '../stores/ui'
+
+// Tiny local component for a label/value pair in the info sections.
+const InfoField = (props) => h('div', [
+  h('dt', { class: 'text-[10px] font-semibold uppercase tracking-wide text-slate-400' }, props.label),
+  h('dd', { class: 'mt-1 text-sm font-medium text-slate-700 break-words' }, props.value),
+])
+InfoField.props = ['label', 'value']
+
+const route = useRoute()
+const router = useRouter()
+const studentsStore = useSchoolAdminStudentsStore()
+const uiStore = useSchoolAdminUiStore()
+
+const NOT_PROVIDED = 'Not provided'
+const displayValue = (v) => (v === null || v === undefined || v === '' ? NOT_PROVIDED : v)
+
+const student = ref(null)
+const loading = ref(true)
+const showEditDrawer = ref(false)
+const showPromoteDrawer = ref(false)
+const savingStudent = ref(false)
+const promoting = ref(false)
+const deleting = ref(false)
+const resettingPassword = ref(false)
+
+const studentIdParam = computed(() => route.params.id)
+
+const sp = computed(() => student.value?.studentProfile || student.value?.student_profile || student.value?.profile || null)
+
+const fullName = computed(() => {
+  const t = student.value || {}
+  return `${t.first_name || ''} ${t.last_name || ''}`.trim() || 'Student'
+})
+const initials = computed(() => fullName.value.split(' ').map((p) => p[0] || '').join('').toUpperCase().slice(0, 2) || 'NA')
+const statusLabel = computed(() => (student.value?.is_active !== false ? 'Active' : 'Inactive'))
+const email = computed(() => displayValue(student.value?.email || student.value?.user?.email))
+const phone = computed(() => displayValue(student.value?.phone || student.value?.user?.phone))
+const studentId = computed(() => displayValue(student.value?.id))
+const gender = computed(() => displayValue(sp.value?.gender || student.value?.gender))
+const dob = computed(() => displayValue(sp.value?.date_of_birth || sp.value?.dateOfBirth || student.value?.date_of_birth))
+const bloodGroup = computed(() => displayValue(sp.value?.blood_group || sp.value?.bloodGroup))
+const stateOfOrigin = computed(() => displayValue(sp.value?.state_of_origin || sp.value?.stateOfOrigin))
+const admissionNumber = computed(() => displayValue(sp.value?.admission_number || sp.value?.admissionNumber || student.value?.admission_number))
+const admissionDate = computed(() => displayValue(sp.value?.admission_date || sp.value?.admissionDate || student.value?.created_at?.slice?.(0, 10)))
+const guardianName = computed(() => displayValue(sp.value?.guardian_name || sp.value?.guardianName))
+const guardianPhone = computed(() => displayValue(sp.value?.guardian_phone || sp.value?.guardianPhone))
+const guardianEmail = computed(() => displayValue(sp.value?.guardian_email || sp.value?.guardianEmail))
+const session = computed(() => displayValue(sp.value?.academic_session?.name || sp.value?.session?.name || sp.value?.session_name))
+
+const classArm = computed(() => sp.value?.class_arm || sp.value?.classArm || {})
+const classLevel = computed(() => sp.value?.class_level || sp.value?.classLevel || classArm.value?.class_level || classArm.value?.classLevel || {})
+const classArmName = computed(() => {
+  const level = classLevel.value?.name
+  const arm = classArm.value?.name
+  if (level && arm) return `${level} ${arm}`
+  return displayValue(level || arm)
+})
+const armOnly = computed(() => displayValue(classArm.value?.name))
+
+const loadStudent = async () => {
+  loading.value = true
+  try {
+    student.value = await studentsStore.fetchStudent(studentIdParam.value)
+  } catch (error) {
+    student.value = null
+    uiStore.addToast({ title: 'Error', message: error?.message || 'Failed to load student.', variant: 'error' })
+  } finally {
+    loading.value = false
+  }
+}
+
+const handleUpdate = async (data) => {
+  savingStudent.value = true
+  try {
+    const { id, ...payload } = data
+    await studentsStore.updateStudent(id, payload)
+    uiStore.addToast({ title: 'Student updated', message: 'Changes have been saved.', variant: 'success' })
+    showEditDrawer.value = false
+    await loadStudent()
+  } catch (error) {
+    uiStore.addToast({ title: 'Error', message: error?.response?.data?.message || error?.message || 'Failed to update student.', variant: 'error' })
+  } finally {
+    savingStudent.value = false
+  }
+}
+
+const handlePromote = async (data) => {
+  promoting.value = true
+  try {
+    const { id, ...payload } = data
+    await studentsStore.updateStudent(id, payload)
+    uiStore.addToast({ title: 'Student promoted', message: 'The student has been moved to their new class.', variant: 'success' })
+    showPromoteDrawer.value = false
+    await loadStudent()
+  } catch (error) {
+    uiStore.addToast({ title: 'Error', message: error?.response?.data?.message || error?.message || 'Failed to promote student.', variant: 'error' })
+  } finally {
+    promoting.value = false
+  }
+}
+
+const handleDelete = async () => {
+  if (!window.confirm('Permanently delete this student? This cannot be undone.')) return
+  deleting.value = true
+  try {
+    await studentsStore.deleteStudentFromStore(student.value.id)
+    uiStore.addToast({ title: 'Student deleted', message: 'The student record has been permanently deleted.', variant: 'success' })
+    router.push('/school-admin/students')
+  } catch (error) {
+    uiStore.addToast({ title: 'Error', message: error?.message || 'Failed to delete student.', variant: 'error' })
+  } finally {
+    deleting.value = false
+  }
+}
+
+const handleResetPassword = async () => {
+  if (!window.confirm("Reset this student's password to the default?")) return
+  resettingPassword.value = true
+  try {
+    await studentsStore.resetPassword(student.value.id)
+  } finally {
+    resettingPassword.value = false
+  }
+}
+
+onMounted(loadStudent)
+</script>

@@ -15,61 +15,81 @@
     </div>
 
     <section class="rounded-2xl border border-slate-200 bg-white">
-      <SkeletonRows v-if="sessionsStore.loading" :columns="5" />
+      <SkeletonRows v-if="sessionsStore.loading" :columns="5" class="hidden lg:block" />
+      <div v-if="sessionsStore.loading" class="grid gap-3 p-4 sm:grid-cols-2 lg:hidden">
+        <div v-for="i in 4" :key="i" class="h-32 animate-pulse rounded-2xl bg-slate-100" />
+      </div>
 
-      <div v-else-if="!sessionsStore.sessions.length" class="px-5 py-16 text-center">
-        <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100">
-          <Calendar class="h-8 w-8 text-slate-400" />
-        </div>
-        <h3 class="mt-4 text-base font-semibold text-slate-900">No academic sessions</h3>
-        <p class="mt-1.5 text-sm text-slate-500">Create your first session to begin managing your school year.</p>
-        <div class="mt-5">
+      <AppEmptyState
+        v-else-if="!sessionsStore.sessions.length"
+        :icon="Calendar"
+        title="No academic sessions"
+        description="Create your first session to begin managing your school year."
+        class="m-4 border-0"
+      >
+        <template #actions>
           <AppButton :icon="Plus" text="Create First Session" variant="primary" size="sm" @click="openModal()" />
-        </div>
-      </div>
+        </template>
+      </AppEmptyState>
 
-      <div v-else class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-slate-100">
-          <thead>
-            <tr class="bg-slate-50">
-              <th v-if="isSelectMode" class="w-10 px-5 py-3">
-                <input type="checkbox" :checked="areAllSelected" class="h-4 w-4 rounded border-slate-300 text-[#D4AF37]" @change="toggleSelectAll($event.target.checked)" />
-              </th>
-              <th class="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">Session Name</th>
-              <th class="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">Status</th>
-              <th class="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">Start Date</th>
-              <th class="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">End Date</th>
-              <th class="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">Terms</th>
-              <th class="px-5 py-3"></th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-slate-100 bg-white">
-            <tr v-for="session in paginatedSessions" :key="session.id" class="group transition hover:bg-slate-50/70">
-              <td v-if="isSelectMode" class="px-5 py-3.5">
-                <input type="checkbox" :checked="selectedSessions.has(session.id)" class="h-4 w-4 rounded border-slate-300 text-[#D4AF37]" @change="toggleItemSelection(session.id, $event.target.checked)" />
-              </td>
-              <td class="px-5 py-3.5 font-semibold text-slate-900">{{ session.name }}</td>
-              <td class="px-5 py-3.5"><StatusBadge :status="sessionStatus(session)" /></td>
-              <td class="px-5 py-3.5 text-sm text-slate-600 whitespace-nowrap">{{ fmtDate(session.startDate || session.start_date || 'N/A') }}</td>
-              <td class="px-5 py-3.5 text-sm text-slate-600 whitespace-nowrap">{{ fmtDate(session.endDate || session.end_date || 'N/A') }}</td>
-              <td class="px-5 py-3.5 text-sm text-slate-600">{{ getTermsCount(session) }}</td>
-              <td class="px-5 py-3.5">
-                <div class="flex items-center gap-2 opacity-0 transition group-hover:opacity-100">
-                  <button class="rounded-lg px-2.5 py-1 text-xs font-medium text-slate-600 ring-1 ring-slate-200 transition hover:bg-slate-100" @click="openModal(session)">Edit</button>
-                  <RouterLink :to="`/school-admin/terms/${session.id}`" class="rounded-lg px-2.5 py-1 text-xs font-medium text-[#0B1F3A] ring-1 ring-slate-200 transition hover:bg-slate-100">Terms</RouterLink>
-                  <button
-                    class="rounded-lg px-2.5 py-1 text-xs font-medium transition ring-1"
-                    :class="sessionStatus(session) === 'Current' ? 'text-red-600 ring-red-200 hover:bg-red-50' : 'text-emerald-600 ring-emerald-200 hover:bg-emerald-50'"
-                    :disabled="toggleLoading.has(session.id)"
-                    @click="toggleSession(session.id)"
-                  >{{ toggleLoading.has(session.id) ? '…' : sessionStatus(session) === 'Current' ? 'Deactivate' : 'Activate' }}</button>
-                  <button class="rounded-lg px-2.5 py-1 text-xs font-medium text-red-600 ring-1 ring-red-200 transition hover:bg-red-50" :disabled="deleteLoading.has(session.id)" @click="deleteSession(session.id)">{{ deleteLoading.has(session.id) ? '…' : 'Delete' }}</button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+      <template v-else>
+        <!-- Desktop table -->
+        <div class="hidden overflow-x-auto lg:block">
+          <table class="min-w-full divide-y divide-slate-100">
+            <thead>
+              <tr class="bg-slate-50">
+                <th v-if="isSelectMode" class="w-10 px-5 py-3">
+                  <input type="checkbox" :checked="areAllSelected" class="h-4 w-4 rounded border-slate-300 text-[#D4AF37]" @change="toggleSelectAll($event.target.checked)" />
+                </th>
+                <th class="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">Session Name</th>
+                <th class="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">Status</th>
+                <th class="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">Start Date</th>
+                <th class="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">End Date</th>
+                <th class="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">Terms</th>
+                <th class="px-5 py-3"></th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 bg-white">
+              <tr v-for="session in paginatedSessions" :key="session.id" class="group transition hover:bg-slate-50/70">
+                <td v-if="isSelectMode" class="px-5 py-3.5">
+                  <input type="checkbox" :checked="selectedSessions.has(session.id)" class="h-4 w-4 rounded border-slate-300 text-[#D4AF37]" @change="toggleItemSelection(session.id, $event.target.checked)" />
+                </td>
+                <td class="px-5 py-3.5 font-semibold text-slate-900">{{ session.name }}</td>
+                <td class="px-5 py-3.5"><StatusBadge :status="sessionStatus(session)" /></td>
+                <td class="px-5 py-3.5 text-sm text-slate-600 whitespace-nowrap">{{ fmtDate(session.startDate || session.start_date || 'N/A') }}</td>
+                <td class="px-5 py-3.5 text-sm text-slate-600 whitespace-nowrap">{{ fmtDate(session.endDate || session.end_date || 'N/A') }}</td>
+                <td class="px-5 py-3.5 text-sm text-slate-600">{{ getTermsCount(session) }}</td>
+                <td class="px-5 py-3.5">
+                  <ResponsiveTableActions :actions="sessionActions(session)" :entity-label="session.name" />
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Tablet & mobile cards -->
+        <div class="grid gap-3 p-4 sm:grid-cols-2 lg:hidden">
+          <ResponsiveDataCard
+            v-for="session in paginatedSessions"
+            :key="session.id"
+            avatar-color="bg-[#0B1F3A]/10 text-[#0B1F3A]"
+            :avatar-text="(session.name || '?').slice(0, 2).toUpperCase()"
+            :title="session.name"
+            :fields="[
+              { label: 'Start Date', value: fmtDate(session.startDate || session.start_date || 'N/A') },
+              { label: 'End Date', value: fmtDate(session.endDate || session.end_date || 'N/A') },
+              { label: 'Terms', value: getTermsCount(session) },
+            ]"
+          >
+            <template #badge>
+              <StatusBadge :status="sessionStatus(session)" />
+            </template>
+            <template #actions>
+              <ResponsiveTableActions :actions="sessionActions(session)" :entity-label="session.name" always-visible />
+            </template>
+          </ResponsiveDataCard>
+        </div>
+      </template>
 
       <div v-if="sessionsStore.sessions.length" class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-5 py-3.5">
         <p class="text-xs text-slate-500">Showing {{ startIndex }}–{{ endIndex }} of {{ sessionsStore.sessions.length }}</p>
@@ -81,22 +101,26 @@
       </div>
     </section>
 
-    <SessionModal :show="showModal" :session="selectedSession" @close="closeModal" @submit="submitSession" />
+    <SessionFormDrawer :show="showModal" :session="selectedSession" :saving="savingSession" @close="closeModal" @submit="submitSession" />
   </div>
 </template>
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
-import { RouterLink } from 'vue-router'
-import { Calendar, CheckSquare, ChevronLeft, ChevronRight, Plus } from 'lucide-vue-next'
+import { useRouter } from 'vue-router'
+import { Calendar, CheckSquare, ChevronLeft, ChevronRight, Pencil, Plus, Power, Trash2 } from 'lucide-vue-next'
 import AppButton from '../../shared/AppButton.vue'
+import AppEmptyState from '../../shared/AppEmptyState.vue'
+import ResponsiveTableActions from '../../shared/ResponsiveTableActions.vue'
+import ResponsiveDataCard from '../../shared/ResponsiveDataCard.vue'
 import SkeletonRows from '../components/SkeletonRows.vue'
 import StatusBadge from '../components/StatusBadge.vue'
-import SessionModal from '../components/SessionModal.vue'
+import SessionFormDrawer from '../components/SessionFormDrawer.vue'
 import { useSchoolAdminSessionsStore } from '../stores/sessions'
 import { useSchoolAdminUiStore } from '../stores/ui'
 import { fmtDate } from '@/lib/helpers'
 
+const router = useRouter()
 const sessionsStore = useSchoolAdminSessionsStore()
 const uiStore = useSchoolAdminUiStore()
 
@@ -104,6 +128,7 @@ const isSelectMode = ref(false)
 const selectedSessions = ref(new Set())
 const showModal = ref(false)
 const selectedSession = ref(null)
+const savingSession = ref(false)
 const toggleLoading = ref(new Set())
 const deleteLoading = ref(new Set())
 const itemsPerPage = 10
@@ -122,6 +147,28 @@ const getTermsCount = (s) => {
   const t = Array.isArray(s.terms) ? s.terms : Array.isArray(s.terms?.data) ? s.terms.data : sessionsStore.terms?.[s.id]
   return Array.isArray(t) ? `${t.length} term${t.length !== 1 ? 's' : ''}` : 'N/A'
 }
+
+const sessionActions = (session) => [
+  { key: 'edit', label: 'Edit', icon: Pencil, onClick: () => openModal(session) },
+  { key: 'terms', label: 'Terms', icon: Calendar, onClick: () => router.push(`/school-admin/terms/${session.id}`) },
+  {
+    key: 'toggle',
+    label: sessionStatus(session) === 'Current' ? 'Deactivate' : 'Activate',
+    icon: Power,
+    variant: sessionStatus(session) === 'Current' ? 'danger' : 'success',
+    loading: toggleLoading.value.has(session.id),
+    onClick: () => toggleSession(session.id),
+  },
+  {
+    key: 'delete',
+    label: 'Delete',
+    icon: Trash2,
+    variant: 'danger',
+    loading: deleteLoading.value.has(session.id),
+    loadingLabel: 'Deleting…',
+    onClick: () => deleteSession(session.id),
+  },
+]
 
 const startSelectMode = () => { isSelectMode.value = true; selectedSessions.value = new Set() }
 const cancelSelectMode = () => { isSelectMode.value = false; selectedSessions.value = new Set() }
@@ -167,12 +214,18 @@ const deleteSession = async (id) => {
 }
 
 const submitSession = async (data) => {
+  savingSession.value = true
   try {
-    const payload = { name: data.name, start_date: data.startDate ?? data.start_date, end_date: data.endDate ?? data.end_date, is_current: Boolean(data.isCurrent ?? data.is_current) }
-    data.id ? await sessionsStore.saveSession({ id: data.id, ...payload }) : await sessionsStore.createSession(payload)
+    const { id, ...payload } = data
+    const apiPayload = { name: payload.name, start_date: payload.startDate, end_date: payload.endDate, is_current: payload.isCurrent }
+    id ? await sessionsStore.saveSession({ id, ...apiPayload }) : await sessionsStore.createSession(apiPayload)
     uiStore.addToast({ title: 'Session saved', message: 'Academic session saved.', variant: 'success' })
-    setTimeout(closeModal, 100)
-  } catch { uiStore.addToast({ title: 'Error', message: 'Failed to save session.', variant: 'error' }); setTimeout(closeModal, 100) }
+    closeModal()
+  } catch (error) {
+    uiStore.addToast({ title: 'Error', message: error?.response?.data?.message || error?.message || 'Failed to save session.', variant: 'error' })
+  } finally {
+    savingSession.value = false
+  }
 }
 
 onMounted(async () => {

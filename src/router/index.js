@@ -17,7 +17,9 @@ import SchoolAdminSessionTerms from '../components/schooladmincomponents/pages/S
 import SchoolAdminClassLevels from '../components/schooladmincomponents/pages/ClassLevelsPage.vue'
 import SchoolAdminClassArms from '../components/schooladmincomponents/pages/ClassArmsPage.vue'
 import SchoolAdminTeachers from '../components/schooladmincomponents/pages/TeachersPage.vue'
+import SchoolAdminTeacherProfile from '../components/schooladmincomponents/pages/TeacherProfilePage.vue'
 import SchoolAdminStudents from '../components/schooladmincomponents/pages/StudentsPage.vue'
+import SchoolAdminStudentProfile from '../components/schooladmincomponents/pages/StudentProfilePage.vue'
 import SchoolAdminSubjects from '../components/schooladmincomponents/pages/SubjectsPage.vue'
 import SchoolAdminSubjectAssignTeacher from '../components/schooladmincomponents/pages/SubjectAssignTeacherPage.vue'
 import SchoolAdminSettings from '../components/schooladmincomponents/pages/SettingsPage.vue'
@@ -84,8 +86,10 @@ const routes = [
           { path: 'classes/:id', name: 'SchoolAdminClasses', component: SchoolAdminClassArms },
           { path: 'teachers', name: 'SchoolAdminTeachers', component: SchoolAdminTeachers },
           { path: 'teachers/import', name: 'SchoolAdminTeacherImport', component: TeacherImportPage },
+          { path: 'teachers/:id', name: 'SchoolAdminTeacherProfile', component: SchoolAdminTeacherProfile, props: true },
           { path: 'students', name: 'SchoolAdminStudents', component: SchoolAdminStudents },
           { path: 'students/import', name: 'SchoolAdminStudentImport', component: StudentImportPage },
+          { path: 'students/:id', name: 'SchoolAdminStudentProfile', component: SchoolAdminStudentProfile, props: true },
           { path: 'exams', name: 'SchoolAdminExamApprovals', component: SchoolAdminExamApprovals },
           { path: 'subjects', name: 'SchoolAdminSubjects', component: SchoolAdminSubjects },
           {

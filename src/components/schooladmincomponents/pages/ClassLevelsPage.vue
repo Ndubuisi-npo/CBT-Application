@@ -15,55 +15,74 @@
     </div>
 
     <section class="rounded-2xl border border-slate-200 bg-white">
-      <SkeletonRows v-if="classLevelsStore.loading" :columns="3" />
+      <SkeletonRows v-if="classLevelsStore.loading" :columns="3" class="hidden lg:block" />
+      <div v-if="classLevelsStore.loading" class="grid gap-3 p-4 sm:grid-cols-2 lg:hidden">
+        <div v-for="i in 4" :key="i" class="h-24 animate-pulse rounded-2xl bg-slate-100" />
+      </div>
 
-      <div v-else-if="!classLevelsStore.classLevels.length" class="px-5 py-16 text-center">
-        <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100">
-          <Columns3 class="h-8 w-8 text-slate-400" />
-        </div>
-        <h3 class="mt-4 text-base font-semibold text-slate-900">No class levels yet</h3>
-        <p class="mt-1.5 text-sm text-slate-500">Create class levels to organise your school's structure.</p>
-        <div class="mt-5">
+      <AppEmptyState
+        v-else-if="!classLevelsStore.classLevels.length"
+        :icon="Columns3"
+        title="No class levels yet"
+        description="Create class levels to organise your school's structure."
+        class="m-4 border-0"
+      >
+        <template #actions>
           <AppButton :icon="Plus" text="Create First Level" variant="primary" size="sm" @click="openModal()" />
-        </div>
-      </div>
+        </template>
+      </AppEmptyState>
 
-      <div v-else class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-slate-100">
-          <thead>
-            <tr class="bg-slate-50">
-              <th v-if="isSelectMode" class="w-10 px-5 py-3">
-                <input type="checkbox" :checked="areAllSelected" class="h-4 w-4 rounded border-slate-300 text-[#D4AF37]" @change="toggleSelectAll($event.target.checked)" />
-              </th>
-              <th class="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">Class Level</th>
-              <th class="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">Arms</th>
-              <th class="px-5 py-3"></th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-slate-100 bg-white">
-            <tr v-for="level in paginatedLevels" :key="level.id" class="group transition hover:bg-slate-50/70">
-              <td v-if="isSelectMode" class="px-5 py-3.5">
-                <input type="checkbox" :checked="selectedItems.has(level.id)" class="h-4 w-4 rounded border-slate-300 text-[#D4AF37]" @change="toggleItemSelection(level.id, $event.target.checked)" />
-              </td>
-              <td class="px-5 py-3.5">
-                <p class="font-semibold text-slate-900">{{ level.name }}</p>
-              </td>
-              <td class="px-5 py-3.5">
-                <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-700">
-                  {{ getClassesCount(level) }} arm{{ getClassesCount(level) !== 1 ? 's' : '' }}
-                </span>
-              </td>
-              <td class="px-5 py-3.5">
-                <div class="flex items-center gap-2 opacity-0 transition group-hover:opacity-100">
-                  <button class="rounded-lg px-2.5 py-1 text-xs font-medium text-slate-600 ring-1 ring-slate-200 transition hover:bg-slate-100" @click="openModal(level)">Edit</button>
-                  <RouterLink :to="`/school-admin/classes/${level.id}`" class="rounded-lg px-2.5 py-1 text-xs font-medium text-[#0B1F3A] ring-1 ring-slate-200 transition hover:bg-slate-100">View Arms</RouterLink>
-                  <button class="rounded-lg px-2.5 py-1 text-xs font-medium text-red-600 ring-1 ring-red-200 transition hover:bg-red-50" :disabled="deleteLoading.has(level.id)" @click="deleteClassLevel(level.id)">{{ deleteLoading.has(level.id) ? '…' : 'Delete' }}</button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+      <template v-else>
+        <!-- Desktop table -->
+        <div class="hidden overflow-x-auto lg:block">
+          <table class="min-w-full divide-y divide-slate-100">
+            <thead>
+              <tr class="bg-slate-50">
+                <th v-if="isSelectMode" class="w-10 px-5 py-3">
+                  <input type="checkbox" :checked="areAllSelected" class="h-4 w-4 rounded border-slate-300 text-[#D4AF37]" @change="toggleSelectAll($event.target.checked)" />
+                </th>
+                <th class="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">Class Level</th>
+                <th class="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">Arms</th>
+                <th class="px-5 py-3"></th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 bg-white">
+              <tr v-for="level in paginatedLevels" :key="level.id" class="group transition hover:bg-slate-50/70">
+                <td v-if="isSelectMode" class="px-5 py-3.5">
+                  <input type="checkbox" :checked="selectedItems.has(level.id)" class="h-4 w-4 rounded border-slate-300 text-[#D4AF37]" @change="toggleItemSelection(level.id, $event.target.checked)" />
+                </td>
+                <td class="px-5 py-3.5">
+                  <p class="font-semibold text-slate-900">{{ level.name }}</p>
+                </td>
+                <td class="px-5 py-3.5">
+                  <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-700">
+                    {{ getClassesCount(level) }} arm{{ getClassesCount(level) !== 1 ? 's' : '' }}
+                  </span>
+                </td>
+                <td class="px-5 py-3.5">
+                  <ResponsiveTableActions :actions="classLevelActions(level)" :entity-label="level.name" />
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Tablet & mobile cards -->
+        <div class="grid gap-3 p-4 sm:grid-cols-2 lg:hidden">
+          <ResponsiveDataCard
+            v-for="level in paginatedLevels"
+            :key="level.id"
+            avatar-color="bg-slate-100 text-slate-600"
+            :avatar-text="(level.name || '?').slice(0, 2).toUpperCase()"
+            :title="level.name"
+            :fields="[{ label: 'Arms', value: `${getClassesCount(level)} arm${getClassesCount(level) !== 1 ? 's' : ''}` }]"
+          >
+            <template #actions>
+              <ResponsiveTableActions :actions="classLevelActions(level)" :entity-label="level.name" always-visible />
+            </template>
+          </ResponsiveDataCard>
+        </div>
+      </template>
 
       <div v-if="classLevelsStore.classLevels.length" class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-5 py-3.5">
         <p class="text-xs text-slate-500">Showing {{ startIndex }}–{{ endIndex }} of {{ classLevelsStore.classLevels.length }}</p>
@@ -75,20 +94,24 @@
       </div>
     </section>
 
-    <ClassLevelModal :show="showModal" :classLevel="selectedClassLevel" :loading="isSaving" @close="closeModal" @submit="submitClassLevel" />
+    <ClassLevelFormDrawer :show="showModal" :class-level="selectedClassLevel" :saving="isSaving" @close="closeModal" @submit="submitClassLevel" />
   </div>
 </template>
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
-import { RouterLink } from 'vue-router'
-import { CheckSquare, ChevronLeft, ChevronRight, Columns3, Plus } from 'lucide-vue-next'
+import { useRouter } from 'vue-router'
+import { CheckSquare, ChevronLeft, ChevronRight, Columns3, Eye, Pencil, Plus, Trash2 } from 'lucide-vue-next'
 import AppButton from '../../shared/AppButton.vue'
+import AppEmptyState from '../../shared/AppEmptyState.vue'
+import ResponsiveTableActions from '../../shared/ResponsiveTableActions.vue'
+import ResponsiveDataCard from '../../shared/ResponsiveDataCard.vue'
 import SkeletonRows from '../components/SkeletonRows.vue'
-import ClassLevelModal from '../components/ClassLevelModal.vue'
+import ClassLevelFormDrawer from '../components/ClassLevelFormDrawer.vue'
 import { useSchoolAdminClassLevelsStore } from '../stores/classLevels'
 import { useSchoolAdminUiStore } from '../stores/ui'
 
+const router = useRouter()
 const classLevelsStore = useSchoolAdminClassLevelsStore()
 const uiStore = useSchoolAdminUiStore()
 
@@ -110,6 +133,20 @@ const endIndex = computed(() => Math.min(currentPage.value * itemsPerPage, class
 const paginatedLevels = computed(() => classLevelsStore.classLevels.slice((currentPage.value - 1) * itemsPerPage, currentPage.value * itemsPerPage))
 
 const getClassesCount = (l) => l.class_arms_count ?? 0
+
+const classLevelActions = (level) => [
+  { key: 'view', label: 'View Arms', icon: Eye, onClick: () => router.push(`/school-admin/classes/${level.id}`) },
+  { key: 'edit', label: 'Edit', icon: Pencil, onClick: () => openModal(level) },
+  {
+    key: 'delete',
+    label: 'Delete',
+    icon: Trash2,
+    variant: 'danger',
+    loading: deleteLoading.value.has(level.id),
+    loadingLabel: 'Deleting…',
+    onClick: () => deleteClassLevel(level.id),
+  },
+]
 
 const startSelectMode = () => { isSelectMode.value = true; selectedItems.value = new Set() }
 const cancelSelectMode = () => { isSelectMode.value = false; selectedItems.value = new Set() }
@@ -144,7 +181,7 @@ const submitClassLevel = async (data) => {
   try {
     data.id ? await classLevelsStore.updateClassLevel(data.id, { name: data.name }) : await classLevelsStore.createClassLevel({ name: data.name })
     uiStore.addToast({ title: 'Saved', message: 'Class level saved.', variant: 'success' })
-    setTimeout(closeModal, 100)
+    closeModal()
   } catch (e) { uiStore.addToast({ title: 'Error', message: e?.response?.data?.message || 'Failed.', variant: 'error' }) }
   finally { isSaving.value = false }
 }

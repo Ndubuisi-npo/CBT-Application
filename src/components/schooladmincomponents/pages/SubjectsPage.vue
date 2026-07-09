@@ -15,56 +15,79 @@
     </div>
 
     <section class="rounded-2xl border border-slate-200 bg-white">
-      <SkeletonRows v-if="subjectsStore.loading" :columns="5" />
+      <SkeletonRows v-if="subjectsStore.loading" :columns="5" class="hidden lg:block" />
+      <div v-if="subjectsStore.loading" class="grid gap-3 p-4 sm:grid-cols-2 lg:hidden">
+        <div v-for="i in 4" :key="i" class="h-32 animate-pulse rounded-2xl bg-slate-100" />
+      </div>
 
-      <div v-else-if="!subjectsStore.subjects.length" class="px-5 py-16 text-center">
-        <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100">
-          <Shapes class="h-8 w-8 text-slate-400" />
-        </div>
-        <h3 class="mt-4 text-base font-semibold text-slate-900">No subjects yet</h3>
-        <p class="mt-1.5 text-sm text-slate-500">Create subjects to build out your curriculum.</p>
-        <div class="mt-5">
+      <AppEmptyState
+        v-else-if="!subjectsStore.subjects.length"
+        :icon="Shapes"
+        title="No subjects yet"
+        description="Create subjects to build out your curriculum."
+        class="m-4 border-0"
+      >
+        <template #actions>
           <AppButton :icon="Plus" text="Create First Subject" variant="primary" size="sm" @click="openModal()" />
-        </div>
-      </div>
+        </template>
+      </AppEmptyState>
 
-      <div v-else class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-slate-100">
-          <thead>
-            <tr class="bg-slate-50">
-              <th v-if="isSelectMode" class="w-10 px-5 py-3">
-                <input type="checkbox" :checked="areAllSelected" class="h-4 w-4 rounded border-slate-300 text-[#D4AF37]" @change="toggleSelectAll($event.target.checked)" />
-              </th>
-              <th class="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">Subject Name</th>
-              <th class="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">Code</th>
-              <th class="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">Class Levels</th>
-              <th class="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">Assigned Teachers</th>
-              <th class="px-5 py-3"></th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-slate-100 bg-white">
-            <tr v-for="subject in paginatedSubjects" :key="subject.id" class="group transition hover:bg-slate-50/70">
-              <td v-if="isSelectMode" class="px-5 py-3.5">
-                <input type="checkbox" :checked="selectedSubjects.has(subject.id)" class="h-4 w-4 rounded border-slate-300 text-[#D4AF37]" @change="toggleItemSelection(subject.id, $event.target.checked)" />
-              </td>
-              <td class="px-5 py-3.5 font-semibold text-slate-900">{{ subject.name }}</td>
-              <td class="px-5 py-3.5">
-                <span v-if="subject.code" class="font-mono text-xs font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded">{{ subject.code }}</span>
-                <span v-else class="text-slate-400">N/A</span>
-              </td>
-              <td class="px-5 py-3.5 text-sm text-slate-600">{{ formatClassLevels(subject) }}</td>
-              <td class="px-5 py-3.5 text-sm text-slate-600">{{ formatAssignedTeachers(subject) }}</td>
-              <td class="px-5 py-3.5">
-                <div class="flex items-center gap-2 opacity-0 transition group-hover:opacity-100">
-                  <button class="rounded-lg px-2.5 py-1 text-xs font-medium text-slate-600 ring-1 ring-slate-200 transition hover:bg-slate-100" @click="openModal(subject)">Edit</button>
-                  <button class="rounded-lg px-2.5 py-1 text-xs font-medium text-[#0B1F3A] ring-1 ring-slate-200 transition hover:bg-slate-100" @click="$router.push(`/school-admin/subjects/${subject.id}/assign-teacher`)">Assign Teacher</button>
-                  <button class="rounded-lg px-2.5 py-1 text-xs font-medium text-red-600 ring-1 ring-red-200 transition hover:bg-red-50" :disabled="deleteLoading.has(subject.id)" @click="deleteSubject(subject.id)">{{ deleteLoading.has(subject.id) ? '…' : 'Delete' }}</button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+      <template v-else>
+        <!-- Desktop table -->
+        <div class="hidden overflow-x-auto lg:block">
+          <table class="min-w-full divide-y divide-slate-100">
+            <thead>
+              <tr class="bg-slate-50">
+                <th v-if="isSelectMode" class="w-10 px-5 py-3">
+                  <input type="checkbox" :checked="areAllSelected" class="h-4 w-4 rounded border-slate-300 text-[#D4AF37]" @change="toggleSelectAll($event.target.checked)" />
+                </th>
+                <th class="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">Subject Name</th>
+                <th class="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">Code</th>
+                <th class="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">Class Levels</th>
+                <th class="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">Assigned Teachers</th>
+                <th class="px-5 py-3"></th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 bg-white">
+              <tr v-for="subject in paginatedSubjects" :key="subject.id" class="group transition hover:bg-slate-50/70">
+                <td v-if="isSelectMode" class="px-5 py-3.5">
+                  <input type="checkbox" :checked="selectedSubjects.has(subject.id)" class="h-4 w-4 rounded border-slate-300 text-[#D4AF37]" @change="toggleItemSelection(subject.id, $event.target.checked)" />
+                </td>
+                <td class="px-5 py-3.5 font-semibold text-slate-900">{{ subject.name }}</td>
+                <td class="px-5 py-3.5">
+                  <span v-if="subject.code" class="font-mono text-xs font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded">{{ subject.code }}</span>
+                  <span v-else class="text-slate-400">N/A</span>
+                </td>
+                <td class="px-5 py-3.5 text-sm text-slate-600">{{ formatClassLevels(subject) }}</td>
+                <td class="px-5 py-3.5 text-sm text-slate-600">{{ formatAssignedTeachers(subject) }}</td>
+                <td class="px-5 py-3.5">
+                  <ResponsiveTableActions :actions="subjectActions(subject)" :entity-label="subject.name" />
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Tablet & mobile cards -->
+        <div class="grid gap-3 p-4 sm:grid-cols-2 lg:hidden">
+          <ResponsiveDataCard
+            v-for="subject in paginatedSubjects"
+            :key="subject.id"
+            avatar-color="bg-[#0B1F3A]/10 text-[#0B1F3A]"
+            :avatar-text="(subject.code || subject.name || '?').slice(0, 2).toUpperCase()"
+            :title="subject.name"
+            :subtitle="subject.code || 'No code'"
+            :fields="[
+              { label: 'Class Levels', value: formatClassLevels(subject), span: 2 },
+              { label: 'Assigned Teachers', value: formatAssignedTeachers(subject), span: 2 },
+            ]"
+          >
+            <template #actions>
+              <ResponsiveTableActions :actions="subjectActions(subject)" :entity-label="subject.name" always-visible />
+            </template>
+          </ResponsiveDataCard>
+        </div>
+      </template>
 
       <div v-if="subjectsStore.subjects.length" class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-5 py-3.5">
         <p class="text-xs text-slate-500">Showing {{ startIndex }}–{{ endIndex }} of {{ subjectsStore.subjects.length }}</p>
@@ -76,19 +99,24 @@
       </div>
     </section>
 
-    <SubjectModal :show="showModal" :subject="selectedSubject" @close="closeModal" @submit="submitSubject" />
+    <SubjectFormDrawer :show="showModal" :subject="selectedSubject" :saving="savingSubject" @close="closeModal" @submit="submitSubject" />
   </div>
 </template>
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
-import { CheckSquare, ChevronLeft, ChevronRight, Plus, Shapes } from 'lucide-vue-next'
+import { CheckSquare, ChevronLeft, ChevronRight, Pencil, Plus, Shapes, Trash2, UserCog } from 'lucide-vue-next'
 import AppButton from '../../shared/AppButton.vue'
+import AppEmptyState from '../../shared/AppEmptyState.vue'
+import ResponsiveTableActions from '../../shared/ResponsiveTableActions.vue'
+import ResponsiveDataCard from '../../shared/ResponsiveDataCard.vue'
 import SkeletonRows from '../components/SkeletonRows.vue'
-import SubjectModal from '../components/SubjectModal.vue'
+import SubjectFormDrawer from '../components/SubjectFormDrawer.vue'
 import { useSchoolAdminSubjectsStore } from '../stores/subjects'
 import { useSchoolAdminUiStore } from '../stores/ui'
+import { useRouter } from 'vue-router'
 
+const router = useRouter()
 const subjectsStore = useSchoolAdminSubjectsStore()
 const uiStore = useSchoolAdminUiStore()
 
@@ -96,6 +124,7 @@ const isSelectMode = ref(false)
 const selectedSubjects = ref(new Set())
 const showModal = ref(false)
 const selectedSubject = ref(null)
+const savingSubject = ref(false)
 const deleteLoading = ref(new Set())
 const itemsPerPage = 10
 const currentPage = ref(1)
@@ -117,6 +146,20 @@ const formatAssignedTeachers = (s) => {
   const names = assignments.map((a) => a.user ? `${a.user.first_name} ${a.user.last_name}`.trim() : null).filter(Boolean)
   return names.length ? names.join(', ') : 'N/A'
 }
+
+const subjectActions = (subject) => [
+  { key: 'edit', label: 'Edit', icon: Pencil, onClick: () => openModal(subject) },
+  { key: 'assign', label: 'Assign Teacher', icon: UserCog, onClick: () => router.push(`/school-admin/subjects/${subject.id}/assign-teacher`) },
+  {
+    key: 'delete',
+    label: 'Delete',
+    icon: Trash2,
+    variant: 'danger',
+    loading: deleteLoading.value.has(subject.id),
+    loadingLabel: 'Deleting…',
+    onClick: () => deleteSubject(subject.id),
+  },
+]
 
 const startSelectMode = () => { isSelectMode.value = true; selectedSubjects.value = new Set() }
 const cancelSelectMode = () => { isSelectMode.value = false; selectedSubjects.value = new Set() }
@@ -147,12 +190,17 @@ const deleteSubject = async (id) => {
 }
 
 const submitSubject = async (data) => {
+  savingSubject.value = true
   try {
-    const payload = { name: data.name, code: data.code, class_level_ids: data.class_level_ids, class_arm_ids: data.class_arm_ids }
-    data.id ? await subjectsStore.updateSubject(data.id, payload) : await subjectsStore.createSubject(payload)
+    const { id, ...payload } = data
+    id ? await subjectsStore.updateSubject(id, payload) : await subjectsStore.createSubject(payload)
     uiStore.addToast({ title: 'Subject saved', message: 'Subject saved successfully.', variant: 'success' })
-    setTimeout(closeModal, 100)
-  } catch { uiStore.addToast({ title: 'Error', message: 'Failed to save subject.', variant: 'error' }); setTimeout(closeModal, 100) }
+    closeModal()
+  } catch (error) {
+    uiStore.addToast({ title: 'Error', message: error?.response?.data?.message || error?.message || 'Failed to save subject.', variant: 'error' })
+  } finally {
+    savingSubject.value = false
+  }
 }
 
 onMounted(async () => {

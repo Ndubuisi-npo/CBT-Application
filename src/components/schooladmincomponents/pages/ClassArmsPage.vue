@@ -4,54 +4,64 @@
       <template #header>
         <AppButton @click="openModal()" :icon="Plus" text="Create" variant="primary" size="sm" />
       </template>
-      <SkeletonRows v-if="classArmsStore.loading" :columns="3" />
-      <div v-else-if="classArmsStore.classArms.length === 0" class="text-center py-12">
-        <div class="mx-auto w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mb-4">
-          <svg class="w-12 h-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-          </svg>
-        </div>
-        <h3 class="text-lg font-medium text-slate-900 mb-2">No arms created</h3>
-        <p class="text-slate-600 mb-6">Get started by creating your first class.</p>
+      <SkeletonRows v-if="classArmsStore.loading" :columns="3" class="hidden lg:block" />
+      <div v-if="classArmsStore.loading" class="grid gap-3 sm:grid-cols-2 lg:hidden">
+        <div v-for="i in 4" :key="i" class="h-28 animate-pulse rounded-2xl bg-slate-100" />
       </div>
-      <div v-else class="overflow-hidden rounded-2xl border border-slate-200">
-        <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-slate-200 bg-white">
-            <thead class="bg-slate-50">
-              <tr>
-                <th v-for="heading in headings" :key="heading" class="px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">{{ heading }}</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100">
-              <tr v-for="classArm in classArmsStore.classArms" :key="classArm.id" class="transition hover:bg-slate-50/80">
-                <td class="px-5 py-4 font-semibold text-slate-900">{{ classArm.name }}</td>
-                <td class="px-5 py-4 text-sm text-slate-600">{{ getAssignedTeacher(classArm) }}</td>
-                <td class="px-5 py-4">
-                  <div class="flex gap-2">
-                    <AppButton text="Edit" @click="editClass(classArm)" variant="outline" size="xs" />
-                    <AppButton text="Assign Teacher" @click="openAssignTeacherModal(classArm)" variant="primary" size="xs" />
-                    <AppButton 
-                      text="Delete" 
-                      @click="deleteClass(classArm.id)" 
-                      variant="danger" 
-                      size="xs"
-                      loadingText="Deleting..."
-                      :processing="deleteLoading.has(classArm.id)"
-                      :disabled="deleteLoading.has(classArm.id)"
-                    />
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+
+      <AppEmptyState
+        v-else-if="classArmsStore.classArms.length === 0"
+        :icon="LayoutGrid"
+        title="No arms created"
+        description="Get started by creating your first class."
+      />
+
+      <template v-else>
+        <!-- Desktop table -->
+        <div class="hidden overflow-hidden rounded-2xl border border-slate-200 lg:block">
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-200 bg-white">
+              <thead class="bg-slate-50">
+                <tr>
+                  <th v-for="heading in headings" :key="heading" class="px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">{{ heading }}</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                <tr v-for="classArm in classArmsStore.classArms" :key="classArm.id" class="group transition hover:bg-slate-50/80">
+                  <td class="px-5 py-4 font-semibold text-slate-900">{{ classArm.name }}</td>
+                  <td class="px-5 py-4 text-sm text-slate-600">{{ getAssignedTeacher(classArm) }}</td>
+                  <td class="px-5 py-4">
+                    <ResponsiveTableActions :actions="classArmActions(classArm)" :entity-label="classArm.name" always-visible />
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+
+        <!-- Tablet & mobile cards -->
+        <div class="grid gap-3 sm:grid-cols-2 lg:hidden">
+          <ResponsiveDataCard
+            v-for="classArm in classArmsStore.classArms"
+            :key="classArm.id"
+            avatar-color="bg-slate-100 text-slate-600"
+            :avatar-text="(classArm.name || '?').slice(0, 2).toUpperCase()"
+            :title="classArm.name"
+            :fields="[{ label: 'Teacher', value: getAssignedTeacher(classArm), span: 2 }]"
+          >
+            <template #actions>
+              <ResponsiveTableActions :actions="classArmActions(classArm)" :entity-label="classArm.name" always-visible />
+            </template>
+          </ResponsiveDataCard>
+        </div>
+      </template>
     </SectionCard>
 
-    <ClassModal 
-      :show="showModal" 
-      :classItem="selectedClass"
-      :classLevelName="classLevelName"
+    <ClassArmFormDrawer
+      :show="showModal"
+      :class-item="selectedClass"
+      :class-level-name="classLevelName"
+      :saving="savingClass"
       @close="closeModal"
       @submit="submitClass"
     />
@@ -68,10 +78,14 @@
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { LayoutGrid, Pencil, Trash2, UserCog } from 'lucide-vue-next'
 import SectionCard from '../components/SectionCard.vue'
 import SkeletonRows from '../components/SkeletonRows.vue'
 import AppButton from '../../shared/AppButton.vue'
-import ClassModal from '../components/ClassModal.vue'
+import AppEmptyState from '../../shared/AppEmptyState.vue'
+import ResponsiveTableActions from '../../shared/ResponsiveTableActions.vue'
+import ResponsiveDataCard from '../../shared/ResponsiveDataCard.vue'
+import ClassArmFormDrawer from '../components/ClassArmFormDrawer.vue'
 import AssignTeacherModal from '../components/AssignTeacherModal.vue'
 import { Plus } from 'lucide-vue-next'
 import { useSchoolAdminClassArmsStore } from '../stores/classArms'
@@ -92,10 +106,25 @@ const classLevelName = computed(() => currentClassLevel.value?.name || '')
 // Modal state
 const showModal = ref(false)
 const selectedClass = ref(null)
+const savingClass = ref(false)
 const showAssignTeacherModal = ref(false)
 
 // Loading states
 const deleteLoading = ref(new Set())
+
+const classArmActions = (classArm) => [
+  { key: 'edit', label: 'Edit', icon: Pencil, onClick: () => editClass(classArm) },
+  { key: 'assign', label: 'Assign Teacher', icon: UserCog, onClick: () => openAssignTeacherModal(classArm) },
+  {
+    key: 'delete',
+    label: 'Delete',
+    icon: Trash2,
+    variant: 'danger',
+    loading: deleteLoading.value.has(classArm.id),
+    loadingLabel: 'Deleting…',
+    onClick: () => deleteClass(classArm.id),
+  },
+]
 
 onMounted(async () => {
   try {
@@ -137,37 +166,25 @@ const editClass = (classItem) => {
 }
 
 const submitClass = async (classData) => {
+  savingClass.value = true
   try {
     if (classData.id) {
-      // Update existing class
-      await classArmsStore.saveClassArm(classLevelId.value, {
-        id: classData.id,
-        name: classData.name
-      })
+      await classArmsStore.saveClassArm(classLevelId.value, { id: classData.id, name: classData.name })
       uiStore.addToast({ title: 'Class updated', message: 'Class has been updated.', variant: 'success' })
     } else {
-      // Create new class
-      await classArmsStore.saveClassArm(classLevelId.value, {
-        name: classData.name
-      })
+      await classArmsStore.saveClassArm(classLevelId.value, { name: classData.name })
       uiStore.addToast({ title: 'Class created', message: 'Class has been created.', variant: 'success' })
     }
-    
-    // Close modal after a short delay to ensure toast is visible
-    setTimeout(() => {
-      closeModal()
-    }, 100)
-    await classArmsStore.fetchClassArms(classLevelId.value) // Refresh to get updated list
+    closeModal()
+    await classArmsStore.fetchClassArms(classLevelId.value)
   } catch (error) {
     if (isNameTakenError(error)) {
       uiStore.addToast({ title: 'Name taken', message: 'Name has already been taken.', variant: 'error' })
     } else {
       uiStore.addToast({ title: 'Error', message: error.message || 'Failed to save class.', variant: 'error' })
     }
-    // Close modal after error toast as well
-    setTimeout(() => {
-      closeModal()
-    }, 100)
+  } finally {
+    savingClass.value = false
   }
 }
 
