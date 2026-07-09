@@ -1,6 +1,5 @@
 <template>
   <div class="space-y-6 pb-10">
-    <!-- Loading state -->
     <div v-if="loading" class="space-y-6">
       <div class="h-40 animate-pulse rounded-2xl bg-slate-100" />
       <div class="grid gap-6 lg:grid-cols-3">
@@ -9,20 +8,18 @@
       </div>
     </div>
 
-    <!-- Not found -->
     <AppEmptyState
       v-else-if="!student"
       :icon="UserX"
       title="Student not found"
-      description="This student may have been removed, or the link is out of date."
+      description="This student may not be assigned to your classes, or the link is out of date."
     >
       <template #actions>
-        <AppButton text="Back to Students" variant="primary" size="sm" @click="router.push('/school-admin/students')" />
+        <AppButton text="Back to Students" variant="primary" size="sm" @click="router.push({ name: 'TeachersStudentsPage' })" />
       </template>
     </AppEmptyState>
 
     <template v-else>
-      <!-- ── Header card ─────────────────────────────────────────────────── -->
       <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div class="flex flex-wrap items-end justify-between gap-4 bg-gradient-to-r from-[#0B1F3A] to-[#0B1F3A]/80 px-5 pb-5 pt-6 sm:px-6">
           <div class="flex items-end gap-4">
@@ -35,9 +32,8 @@
             </div>
           </div>
           <div class="flex shrink-0 flex-wrap items-center gap-2 pb-1">
-            <AppButton :icon="Pencil" text="Edit" variant="outline" size="sm" @click="showEditDrawer = true" />
-            <AppButton :icon="ArrowUpCircle" text="Promote" variant="outline" size="sm" @click="showPromoteDrawer = true" />
-            <AppButton :icon="Trash2" text="Delete" variant="danger" size="sm" :processing="deleting" @click="handleDelete" />
+            <AppButton :icon="BarChart2" text="View Exam Results" variant="primary" size="sm" @click="viewResults" />
+            <AppButton text="Back to Students" variant="outline" size="sm" @click="router.push({ name: 'TeachersStudentsPage' })" />
           </div>
         </div>
         <div class="px-5 pb-5 sm:px-6">
@@ -45,7 +41,6 @@
             <AppBadge :label="statusLabel" :variant="student.is_active !== false ? 'success' : 'danger'" dot />
           </div>
 
-          <!-- Quick meta row -->
           <div class="mt-5 grid grid-cols-2 gap-4 border-t border-slate-100 pt-4 sm:grid-cols-3 lg:grid-cols-6">
             <div>
               <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Class</p>
@@ -75,7 +70,6 @@
         </div>
       </div>
 
-      <!-- ── Attendance & Exam statistics ────────────────────────────────── -->
       <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <AppStatCard label="Attendance Rate" value="—" sub="Not tracked yet" :icon="CalendarCheck" icon-bg="bg-blue-50" icon-color="text-blue-600" />
         <AppStatCard label="Days Present" value="—" sub="Not tracked yet" :icon="CalendarCheck" icon-bg="bg-blue-50" icon-color="text-blue-600" />
@@ -85,11 +79,8 @@
         <AppStatCard label="Pass Rate" value="—" sub="Not tracked yet" :icon="ClipboardCheck" icon-bg="bg-slate-100" icon-color="text-slate-600" />
       </div>
 
-      <!-- ── Main grid ───────────────────────────────────────────────────── -->
       <div class="grid gap-6 lg:grid-cols-3">
-        <!-- Left column -->
         <div class="space-y-6 lg:col-span-2">
-          <!-- Personal Information -->
           <section class="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
             <h2 class="text-sm font-semibold text-slate-900">Personal Information</h2>
             <dl class="mt-4 grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
@@ -103,7 +94,6 @@
             </dl>
           </section>
 
-          <!-- Academic Information -->
           <section class="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
             <h2 class="text-sm font-semibold text-slate-900">Academic Information</h2>
             <dl class="mt-4 grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
@@ -115,26 +105,22 @@
             </dl>
           </section>
 
-          <!-- Results -->
           <section class="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
             <h2 class="text-sm font-semibold text-slate-900">Results</h2>
             <p class="mt-4 rounded-xl border border-dashed border-slate-200 py-8 text-center text-sm text-slate-400">
-              Result history isn't available from this admin view yet — this requires a per-student results endpoint that doesn't currently exist outside the teacher portal.
+              Result history is available from the Exam Results view. Use the action above to inspect this student’s full score history.
             </p>
           </section>
 
-          <!-- Recent Exams -->
           <section class="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
             <h2 class="text-sm font-semibold text-slate-900">Recent Exams</h2>
             <p class="mt-4 rounded-xl border border-dashed border-slate-200 py-8 text-center text-sm text-slate-400">
-              No exam history available yet.
+              No recent exam history available yet.
             </p>
           </section>
         </div>
 
-        <!-- Right column -->
         <div class="space-y-6">
-          <!-- Parent / Guardian -->
           <section class="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
             <h2 class="text-sm font-semibold text-slate-900">Parent / Guardian</h2>
             <dl class="mt-4 space-y-4">
@@ -144,42 +130,31 @@
             </dl>
           </section>
 
-          <!-- Action bar -->
           <section class="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
             <h2 class="text-sm font-semibold text-slate-900">Actions</h2>
             <div class="mt-4 space-y-2">
-              <AppButton :icon="Pencil" text="Edit" variant="outline" full-width class="justify-start" @click="showEditDrawer = true" />
-              <AppButton :icon="ArrowUpCircle" text="Promote" variant="outline" full-width class="justify-start" @click="showPromoteDrawer = true" />
-              <AppButton :icon="KeyRound" text="Reset Password" variant="outline" full-width class="justify-start" :processing="resettingPassword" @click="handleResetPassword" />
-              <AppButton :icon="Trash2" text="Delete" variant="danger" full-width class="justify-start" :processing="deleting" @click="handleDelete" />
+              <AppButton :icon="BarChart2" text="View Exam Results" variant="primary" full-width class="justify-start" @click="viewResults" />
+              <AppButton text="Back to Students" variant="outline" full-width class="justify-start" @click="router.push({ name: 'TeachersStudentsPage' })" />
             </div>
           </section>
         </div>
       </div>
     </template>
-
-    <StudentFormDrawer :show="showEditDrawer" :student="student" :saving="savingStudent" @close="showEditDrawer = false" @submit="handleUpdate" />
-    <PromoteStudentDrawer :show="showPromoteDrawer" :student="student" :saving="promoting" @close="showPromoteDrawer = false" @submit="handlePromote" />
   </div>
 </template>
 
 <script setup>
 import { computed, h, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import {
-  ArrowUpCircle, CalendarCheck, ClipboardCheck, FileText,
-  KeyRound, Pencil, Percent, TrendingUp, Trash2, UserX,
-} from 'lucide-vue-next'
+import { BarChart2, CalendarCheck, ClipboardCheck, FileText, Percent, TrendingUp, UserX } from 'lucide-vue-next'
 import AppBadge from '../../shared/AppBadge.vue'
 import AppButton from '../../shared/AppButton.vue'
 import AppEmptyState from '../../shared/AppEmptyState.vue'
 import AppStatCard from '../../shared/AppStatCard.vue'
-import StudentFormDrawer from '../components/StudentFormDrawer.vue'
-import PromoteStudentDrawer from '../components/PromoteStudentDrawer.vue'
-import { useSchoolAdminStudentsStore } from '../stores/students'
-import { useSchoolAdminUiStore } from '../stores/ui'
+import { useSchoolAdminUiStore } from '../../schooladmincomponents/stores/ui'
+import { getStudents } from '../../schooladmincomponents/services/api/students'
+import { getAuthUser } from '../../../js/lib/auth'
 
-// Tiny local component for a label/value pair in the info sections.
 const InfoField = (props) => h('div', [
   h('dt', { class: 'text-[10px] font-semibold uppercase tracking-wide text-slate-400' }, props.label),
   h('dd', { class: 'mt-1 text-sm font-medium text-slate-700 break-words' }, props.value),
@@ -188,7 +163,6 @@ InfoField.props = ['label', 'value']
 
 const route = useRoute()
 const router = useRouter()
-const studentsStore = useSchoolAdminStudentsStore()
 const uiStore = useSchoolAdminUiStore()
 
 const NOT_PROVIDED = 'Not provided'
@@ -196,20 +170,13 @@ const displayValue = (v) => (v === null || v === undefined || v === '' ? NOT_PRO
 
 const student = ref(null)
 const loading = ref(true)
-const showEditDrawer = ref(false)
-const showPromoteDrawer = ref(false)
-const savingStudent = ref(false)
-const promoting = ref(false)
-const deleting = ref(false)
-const resettingPassword = ref(false)
-
-const studentIdParam = computed(() => route.params.id)
 
 const sp = computed(() => student.value?.studentProfile || student.value?.student_profile || student.value?.profile || null)
-
 const fullName = computed(() => {
   const t = student.value || {}
-  return `${t.first_name || ''} ${t.last_name || ''}`.trim() || 'Student'
+  const fn = t.first_name || t.user?.first_name || ''
+  const ln = t.last_name || t.user?.last_name || ''
+  return `${fn} ${ln}`.trim() || 'Student'
 })
 const initials = computed(() => fullName.value.split(' ').map((p) => p[0] || '').join('').toUpperCase().slice(0, 2) || 'NA')
 const statusLabel = computed(() => (student.value?.is_active !== false ? 'Active' : 'Inactive'))
@@ -240,7 +207,11 @@ const armOnly = computed(() => displayValue(classArm.value?.name))
 const loadStudent = async () => {
   loading.value = true
   try {
-    student.value = await studentsStore.fetchStudent(studentIdParam.value)
+    const user = getAuthUser()
+    const params = user?.id ? { teacher_id: user.id } : {}
+    const response = await getStudents(params)
+    const list = Array.isArray(response) ? response : (response?.data || response?.students || [])
+    student.value = list.find((s) => String(s.id) === String(route.params.id)) || null
   } catch (error) {
     student.value = null
     uiStore.addToast({ title: 'Error', message: error?.message || 'Failed to load student.', variant: 'error' })
@@ -249,58 +220,8 @@ const loadStudent = async () => {
   }
 }
 
-const handleUpdate = async (data) => {
-  savingStudent.value = true
-  try {
-    const { id, ...payload } = data
-    await studentsStore.updateStudent(id, payload)
-    uiStore.addToast({ title: 'Student updated', message: 'Changes have been saved.', variant: 'success' })
-    showEditDrawer.value = false
-    await loadStudent()
-  } catch (error) {
-    uiStore.addToast({ title: 'Error', message: error?.response?.data?.message || error?.message || 'Failed to update student.', variant: 'error' })
-  } finally {
-    savingStudent.value = false
-  }
-}
-
-const handlePromote = async (data) => {
-  promoting.value = true
-  try {
-    const { id, ...payload } = data
-    await studentsStore.updateStudent(id, payload)
-    uiStore.addToast({ title: 'Student promoted', message: 'The student has been moved to their new class.', variant: 'success' })
-    showPromoteDrawer.value = false
-    await loadStudent()
-  } catch (error) {
-    uiStore.addToast({ title: 'Error', message: error?.response?.data?.message || error?.message || 'Failed to promote student.', variant: 'error' })
-  } finally {
-    promoting.value = false
-  }
-}
-
-const handleDelete = async () => {
-  if (!window.confirm('Permanently delete this student? This cannot be undone.')) return
-  deleting.value = true
-  try {
-    await studentsStore.deleteStudentFromStore(student.value.id)
-    uiStore.addToast({ title: 'Student deleted', message: 'The student record has been permanently deleted.', variant: 'success' })
-    router.push('/school-admin/students')
-  } catch (error) {
-    uiStore.addToast({ title: 'Error', message: error?.message || 'Failed to delete student.', variant: 'error' })
-  } finally {
-    deleting.value = false
-  }
-}
-
-const handleResetPassword = async () => {
-  if (!window.confirm("Reset this student's password to the default?")) return
-  resettingPassword.value = true
-  try {
-    await studentsStore.resetPassword(student.value.id)
-  } finally {
-    resettingPassword.value = false
-  }
+const viewResults = () => {
+  router.push({ name: 'TeacherStudentHistory', params: { studentId: student.value.id } })
 }
 
 onMounted(loadStudent)

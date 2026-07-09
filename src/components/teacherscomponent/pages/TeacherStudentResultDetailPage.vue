@@ -1,29 +1,44 @@
 <template>
   <div class="space-y-6">
-
-    <!-- Breadcrumb -->
-    <div>
-      <nav class="flex items-center gap-1.5 text-xs text-slate-500 flex-wrap">
-        <RouterLink to="/teachers/students" class="transition hover:text-slate-900">Students</RouterLink>
-        <span class="text-slate-300">/</span>
-        <RouterLink :to="{ name: 'TeacherStudentHistory', params: { studentId } }" class="transition hover:text-slate-900">
-          Exam History
-        </RouterLink>
-        <span class="text-slate-300">/</span>
-        <span class="font-medium text-slate-700">Result Detail</span>
-      </nav>
-      <div class="mt-3 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <p class="text-xs font-semibold uppercase tracking-widest text-[#D4AF37]">Teacher Portal</p>
-          <h1 class="mt-1 text-2xl font-semibold tracking-tight text-slate-900">Result Detail</h1>
-          <p class="mt-1 text-sm text-slate-500">Full breakdown of this student's attempt.</p>
+    <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div class="flex flex-wrap items-end justify-between gap-4 bg-gradient-to-r from-[#0B1F3A] to-[#0B1F3A]/80 px-5 pb-5 pt-6 sm:px-6">
+        <div class="flex items-end gap-4">
+          <div class="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl border-4 border-white bg-emerald-50 text-xl font-bold text-emerald-700 shadow-sm">
+            {{ studentInitials }}
+          </div>
+          <div class="pb-1">
+            <h1 class="text-xl font-semibold tracking-tight text-white">Result Detail</h1>
+            <p class="mt-0.5 text-sm text-slate-200">{{ studentName || 'Student' }}</p>
+          </div>
         </div>
-        <RouterLink
-          :to="{ name: 'TeacherStudentHistory', params: { studentId } }"
-          class="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-        >
-          ← Back to History
-        </RouterLink>
+        <div class="flex shrink-0 flex-wrap items-center gap-2 pb-1">
+          <AppButton text="Back to History" variant="outline" size="sm" @click="router.push({ name: 'TeacherStudentHistory', params: { studentId } })" />
+        </div>
+      </div>
+      <div class="px-5 pb-5 sm:px-6">
+        <div class="mt-4 flex flex-wrap items-center gap-2">
+          <span class="inline-flex items-center rounded-full bg-[#0B1F3A]/8 px-2.5 py-0.5 text-xs font-semibold text-[#0B1F3A]">
+            {{ examTitle }}
+          </span>
+        </div>
+        <div class="mt-5 grid grid-cols-2 gap-4 border-t border-slate-100 pt-4 sm:grid-cols-3 lg:grid-cols-4">
+          <div>
+            <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Admission</p>
+            <p class="mt-0.5 truncate text-sm font-medium text-slate-700">{{ admissionNumber || 'N/A' }}</p>
+          </div>
+          <div>
+            <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Class</p>
+            <p class="mt-0.5 truncate text-sm font-medium text-slate-700">{{ studentClass || 'N/A' }}</p>
+          </div>
+          <div>
+            <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Subject</p>
+            <p class="mt-0.5 truncate text-sm font-medium text-slate-700">{{ examSubject || 'N/A' }}</p>
+          </div>
+          <div>
+            <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Status</p>
+            <p class="mt-0.5 truncate text-sm font-medium text-slate-700 capitalize">{{ result?.status || 'Graded' }}</p>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -145,7 +160,8 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
-import { RouterLink, useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
+import AppButton from '../../shared/AppButton.vue'
 import QuestionReviewCard from '../../shared/QuestionReviewCard.vue'
 import { getAttemptResultDetailForTeacher } from '../services/api/teacherStudentResults'
 import { getStudents } from '../../schooladmincomponents/services/api/students'
@@ -153,6 +169,7 @@ import { fmtDate } from '../../../js/lib/helpers'
 import { scoreColorClass, fmtDuration } from '../../../types/question'
 
 const route = useRoute()
+const router = useRouter()
 const studentId = route.params.studentId
 const examId = route.params.examId
 const attemptId = route.params.attemptId

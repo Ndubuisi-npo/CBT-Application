@@ -1,30 +1,5 @@
-<!--
-  TeacherProfilePage.vue
-  ────────────────────────────────────────────────────────────────────────
-  Route: /school-admin/teachers/:id
-  Replaces the old "View Teacher" drawer with a full CRM-style profile
-  page. Edit still happens in the shared AppDrawer (TeacherFormDrawer);
-  only the read-only "view" experience moved to a dedicated page.
-
-  Field availability note: the current teacher API only returns
-  first/last name, email, phone, is_active, teacherProfile{staff_id,
-  qualification, department?, date_joined?}, assignedClasses[], and
-  teacherAssignments[]. Fields the spec asks for that the backend doesn't
-  yet expose (gender, DOB, address, emergency contact, state, country,
-  years of experience, employment status, date hired, username) are
-  rendered defensively — if the API adds them later they'll appear
-  automatically; until then they show "Not provided" rather than
-  fabricated data.
--->
 <template>
   <div class="space-y-6 pb-10">
-    <!-- Breadcrumb -->
-    <nav class="flex items-center gap-1.5 text-xs text-slate-500" aria-label="Breadcrumb">
-      <RouterLink to="/school-admin/teachers" class="transition hover:text-[#0B1F3A]">Teachers</RouterLink>
-      <ChevronRight class="h-3 w-3 text-slate-300" />
-      <span class="font-medium text-slate-700">{{ loading ? 'Loading…' : fullName }}</span>
-    </nav>
-
     <!-- Loading state -->
     <div v-if="loading" class="space-y-6">
       <div class="h-40 animate-pulse rounded-2xl bg-slate-100" />
@@ -49,26 +24,25 @@
     <template v-else>
       <!-- ── Header card ─────────────────────────────────────────────────── -->
       <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div class="h-20 bg-gradient-to-r from-[#0B1F3A] to-[#0B1F3A]/80" />
+        <div class="flex flex-wrap items-end justify-between gap-4 bg-gradient-to-r from-[#0B1F3A] to-[#0B1F3A]/80 px-5 pb-5 pt-6 sm:px-6">
+          <div class="flex items-end gap-4">
+            <div class="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl border-4 border-white bg-emerald-50 text-xl font-bold text-emerald-700 shadow-sm">
+              {{ initials }}
+            </div>
+            <div class="pb-1">
+              <h1 class="text-xl font-semibold tracking-tight text-white">{{ fullName }}</h1>
+              <p class="mt-0.5 text-sm text-slate-200">{{ staffId }} &middot; {{ qualification }}</p>
+            </div>
+          </div>
+          <div class="flex shrink-0 flex-wrap items-center gap-2 pb-1">
+            <AppButton :icon="Pencil" text="Edit" variant="outline" size="sm" @click="showEditDrawer = true" />
+            <AppButton :icon="Ban" text="Suspend" variant="warning" size="sm" :processing="revoking" @click="handleSuspend" v-if="teacher.is_active !== false" />
+            <AppButton :icon="Trash2" text="Delete" variant="danger" size="sm" :processing="deleting" @click="handleDelete" />
+          </div>
+        </div>
         <div class="px-5 pb-5 sm:px-6">
-          <div class="flex flex-wrap items-end justify-between gap-4 -mt-10">
-            <div class="flex items-end gap-4">
-              <div class="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl border-4 border-white bg-emerald-50 text-xl font-bold text-emerald-700 shadow-sm">
-                {{ initials }}
-              </div>
-              <div class="pb-1">
-                <div class="flex flex-wrap items-center gap-2">
-                  <h1 class="text-xl font-semibold tracking-tight text-slate-900">{{ fullName }}</h1>
-                  <AppBadge :label="statusLabel" :variant="teacher.is_active !== false ? 'success' : 'danger'" dot />
-                </div>
-                <p class="mt-0.5 text-sm text-slate-500">{{ staffId }} &middot; {{ qualification }}</p>
-              </div>
-            </div>
-            <div class="flex shrink-0 flex-wrap items-center gap-2 pb-1">
-              <AppButton :icon="Pencil" text="Edit" variant="outline" size="sm" @click="showEditDrawer = true" />
-              <AppButton :icon="Ban" text="Suspend" variant="warning" size="sm" :processing="revoking" @click="handleSuspend" v-if="teacher.is_active !== false" />
-              <AppButton :icon="Trash2" text="Delete" variant="danger" size="sm" :processing="deleting" @click="handleDelete" />
-            </div>
+          <div class="mt-4 flex flex-wrap items-center gap-2">
+            <AppBadge :label="statusLabel" :variant="teacher.is_active !== false ? 'success' : 'danger'" dot />
           </div>
 
           <!-- Quick contact / meta row -->
@@ -242,9 +216,9 @@
 
 <script setup>
 import { computed, h, onMounted, ref } from 'vue'
-import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import {
-  Ban, BookOpen, ChevronRight, ClipboardCheck, FileText, HelpCircle,
+  Ban, BookOpen, ClipboardCheck, FileText, HelpCircle,
   KeyRound, Pencil, School, Trash2, UserX, Users,
 } from 'lucide-vue-next'
 import AppBadge from '../../shared/AppBadge.vue'

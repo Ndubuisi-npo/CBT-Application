@@ -1,44 +1,42 @@
 <template>
   <div class="space-y-6">
 
-    <!-- Breadcrumb + header -->
-    <div>
-      <nav class="flex items-center gap-1.5 text-xs text-slate-500">
-        <RouterLink to="/teachers/students" class="transition hover:text-slate-900">Students</RouterLink>
-        <span class="text-slate-300">/</span>
-        <span class="font-medium text-slate-700">Exam History</span>
-      </nav>
-      <div class="mt-3 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <p class="text-xs font-semibold uppercase tracking-widest text-[#D4AF37]">Teacher Portal</p>
-          <h1 class="mt-1 text-2xl font-semibold tracking-tight text-slate-900">
-            {{ studentName || 'Student' }} N/A Exam History
-          </h1>
-          <p class="mt-1 text-sm text-slate-500">
-            All exams taken by this student.
-          </p>
+    <div v-if="student" class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div class="flex flex-wrap items-end justify-between gap-4 bg-gradient-to-r from-[#0B1F3A] to-[#0B1F3A]/80 px-5 pb-5 pt-6 sm:px-6">
+        <div class="flex items-end gap-4">
+          <div class="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl border-4 border-white bg-emerald-50 text-xl font-bold text-emerald-700 shadow-sm">
+            {{ studentInitials }}
+          </div>
+          <div class="pb-1">
+            <h1 class="text-xl font-semibold tracking-tight text-white">{{ studentName || 'Student' }}</h1>
+            <p class="mt-0.5 text-sm text-slate-200">{{ admissionNumber || 'No admission number' }}</p>
+          </div>
         </div>
-        <RouterLink
-          to="/teachers/students"
-          class="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-        >
-          ← Back to Students
-        </RouterLink>
+        <div class="flex shrink-0 flex-wrap items-center gap-2 pb-1">
+          <AppButton text="Back to Student" variant="outline" size="sm" @click="router.push({ name: 'TeacherStudentProfile', params: { id: studentId } })" />
+        </div>
       </div>
-    </div>
-
-    <!-- Student info card -->
-    <div v-if="student" class="rounded-2xl border border-slate-200 bg-white p-5">
-      <div class="flex flex-wrap items-center gap-4">
-        <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#0B1F3A]/10 text-xl font-bold text-[#0B1F3A]">
-          {{ studentInitials }}
+      <div class="px-5 pb-5 sm:px-6">
+        <div class="mt-4 flex flex-wrap items-center gap-2">
+          <AppBadge :label="studentClass || 'Class not assigned'" variant="info" dot />
         </div>
-        <div>
-          <p class="font-semibold text-slate-900">{{ studentName }}</p>
-          <p class="text-sm text-slate-500">{{ student.email || student.user?.email || 'N/A' }}</p>
-          <p class="text-xs text-slate-400 mt-0.5">
-            {{ admissionNumber }} • {{ studentClass }}
-          </p>
+        <div class="mt-5 grid grid-cols-2 gap-4 border-t border-slate-100 pt-4 sm:grid-cols-3 lg:grid-cols-4">
+          <div>
+            <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Email</p>
+            <p class="mt-0.5 truncate text-sm font-medium text-slate-700">{{ student.email || student.user?.email || 'N/A' }}</p>
+          </div>
+          <div>
+            <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Phone</p>
+            <p class="mt-0.5 truncate text-sm font-medium text-slate-700">{{ student.phone || student.user?.phone || 'N/A' }}</p>
+          </div>
+          <div>
+            <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Class</p>
+            <p class="mt-0.5 truncate text-sm font-medium text-slate-700">{{ studentClass || 'N/A' }}</p>
+          </div>
+          <div>
+            <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Admission</p>
+            <p class="mt-0.5 truncate text-sm font-medium text-slate-700">{{ admissionNumber || 'N/A' }}</p>
+          </div>
         </div>
       </div>
     </div>
@@ -76,7 +74,8 @@
       <div class="border-b border-slate-100 px-5 py-4">
         <h2 class="text-sm font-semibold text-slate-900">{{ results.length }} Result{{ results.length !== 1 ? 's' : '' }}</h2>
       </div>
-      <div class="overflow-x-auto">
+
+      <div class="hidden md:block overflow-x-auto">
         <table class="min-w-full divide-y divide-slate-100">
           <thead class="bg-slate-50">
             <tr>
@@ -118,7 +117,7 @@
               </td>
               <td class="px-5 py-4">
                 <button
-                  class="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 opacity-0 transition hover:bg-slate-100 group-hover:opacity-100"
+                  class="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-100"
                   @click="viewResult(result)"
                 >
                   View Result
@@ -127,6 +126,56 @@
             </tr>
           </tbody>
         </table>
+      </div>
+
+      <div class="block space-y-3 p-3 md:hidden">
+        <div
+          v-for="result in paginatedResults"
+          :key="result.attempt_id || result.id"
+          class="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 shadow-sm"
+        >
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <p class="text-sm font-semibold text-slate-900">{{ getExamTitle(result) }}</p>
+              <p class="mt-1 text-sm text-slate-500">{{ getExamSubject(result) || 'N/A' }}</p>
+            </div>
+            <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize" :class="statusClass(result.status)">
+              {{ result.status || 'Graded' }}
+            </span>
+          </div>
+
+          <div class="mt-3 space-y-2 text-sm text-slate-600">
+            <div class="flex items-center justify-between gap-3">
+              <span class="text-slate-500">Attempt</span>
+              <span class="font-medium text-slate-700">#{{ result.attempt_number ?? 1 }}</span>
+            </div>
+            <div class="flex items-center justify-between gap-3">
+              <span class="text-slate-500">Submitted</span>
+              <span class="font-medium text-slate-700">{{ fmtDate(result.submitted_at || result.completed_at) || 'N/A' }}</span>
+            </div>
+            <div class="flex items-center justify-between gap-3">
+              <span class="text-slate-500">Score</span>
+              <span class="font-medium text-slate-700">{{ getScore(result) }} / {{ getTotalMarks(result) }}</span>
+            </div>
+            <div class="flex items-center justify-between gap-3">
+              <span class="text-slate-500">Percentage</span>
+              <span class="font-semibold" :class="scoreColorClass(getPercentage(result))">
+                {{ getPercentage(result) != null ? `${getPercentage(result)}%` : 'N/A' }}
+              </span>
+            </div>
+            <div class="flex items-center justify-between gap-3">
+              <span class="text-slate-500">Grade</span>
+              <span class="font-semibold text-slate-700">{{ result.grade || 'N/A' }}</span>
+            </div>
+          </div>
+
+          <button
+            class="mt-4 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+            @click="viewResult(result)"
+          >
+            View Result
+          </button>
+        </div>
       </div>
 
       <!-- Pagination -->
@@ -156,8 +205,10 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
-import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { ChevronLeft, ChevronRight, FileText } from 'lucide-vue-next'
+import AppBadge from '../../shared/AppBadge.vue'
+import AppButton from '../../shared/AppButton.vue'
 import { getStudentResultsForTeacher } from '../services/api/teacherStudentResults'
 import { getStudents } from '../../schooladmincomponents/services/api/students'
 import { fmtDate } from '../../../js/lib/helpers'

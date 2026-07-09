@@ -116,8 +116,11 @@ const buttonClasses = computed(() => {
     outline: [
       'border-2',
       'border-slate-300',
-      'text-slate-700',
-      'hover:bg-slate-50'
+      'bg-white/95',
+      'text-slate-800',
+      'shadow-sm',
+      'hover:bg-white',
+      'hover:border-slate-400'
     ],
     ghost: [
       'text-slate-600',

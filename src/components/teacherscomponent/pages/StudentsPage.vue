@@ -30,7 +30,7 @@
       </div>
 
       <!-- Skeleton -->
-      <div v-if="loading" class="divide-y divide-slate-100">
+      <div v-if="loading" class="hidden divide-y divide-slate-100 lg:block">
         <div v-for="i in 5" :key="i" class="flex items-center gap-4 px-5 py-4">
           <div class="h-8 w-8 animate-pulse rounded-full bg-slate-100" />
           <div class="flex-1 space-y-2">
@@ -39,101 +39,95 @@
           </div>
         </div>
       </div>
+      <div v-if="loading" class="grid gap-3 p-4 sm:grid-cols-2 lg:hidden">
+        <div v-for="i in 4" :key="i" class="h-32 animate-pulse rounded-2xl bg-slate-100" />
+      </div>
 
       <!-- Empty -->
-      <div v-else-if="!filteredStudents.length" class="px-5 py-16 text-center">
-        <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100">
-          <GraduationCap class="h-8 w-8 text-slate-400" />
-        </div>
-        <h3 class="mt-4 text-base font-semibold text-slate-900">
-          {{ searchQuery ? 'No students found' : 'No students assigned' }}
-        </h3>
-        <p class="mt-1.5 text-sm text-slate-500">
-          {{ searchQuery ? 'Try a different search term.' : 'No students are currently assigned to your classes.' }}
-        </p>
-        <button
-          v-if="searchQuery"
-          class="mt-4 text-sm font-medium text-[#0B1F3A] underline"
-          @click="searchQuery = ''"
-        >Clear search</button>
-      </div>
+      <AppEmptyState
+        v-else-if="!filteredStudents.length"
+        :icon="GraduationCap"
+        :title="searchQuery ? 'No students found' : 'No students assigned'"
+        :description="searchQuery ? 'Try a different search term.' : 'No students are currently assigned to your classes.'"
+        class="m-4 border-0"
+      >
+        <template v-if="searchQuery" #actions>
+          <AppButton text="Clear Search" variant="outline" size="sm" @click="searchQuery = ''" />
+        </template>
+      </AppEmptyState>
 
-      <!-- Table -->
-      <div v-else class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-slate-100">
-          <thead>
-            <tr class="bg-slate-50">
-              <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Student</th>
-              <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Admission No.</th>
-              <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Class</th>
-              <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Phone</th>
-              <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Status</th>
-              <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Actions</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-slate-100 bg-white">
-            <tr
-              v-for="student in paginatedStudents"
-              :key="student.id"
-              class="group transition hover:bg-slate-50/70"
-            >
-              <td class="px-5 py-3.5">
-                <div class="flex items-center gap-3">
-                  <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#0B1F3A]/10 text-xs font-semibold text-[#0B1F3A]">
-                    {{ initials(student) }}
+      <template v-else>
+        <!-- Desktop table -->
+        <div class="hidden overflow-x-auto lg:block">
+          <table class="min-w-full divide-y divide-slate-100">
+            <thead>
+              <tr class="bg-slate-50">
+                <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Student</th>
+                <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Admission No.</th>
+                <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Class</th>
+                <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Phone</th>
+                <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Status</th>
+                <th class="px-5 py-3"></th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 bg-white">
+              <tr v-for="student in paginatedStudents" :key="student.id" class="group transition hover:bg-slate-50/70">
+                <td class="px-5 py-3.5">
+                  <div class="flex items-center gap-3">
+                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#0B1F3A]/10 text-xs font-semibold text-[#0B1F3A]">
+                      {{ initials(student) }}
+                    </div>
+                    <div>
+                      <p class="font-medium text-slate-900">
+                        {{ student.first_name || student.user?.first_name || '' }}
+                        {{ student.last_name || student.user?.last_name || '' }}
+                      </p>
+                      <p class="text-xs text-slate-500">{{ student.email || student.user?.email || 'N/A' }}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p class="font-medium text-slate-900">
-                      {{ student.first_name || student.user?.first_name || '' }}
-                      {{ student.last_name || student.user?.last_name || '' }}
-                    </p>
-                    <p class="text-xs text-slate-500">{{ student.email || student.user?.email || 'N/A' }}</p>
-                  </div>
-                </div>
-              </td>
-              <td class="px-5 py-3.5 text-sm text-slate-600">
-                {{ student.studentProfile?.admission_number || student.student_profile?.admission_number || 'N/A' }}
-              </td>
-              <td class="px-5 py-3.5 text-sm text-slate-600">
-                {{ getClassName(student) }}
-              </td>
-              <td class="px-5 py-3.5 text-sm text-slate-600">
-                {{ student.phone || student.user?.phone || 'N/A' }}
-              </td>
-              <td class="px-5 py-3.5">
-                <span
-                  class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold"
-                  :class="student.is_active !== false
-                    ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200'
-                    : 'bg-red-50 text-red-700 ring-1 ring-red-200'"
-                >
-                  <span
-                    class="h-1.5 w-1.5 rounded-full"
-                    :class="student.is_active !== false ? 'bg-emerald-500' : 'bg-red-500'"
-                  />
-                  {{ student.is_active !== false ? 'Active' : 'Inactive' }}
-                </span>
-              </td>
-              <td class="px-5 py-3.5">
-                <div class="flex items-center gap-2">
-                  <button
-                    class="rounded-lg px-2.5 py-1 text-xs font-medium text-slate-600 ring-1 ring-slate-200 transition hover:bg-slate-100"
-                    @click="viewStudent(student)"
-                  >
-                    View
-                  </button>
-                  <button
-                    class="rounded-lg px-2.5 py-1 text-xs font-medium text-[#0B1F3A] ring-1 ring-[#0B1F3A]/20 transition hover:bg-[#0B1F3A]/5"
-                    @click="viewResults(student)"
-                  >
-                    Results
-                  </button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+                </td>
+                <td class="px-5 py-3.5 text-sm text-slate-600">
+                  {{ student.studentProfile?.admission_number || student.student_profile?.admission_number || 'N/A' }}
+                </td>
+                <td class="px-5 py-3.5 text-sm text-slate-600">{{ getClassName(student) }}</td>
+                <td class="px-5 py-3.5 text-sm text-slate-600">{{ student.phone || student.user?.phone || 'N/A' }}</td>
+                <td class="px-5 py-3.5">
+                  <AppBadge :label="student.is_active !== false ? 'Active' : 'Inactive'" :variant="student.is_active !== false ? 'success' : 'danger'" dot />
+                </td>
+                <td class="px-5 py-3.5">
+                  <ResponsiveTableActions :actions="studentActions(student)" :entity-label="studentFullName(student)" />
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Tablet & mobile cards -->
+        <div class="grid gap-3 p-4 sm:grid-cols-2 lg:hidden">
+          <ResponsiveDataCard
+            v-for="student in paginatedStudents"
+            :key="student.id"
+            :avatar-text="initials(student)"
+            avatar-color="bg-[#0B1F3A]/10 text-[#0B1F3A]"
+            :title="studentFullName(student)"
+            :subtitle="student.email || student.user?.email || 'N/A'"
+            :fields="[
+              { label: 'Admission No.', value: student.studentProfile?.admission_number || student.student_profile?.admission_number || 'N/A' },
+              { label: 'Phone', value: student.phone || student.user?.phone || 'N/A' },
+              { label: 'Class', value: getClassName(student), span: 2 },
+            ]"
+            clickable
+            @click="viewStudent(student)"
+          >
+            <template #badge>
+              <AppBadge :label="student.is_active !== false ? 'Active' : 'Inactive'" :variant="student.is_active !== false ? 'success' : 'danger'" dot />
+            </template>
+            <template #actions>
+              <ResponsiveTableActions :actions="studentActions(student)" :entity-label="studentFullName(student)" always-visible />
+            </template>
+          </ResponsiveDataCard>
+        </div>
+      </template>
 
       <!-- Pagination -->
       <div v-if="filteredStudents.length > itemsPerPage" class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-5 py-3.5">
@@ -159,135 +153,18 @@
         </div>
       </div>
     </section>
-
-    <!-- Student Detail Drawer -->
-    <Teleport to="body">
-      <Transition name="drawer-backdrop">
-        <div
-          v-if="drawerOpen"
-          class="fixed inset-0 z-50 bg-slate-950/40 backdrop-blur-sm"
-          @click="closeDrawer"
-        />
-      </Transition>
-      <Transition name="drawer-panel">
-        <div
-          v-if="drawerOpen"
-          class="fixed inset-y-0 right-0 z-50 flex w-full max-w-2xl flex-col bg-white shadow-2xl"
-          role="dialog"
-          aria-modal="true"
-        >
-          <!-- Drawer header -->
-          <div class="flex shrink-0 items-start justify-between gap-4 border-b border-slate-100 px-6 py-5">
-            <div class="flex items-center gap-4">
-              <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#0B1F3A]/10 text-xl font-bold text-[#0B1F3A]">
-                {{ selectedStudent ? initials(selectedStudent) : '?' }}
-              </div>
-              <div>
-                <p class="text-xs font-semibold uppercase tracking-widest text-[#D4AF37]">Student Profile</p>
-                <h2 class="mt-0.5 text-xl font-semibold text-slate-900">{{ drawerFullName }}</h2>
-                <span
-                  class="mt-1 inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold"
-                  :class="selectedStudent?.is_active !== false
-                    ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200'
-                    : 'bg-red-50 text-red-700 ring-1 ring-red-200'"
-                >
-                  <span class="h-1.5 w-1.5 rounded-full" :class="selectedStudent?.is_active !== false ? 'bg-emerald-500' : 'bg-red-500'" />
-                  {{ selectedStudent?.is_active !== false ? 'Active' : 'Inactive' }}
-                </span>
-              </div>
-            </div>
-            <button
-              type="button"
-              class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
-              @click="closeDrawer"
-            >
-              <X class="h-4 w-4" />
-            </button>
-          </div>
-
-          <!-- Drawer body -->
-          <div class="flex-1 overflow-y-auto px-6 py-6">
-            <div v-if="!selectedStudent" class="flex h-full items-center justify-center text-slate-400">
-              No student selected.
-            </div>
-            <div v-else class="space-y-6">
-
-              <!-- Personal Information -->
-              <div>
-                <p class="mb-3 text-xs font-semibold uppercase tracking-widest text-slate-400">Personal Information</p>
-                <div class="grid grid-cols-2 gap-3">
-                  <div class="rounded-xl bg-slate-50 px-4 py-3">
-                    <p class="text-xs font-medium text-slate-400">First Name</p>
-                    <p class="mt-0.5 text-xs font-semibold text-slate-900">{{ selectedStudent.first_name || selectedStudent.user?.first_name || 'N/A' }}</p>
-                  </div>
-                  <div class="rounded-xl bg-slate-50 px-4 py-3">
-                    <p class="text-xs font-medium text-slate-400">Last Name</p>
-                    <p class="mt-0.5 text-xs font-semibold text-slate-900">{{ selectedStudent.last_name || selectedStudent.user?.last_name || 'N/A' }}</p>
-                  </div>
-                  <div class="rounded-xl bg-slate-50 px-4 py-3 col-span-2">
-                    <p class="text-xs font-medium text-slate-400">Email</p>
-                    <p class="mt-0.5 text-xs font-semibold text-slate-900">{{ selectedStudent.email || selectedStudent.user?.email || 'N/A' }}</p>
-                  </div>
-                  <div class="rounded-xl bg-slate-50 px-4 py-3">
-                    <p class="text-xs font-medium text-slate-400">Phone</p>
-                    <p class="mt-0.5 text-xs font-semibold text-slate-900">{{ selectedStudent.phone || selectedStudent.user?.phone || 'N/A' }}</p>
-                  </div>
-                  <div class="rounded-xl bg-slate-50 px-4 py-3">
-                    <p class="text-xs font-medium text-slate-400">Gender</p>
-                    <p class="mt-0.5 text-xs font-semibold text-slate-900">{{ sp?.gender || 'N/A' }}</p>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Academic Information -->
-              <div>
-                <p class="mb-3 text-xs font-semibold uppercase tracking-widest text-slate-400">Academic Information</p>
-                <div class="grid grid-cols-2 gap-3">
-                  <div class="rounded-xl bg-slate-50 px-4 py-3">
-                    <p class="text-xs font-medium text-slate-400">Admission Number</p>
-                    <p class="mt-0.5 text-xs font-semibold text-slate-900">{{ sp?.admission_number || 'N/A' }}</p>
-                  </div>
-                  <div class="rounded-xl bg-slate-50 px-4 py-3">
-                    <p class="text-xs font-medium text-slate-400">Class</p>
-                    <p class="mt-0.5 text-xs font-semibold text-slate-900">{{ sp?.class_arm?.name || 'N/A' }}</p>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Quick Actions -->
-              <div>
-                <p class="mb-3 text-xs font-semibold uppercase tracking-widest text-slate-400">Quick Actions</p>
-                <button
-                  class="flex w-full items-center gap-3 rounded-xl border border-[#0B1F3A]/20 bg-[#0B1F3A]/5 px-4 py-3 text-sm font-medium text-[#0B1F3A] transition hover:bg-[#0B1F3A]/10"
-                  @click="() => { closeDrawer(); viewResults(selectedStudent) }"
-                >
-                  <BarChart2 class="h-4 w-4" />
-                  View Exam Results
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Footer -->
-          <div class="shrink-0 border-t border-slate-100 px-6 py-4">
-            <button
-              type="button"
-              class="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-              @click="closeDrawer"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      </Transition>
-    </Teleport>
   </div>
 </template>
 
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { BarChart2, ChevronLeft, ChevronRight, GraduationCap, Search, X } from 'lucide-vue-next'
+import { BarChart2, ChevronLeft, ChevronRight, Eye, GraduationCap, Search } from 'lucide-vue-next'
+import AppBadge from '../../shared/AppBadge.vue'
+import AppButton from '../../shared/AppButton.vue'
+import AppEmptyState from '../../shared/AppEmptyState.vue'
+import ResponsiveTableActions from '../../shared/ResponsiveTableActions.vue'
+import ResponsiveDataCard from '../../shared/ResponsiveDataCard.vue'
 import { useSchoolAdminUiStore } from '../../schooladmincomponents/stores/ui'
 import { getStudents } from '../../schooladmincomponents/services/api/students'
 import { getAuthUser } from '../../../js/lib/auth'
@@ -300,8 +177,6 @@ const allStudents = ref([])
 const loading = ref(false)
 const itemsPerPage = 10
 const page = ref(1)
-const drawerOpen = ref(false)
-const selectedStudent = ref(null)
 
 const initials = (s) => {
   const fn = s?.first_name || s?.user?.first_name || ''
@@ -309,22 +184,21 @@ const initials = (s) => {
   return `${fn[0] || ''}${ln[0] || ''}`.toUpperCase() || '?'
 }
 
+const studentFullName = (s) => {
+  const fn = s?.first_name || s?.user?.first_name || ''
+  const ln = s?.last_name || s?.user?.last_name || ''
+  return `${fn} ${ln}`.trim() || 'Student'
+}
+
 const getClassName = (student) => {
   const sp = student?.studentProfile || student?.student_profile
   return sp?.class_arm?.name || sp?.class_arm?.class_level?.name || sp?.class_name || 'N/A'
 }
 
-const sp = computed(() => {
-  if (!selectedStudent.value) return null
-  return selectedStudent.value.studentProfile || selectedStudent.value.student_profile || null
-})
-
-const drawerFullName = computed(() => {
-  if (!selectedStudent.value) return ''
-  const fn = selectedStudent.value.first_name || selectedStudent.value.user?.first_name || ''
-  const ln = selectedStudent.value.last_name || selectedStudent.value.user?.last_name || ''
-  return `${fn} ${ln}`.trim()
-})
+const studentActions = (student) => [
+  { key: 'view', label: 'View', icon: Eye, onClick: () => viewStudent(student) },
+  { key: 'results', label: 'Results', icon: BarChart2, onClick: () => viewResults(student) },
+]
 
 const filteredStudents = computed(() => {
   const q = searchQuery.value.toLowerCase().trim()
@@ -354,13 +228,7 @@ watch(searchQuery, () => { page.value = 1 })
 watch(totalPages, (t) => { if (page.value > t) page.value = t })
 
 const viewStudent = (student) => {
-  selectedStudent.value = student
-  drawerOpen.value = true
-}
-
-const closeDrawer = () => {
-  drawerOpen.value = false
-  selectedStudent.value = null
+  router.push({ name: 'TeacherStudentProfile', params: { id: student.id } })
 }
 
 const viewResults = (student) => {
@@ -383,14 +251,3 @@ const loadStudents = async () => {
 
 onMounted(loadStudents)
 </script>
-
-<style scoped>
-.drawer-backdrop-enter-active,
-.drawer-backdrop-leave-active { transition: opacity 0.2s ease; }
-.drawer-backdrop-enter-from,
-.drawer-backdrop-leave-to { opacity: 0; }
-.drawer-panel-enter-active,
-.drawer-panel-leave-active { transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
-.drawer-panel-enter-from,
-.drawer-panel-leave-to { transform: translateX(100%); }
-</style>

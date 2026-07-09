@@ -40,6 +40,7 @@ import TeachersResultsPage from '../components/teacherscomponent/pages/ResultsPa
 import TeachersSettingsPage from '../components/teacherscomponent/pages/TeachersSettingsPage.vue'
 import TeachersMyClasses from '../components/teacherscomponent/pages/MyClasses.vue'
 import TeachersStudentsPage from '../components/teacherscomponent/pages/StudentsPage.vue'
+import TeacherStudentProfilePage from '../components/teacherscomponent/pages/TeacherStudentProfilePage.vue'
 import TeachersAttendancePage from '../components/teacherscomponent/pages/AttendancePage.vue'
 import TeachersGradingPage from '../components/teacherscomponent/pages/GradingPage.vue'
 import TeachersTimetablePage from '../components/teacherscomponent/pages/TimetablePage.vue'
@@ -132,6 +133,7 @@ const routes = [
 
           // Students + Student Results (Features 2 & 3)
           { path: 'students', name: 'TeachersStudentsPage', component: TeachersStudentsPage },
+          { path: 'students/:id', name: 'TeacherStudentProfile', component: TeacherStudentProfilePage, props: true },
           {
             path: 'students/:studentId/results',
             name: 'TeacherStudentHistory',

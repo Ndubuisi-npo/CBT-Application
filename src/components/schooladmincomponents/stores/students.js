@@ -74,12 +74,15 @@ export const useSchoolAdminStudentsStore = defineStore(
                 const response = await getStudent(id);
                 const record = response?.student || response;
                 if (record?.id) {
-                    this.students = this.students.map((item) =>
-                        item.id === record.id ? record : item,
-                    );
-                    this.archivedStudents = this.archivedStudents.map((item) =>
-                        item.id === record.id ? record : item,
-                    );
+                    const existsInActive = this.students.some((item) => item.id === record.id);
+                    this.students = existsInActive
+                        ? this.students.map((item) => (item.id === record.id ? record : item))
+                        : [record, ...this.students];
+
+                    const existsInArchived = this.archivedStudents.some((item) => item.id === record.id);
+                    this.archivedStudents = existsInArchived
+                        ? this.archivedStudents.map((item) => (item.id === record.id ? record : item))
+                        : this.archivedStudents;
                 }
                 return record;
             },
