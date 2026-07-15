@@ -105,8 +105,14 @@
         <span class="text-xs text-slate-500">Select all ({{ filteredNotifications.length }})</span>
       </div>
 
+      <!-- Loading state -->
+      <div v-if="notificationStore.isLoadingList && !filteredNotifications.length" class="flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white py-16 text-sm text-slate-500">
+        <span class="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-[#0B1F3A]" aria-hidden="true" />
+        Loading notifications…
+      </div>
+
       <!-- Notification list -->
-      <div v-if="filteredNotifications.length" class="space-y-3">
+      <div v-else-if="filteredNotifications.length" class="space-y-3">
         <article
           v-for="notification in filteredNotifications"
           :key="notification.id"
@@ -177,7 +183,7 @@
 </template>
 
 <script setup>
-import { computed, reactive, ref } from 'vue'
+import { computed, reactive, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   BellOff, CalendarClock, CheckCheck, FileText, GraduationCap, MailWarning,
@@ -195,6 +201,12 @@ const notificationStore = useNotificationStore()
 
 const role = computed(() => getAuthRole() || 'student')
 const roleNotifications = computed(() => notificationStore.notificationsForRole(role.value))
+
+// Always fetch the latest from the server when the notification center is
+// opened, rather than relying solely on whatever was primed at app boot.
+onMounted(() => {
+  void notificationStore.fetchNotificationsList()
+})
 
 // ── Category presentation ───────────────────────────────────────────────
 const CATEGORY_META = {

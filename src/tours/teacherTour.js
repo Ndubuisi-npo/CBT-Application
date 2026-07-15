@@ -92,7 +92,7 @@ export function getTeacherTourSteps() {
       beforeShow: revealSidebar,
       title: 'Question Bank',
       description:
-        'Build reusable questions here — Multiple Choice, Fill in the Blank and True/False — then attach them to any exam.',
+        'Build reusable questions here — Multiple Choice, Theory, True/False, and more — then attach them to any exam.',
       side: 'right',
     },
     {
