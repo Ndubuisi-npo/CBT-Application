@@ -14,7 +14,7 @@
       </div>
       <div v-if="!showArchived" class="flex flex-wrap items-center gap-2">
         <AppButton :icon="UploadCloud" text="Import" variant="outline" size="sm" @click="goToImport" />
-        <AppButton :icon="Plus" text="Add Teacher" variant="primary" size="sm" @click="openModal()" />
+        <AppButton data-tour="create-teacher-btn" :icon="Plus" text="Add Teacher" variant="primary" size="sm" @click="openModal()" />
       </div>
       <div v-else>
         <AppButton text="← Back to Active" variant="outline" size="sm" @click="toggleView" />
@@ -39,11 +39,21 @@
           <AppButton v-if="selectedTeachers.size" text="Revoke Selected" variant="warning" size="sm" :processing="isRevokingSelected" @click="revokeSelectedTeachers" />
           <AppButton v-if="isSelectMode" text="Cancel" variant="ghost" size="sm" @click="cancelSelectMode" />
           <AppButton v-if="!isSelectMode" :icon="CheckSquare" text="Select" variant="ghost" size="sm" @click="startSelectMode" />
-          <AppButton :icon="Archive" text="Archived" variant="ghost" size="sm" @click="toggleView" />
+          <button
+            type="button"
+            class="relative inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-700"
+            @click="toggleView"
+          >
+            <Archive class="h-4 w-4" />
+            <span>Archived</span>
+            <span v-if="teachersStore.totalArchivedTeachers > 0" class="absolute -right-1 -top-1 inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-[#D4AF37]/90 px-1.5 text-[10px] font-bold text-white ring-2 ring-white">
+              {{ teachersStore.totalArchivedTeachers }}
+            </span>
+          </button>
         </div>
       </div>
 
-      <SkeletonRows v-if="teachersStore.loading" :columns="5" class="hidden lg:block" />
+      <SkeletonRows v-if="teachersStore.loading" :columns="6" class="hidden lg:block" />
       <div v-if="teachersStore.loading" class="grid gap-3 p-4 sm:grid-cols-2 lg:hidden">
         <div v-for="i in 4" :key="i" class="h-36 animate-pulse rounded-2xl bg-slate-100" />
       </div>
@@ -73,6 +83,7 @@
                 <th class="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">Teacher</th>
                 <th class="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">Staff ID</th>
                 <th class="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">Phone</th>
+                <th class="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">Gender</th>
                 <th class="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">Qualification</th>
                 <th class="px-5 py-3"></th>
               </tr>
@@ -96,6 +107,7 @@
                 </td>
                 <td class="px-5 py-3.5 text-sm text-slate-600">{{ teacher.teacherProfile?.staff_id || teacher.teacher_profile?.staff_id || 'N/A' }}</td>
                 <td class="px-5 py-3.5 text-sm text-slate-600">{{ teacher.phone || 'N/A' }}</td>
+                <td class="px-5 py-3.5 text-sm text-slate-600">{{ teacher.teacherProfile?.gender || teacher.teacher_profile?.gender || teacher.gender || 'N/A' }}</td>
                 <td class="px-5 py-3.5 text-sm text-slate-600">{{ teacher.teacherProfile?.qualification || teacher.teacher_profile?.qualification || 'N/A' }}</td>
                 <td class="px-5 py-3.5">
                   <ResponsiveTableActions :actions="teacherActions(teacher)" :entity-label="teacherFullName(teacher)" />
@@ -117,6 +129,7 @@
             :fields="[
               { label: 'Staff ID', value: teacher.teacherProfile?.staff_id || teacher.teacher_profile?.staff_id || 'N/A' },
               { label: 'Phone', value: teacher.phone || 'N/A' },
+              { label: 'Gender', value: teacher.teacherProfile?.gender || teacher.teacher_profile?.gender || teacher.gender || 'N/A' },
               { label: 'Qualification', value: teacher.teacherProfile?.qualification || teacher.teacher_profile?.qualification || 'N/A', span: 2 },
             ]"
             clickable

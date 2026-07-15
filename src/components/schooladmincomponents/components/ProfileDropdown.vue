@@ -1,6 +1,7 @@
 <template>
   <div class="relative" ref="dropdownRef">
     <button
+      data-tour="profile-menu-button"
       @click="toggleDropdown"
       :class="{ 'ring-2 ring-[#D4AF37] ring-offset-2': isOpen }"
     >
@@ -32,6 +33,15 @@
       <!-- Actions -->
       <div class="p-2">
         <button
+          v-if="showTakeTour"
+          data-tour="restart-tour-btn"
+          @click="handleTakeTour"
+          class="flex w-full items-center gap-2 text-left px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 hover:text-[#0B1F3A] transition-colors rounded-md"
+        >
+          <Compass class="h-4 w-4 text-[#D4AF37]" />
+          Take Product Tour
+        </button>
+        <button
           @click="handleLogout"
           :disabled="isLoggingOut"
           class="w-full text-left px-3 py-2 text-sm font-medium text-red-600 hover:text-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -45,8 +55,10 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { logout as unifiedLogout, getAuthUser } from '../../../js/lib/auth'
+import { Compass } from 'lucide-vue-next'
+import { logout as unifiedLogout, getAuthUser, getAuthRole } from '../../../js/lib/auth'
 import { useSchoolAdminUiStore } from '../stores/ui'
+import { isTourEligibleRole, restartProductTour } from '../../../tours'
 
 const uiStore = useSchoolAdminUiStore()
 
@@ -55,6 +67,13 @@ const isLoggingOut = ref(false)
 const dropdownRef = ref(null)
 
 const user = computed(() => getAuthUser())
+// Students (and any other non-tour role) never see this option.
+const showTakeTour = computed(() => isTourEligibleRole(getAuthRole()))
+
+const handleTakeTour = () => {
+  closeDropdown()
+  void restartProductTour(getAuthRole())
+}
 
 const userInitials = computed(() => {
   if (!user.value) return 'SA'

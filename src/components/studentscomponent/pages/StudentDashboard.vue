@@ -89,6 +89,7 @@ import { getAvailableExams, getStudentExamAttempt } from '../services/api/studen
 import { getStudentResults } from '../services/api/studentResults'
 import { useSchoolAdminUiStore } from '../../schooladmincomponents/stores/ui'
 import { getAuthUser, logout } from '../../../js/lib/auth'
+import { teardownRealtimeNotifications } from '../../../js/echoNotifications'
 
 const router = useRouter()
 const uiStore = useSchoolAdminUiStore()
@@ -186,6 +187,7 @@ const resumeExam = (exam) => {
 const handleLogout = async () => {
   logoutLoading.value = true
   try {
+    teardownRealtimeNotifications()
     await logout()
   } finally {
     logoutLoading.value = false

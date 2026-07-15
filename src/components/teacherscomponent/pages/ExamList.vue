@@ -4,7 +4,7 @@
     <SectionCard title="Exam Management" subtitle="Create, manage, and submit your exams. The school admin activates them for students.">
       <template #header>
         <div class="flex flex-wrap items-center gap-3">
-          <AppButton :icon="Plus" text="Create Exam" variant="primary" @click="$router.push('/teachers/exams/create')" />
+          <AppButton data-tour="create-exam-btn" :icon="Plus" text="Create Exam" variant="primary" @click="$router.push('/teachers/exams/create')" />
           <AppButton :icon="FileQuestion" text="Question Bank" variant="outline" @click="$router.push('/teachers/questions')" />
         </div>
       </template>

@@ -23,10 +23,28 @@
 </template>
 
 <script setup>
+import { onMounted } from 'vue'
 import AppHeader from '../components/AppHeader.vue'
 import AppSidebar from '../components/AppSidebar.vue'
 import ToastStack from '../components/ToastStack.vue'
 import { useSchoolAdminUiStore } from '../stores/ui'
+import { getAuthRole } from '../../../js/lib/auth'
+import { isTourEligibleRole, resumeProductTour } from '../../../tours'
 
 const uiStore = useSchoolAdminUiStore()
+
+// Product Tour: this layout is shared by both /school-admin and /teachers
+// routes, so it's the single best place to kick off onboarding. Students
+// never render this layout at all, and `isTourEligibleRole` double-guards
+// against loading Driver.js for any role other than school_admin/teacher.
+//
+// `resumeProductTour` handles both cases in one call:
+//  - Brand new user (nothing completed, no saved progress) -> starts at step 0.
+//  - User refreshed mid-tour -> resumes from the last saved step.
+//  - Tour already completed/skipped previously -> no-op.
+onMounted(() => {
+  const role = getAuthRole()
+  if (!isTourEligibleRole(role)) return
+  void resumeProductTour(role)
+})
 </script>

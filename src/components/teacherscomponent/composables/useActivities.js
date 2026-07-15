@@ -6,7 +6,6 @@ export function useActivities() {
   const addActivity = async (activityData) => {
     try {
       // Log activity - in real app, this would make API call
-      console.log('Activity logged:', activityData)
       
       // Show success toast
       uiStore.addToast({

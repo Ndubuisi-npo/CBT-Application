@@ -14,7 +14,7 @@
       </div>
       <div v-if="!showArchived" class="flex flex-wrap items-center gap-2">
         <AppButton :icon="UploadCloud" text="Import" variant="outline" size="sm" @click="goToImport" />
-        <AppButton :icon="Plus" text="Add Student" variant="primary" size="sm" @click="openModal()" />
+        <AppButton data-tour="create-student-btn" :icon="Plus" text="Add Student" variant="primary" size="sm" @click="openModal()" />
       </div>
       <div v-else class="flex items-center gap-2">
         <AppButton text="← Back to Active" variant="outline" size="sm" @click="toggleView" />
@@ -62,13 +62,17 @@
             size="sm"
             @click="startSelectMode"
           />
-          <AppButton
-            :icon="Archive"
-            text="Archived"
-            variant="ghost"
-            size="sm"
+          <button
+            type="button"
+            class="relative inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-700"
             @click="toggleView"
-          />
+          >
+            <Archive class="h-4 w-4" />
+            <span>Archived</span>
+            <span v-if="studentsStore.totalArchivedStudents > 0" class="absolute -right-1 -top-1 inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-[#D4AF37]/90 px-1.5 text-[10px] font-bold text-white ring-2 ring-white">
+              {{ studentsStore.totalArchivedStudents }}
+            </span>
+          </button>
         </div>
       </div>
 

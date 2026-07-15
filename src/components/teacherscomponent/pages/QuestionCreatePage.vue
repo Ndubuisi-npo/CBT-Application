@@ -350,7 +350,7 @@
       </div>
 
       <!-- Right: Preview + validation -->
-      <div class="space-y-6">
+      <div class="sticky top-6 space-y-6 h-fit">
 
         <!-- Live preview -->
         <section class="rounded-2xl border border-slate-200 bg-white p-6">
@@ -362,33 +362,34 @@
               <span v-if="selectedSubjectName" class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{{ selectedSubjectName }}</span>
               <span v-if="selectedClassName" class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{{ selectedClassName }}</span>
             </div>
-            <div class="mt-4 text-sm leading-6 text-slate-800 preview-reset">
+            <div class="mt-4 max-h-[60vh] overflow-y-auto overflow-x-hidden pr-1 text-sm leading-6 text-slate-800 preview-reset">
               <div v-html="form.content ? renderedContent : 'Your question preview will appear here once you start typing…'" />
-            </div>
 
-            <!-- MCQ preview -->
-            <div v-if="form.type === 'mcq'" class="mt-4 space-y-2">
+              <!-- MCQ preview -->
+              <div v-if="form.type === 'mcq'" class="mt-4 space-y-2">
               <p v-if="form.allow_multiple_answers" class="text-xs font-semibold text-blue-700 mb-2">
                 ☑ Select all correct answers
               </p>
-              <div
-                v-for="(option, index) in form.options.filter(o => o?.content?.trim())"
-                :key="index"
-                class="flex items-center gap-3 rounded-xl border px-4 py-3 text-sm"
-                :class="option.is_correct ? 'border-emerald-300 bg-emerald-50 font-semibold text-emerald-900' : 'border-slate-200 bg-white text-slate-700'"
-              >
-                <span v-if="form.allow_multiple_answers" class="h-4 w-4 rounded border-2 shrink-0" :class="option.is_correct ? 'border-emerald-500 bg-emerald-500' : 'border-slate-300'" />
-                <span v-else class="h-4 w-4 rounded-full border-2 shrink-0" :class="option.is_correct ? 'border-emerald-500 bg-emerald-500' : 'border-slate-300'" />
-                {{ String.fromCharCode(65 + index) }}. <span v-html="renderContentHtml(option.content)" />
-                <span v-if="option.is_correct" class="ml-2 text-xs text-emerald-600">✓</span>
+                <div
+                  v-for="(option, index) in form.options.filter(o => o?.content?.trim())"
+                  :key="index"
+                  class="flex items-start gap-3 rounded-xl border px-4 py-3 text-sm"
+                  :class="option.is_correct ? 'border-emerald-300 bg-emerald-50 font-semibold text-emerald-900' : 'border-slate-200 bg-white text-slate-700'"
+                >
+                  <span v-if="form.allow_multiple_answers" class="mt-0.5 h-4 w-4 shrink-0 rounded border-2" :class="option.is_correct ? 'border-emerald-500 bg-emerald-500' : 'border-slate-300'" />
+                  <span v-else class="mt-0.5 h-4 w-4 shrink-0 rounded-full border-2" :class="option.is_correct ? 'border-emerald-500 bg-emerald-500' : 'border-slate-300'" />
+                  <span class="min-w-0 flex-1 break-words preview-option-text">
+                    {{ String.fromCharCode(65 + index) }}. <span v-html="renderContentHtml(option.content)" />
+                  </span>
+                  <span v-if="option.is_correct" class="ml-2 shrink-0 text-xs text-emerald-600">✓</span>
+                </div>
+                <div v-if="!form.options.some(o => o?.content?.trim())" class="rounded-xl border border-dashed border-slate-200 px-4 py-3 text-sm text-slate-400">
+                  Add options to see preview
+                </div>
               </div>
-              <div v-if="!form.options.some(o => o?.content?.trim())" class="rounded-xl border border-dashed border-slate-200 px-4 py-3 text-sm text-slate-400">
-                Add options to see preview
-              </div>
-            </div>
 
-            <!-- True/False preview -->
-            <div v-if="form.type === 'true_false'" class="mt-4 space-y-2">
+              <!-- True/False preview -->
+              <div v-if="form.type === 'true_false'" class="mt-4 space-y-2">
               <div
                 v-for="val in ['True', 'False']"
                 :key="val"
@@ -400,21 +401,22 @@
               </div>
             </div>
 
-            <!-- FITB preview -->
-            <div v-if="form.type === 'fill_in_blank'" class="mt-4">
-              <div class="rounded-xl border border-dashed border-slate-300 bg-white px-4 py-3 text-sm text-slate-400 text-center">
-                [ Text input field ]
-              </div>
-              <div v-if="form.acceptable_answers.some(a => a.content?.trim())" class="mt-3">
-                <p class="text-xs font-semibold text-slate-500 mb-1">Acceptable answers:</p>
-                <div class="flex flex-wrap gap-2">
-                  <span
-                    v-for="(ans, i) in form.acceptable_answers.filter(a => a.content?.trim())"
-                    :key="i"
-                    class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-800"
-                  >
-                    {{ ans.content }}<span v-if="ans.case_sensitive" class="ml-1 opacity-60">(case-sensitive)</span>
-                  </span>
+              <!-- FITB preview -->
+              <div v-if="form.type === 'fill_in_blank'" class="mt-4">
+                <div class="rounded-xl border border-dashed border-slate-300 bg-white px-4 py-3 text-sm text-slate-400 text-center">
+                  [ Text input field ]
+                </div>
+                <div v-if="form.acceptable_answers.some(a => a.content?.trim())" class="mt-3">
+                  <p class="text-xs font-semibold text-slate-500 mb-1">Acceptable answers:</p>
+                  <div class="flex flex-wrap gap-2">
+                    <span
+                      v-for="(ans, i) in form.acceptable_answers.filter(a => a.content?.trim())"
+                      :key="i"
+                      class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-800"
+                    >
+                      {{ ans.content }}<span v-if="ans.case_sensitive" class="ml-1 opacity-60">(case-sensitive)</span>
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -844,6 +846,7 @@ const submitQuestion = async (status) => {
     const payload = {
       type: form.type,
       content: form.content.trim(),
+      content_format: 'plain_text',
       subject_id: form.subject_id,
       class_level_id: form.class_level_id || undefined,
       class_arm_id: form.class_arm_id || undefined,
@@ -984,8 +987,13 @@ onUnmounted(() => {
   vertical-align: baseline;
   overflow-wrap: anywhere;
 }
-.preview-reset .katex .katex-html {
+preview-reset .katex .katex-html {
   overflow-wrap: anywhere;
+}
+
+.preview-option-text {
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 </style>

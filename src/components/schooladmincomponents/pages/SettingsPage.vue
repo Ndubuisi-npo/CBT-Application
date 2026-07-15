@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-6">
+  <div data-tour="settings-page" class="space-y-6">
     <!-- Password Change Section -->
     <SectionCard title="Change Password" subtitle="Update your account password for security.">
       <form @submit.prevent="handlePasswordChange" class="space-y-5">
@@ -94,6 +94,7 @@ import { useSchoolAdminUiStore } from '../stores/ui'
 import { useActivities } from '../composables/useActivities'
 import { changePassword } from '../services/api/settings'
 import { logout } from '../../../js/lib/auth'
+import { teardownRealtimeNotifications } from '../../../js/echoNotifications'
 
 const uiStore = useSchoolAdminUiStore()
 const router = useRouter()
@@ -190,6 +191,7 @@ const handlePasswordChange = async () => {
       variant: 'success' 
     })
 
+    teardownRealtimeNotifications()
     await logout()
     router.replace({ name: 'Login' })
   } catch (error) {

@@ -1,4 +1,5 @@
-import { getAuthUser, getAuthRole, getTenantSlug } from './lib/auth'
+import Echo from 'laravel-echo'
+import { getAuthUser, getAuthRole, getAuthToken, getTenantSlug } from './lib/auth'
 import { useNotificationStore } from '../components/shared/stores/notifications'
 
 const buildChannelName = (user) => {
@@ -10,21 +11,58 @@ const buildChannelName = (user) => {
     : `superadmin.${user.id}`
 }
 
-export function initializeRealtimeNotifications() {
-  if (typeof window === 'undefined' || !window.Echo) {
-    console.warn('[Realtime Notifications] window.Echo is not available.')
-    return
-  }
+let activeChannelName = null
 
+/**
+ * Lazily instantiates window.Echo (deferred from bootstrap.js so the auth
+ * token, only available after initializeAuthState(), is ready) and
+ * subscribes the current user to their private notification channel.
+ *
+ * Safe to call multiple times (e.g. after login/logout) - it tears down any
+ * previous subscription first.
+ */
+export function initializeRealtimeNotifications() {
+  if (typeof window === 'undefined') return
+
+  const token = getAuthToken()
   const user = getAuthUser()
   const channelName = buildChannelName(user)
 
-  if (!channelName) {
-    console.warn('[Realtime Notifications] No authenticated user available to subscribe notifications.')
+  if (!token || !channelName) {
+    console.warn('[Realtime Notifications] No authenticated user/token available to subscribe notifications.')
+    return
+  }
+
+  // (Re)instantiate Echo so the auth header always reflects the current token.
+  if (window.Echo) {
+    try {
+      if (activeChannelName) window.Echo.leave(activeChannelName)
+      window.Echo.disconnect()
+    } catch (error) {
+      console.warn('[Realtime Notifications] Failed to tear down previous Echo connection:', error)
+    }
+  }
+
+  if (!window.Pusher) {
+    console.warn('[Realtime Notifications] window.Pusher is not available; check src/js/bootstrap.js.')
     return
   }
 
   try {
+    window.Echo = new Echo({
+      broadcaster: 'pusher',
+      key: window.__PUSHER_APP_KEY__,
+      cluster: window.__PUSHER_APP_CLUSTER__,
+      forceTLS: true,
+      authEndpoint: `${window.API_BASE_URL}/broadcasting/auth`,
+      auth: {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: 'application/json',
+        },
+      },
+    })
+
     const channel = window.Echo.private(channelName)
 
     channel.notification((notification) => {
@@ -47,8 +85,22 @@ export function initializeRealtimeNotifications() {
       notificationStore.prependNotification(formatted)
     })
 
+    activeChannelName = channelName
     console.info('[Realtime Notifications] Subscribed to channel', channelName)
   } catch (error) {
     console.warn('[Realtime Notifications] Failed to subscribe:', error)
+  }
+}
+
+/** Tears down the realtime subscription - call this on logout. */
+export function teardownRealtimeNotifications() {
+  if (typeof window === 'undefined' || !window.Echo) return
+  try {
+    if (activeChannelName) window.Echo.leave(activeChannelName)
+    window.Echo.disconnect()
+  } catch (error) {
+    console.warn('[Realtime Notifications] Failed to disconnect Echo:', error)
+  } finally {
+    activeChannelName = null
   }
 }

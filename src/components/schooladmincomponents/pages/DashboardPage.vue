@@ -27,7 +27,7 @@
     </div>
 
     <!-- ── Stat cards ──────────────────────────────────────────────────────── -->
-    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <div data-tour="admin-stats-cards" class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <AppStatCard
         label="Total Students"
         :value="studentsStore.students?.length ?? 'N/A'"
@@ -71,7 +71,7 @@
 
       <!-- Quick nav cards N/A 2/3 width -->
       <div class="xl:col-span-2 space-y-6">
-        <section class="rounded-2xl border border-slate-200 bg-white p-6">
+        <section data-tour="admin-quick-nav" class="rounded-2xl border border-slate-200 bg-white p-6">
           <div class="mb-5 flex items-center justify-between">
             <div>
               <h2 class="text-lg font-semibold text-slate-900">Quick Navigation</h2>

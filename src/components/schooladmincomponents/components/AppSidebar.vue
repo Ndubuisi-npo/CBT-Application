@@ -32,7 +32,7 @@
     </div>
 
     <!-- Nav -->
-    <nav class="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4">
+    <nav data-tour="sidebar-nav" class="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4">
       <template v-for="group in navGroups" :key="group.label">
         <!-- Group label -->
         <p
@@ -52,6 +52,7 @@
         >
           <button
             type="button"
+            :data-tour="item.tour"
             class="group relative flex w-full items-center gap-3 rounded-xl px-2.5 py-2.5 text-xs font-medium transition-all duration-150"
             :class="[
               isActive(item.to)
@@ -151,20 +152,20 @@ const navGroups = computed(() => {
       {
         label: 'Exams',
         items: [
-          { label: 'My Exams', to: '/teachers/exams', icon: ClipboardList, count: teacherExamNotifications.value },
-          { label: 'Question Bank', to: '/teachers/questions', icon: FileQuestion },
+          { label: 'My Exams', to: '/teachers/exams', icon: ClipboardList, count: teacherExamNotifications.value, tour: 'nav-exams' },
+          { label: 'Question Bank', to: '/teachers/questions', icon: FileQuestion, tour: 'nav-question-bank' },
         ],
       },
       {
         label: 'People',
         items: [
-          { label: 'Students', to: '/teachers/students', icon: GraduationCap, count: teacherStudentNotifications.value },
+          { label: 'Students', to: '/teachers/students', icon: GraduationCap, count: teacherStudentNotifications.value, tour: 'nav-students' },
         ],
       },
       {
         label: 'Account',
         items: [
-          { label: 'Settings', to: '/teachers/settings', icon: Settings },
+          { label: 'Settings', to: '/teachers/settings', icon: Settings, tour: 'nav-settings' },
         ],
       },
     ]
@@ -180,28 +181,28 @@ const navGroups = computed(() => {
     {
       label: 'Academics',
       items: [
-        { label: 'Sessions', to: '/school-admin/sessions', icon: CalendarRange, count: adminSessionNotifications.value },
-        { label: 'Class Levels', to: '/school-admin/class-levels', icon: Columns3 },
-        { label: 'Subjects', to: '/school-admin/subjects', icon: Shapes },
+        { label: 'Sessions', to: '/school-admin/sessions', icon: CalendarRange, count: adminSessionNotifications.value, tour: 'nav-sessions' },
+        { label: 'Class Levels', to: '/school-admin/class-levels', icon: Columns3, tour: 'nav-class-levels' },
+        { label: 'Subjects', to: '/school-admin/subjects', icon: Shapes, tour: 'nav-subjects' },
       ],
     },
     {
       label: 'People',
       items: [
-        { label: 'Teachers', to: '/school-admin/teachers', icon: Users, count: adminTeacherNotifications.value },
-        { label: 'Students', to: '/school-admin/students', icon: GraduationCap, count: adminStudentNotifications.value },
+        { label: 'Teachers', to: '/school-admin/teachers', icon: Users, count: adminTeacherNotifications.value, tour: 'nav-teachers' },
+        { label: 'Students', to: '/school-admin/students', icon: GraduationCap, count: adminStudentNotifications.value, tour: 'nav-students' },
       ],
     },
     {
       label: 'Oversight',
       items: [
-        { label: 'Exam Approvals', to: '/school-admin/exams', icon: ClipboardList, count: adminExamNotifications.value },
+        { label: 'Exam Approvals', to: '/school-admin/exams', icon: ClipboardList, count: adminExamNotifications.value, tour: 'nav-exam-approvals' },
       ],
     },
     {
       label: 'Account',
       items: [
-        { label: 'Settings', to: '/school-admin/settings', icon: Settings },
+        { label: 'Settings', to: '/school-admin/settings', icon: Settings, tour: 'nav-settings' },
       ],
     },
   ]

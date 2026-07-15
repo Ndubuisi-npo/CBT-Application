@@ -25,9 +25,9 @@ export const QUESTION_TYPE_LABELS = {
 
 export function detectContentFormat(content = '') {
   const text = String(content ?? '')
-  if (!text.trim()) return 'text'
+  if (!text.trim()) return 'plain_text'
   const hasMathDelimiters = /\$\$[\s\S]+?\$\$|\$[^$]+\$/.test(text)
-  return hasMathDelimiters ? 'latex' : 'text'
+  return hasMathDelimiters ? 'latex' : 'plain_text'
 }
 
 /**

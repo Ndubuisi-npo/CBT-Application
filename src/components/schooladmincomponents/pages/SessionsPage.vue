@@ -10,7 +10,7 @@
         <AppButton v-if="selectedSessions.size" text="Delete Selected" variant="danger" size="sm" @click="deleteSelected" />
         <AppButton v-if="isSelectMode" text="Cancel" variant="ghost" size="sm" @click="cancelSelectMode" />
         <AppButton v-if="!isSelectMode" :icon="CheckSquare" text="Select" variant="ghost" size="sm" @click="startSelectMode" />
-        <AppButton :icon="Plus" text="Create Session" variant="primary" size="sm" @click="openModal()" />
+        <AppButton data-tour="create-session-btn" :icon="Plus" text="Create Session" variant="primary" size="sm" @click="openModal()" />
       </div>
     </div>
 

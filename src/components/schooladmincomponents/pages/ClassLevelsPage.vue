@@ -10,7 +10,7 @@
         <AppButton v-if="selectedItems.size" text="Delete Selected" variant="danger" size="sm" @click="deleteSelected" />
         <AppButton v-if="isSelectMode" text="Cancel" variant="ghost" size="sm" @click="cancelSelectMode" />
         <AppButton v-if="!isSelectMode" :icon="CheckSquare" text="Select" variant="ghost" size="sm" @click="startSelectMode" />
-        <AppButton :icon="Plus" text="Create Class Level" variant="primary" size="sm" @click="openModal()" />
+        <AppButton data-tour="create-class-level-btn" :icon="Plus" text="Create Class Level" variant="primary" size="sm" @click="openModal()" />
       </div>
     </div>
 

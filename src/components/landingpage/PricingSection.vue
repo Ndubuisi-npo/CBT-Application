@@ -140,7 +140,6 @@ const goToOnboarding = (plan) => {
 onMounted(async () => {
   try {
     const apiPlans = await fetchPlans()
-    console.log('API Plans:', apiPlans)
     plans.value = Array.isArray(apiPlans)
       ? apiPlans.map((p) => ({
           id: p.id,

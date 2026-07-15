@@ -202,12 +202,7 @@ const submitLogin = async () => {
 
 const authData = await unifiedLogin(form)
 
-    console.log('[Login] Auth Data Returned:', authData)
-    console.log('[Login] Role:', authData.role)
-    console.log('[Login] User Details:', authData.user)
-
     const tenantHandle = getTenantHandle()
-    console.log('[Login] Tenant Handle:', tenantHandle)
 
     const buildRedirectUrl = (path) => {
       if (!tenantHandle) return path

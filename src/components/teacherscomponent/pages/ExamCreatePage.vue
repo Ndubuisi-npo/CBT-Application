@@ -27,6 +27,7 @@
           </RouterLink>
           <button
             type="button"
+            data-tour="exam-save-draft-btn"
             class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
             :disabled="saving"
             @click="saveDraft"
@@ -62,7 +63,7 @@
         <section class="rounded-2xl border border-slate-200 bg-white p-6">
           <h2 class="mb-5 text-base font-semibold text-slate-900">Basic Details</h2>
           <div class="space-y-4">
-            <div>
+            <div data-tour="exam-title-field">
               <label class="block text-sm font-medium text-slate-700">
                 Exam Title <span class="text-red-500">*</span>
               </label>
@@ -151,7 +152,7 @@
                 </label>
               </div>
             </div>
-            <div>
+            <div data-tour="exam-duration-field">
               <label class="block text-sm font-medium text-slate-700">
                 Duration (minutes) <span class="text-red-500">*</span>
               </label>

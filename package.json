@@ -20,19 +20,19 @@
         "autoprefixer": "^10.4.27",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
+        "driver.js": "^1.7.0",
         "katex": "^0.17.0",
+        "laravel-echo": "^1.11.3",
         "lodash": "^4.18.1",
         "lucide-vue-next": "^0.577.0",
         "mathlive": "^0.110.0",
         "pinia": "^3.0.3",
         "postcss": "^8.5.8",
+        "pusher-js": "^8.0.1",
         "radix-vue": "^1.9.17",
         "tailwind-merge": "^3.5.0",
         "vue": "^3.5.30",
         "vue-embed-gist": "^1.2.0",
         "vue-router": "^5.0.4"
-        ,
-        "laravel-echo": "^1.11.3",
-        "pusher-js": "^8.0.1"
     }
 }

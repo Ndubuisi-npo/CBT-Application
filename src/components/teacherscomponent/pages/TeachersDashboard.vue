@@ -29,7 +29,7 @@
     </div>
 
     <!-- Stat cards N/A fixed responsive grid -->
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <div data-tour="teacher-stats-cards" class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <div class="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-50">
           <ClipboardList class="h-6 w-6 text-blue-600" />

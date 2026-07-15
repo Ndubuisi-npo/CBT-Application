@@ -113,13 +113,13 @@ const loadStudents = async () => {
     const res  = await store.fetchAttendanceStudents(selectedExamId.value)
     const list = Array.isArray(res) ? res : res?.data || []
     students.value = list
-    console.log('Loaded students for exam:', selectedExamId.value, list)
+
     list.forEach((s) => {
       attendance[s.id] = s.attendance_status || s.status || ''
     })
     if (list.length === 0) {
       const exam = store.exams.find(e => e.id === selectedExamId.value)
-      console.log('No students found. Exam details:', exam)
+
       loadError.value = `No students found for this exam. This could mean: (1) No students are assigned to ${exam?.class_level?.name || exam?.class_arm?.name || 'this class'}, or (2) The exam is not linked to any class.`
     }
   } catch (err) {

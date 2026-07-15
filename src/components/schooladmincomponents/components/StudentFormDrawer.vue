@@ -37,7 +37,7 @@
       <FormSection title="Academic Information" description="Class placement and admission record.">
         <ResponsiveFormGrid :cols="2">
           <AppInput v-model="form.admission_number" label="Admission Number" placeholder="ADM2024-001" required :error="errors.admission_number" @blur="touch('admission_number')" />
-          <div />
+          <AppInput v-model="form.admission_date" type="date" label="Date Joined" />
           <AppSelect
             v-model="form.class_level_id"
             label="Class Level"
@@ -91,6 +91,7 @@
 import { computed, reactive, ref, watch } from 'vue'
 import AppDrawer from '../../shared/AppDrawer.vue'
 import AppInput from '../../shared/AppInput.vue'
+import { validateAccountEmail } from '../../../js/lib/validators'
 import AppSelect from '../../shared/AppSelect.vue'
 import FormSection from '../../shared/FormSection.vue'
 import ResponsiveFormGrid from '../../shared/ResponsiveFormGrid.vue'
@@ -115,7 +116,7 @@ const sp = computed(() => {
 
 const emptyForm = () => ({
   firstName: '', lastName: '', email: '', phone: '',
-  gender: '', date_of_birth: '', admission_number: '',
+  gender: '', date_of_birth: '', admission_number: '', admission_date: '',
   class_level_id: '', class_arm_id: '',
   guardian_name: '', guardian_phone: '', guardian_email: '',
 })
@@ -163,6 +164,7 @@ const resetForm = (source) => {
     gender: profile.gender || t.gender || '',
     date_of_birth: profile.date_of_birth || t.date_of_birth || '',
     admission_number: profile.admission_number || t.admission_number || '',
+    admission_date: (profile.admission_date || profile.admissionDate || t.admission_date || '')?.slice?.(0, 10) || '',
     class_level_id: classLevel.id || profile.class_level_id || '',
     class_arm_id: classArm.id || profile.class_arm_id || '',
     guardian_name: profile.guardian_name || t.guardian_name || '',
@@ -191,10 +193,7 @@ const touch = (field) => { touched[field] = true; validateField(field) }
 const validators = {
   firstName: (v) => (v?.trim() ? '' : 'First name is required.'),
   lastName: (v) => (v?.trim() ? '' : 'Last name is required.'),
-  email: (v) => {
-    if (!v?.trim()) return 'Email is required.'
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) ? '' : 'Enter a valid email address.'
-  },
+  email: (v) => validateAccountEmail(v),
   phone: (v) => (v?.trim() ? '' : 'Phone number is required.'),
   admission_number: (v) => (v?.trim() ? '' : 'Admission number is required.'),
 }
@@ -217,8 +216,9 @@ const submit = () => {
     last_name: form.lastName,
     email: form.email,
     phone: form.phone,
-    gender: form.gender || undefined,
+    gender: form.gender ? form.gender.toLowerCase() : undefined,
     date_of_birth: form.date_of_birth || undefined,
+    admission_date: form.admission_date || undefined,
     class_level_id: form.class_level_id || undefined,
     class_arm_id: form.class_arm_id || undefined,
     guardian_name: form.guardian_name || undefined,

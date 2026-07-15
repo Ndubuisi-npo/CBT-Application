@@ -205,7 +205,7 @@ const studentClass = computed(() => {
 
 // ── Exam info ─────────────────────────────────────────────────────────────────
 const examTitle = computed(() => result.value?.exam?.title || result.value?.exam_title || 'Exam Result')
-const examSubject = computed(() => result.value?.exam?.subject?.name || result.value?.subject?.name || result.value?.subject || '')
+const examSubject = computed(() => result.value?.exam_subject || result.value?.subject?.name || result.value?.subject || '')
 const totalScore = computed(() => result.value?.total_score ?? result.value?.score ?? 0)
 const totalMarks = computed(() => result.value?.total_marks ?? result.value?.exam?.total_marks ?? 'N/A')
 const percentage = computed(() => result.value?.percentage_score ?? result.value?.percentage ?? null)

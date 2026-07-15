@@ -1,0 +1,90 @@
+/**
+ * tour-theme.css
+ *
+ * Light-touch theme override so Driver.js popovers match the app's
+ * navy (#0B1F3A) / gold (#D4AF37) brand palette instead of the library's
+ * default styling. Loaded once by tourManager.js.
+ */
+
+.cbt-tour-popover.driver-popover {
+  border-radius: 16px;
+  box-shadow: 0 20px 45px -12px rgba(11, 31, 58, 0.35);
+  font-family: inherit;
+  max-width: 360px;
+}
+
+.cbt-tour-popover .driver-popover-title {
+  color: #0B1F3A;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.cbt-tour-popover .driver-popover-description {
+  color: #475569;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.cbt-tour-popover .driver-popover-progress-text {
+  color: #94a3b8;
+  font-size: 0.75rem;
+}
+
+.cbt-tour-popover .driver-popover-footer button {
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  text-shadow: none;
+  box-shadow: none;
+}
+
+/* The corner "x" close button is never shown — exiting only happens via
+   the explicit "Skip Tour" button below. This is a belt-and-braces rule;
+   showButtons already omits 'close' so this element isn't even rendered
+   visible, but we hide it defensively in case of future config changes. */
+.cbt-tour-popover .driver-popover-close-btn {
+  display: none !important;
+}
+
+.cbt-tour-skip-btn {
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  background: transparent;
+  color: #64748b;
+  border: 1px solid transparent;
+}
+
+.cbt-tour-skip-btn:hover {
+  color: #334155;
+  background: #f1f5f9;
+}
+
+.cbt-tour-popover .driver-popover-next-btn,
+.cbt-tour-popover .driver-popover-close-btn {
+  background: #0B1F3A;
+  color: #ffffff;
+  border: 1px solid #0B1F3A;
+}
+
+.cbt-tour-popover .driver-popover-next-btn:hover,
+.cbt-tour-popover .driver-popover-close-btn:hover {
+  background: #0F2940;
+}
+
+.cbt-tour-popover .driver-popover-prev-btn {
+  background: #ffffff;
+  color: #0B1F3A;
+  border: 1px solid #cbd5e1;
+}
+
+.driver-active-element {
+  border-radius: 10px;
+}
+
+@media (max-width: 640px) {
+  .cbt-tour-popover.driver-popover {
+    max-width: calc(100vw - 32px);
+  }
+}

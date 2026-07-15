@@ -88,6 +88,7 @@ import AppButton from '../../shared/AppButton.vue'
 import { useSchoolAdminUiStore } from '../../schooladmincomponents/stores/ui'
 import { changePassword } from '../services/api/auth'
 import { logout } from '../../../js/lib/auth'
+import { teardownRealtimeNotifications } from '../../../js/echoNotifications'
 
 const uiStore = useSchoolAdminUiStore()
 const router = useRouter()
@@ -170,6 +171,7 @@ const handlePasswordChange = async () => {
       variant: 'success' 
     })
 
+    teardownRealtimeNotifications()
     await logout()
     router.replace({ name: 'Login' })
   } catch (error) {

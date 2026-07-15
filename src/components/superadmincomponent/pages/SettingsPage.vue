@@ -88,6 +88,7 @@ import AppButton from '../../shared/AppButton.vue'
 import { useSuperAdminUiStore } from '../stores/ui'
 import { changePassword } from '../api/settings'
 import { logout } from '../../../js/lib/auth'
+import { teardownRealtimeNotifications } from '../../../js/echoNotifications'
 
 const uiStore = useSuperAdminUiStore()
 const router = useRouter()
@@ -170,6 +171,7 @@ const handlePasswordChange = async () => {
       variant: 'success' 
     })
 
+    teardownRealtimeNotifications()
     await logout()
     router.replace({ name: 'Login' })
   } catch (error) {

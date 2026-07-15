@@ -259,7 +259,7 @@ const endIndex = computed(() => Math.min(page.value * itemsPerPage, results.valu
 
 // ── Data helpers ──────────────────────────────────────────────────────────────
 const getExamTitle = (r) => r?.exam?.title || r?.exam_title || r?.title || 'Exam'
-const getExamSubject = (r) => r?.exam?.subject?.name || r?.subject?.name || r?.subject || ''
+const getExamSubject = (r) => r?.exam_subject || r?.exam?.subject?.name || r?.subject?.name || r?.subject || ''
 const getScore = (r) => r?.total_score ?? r?.score ?? 0
 const getTotalMarks = (r) => r?.total_marks ?? r?.exam?.total_marks ?? 'N/A'
 const getPercentage = (r) => r?.percentage_score ?? r?.percentage ?? null

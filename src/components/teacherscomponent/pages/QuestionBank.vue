@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-6">
+  <div data-tour="question-bank-page" class="space-y-6">
     <SectionCard title="Question Bank" subtitle="Create and manage multiple choice questions that can be auto-graded by the system.">
       <template #header>
         <div class="flex flex-wrap items-center gap-3">
