@@ -5,12 +5,13 @@
   roles (see router: SchoolAdminNotifications / TeachersNotifications /
   StudentNotifications all point here).
 
-  Data note: notifications are currently push-only (via Laravel Echo /
-  websockets, see src/js/echoNotifications.js) with no REST endpoint to
-  fetch history or persist read/archived state server-side. Mark-read,
-  delete, and archive are therefore session-local actions on the Pinia
-  store, same as the pre-existing "mark all as read" behaviour — this
-  page doesn't regress that, it just extends it consistently.
+  Data note: the list and unread count are fetched from the backend
+  (GET /notifications, GET /notifications/unread-count — see
+  stores/notifications.js + services/api/notifications.js) and merged with
+  realtime pushes over Laravel Echo (src/js/echoNotifications.js).
+  Mark-read and mark-all-read persist via PATCH /notifications/{id}/read
+  and PATCH /notifications/read-all. Delete and archive have no backend
+  endpoint yet, so those stay session-local on the Pinia store.
 -->
 <template>
   <div class="min-h-screen bg-slate-50 px-4 py-6 sm:px-6 lg:px-8">
@@ -114,7 +115,7 @@
       <!-- Notification list -->
       <div v-else-if="filteredNotifications.length" class="space-y-3">
         <article
-          v-for="notification in filteredNotifications"
+          v-for="notification in pagedNotifications"
           :key="notification.id"
           class="group relative overflow-hidden rounded-2xl border bg-white p-4 shadow-sm transition hover:shadow-md sm:p-5"
           :class="notification.unread ? 'border-slate-200 bg-[#0B1F3A]/[0.03]' : 'border-slate-100 opacity-80'"
@@ -178,12 +179,25 @@
           <AppButton text="Clear Filters" variant="outline" size="sm" @click="resetFilters" />
         </template>
       </AppEmptyState>
+
+      <!-- Pagination — only shown once the list is actually rendering and
+           spans more than one page (kept outside the loading/list/empty
+           v-if chain above since it's an independent, always-optional element). -->
+      <PaginationControls
+        v-if="!notificationStore.isLoadingList && totalFiltered > PER_PAGE"
+        :page="currentPage"
+        :start="paginationRange.start"
+        :end="paginationRange.end"
+        :total="totalFiltered"
+        :per-page="PER_PAGE"
+        @change="goToPage"
+      />
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed, reactive, ref, onMounted } from 'vue'
+import { computed, reactive, ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   BellOff, CalendarClock, CheckCheck, FileText, GraduationCap, MailWarning,
@@ -193,6 +207,7 @@ import AppButton from './AppButton.vue'
 import AppSelect from './AppSelect.vue'
 import AppStatCard from './AppStatCard.vue'
 import AppEmptyState from './AppEmptyState.vue'
+import PaginationControls from './components/PaginationControls.vue'
 import { useNotificationStore } from './stores/notifications'
 import { getAuthRole } from '../../js/lib/auth'
 
@@ -276,6 +291,44 @@ const filteredNotifications = computed(() => {
     return filters.sort === 'oldest' ? aTime - bTime : bTime - aTime
   })
   return list
+})
+
+// ── Pagination ───────────────────────────────────────────────────────────
+// The store now fetches the notification history in full (walking every
+// backend page — see fetchNotificationsList() in stores/notifications.js),
+// so search/category/unread filters above always run against the complete
+// set. Pagination is then applied client-side on the *filtered* results,
+// same pattern StudentsPage.vue/TeachersPage.vue already use.
+const PER_PAGE = 20
+const currentPage = ref(1)
+
+const totalFiltered = computed(() => filteredNotifications.value.length)
+
+const pagedNotifications = computed(() =>
+  filteredNotifications.value.slice((currentPage.value - 1) * PER_PAGE, currentPage.value * PER_PAGE),
+)
+
+const paginationRange = computed(() => {
+  if (!totalFiltered.value) return { start: 0, end: 0 }
+  const start = (currentPage.value - 1) * PER_PAGE + 1
+  const end = Math.min(currentPage.value * PER_PAGE, totalFiltered.value)
+  return { start, end }
+})
+
+const goToPage = (page) => {
+  const lastPage = Math.max(1, Math.ceil(totalFiltered.value / PER_PAGE))
+  currentPage.value = Math.min(Math.max(1, page), lastPage)
+}
+
+// Changing a filter can shrink the result set out from under the current
+// page (e.g. you're on page 3, then a search narrows it to one page) —
+// snap back to page 1 whenever the filters themselves change...
+watch(filters, () => { currentPage.value = 1 }, { deep: true })
+// ...and clamp defensively if the total shrinks for any other reason
+// (marking items read while an "unread" filter is active, deleting, etc.).
+watch(totalFiltered, (total) => {
+  const lastPage = Math.max(1, Math.ceil(total / PER_PAGE))
+  if (currentPage.value > lastPage) currentPage.value = lastPage
 })
 
 // ── Summary stats ────────────────────────────────────────────────────────

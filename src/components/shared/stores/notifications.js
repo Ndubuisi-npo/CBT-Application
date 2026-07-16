@@ -13,46 +13,87 @@ import { extractErrorMessage } from '../../../js/lib/api'
 // falls back to 'general' so unexpected backend categories don't break cards.
 export const NOTIFICATION_CATEGORIES = ['announcements', 'system', 'messages', 'students', 'teachers', 'exams', 'general']
 
+// Backend severity (`data.type`: success | danger | warning | info) doesn't
+// map onto our category system (that's about *what* the notification is
+// about — students/exams/etc. — which this backend doesn't send). Instead
+// we use it to drive the priority badge, since "danger" notifications
+// (e.g. account deactivated) genuinely deserve the "High" flag.
+const SEVERITY_TO_PRIORITY = {
+  danger: 'high',
+  warning: 'high',
+  success: 'normal',
+  info: 'normal',
+}
+
 /**
  * Normalize a notification coming from the API into the shape the UI
- * expects. Laravel's default `notifications` table stores `type` + a JSON
- * `data` column + `read_at`, so we read from both that shape and a flatter
- * custom shape defensively (same tolerance echoNotifications.js already
- * uses for the realtime/pushed notifications, so REST and websocket items
- * end up looking identical in the store).
+ * expects.
+ *
+ * Confirmed real payload shape (Laravel's standard notifications table):
+ *   {
+ *     id: "538f0945-...",
+ *     type: "App\\Notifications\\InAppNotification",   // PHP class name, not a UI category
+ *     data: { title, message, type: "success"|"danger", action },
+ *     read_at: null | "2026-...",
+ *     created_at: "2026-07-15T17:38:36.000000Z",
+ *     ...
+ *   }
+ *
+ * There is no per-notification `category` or `roles` field — the backend
+ * scopes the whole list to the authenticated user already, so `roles`
+ * naturally comes out empty and is treated as "applies to everyone" by
+ * matchesRole() above.
  */
 function normalizeNotification(raw) {
   if (!raw || typeof raw !== 'object') return null
   const data = raw.data && typeof raw.data === 'object' ? raw.data : {}
+  const severity = raw.priority || data.priority || data.type || null
 
   return {
     id: raw.id,
-    title: raw.title || data.title || raw.type || 'Notification',
+    title: raw.title || data.title || 'Notification',
     description: raw.message || data.message || data.body || raw.description || '',
     category: raw.category || data.category || 'general',
     roles: raw.roles || (data.role ? [data.role] : []),
     unread: raw.unread !== undefined ? !!raw.unread : raw.read_at == null,
     time: raw.time || (raw.created_at ? new Date(raw.created_at).toLocaleTimeString() : ''),
     createdAt: raw.created_at || raw.createdAt || new Date().toISOString(),
-    priority: raw.priority || data.priority || 'normal',
+    priority: SEVERITY_TO_PRIORITY[severity] || 'normal',
     sender: raw.sender || data.sender || 'System',
-    link: raw.link || data.link || null,
+    link: raw.link || data.link || data.action || null,
     archived: !!raw.archived,
   }
 }
 
 /**
- * The list endpoint may come back as a bare array, a Laravel API Resource
- * envelope (`{ data: [...] }` — already unwrapped once by apiFetch, but
- * paginated responses nest an extra level), or `{ notifications: [...] }`.
- * Handle all three defensively, same pattern used by the students/teachers
- * stores elsewhere in the app.
+ * The list endpoint may come back as a bare array, a Laravel paginator
+ * envelope (`{ current_page, data: [...], last_page, total, ... }` — this
+ * is the confirmed real shape, apiFetch already unwraps one `{ data }`
+ * level off the top), or a flatter `{ notifications: [...] }`. Handle all
+ * three defensively, and — critically — surface the pagination metadata
+ * instead of discarding it, so fetchNotificationsList() can walk every
+ * page instead of silently stopping after the first 20.
  */
-function extractList(response) {
-  if (Array.isArray(response)) return response
-  if (response && Array.isArray(response.data)) return response.data
-  if (response && Array.isArray(response.notifications)) return response.notifications
-  return []
+function extractListAndMeta(response) {
+  if (Array.isArray(response)) {
+    return { list: response, meta: null }
+  }
+  if (response && Array.isArray(response.data)) {
+    const list = response.data
+    return {
+      list,
+      meta: {
+        currentPage: response.current_page ?? 1,
+        lastPage: response.last_page ?? 1,
+        perPage: response.per_page ?? list.length,
+        total: response.total ?? list.length,
+      },
+    }
+  }
+  if (response && Array.isArray(response.notifications)) {
+    return { list: response.notifications, meta: null }
+  }
+  return { list: [], meta: null }
 }
 
 /** The unread-count endpoint shape isn't fixed to a single key — read defensively. */
@@ -64,6 +105,20 @@ function extractCount(response) {
   return 0
 }
 
+/**
+ * The backend's /notifications response is already scoped to the
+ * authenticated user (no per-notification `roles` field is sent — see the
+ * real payload shape this was built against). So a notification with an
+ * empty `roles` array should be treated as "applies to whoever it belongs
+ * to" rather than filtered out. Only exclude it if it explicitly lists
+ * roles that don't include this one.
+ */
+function matchesRole(notification, role) {
+  if (!role) return true
+  if (!notification.roles || notification.roles.length === 0) return true
+  return notification.roles.includes(role)
+}
+
 export const useNotificationStore = defineStore('notifications', () => {
   const notifications = ref([])
   // Server-sourced unread count (GET /notifications/unread-count) — this is
@@ -73,23 +128,25 @@ export const useNotificationStore = defineStore('notifications', () => {
   const isLoadingList = ref(false)
   const isLoadingCount = ref(false)
   const hasLoadedList = ref(false)
+  // Server-reported total, kept mainly as a sanity check against
+  // notifications.value.length after a full fetch (they should match).
+  const serverTotal = ref(0)
 
   // Local, non-authoritative fallback (useful before the first fetch
   // resolves, or if the count endpoint is ever unavailable).
   const totalUnread = computed(() => (hasLoadedList.value || unreadCount.value > 0 ? unreadCount.value : notifications.value.filter((n) => n.unread && !n.archived).length))
 
   const unreadByRole = (role) =>
-    notifications.value.filter((n) => n.unread && !n.archived && n.roles.includes(role)).length
+    notifications.value.filter((n) => n.unread && !n.archived && matchesRole(n, role)).length
 
   const unreadByCategory = (category, role = null) =>
     notifications.value.filter((n) => {
       const matchesCategory = n.category === category
-      const matchesRole = role ? n.roles.includes(role) : true
-      return n.unread && !n.archived && matchesCategory && matchesRole
+      return n.unread && !n.archived && matchesCategory && matchesRole(n, role)
     }).length
 
   const notificationsForRole = (role) =>
-    notifications.value.filter((n) => n.roles.includes(role) && !n.archived)
+    notifications.value.filter((n) => matchesRole(n, role) && !n.archived)
 
   function notifyError(message) {
     try {
@@ -99,12 +156,39 @@ export const useNotificationStore = defineStore('notifications', () => {
     }
   }
 
-  /** GET /notifications — fetch the notification list. */
+  /**
+   * GET /notifications — fetch the *complete* notification list.
+   *
+   * The backend paginates (20/page by default). The Notifications page
+   * does its own client-side search/category/unread filtering on top of
+   * whatever's in `notifications.value` (same pattern StudentsPage.vue and
+   * TeachersPage.vue already use for their lists), which only produces
+   * correct results if the full history is loaded — otherwise a search
+   * could miss matches that exist on page 2+. So this walks every page
+   * the backend reports via `last_page` and concatenates them, rather
+   * than keeping only the first page and silently dropping the rest.
+   *
+   * A safety cap (MAX_PAGES) guards against an unexpected/broken paginator
+   * response causing a runaway loop.
+   */
+  const MAX_PAGES = 50 // 50 * 20/page = 1,000 notifications — a generous ceiling
   const fetchNotificationsList = async (params = {}) => {
     isLoadingList.value = true
     try {
-      const response = await apiFetchNotifications(params)
-      notifications.value = extractList(response).map(normalizeNotification).filter(Boolean)
+      let page = 1
+      let lastPage = 1
+      const all = []
+
+      do {
+        const response = await apiFetchNotifications({ ...params, page })
+        const { list, meta } = extractListAndMeta(response)
+        all.push(...list)
+        lastPage = meta?.lastPage ?? 1
+        serverTotal.value = meta?.total ?? all.length
+        page += 1
+      } while (page <= lastPage && page <= MAX_PAGES)
+
+      notifications.value = all.map(normalizeNotification).filter(Boolean)
       hasLoadedList.value = true
       return notifications.value
     } catch (error) {
@@ -248,6 +332,7 @@ export const useNotificationStore = defineStore('notifications', () => {
     isLoadingList,
     isLoadingCount,
     hasLoadedList,
+    serverTotal,
     totalUnread,
     unreadByRole,
     unreadByCategory,
