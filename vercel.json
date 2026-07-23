@@ -6,7 +6,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://pss-educbt.onrender.com/api/:path*"
+      "destination": "https://cbt-application-ufyd.onrender.com/api/:path*"
     },
     {
       "source": "/(.*)",
