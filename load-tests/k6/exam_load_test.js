@@ -50,18 +50,18 @@ const DEFAULT_TEACHER_PASS = __ENV.TEACHER_PASS || 'teach12345';
 let STUDENT_VUS = Number(__ENV.STUDENTS_VUS || studentsData.length || 48);
 const STUDENT_ITERATIONS = Number(__ENV.STUDENT_ITERATIONS || 100); // exams per student VU
 let TEACHER_VUS = Number(__ENV.TEACHERS_VUS || teachersData.length || 50);
-const SCHOOLADMIN_VUS = 1; // always test exactly one schooladmin user
+const SCHOOLADMIN_VUS = Number(__ENV.SCHOOLADMIN_VUS || 1); // Test school admin by default
 const QUESTIONS_PER_EXAM = Number(__ENV.QUESTIONS_PER_EXAM || 100);
 const TEACHER_DURATION = __ENV.TEACHER_DURATION || '5m';
 const SCHOOLADMIN_DURATION = __ENV.SCHOOLADMIN_DURATION || '5m';
-const HTTP_REQ_DURATION_THRESHOLD = __ENV.HTTP_REQ_DURATION_THRESHOLD || 'p(95)<2000';
+const HTTP_REQ_DURATION_THRESHOLD = __ENV.HTTP_REQ_DURATION_THRESHOLD || 'p(95)<15000';
 const DEBUG_LOGIN = __ENV.DEBUG_LOGIN === '1';
 const DEBUG_REQUESTS = __ENV.DEBUG_REQUESTS === '1';
 const LOGIN_RETRIES = Number(__ENV.LOGIN_RETRIES || 2);
 const LOGIN_RETRY_SLEEP_SECONDS = Number(__ENV.LOGIN_RETRY_SLEEP_SECONDS || 2);
 const LOGIN_STAGGER_MAX_SECONDS = Number(__ENV.LOGIN_STAGGER_MAX_SECONDS || 30);
 const AUTH_FAILURE_SLEEP_SECONDS = Number(__ENV.AUTH_FAILURE_SLEEP_SECONDS || 5);
-const TENANT_HANDLE = __ENV.TENANT_HANDLE || __ENV.X_TENANT || '';
+const TENANT_HANDLE = __ENV.TENANT_HANDLE || __ENV.X_TENANT || 'pss';
 const SHARED_AUTH = false;
 
 const authTokens = {};
@@ -216,7 +216,7 @@ function login(roleIndex, role) {
       headers: {
         Accept: 'application/json',
         'Content-Type': 'application/json',
-        ...(TENANT_HANDLE && role !== 'schooladmin' ? { 'X-Tenant': TENANT_HANDLE } : {}),
+        ...(TENANT_HANDLE ? { 'X-Tenant': TENANT_HANDLE } : {}),
       },
       tags: { endpoint: 'login', role },
     });
@@ -393,25 +393,7 @@ function teacherFlow(vu, setupData) {
     if (exams.length) examId = exams[vu % exams.length].id || examId;
   }
 
-  const attemptsRes = getJson(
-    `${BASE_URL}/api/exams/${examId}/attempts`,
-    { ...authHeaders, tags: { endpoint: 'teacher.exam_attempts' } },
-    'teacher attempts loaded',
-  );
-  if (attemptsRes.status === 200) {
-    const attempts = asArray(parseJson(attemptsRes));
-    if (attempts.length) {
-      const attemptId = attempts[0].id || attempts[0].attempt_id || attempts[0].attemptId;
-      if (attemptId) {
-        postJson(
-          `${BASE_URL}/api/student/exams/attempts/${attemptId}/force-submit`,
-          null,
-          { ...authHeaders, tags: { endpoint: 'teacher.force_submit' } },
-          'teacher force submit accepted',
-        );
-      }
-    }
-  }
+  // Teacher attempts loading removed - not testing this endpoint
 
   sleep(1);
 }

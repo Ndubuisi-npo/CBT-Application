@@ -48,7 +48,14 @@
               </div>
               <div class="flex flex-col items-end gap-2 shrink-0">
                 <span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">Live</span>
-                <AppButton text="Start" size="sm" variant="primary" @click="startExam(exam)" />
+                <AppButton
+                  text="Start"
+                  size="sm"
+                  variant="primary"
+                  :processing="launchingExamId === exam.id"
+                  :disabled="launchingExamId !== null"
+                  @click="startExam(exam)"
+                />
               </div>
             </div>
           </article>
@@ -86,6 +93,7 @@ import SectionCard from '../../schooladmincomponents/components/SectionCard.vue'
 import AppButton from '../../shared/AppButton.vue'
 import NotificationBell from '../../shared/NotificationBell.vue'
 import { getAvailableExams, getStudentExamAttempt } from '../services/api/studentExams'
+import { startSebExam } from '../services/api/studentSeb'
 import { getStudentResults } from '../services/api/studentResults'
 import { useSchoolAdminUiStore } from '../../schooladmincomponents/stores/ui'
 import { getAuthUser, logout } from '../../../js/lib/auth'
@@ -100,6 +108,7 @@ const logoutLoading = ref(false)
 const allResults = ref([])
 const resultsLoading = ref(false)
 const inProgressAttempts = ref([])
+const launchingExamId = ref(null)
 
 const user = computed(() => getAuthUser() || {})
 const studentName = computed(() => {
@@ -176,8 +185,33 @@ const loadResults = async () => {
   }
 }
 
-const startExam = (exam) => {
-  router.push({ name: 'StudentExamInstructions', params: { id: exam.id } })
+// Opens the static SEB configuration file via its public URL. Vite serves
+// files in /public from BASE_URL, so this resolves correctly in both
+// development and production without any hardcoded host.
+const launchSebConfig = () => {
+  const sebConfigUrl = `${import.meta.env.BASE_URL}SebClientSettings.seb`
+  window.location.href = sebConfigUrl
+}
+
+// Starting an exam no longer navigates to the instructions page directly.
+// It notifies the backend which exam is about to start, then launches SEB.
+// Once SEB opens, /student/seb-launch takes over and resolves the exam.
+const startExam = async (exam) => {
+  if (launchingExamId.value) return
+
+  launchingExamId.value = exam.id
+  try {
+    await startSebExam(exam.id)
+    launchSebConfig()
+  } catch (err) {
+    uiStore.addToast({
+      title: 'Error',
+      message: err.message || 'Could not start the exam. Please try again.',
+      variant: 'error',
+    })
+  } finally {
+    launchingExamId.value = null
+  }
 }
 
 const resumeExam = (exam) => {

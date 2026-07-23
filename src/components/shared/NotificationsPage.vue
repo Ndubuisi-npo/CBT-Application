@@ -88,7 +88,7 @@
           <p class="text-sm font-medium text-slate-700">{{ selectedIds.size }} selected</p>
           <div class="flex flex-wrap items-center gap-2">
             <AppButton text="Mark Read" variant="outline" size="xs" @click="bulkMarkRead" />
-            <AppButton text="Archive" variant="outline" size="xs" @click="bulkArchive" />
+            <AppButton text="Mark Unread" variant="outline" size="xs" @click="bulkMarkUnread" />
             <AppButton text="Delete" variant="danger" size="xs" @click="bulkDelete" />
             <button type="button" class="text-xs font-medium text-slate-500 hover:text-slate-700" @click="selectedIds = new Set()">Clear</button>
           </div>
@@ -363,8 +363,8 @@ const bulkMarkRead = () => {
   notificationStore.markManyRead(Array.from(selectedIds.value), false)
   selectedIds.value = new Set()
 }
-const bulkArchive = () => {
-  notificationStore.archiveMany(Array.from(selectedIds.value), true)
+const bulkMarkUnread = () => {
+  notificationStore.markManyRead(Array.from(selectedIds.value), true)
   selectedIds.value = new Set()
 }
 const bulkDelete = () => {

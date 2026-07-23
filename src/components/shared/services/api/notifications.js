@@ -6,10 +6,12 @@ import { apiFetch, extractErrorMessage } from '../../../../js/lib/api'
  * services/api/students.js) — apiFetch() already attaches the bearer token,
  * tenant header, and unwraps a Laravel `{ data: ... }` envelope.
  *
- *   GET   /api/notifications
- *   GET   /api/notifications/unread-count
- *   PATCH /api/notifications/{id}/read
- *   PATCH /api/notifications/read-all
+ *   GET    /api/notifications
+ *   GET    /api/notifications/unread-count
+ *   PATCH  /api/notifications/{id}/read
+ *   PATCH  /api/notifications/{id}/unread
+ *   PATCH  /api/notifications/read-all
+ *   DELETE /api/notifications/{id}
  */
 
 /** Fetch the notification list (optionally paginated/filtered via params). */
@@ -32,6 +34,14 @@ export async function fetchUnreadNotificationCount() {
   }
 }
 
+export async function markNotificationUnread(id) {
+  try {
+    return await apiFetch(`/api/notifications/${id}/unread`, { method: 'PATCH' })
+  } catch (error) {
+    throw new Error(extractErrorMessage(error, 'Unable to mark notification as unread.'))
+  }
+}
+
 /** Mark a single notification as read. */
 export async function markNotificationRead(id) {
   try {
@@ -47,5 +57,13 @@ export async function markAllNotificationsRead() {
     return await apiFetch('/api/notifications/read-all', { method: 'PATCH' })
   } catch (error) {
     throw new Error(extractErrorMessage(error, 'Unable to mark all notifications as read.'))
+  }
+}
+
+export async function deleteNotification(id) {
+  try {
+    return await apiFetch(`/api/notifications/${id}`, { method: 'DELETE' })
+  } catch (error) {
+    throw new Error(extractErrorMessage(error, 'Unable to delete notification.'))
   }
 }

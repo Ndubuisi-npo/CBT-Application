@@ -196,6 +196,12 @@ const routes = [
     meta: { requiresAuth: true, role: 'student' },
   },
   {
+    path: '/student/seb-launch',
+    name: 'StudentSEBLaunch',
+    component: () => import('../components/studentscomponent/pages/SEBLaunchView.vue'),
+    meta: { requiresAuth: true, role: 'student' },
+  },
+  {
     path: '/student/instructions/:id',
     name: 'StudentExamInstructions',
     component: () => import('../components/studentscomponent/pages/StudentExamInstructions.vue'),

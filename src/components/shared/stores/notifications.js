@@ -4,7 +4,9 @@ import {
   fetchNotifications as apiFetchNotifications,
   fetchUnreadNotificationCount as apiFetchUnreadCount,
   markNotificationRead as apiMarkNotificationRead,
+  markNotificationUnread as apiMarkNotificationUnread,
   markAllNotificationsRead as apiMarkAllNotificationsRead,
+  deleteNotification as apiDeleteNotification,
 } from '../services/api/notifications'
 import { useSchoolAdminUiStore } from '../../schooladmincomponents/stores/ui'
 import { extractErrorMessage } from '../../../js/lib/api'
@@ -252,20 +254,27 @@ export const useNotificationStore = defineStore('notifications', () => {
 
   /**
    * PATCH /notifications/{id}/read
+   * PATCH /notifications/{id}/unread
    *
    * Signature kept backwards-compatible with the existing "Mark Read /
-   * Mark Unread" toggle button: `unread` is the value to set. There is no
-   * "mark unread" endpoint, so switching back to unread is a local-only
-   * UI action; only the read direction calls the API.
+   * Mark Unread" toggle button: `unread` is the value to set.
    */
   const markRead = async (id, unread = false) => {
     const notification = notifications.value.find((n) => n.id === id)
     const wasUnread = notification?.unread
 
     if (unread) {
-      // Marking back as unread — no backend endpoint for this, local only.
+      // Marking back as unread — call the API endpoint.
       if (notification) notification.unread = true
       if (wasUnread === false) unreadCount.value += 1
+
+      try {
+        await apiMarkNotificationUnread(id)
+      } catch (error) {
+        if (notification) notification.unread = wasUnread ?? false
+        if (wasUnread === false) unreadCount.value -= 1
+        notifyError(extractErrorMessage(error, 'Unable to mark notification as unread.'))
+      }
       return
     }
 
@@ -282,19 +291,30 @@ export const useNotificationStore = defineStore('notifications', () => {
   }
 
   /**
-   * Bulk "mark read" for a selected subset (used by the Notifications page
+   * Bulk "mark read/unread" for a selected subset (used by the Notifications page
    * bulk-action bar). No dedicated bulk-subset endpoint exists, so this
-   * calls PATCH /notifications/{id}/read for each id and reconciles the
-   * count from the server if any of them fail.
+   * calls PATCH /notifications/{id}/read or PATCH /notifications/{id}/unread
+   * for each id and reconciles the count from the server if any of them fail.
    */
   const markManyRead = async (ids, unread = false) => {
     const idSet = new Set(ids)
 
     if (unread) {
-      notifications.value.forEach((n) => { if (idSet.has(n.id)) n.unread = true })
+      // Mark as unread - call API for each
+      const targets = notifications.value.filter((n) => idSet.has(n.id) && !n.unread)
+      targets.forEach((n) => { n.unread = true })
+      unreadCount.value += targets.length
+
+      const results = await Promise.allSettled(targets.map((n) => apiMarkNotificationUnread(n.id)))
+      const failures = results.filter((r) => r.status === 'rejected')
+      if (failures.length) {
+        notifyError(`Unable to mark ${failures.length} notification(s) as unread.`)
+        void fetchUnreadCount()
+      }
       return
     }
 
+    // Mark as read
     const targets = notifications.value.filter((n) => idSet.has(n.id) && n.unread)
     targets.forEach((n) => { n.unread = false })
     unreadCount.value = Math.max(0, unreadCount.value - targets.length)
@@ -307,13 +327,63 @@ export const useNotificationStore = defineStore('notifications', () => {
     }
   }
 
-  const deleteNotification = (id) => {
+  const deleteNotification = async (id) => {
+    const notification = notifications.value.find((n) => n.id === id)
+    const wasUnread = notification?.unread
+
+    // Optimistically remove from local state
     notifications.value = notifications.value.filter((n) => n.id !== id)
+    if (wasUnread) unreadCount.value = Math.max(0, unreadCount.value - 1)
+
+    try {
+      await apiDeleteNotification(id)
+    } catch (error) {
+      // Roll back on failure
+      if (notification) {
+        notifications.value.push(notification)
+        notifications.value.sort((a, b) => {
+          const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0
+          const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0
+          return bTime - aTime
+        })
+      }
+      if (wasUnread) unreadCount.value += 1
+      notifyError(extractErrorMessage(error, 'Unable to delete notification.'))
+    }
   }
 
-  const deleteMany = (ids) => {
+  const deleteMany = async (ids) => {
     const idSet = new Set(ids)
+    const targets = notifications.value.filter((n) => idSet.has(n.id))
+    const wasUnreadCount = targets.filter((n) => n.unread).length
+
+    // Optimistically remove from local state
     notifications.value = notifications.value.filter((n) => !idSet.has(n.id))
+    unreadCount.value = Math.max(0, unreadCount.value - wasUnreadCount)
+
+    const results = await Promise.allSettled(targets.map((n) => apiDeleteNotification(n.id)))
+    const failures = results.filter((r) => r.status === 'rejected')
+
+    if (failures.length) {
+      // Roll back failed deletions
+      const failedIds = new Set()
+      targets.forEach((n, i) => {
+        if (results[i].status === 'rejected') failedIds.add(n.id)
+      })
+
+      const restored = targets.filter((n) => failedIds.has(n.id))
+      notifications.value.push(...restored)
+      notifications.value.sort((a, b) => {
+        const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0
+        const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0
+        return bTime - aTime
+      })
+
+      const restoredUnreadCount = restored.filter((n) => n.unread).length
+      unreadCount.value += restoredUnreadCount
+
+      notifyError(`Unable to delete ${failures.length} notification(s).`)
+    }
   }
 
   const archiveNotification = (id, archived = true) => {
