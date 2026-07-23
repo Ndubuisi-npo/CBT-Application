@@ -4,6 +4,10 @@
   "installCommand": "npm install",
   "framework": "vite",
   "rewrites": [
+     {
+      "source": "/api/(.*)",
+      "destination": "https://pss-educbt.onrender.com/api/$1"
+    },
     {
       "source": "/(.*)",
       "destination": "/index.html"
