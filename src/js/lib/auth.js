@@ -123,6 +123,36 @@ export async function login(credentials) {
   return authState
 }
 
+/**
+ * Persist an already-issued durable session (from the SEB verify exchange)
+ * into the shared auth store — same shape/persistence as login(), but the
+ * token was minted server-side by /api/seb/verify rather than /api/auth/login.
+ */
+export function setSebSession(response) {
+  const user = response.user ?? response.admin ?? response.profile ?? null
+  const token = response.token ?? response.access_token ?? response.session_token ?? null
+  const role = response.role ?? user?.role ?? user?.role_name ?? user?.role?.name ?? 'student'
+
+  if (!token) {
+    throw new Error('SEB verification response did not include a session token.')
+  }
+
+  const expiresAt = Date.now() + ((response.expires_in || 28800) * 1000)
+
+  authState = {
+    user,
+    token,
+    role,
+    tenantSlug: response.tenant_slug || null,
+    expiresAt,
+  }
+
+  persistAuth(authState)
+  setApiToken(authState.token)
+
+  return authState
+}
+
 export async function refreshAuthUser() {
   const response = await apiFetch('/api/auth/me')
   authState = {

@@ -81,8 +81,15 @@
         </article>
       </div>
     </SectionCard>
+  </div>
 
-    
+  <div
+    v-if="launchingExamId"
+    class="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-[#0B1F3A]/95 px-4 text-center"
+  >
+    <div class="h-12 w-12 animate-spin rounded-full border-4 border-[#D4AF37] border-t-transparent" />
+    <p class="text-lg font-semibold text-white">Launching Secure Exam Browser...</p>
+    <p class="max-w-xs text-sm text-slate-300">Please do not close this window.</p>
   </div>
 </template>
 
@@ -185,31 +192,32 @@ const loadResults = async () => {
   }
 }
 
-// Opens the static SEB configuration file via its public URL. Vite serves
-// files in /public from BASE_URL, so this resolves correctly in both
-// development and production without any hardcoded host.
-const launchSebConfig = () => {
-  const sebConfigUrl = `${import.meta.env.BASE_URL}SebClientSettings.seb`
-  window.location.href = sebConfigUrl
-}
-
-// Starting an exam no longer navigates to the instructions page directly.
-// It notifies the backend which exam is about to start, then launches SEB.
-// Once SEB opens, /student/seb-launch takes over and resolves the exam.
+// Starting an exam hands off to the Secure Exam Browser client. This is a
+// handoff to a different application, not an in-app route change, so it
+// deliberately bypasses Vue Router — assigning window.location.href lets
+// the OS intercept the URL and open the installed SEB client.
 const startExam = async (exam) => {
   if (launchingExamId.value) return
 
   launchingExamId.value = exam.id
   try {
-    await startSebExam(exam.id)
-    launchSebConfig()
+    const response = await startSebExam(exam.id)
+    const sebLaunchUrl = response?.seb_launch_url ?? response?.data?.seb_launch_url
+
+    if (!sebLaunchUrl) {
+      throw new Error('The server did not return a secure launch URL.')
+    }
+
+    // Leave launchingExamId set (and the overlay up) through the handoff —
+    // the redirect isn't instant, and there's no "success" state to return
+    // to on this page once it fires.
+    window.location.href = sebLaunchUrl
   } catch (err) {
     uiStore.addToast({
       title: 'Error',
       message: err.message || 'Could not start the exam. Please try again.',
       variant: 'error',
     })
-  } finally {
     launchingExamId.value = null
   }
 }

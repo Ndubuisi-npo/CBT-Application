@@ -1,28 +1,35 @@
 import { apiFetch } from '../../../../js/lib/api'
 
 /**
- * Tell the backend which exam the student is about to start inside Safe
- * Exam Browser (SEB). The backend is expected to temporarily associate this
- * exam with the authenticated student so it can later be resolved via
- * getCurrentSebExam() once SEB has launched.
+ * Stage A — start an SEB-enabled exam.
+ * Backend returns a seb_launch_url; the browser hands off to the SEB client
+ * by navigating to it directly (never via Vue Router — see StudentDashboard).
  *
  * @param {string|number} examId
+ * @returns {Promise<{ seb_launch_url: string }>}
  */
 export async function startSebExam(examId) {
-  return await apiFetch('/api/student/seb/start', {
+  return await apiFetch(`/api/exams/${examId}/start`, {
     method: 'POST',
-    body: JSON.stringify({ examId }),
   })
 }
 
 /**
- * Ask the backend which exam the currently authenticated student is
- * authorized to take inside the active SEB session.
+ * Stage C — exchange the short-lived launch token for a durable session
+ * token. The temporary token is sent as a one-off Authorization header
+ * (never touching the global/default header) and must not be persisted
+ * or reused after this call resolves.
  *
- * Expected response shape: { examId: string }
- *
- * @returns {Promise<{ examId?: string|number }>}
+ * @param {string} attemptId
+ * @param {string} temporaryToken
+ * @returns {Promise<{ token: string, user?: object, role?: string }>}
  */
-export async function getCurrentSebExam() {
-  return await apiFetch('/api/student/seb/current-exam')
+export async function verifySebSession(attemptId, temporaryToken) {
+  return await apiFetch('/api/seb/verify', {
+    params: { attempt_id: attemptId },
+    headers: { Authorization: `Bearer ${temporaryToken}` },
+    // A failed/expired temporary token should surface as an in-page error
+    // state on /seb-entry, not force a redirect to /login.
+    skipAuthRedirect: true,
+  })
 }

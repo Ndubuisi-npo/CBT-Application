@@ -195,11 +195,14 @@ const routes = [
     component: NotificationsPage,
     meta: { requiresAuth: true, role: 'student' },
   },
+  // Not reachable through normal in-app navigation — SEB opens this
+  // directly with attempt_id/token in the query string. It must be public:
+  // no session exists in storage yet at the moment this page mounts.
   {
-    path: '/student/seb-launch',
-    name: 'StudentSEBLaunch',
-    component: () => import('../components/studentscomponent/pages/SEBLaunchView.vue'),
-    meta: { requiresAuth: true, role: 'student' },
+    path: '/seb-entry',
+    name: 'SebEntry',
+    component: () => import('../components/studentscomponent/pages/SebEntryView.vue'),
+    meta: { requiresAuth: false },
   },
   {
     path: '/student/instructions/:id',
@@ -258,11 +261,12 @@ const buildRedirectUrl = (path) => `${window.location.origin}${path}`
 
 router.beforeEach((to, from, next) => {
   const requiresAuth =
-    to.path.startsWith('/school-admin') ||
-    to.path.startsWith('/super-admin') ||
-    to.path.startsWith('/teachers') ||
-    to.path.startsWith('/student') ||
-    to.path.startsWith('/notifications')
+    to.path !== '/seb-entry' &&
+    (to.path.startsWith('/school-admin') ||
+      to.path.startsWith('/super-admin') ||
+      to.path.startsWith('/teachers') ||
+      to.path.startsWith('/student') ||
+      to.path.startsWith('/notifications'))
 
   const isLoginPage = to.path === '/login'
 
