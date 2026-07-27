@@ -12,7 +12,7 @@
           </div>
 
           <div class="mt-10">
-            <div class="grid grid-cols-2 gap-2 text-center text-xs text-slate-400 sm:grid-cols-3 sm:gap-4 sm:text-sm lg:grid-cols-5">
+            <div class="grid grid-cols-2 gap-2 text-center text-xs sm:grid-cols-3 sm:gap-4 sm:text-sm lg:grid-cols-5">
               <div
                 v-for="(step, index) in steps"
                 :key="step"
@@ -22,7 +22,7 @@
               </div>
             </div>
 
-            <div class="mt-3 h-1 rounded-full bg-slate-100">
+            <div class="hidden mt-3 h-1 rounded-full bg-slate-100 sm:block">
               <div
                 class="h-full rounded-full bg-slate-800 transition-all duration-500"
                 :style="{ width: progressWidth }"
@@ -113,8 +113,12 @@ const progressWidth = computed(() => {
 })
 
 const getStepTextClass = (index: number) => {
-  if (index < currentStep.value) return 'text-amber-500'
-  if (index === currentStep.value) return 'text-slate-800'
+  if (index < currentStep.value) {
+    return 'bg-[#0B1F3A] text-amber-300 rounded-lg px-2 py-1 font-medium'
+  }
+  if (index === currentStep.value) {
+    return 'bg-[#0B1F3A] text-white rounded-lg px-2 py-1 font-medium'
+  }
   return 'text-slate-400'
 }
 
@@ -162,7 +166,7 @@ const submitRegistration = async () => {
       : '/login'
 
     window.location.href = loginUrl
-  } catch (error) {
+  } catch (error: any) {
     errorMessage.value = error.message || 'Registration failed. Please try again.'
   } finally {
     isSubmitting.value = false
