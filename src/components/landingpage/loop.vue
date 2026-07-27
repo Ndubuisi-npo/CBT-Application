@@ -1,11 +1,11 @@
 <template>
-  <section class="lp-reveal-section lp-section px-20 py-20">
-    <div class="lp-card mx-auto max-w-4xl rounded-[30px] border border-slate-200 bg-white px-10 py-16 text-center shadow-sm md:px-20">
+  <section class="lp-reveal-section lp-section px-5 py-14 sm:px-8 sm:py-20 lg:px-20">
+    <div class="lp-card mx-auto max-w-4xl rounded-[30px] border border-slate-200 bg-white px-6 py-12 text-center shadow-sm sm:px-10 sm:py-16 md:px-20">
       <div class="lp-icon-chip mx-auto flex h-12 w-12 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-700 shadow-sm">
         <Bell class="h-6 w-6" />
       </div>
 
-      <h2 class="mt-8 text-4xl font-black tracking-tight text-slate-800">
+      <h2 class="mt-8 text-3xl font-black tracking-tight text-slate-800 sm:text-4xl">
         Stay in the loop
       </h2>
 

@@ -1,8 +1,8 @@
 <template>
   <section class="lp-reveal-section lp-section">
-    <div class="mx-auto px-20 py-20">
+    <div class="mx-auto px-5 py-14 sm:px-8 sm:py-20 lg:px-20">
       <div class="mx-auto max-w-4xl text-center">
-        <h2 class="text-4xl font-black tracking-tight text-slate-800">
+        <h2 class="text-3xl font-black tracking-tight text-slate-800 sm:text-4xl">
           Everything you need to run your school
         </h2>
         <p class="mt-5 text-xl leading-relaxed text-slate-500">
@@ -16,7 +16,7 @@
         v-for="feature in features"
         :key="feature.title"
         :class="feature.cardClass"
-        class="lp-card flex flex-col rounded-2xl border border-slate-200 px-10 py-9 shadow-sm"
+        class="lp-card flex flex-col rounded-2xl border border-slate-200 px-6 py-7 shadow-sm sm:px-10 sm:py-9"
         >
           <div class="lp-icon-chip flex h-14 w-14 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm">
             <component :is="feature.icon" class="h-6 w-8" />

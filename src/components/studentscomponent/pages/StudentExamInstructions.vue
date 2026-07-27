@@ -8,7 +8,22 @@
     <template v-else-if="exam">
       <!-- Header -->
       <div class="rounded-[24px] bg-[#0B1F3A] p-6 text-white">
-        <p class="text-xs font-semibold uppercase tracking-[0.28em] text-[#D4AF37]">Exam Instructions</p>
+        <div class="flex items-center gap-3">
+          <img
+            v-if="studentAvatar"
+            :src="studentAvatar"
+            :alt="`${studentName} avatar`"
+            class="h-10 w-10 shrink-0 rounded-xl object-cover ring-2 ring-white/20"
+          />
+          <div
+            v-else
+            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10 text-sm font-bold text-white ring-2 ring-white/20"
+          >
+            {{ studentInitials }}
+          </div>
+          <p class="text-sm font-semibold text-white">{{ studentName }}</p>
+        </div>
+        <p class="mt-4 text-xs font-semibold uppercase tracking-[0.28em] text-[#D4AF37]">Exam Instructions</p>
         <h1 class="mt-3 text-2xl font-semibold">{{ exam.title }}</h1>
         <p class="mt-2 text-sm text-slate-300">{{ exam.subject || 'N/A' }} • {{ exam.class_level?.name || 'N/A' }}</p>
       </div>
@@ -65,7 +80,7 @@
 
       <!-- CTA -->
       <div class="flex flex-col gap-3 sm:flex-row sm:justify-end">
-        <AppButton text="Back" variant="ghost" @click="$router.push({ name: 'StudentDashboard' })" />
+        <AppButton text="Back" variant="ghost" @click="goBack" />
         <AppButton
           text="Begin Exam"
           variant="primary"
@@ -84,12 +99,13 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import AppButton from '../../shared/AppButton.vue'
 import { getStudentExam, startStudentExam } from '../services/api/studentExams'
 import { fmtDateTime } from '../../../js/lib/helpers'
 import { useSchoolAdminUiStore } from '../../schooladmincomponents/stores/ui'
-import { requestFullscreen } from '../../../js/examProtection'
+import { disableProtection } from '../../../js/examProtection'
+import { getAuthUser } from '../../../js/lib/auth'
 
 const props = defineProps({ id: { type: String, required: true } })
 const route = useRoute()
@@ -102,6 +118,39 @@ const exam = ref(null)
 const loading = ref(true)
 const starting = ref(false)
 const startError = ref(null)
+
+const user = computed(() => getAuthUser() || {})
+const studentName = computed(() => {
+  const firstName = user.value.first_name || user.value.firstName || ''
+  const lastName = user.value.last_name || user.value.lastName || ''
+  return (firstName || lastName)
+    ? `${firstName} ${lastName}`.trim()
+    : user.value.name || user.value.full_name || 'Student'
+})
+
+const studentInitials = computed(() =>
+  studentName.value
+    .split(' ')
+    .map((part) => part[0] || '')
+    .join('')
+    .toUpperCase()
+    .slice(0, 2) || 'ST'
+)
+
+const studentAvatar = computed(() => {
+  const profile = user.value.student_profile || user.value.studentProfile || {}
+  return (
+    user.value.avatar_url ||
+    user.value.avatar ||
+    user.value.photo_url ||
+    user.value.profile_photo_url ||
+    profile.avatar_url ||
+    profile.avatar ||
+    profile.photo_url ||
+    profile.profile_photo_url ||
+    ''
+  )
+})
 
 // Convert any ISO timestamps in error messages to local time for readability
 const formattedStartError = computed(() => {
@@ -153,7 +202,6 @@ const beginExam = async () => {
   starting.value = true
   startError.value = null
   try {
-    await requestFullscreen()
     await startStudentExam(examId)
     router.push({ name: 'StudentExam', params: { id: examId } })
   } catch (err) {
@@ -169,4 +217,15 @@ const beginExam = async () => {
     starting.value = false
   }
 }
+
+const goBack = () => {
+  disableProtection()
+  router.push({ name: 'StudentDashboard' })
+}
+
+onBeforeRouteLeave((to) => {
+  if (to.name !== 'StudentExam') {
+    disableProtection()
+  }
+})
 </script>

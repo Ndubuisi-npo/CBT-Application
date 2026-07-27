@@ -1,8 +1,8 @@
 <template>
   <section class="lp-reveal-section lp-section">
-    <div class="mx-auto px-20 py-20">
+    <div class="mx-auto px-5 py-14 sm:px-8 sm:py-20 lg:px-20">
       <div class="mx-auto max-w-4xl text-center">
-        <h2 class="text-4xl font-black tracking-tight text-slate-800">
+        <h2 class="text-3xl font-black tracking-tight text-slate-800 sm:text-4xl">
           Get started in 3 simple steps
         </h2>
       </div>

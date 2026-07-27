@@ -21,10 +21,10 @@
           <div
             v-for="item in schoolInfo"
             :key="item.label"
-            class="flex items-center justify-between gap-6 border-b border-slate-100 pb-3 last:border-b-0 last:pb-0"
+            class="flex flex-wrap items-center justify-between gap-x-6 gap-y-1 border-b border-slate-100 pb-3 last:border-b-0 last:pb-0"
           >
             <span class="text-base text-slate-500">{{ item.label }}</span>
-            <span class="text-base font-semibold text-slate-800">{{ item.value }}</span>
+            <span class="break-words text-right text-base font-semibold text-slate-800">{{ item.value }}</span>
           </div>
         </div>
       </section>
@@ -38,10 +38,10 @@
           <div
             v-for="item in administratorInfo"
             :key="item.label"
-            class="flex items-center justify-between gap-6 border-b border-slate-100 pb-3 last:border-b-0 last:pb-0"
+            class="flex flex-wrap items-center justify-between gap-x-6 gap-y-1 border-b border-slate-100 pb-3 last:border-b-0 last:pb-0"
           >
             <span class="text-base text-slate-500">{{ item.label }}</span>
-            <span class="text-base font-semibold text-slate-800">{{ item.value }}</span>
+            <span class="break-words text-right text-base font-semibold text-slate-800">{{ item.value }}</span>
           </div>
         </div>
       </section>
@@ -55,10 +55,10 @@
           <div
             v-for="item in curriculumInfo"
             :key="item.label"
-            class="flex items-center justify-between gap-6 border-b border-slate-100 pb-3 last:border-b-0 last:pb-0"
+            class="flex flex-wrap items-center justify-between gap-x-6 gap-y-1 border-b border-slate-100 pb-3 last:border-b-0 last:pb-0"
           >
             <span class="text-base text-slate-500">{{ item.label }}</span>
-            <span class="text-base font-semibold text-slate-800">{{ item.value }}</span>
+            <span class="break-words text-right text-base font-semibold text-slate-800">{{ item.value }}</span>
           </div>
         </div>
       </section>

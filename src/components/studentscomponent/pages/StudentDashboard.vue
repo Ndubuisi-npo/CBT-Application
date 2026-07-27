@@ -107,6 +107,7 @@ import { getStudentResults } from '../services/api/studentResults'
 import { useSchoolAdminUiStore } from '../../schooladmincomponents/stores/ui'
 import { getAuthUser, logout } from '../../../js/lib/auth'
 import { teardownRealtimeNotifications } from '../../../js/echoNotifications'
+import { requestFullscreen } from '../../../js/examProtection'
 
 const router = useRouter()
 const uiStore = useSchoolAdminUiStore()
@@ -220,11 +221,13 @@ const loadResults = async () => {
 // Starting an exam is a normal in-app route change into the instructions
 // page, which starts the attempt and then routes into the protected exam
 // view (see StudentExamInstructions.vue / StudentExam.vue).
-const startExam = (exam) => {
+const startExam = async (exam) => {
+  await requestFullscreen().catch(() => {})
   router.push({ name: 'StudentExamInstructions', params: { id: exam.id } })
 }
 
-const resumeExam = (exam) => {
+const resumeExam = async (exam) => {
+  await requestFullscreen().catch(() => {})
   router.push({ name: 'StudentExam', params: { id: exam.id } })
 }
 

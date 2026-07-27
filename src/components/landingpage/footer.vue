@@ -1,6 +1,6 @@
 <template>
   <footer class="lp-reveal-section w-full bg-white">
-    <div class="w-full px-20 pb-8 pt-4">
+    <div class="w-full px-5 pb-8 pt-4 sm:px-8 lg:px-20">
       
         <div class="grid grid-cols-1 gap-10 md:grid-cols-2 xl:grid-cols-4">
           <div v-for="group in footerGroups" :key="group.title">

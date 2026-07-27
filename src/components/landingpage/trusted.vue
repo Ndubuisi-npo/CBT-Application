@@ -1,6 +1,6 @@
 <template>
   <section class="lp-reveal-section lp-section">
-    <div class="mx-auto px-20 py-10">
+    <div class="mx-auto px-5 py-10 sm:px-8 lg:px-20">
       <p class="text-center text-xs font-semibold uppercase tracking-[0.28em] text-slate-400">
         Trusted by innovative schools worldwide
       </p>
@@ -29,12 +29,12 @@
     </div>
 
     <div class="rounded-t-[28px] border-t border-slate-200 bg-[#fbfbfd]">
-      <div class="mx-auto grid grid-cols-1 gap-7 px-20 py-20 md:grid-cols-2 xl:grid-cols-4">
+      <div class="mx-auto grid grid-cols-1 gap-7 px-5 py-14 sm:px-8 sm:py-20 md:grid-cols-2 lg:px-20 xl:grid-cols-4">
         <article
           v-for="stat in stats"
           :key="stat.label"
           :class="stat.cardClass"
-          class="lp-card rounded-2xl border border-slate-200 px-8 py-10 text-center shadow-sm"
+          class="lp-card rounded-2xl border border-slate-200 px-6 py-8 text-center shadow-sm sm:px-8 sm:py-10"
         >
           <p class="text-4xl font-black tracking-tight text-slate-800">
             {{ stat.value }}

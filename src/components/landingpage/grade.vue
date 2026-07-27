@@ -1,6 +1,6 @@
 <template>
   <section class="lp-reveal-section lp-section">
-    <div class="mx-auto grid grid-cols-1 gap-16 px-20 py-14 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
+    <div class="mx-auto grid grid-cols-1 gap-10 px-5 py-12 sm:px-8 sm:gap-16 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:px-20">
       <div class="lp-card rounded-3xl border border-slate-200 bg-slate-50 p-8 shadow-sm">
         <div class="flex items-center justify-between gap-4">
           <h3 class="text-lg font-bold tracking-tight text-slate-800">
@@ -35,7 +35,7 @@
           <FileText class="h-6 w-6" />
         </div>
 
-        <h2 class="mt-8 text-4xl font-black tracking-tight text-slate-800">
+        <h2 class="mt-8 text-3xl font-black tracking-tight text-slate-800 sm:text-4xl">
           Beautiful Grade Management
         </h2>
 

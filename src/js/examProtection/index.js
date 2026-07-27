@@ -90,7 +90,12 @@ export function enableProtection(options = {}) {
 }
 
 export function disableProtection() {
-  if (!protectionState.active) return
+  if (!protectionState.active) {
+    exitFullscreen().catch(() => {})
+    protectionState.overlayVisible = false
+    protectionState.fullscreenPromptVisible = false
+    return
+  }
 
   cleanupFns.forEach((fn) => fn && fn())
   cleanupFns = []
@@ -114,4 +119,4 @@ export function reenterFullscreen() {
   })
 }
 
-export { requestFullscreen }
+export { requestFullscreen, exitFullscreen }

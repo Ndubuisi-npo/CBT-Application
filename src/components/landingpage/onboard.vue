@@ -1,8 +1,8 @@
 <template>
   <section class="lp-reveal-section lp-section">
-    <div class="mx-auto px-20 py-24 text-center">
-      <div class="mx-auto max-w-5xl bg-white px-8 py-16">
-        <h2 class="text-4xl font-black tracking-tight text-slate-800">
+    <div class="mx-auto px-5 py-16 text-center sm:px-8 sm:py-24 lg:px-20">
+      <div class="mx-auto max-w-5xl bg-white px-2 py-10 sm:px-8 sm:py-16">
+        <h2 class="text-3xl font-black tracking-tight text-slate-800 sm:text-4xl">
           Ready to transform your school?
         </h2>
 

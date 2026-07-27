@@ -1,12 +1,12 @@
 <template>
   <section class="lp-reveal-section lp-section">
-    <div class="mx-auto grid grid-cols-1 gap-16 px-20 py-14 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
+    <div class="mx-auto grid grid-cols-1 gap-10 px-5 py-12 sm:px-8 sm:gap-16 lg:grid-cols-[0.95fr_1.05fr] lg:items-center lg:px-20">
       <div>
         <div class="lp-icon-chip flex h-12 w-12 items-center justify-center rounded-xl border border-rose-100 bg-rose-50 text-amber-600 shadow-sm">
           <CalendarDays class="h-6 w-6" />
         </div>
 
-        <h2 class="mt-8 text-4xl font-black tracking-tight text-slate-800">
+        <h2 class="mt-8 text-3xl font-black tracking-tight text-slate-800 sm:text-4xl">
           Effortless Attendance Tracking
         </h2>
 
