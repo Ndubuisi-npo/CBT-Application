@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-6">
+  <div data-tour="students-page" class="space-y-6">
 
     <!-- Page header -->
     <div class="flex flex-wrap items-start justify-between gap-4">

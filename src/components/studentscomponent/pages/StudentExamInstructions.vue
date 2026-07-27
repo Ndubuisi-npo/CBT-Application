@@ -80,7 +80,6 @@
 
       <!-- CTA -->
       <div class="flex flex-col gap-3 sm:flex-row sm:justify-end">
-        <AppButton text="Back" variant="ghost" @click="goBack" />
         <AppButton
           text="Begin Exam"
           variant="primary"
