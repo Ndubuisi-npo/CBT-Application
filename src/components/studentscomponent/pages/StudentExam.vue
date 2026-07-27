@@ -5,11 +5,26 @@
       class="sticky top-0 z-30 border-b border-slate-200 bg-white px-4 py-3 shadow-sm"
       :class="timerBarClass"
     >
-      <div class="mx-auto flex max-w-5xl items-center justify-between">
-        <div class="flex items-center gap-3">
-          <span class="text-sm font-medium text-slate-700">{{ exam?.title || 'Exam' }}</span>
+      <div class="mx-auto flex max-w-5xl items-center justify-between gap-4">
+        <div class="flex min-w-0 items-center gap-3">
+          <img
+            v-if="studentAvatar"
+            :src="studentAvatar"
+            :alt="`${studentName} avatar`"
+            class="h-10 w-10 shrink-0 rounded-xl object-cover ring-1 ring-slate-200"
+          />
+          <div
+            v-else
+            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#0B1F3A]/10 text-sm font-bold text-[#0B1F3A]"
+          >
+            {{ studentInitials }}
+          </div>
+          <div class="min-w-0">
+            <p class="truncate text-sm font-semibold text-slate-900">{{ studentName }}</p>
+            <p class="truncate text-xs text-slate-500">{{ exam?.title || 'Exam' }}</p>
+          </div>
         </div>
-        <div class="flex items-center gap-4">
+        <div class="flex shrink-0 items-center gap-4">
           <div class="flex items-center gap-2">
             <Clock class="h-4 w-4" :class="timerIconClass" />
             <span
@@ -252,6 +267,21 @@
       class="fixed inset-0 z-[60] flex flex-col items-center justify-center gap-3 bg-[#0B1F3A] px-4 text-center"
     >
       <Eye class="h-10 w-10 text-[#D4AF37]" />
+      <div class="flex flex-col items-center gap-2">
+        <img
+          v-if="studentAvatar"
+          :src="studentAvatar"
+          :alt="`${studentName} avatar`"
+          class="h-16 w-16 rounded-2xl object-cover ring-2 ring-white/20"
+        />
+        <div
+          v-else
+          class="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/10 text-lg font-bold text-white ring-2 ring-white/20"
+        >
+          {{ studentInitials }}
+        </div>
+        <p class="text-sm font-semibold text-white">{{ studentName }}</p>
+      </div>
       <p class="text-lg font-semibold text-white">Return to the exam to continue</p>
       <p class="max-w-xs text-sm text-slate-300">
         The exam is paused while this tab isn't in focus. Your timer and answers are unaffected.
@@ -265,6 +295,21 @@
       class="fixed inset-0 z-[60] flex flex-col items-center justify-center gap-4 bg-[#0B1F3A] px-4 text-center"
     >
       <Maximize class="h-10 w-10 text-[#D4AF37]" />
+      <div class="flex flex-col items-center gap-2">
+        <img
+          v-if="studentAvatar"
+          :src="studentAvatar"
+          :alt="`${studentName} avatar`"
+          class="h-16 w-16 rounded-2xl object-cover ring-2 ring-white/20"
+        />
+        <div
+          v-else
+          class="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/10 text-lg font-bold text-white ring-2 ring-white/20"
+        >
+          {{ studentInitials }}
+        </div>
+        <p class="text-sm font-semibold text-white">{{ studentName }}</p>
+      </div>
       <p class="text-lg font-semibold text-white">Fullscreen required</p>
       <p class="max-w-xs text-sm text-slate-300">This exam must be taken in fullscreen. Click below to continue.</p>
       <AppButton text="Return to fullscreen" variant="primary" @click="reenterFullscreen" />
@@ -286,6 +331,7 @@ import {
   submitStudentAttempt,
 } from '../services/api/studentExams'
 import { useSchoolAdminUiStore } from '../../schooladmincomponents/stores/ui'
+import { getAuthUser } from '../../../js/lib/auth'
 import { enableProtection, disableProtection, protectionState, reenterFullscreen } from '../../../js/examProtection'
 import { fmtDateTime } from '../../../js/lib/helpers'
 import { normalizeQuestionText } from '../../../js/lib/questionText'
@@ -319,6 +365,39 @@ const submitted = ref(false)
 const submitting = ref(false)
 const showSubmitConfirm = ref(false)
 const savedIndicator = ref(false)
+
+const user = computed(() => getAuthUser() || {})
+const studentName = computed(() => {
+  const firstName = user.value.first_name || user.value.firstName || ''
+  const lastName = user.value.last_name || user.value.lastName || ''
+  return (firstName || lastName)
+    ? `${firstName} ${lastName}`.trim()
+    : user.value.name || user.value.full_name || 'Student'
+})
+
+const studentInitials = computed(() =>
+  studentName.value
+    .split(' ')
+    .map((part) => part[0] || '')
+    .join('')
+    .toUpperCase()
+    .slice(0, 2) || 'ST'
+)
+
+const studentAvatar = computed(() => {
+  const profile = user.value.student_profile || user.value.studentProfile || {}
+  return (
+    user.value.avatar_url ||
+    user.value.avatar ||
+    user.value.photo_url ||
+    user.value.profile_photo_url ||
+    profile.avatar_url ||
+    profile.avatar ||
+    profile.photo_url ||
+    profile.profile_photo_url ||
+    ''
+  )
+})
 
 const formattedError = computed(() => {
   if (!error.value) return ''

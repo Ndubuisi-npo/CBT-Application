@@ -113,3 +113,5 @@ export function reenterFullscreen() {
     protectionState.fullscreenPromptVisible = false
   })
 }
+
+export { requestFullscreen }

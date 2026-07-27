@@ -2,11 +2,25 @@
   <div class="space-y-6">
     <div class="rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm">
       <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div>
-          <p class="text-sm text-slate-500">Student Profile</p>
-          <h2 class="mt-2 text-2xl font-semibold text-slate-900">{{ studentName }}</h2>
-          <p class="text-sm text-slate-500">{{ user.email || user.username || 'No email available' }}</p>
-          <p v-if="studentClass" class="mt-1 text-sm text-slate-500">{{ studentClass }}</p>
+        <div class="flex items-center gap-4">
+          <img
+            v-if="studentAvatar"
+            :src="studentAvatar"
+            :alt="`${studentName} avatar`"
+            class="h-16 w-16 shrink-0 rounded-2xl border-4 border-white object-cover shadow-sm ring-1 ring-slate-200"
+          />
+          <div
+            v-else
+            class="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border-4 border-white bg-[#0B1F3A]/10 text-lg font-bold text-[#0B1F3A] shadow-sm ring-1 ring-slate-200"
+          >
+            {{ studentInitials }}
+          </div>
+          <div>
+            <p class="text-sm text-slate-500">Student Profile</p>
+            <h2 class="mt-1 text-2xl font-semibold text-slate-900">{{ studentName }}</h2>
+            <p class="text-sm text-slate-500">{{ user.email || user.username || 'No email available' }}</p>
+            <p v-if="studentClass" class="mt-1 text-sm text-slate-500">{{ studentClass }}</p>
+          </div>
         </div>
         <div class="flex flex-wrap items-center gap-3">
           <NotificationBell />
@@ -111,6 +125,30 @@ const studentName = computed(() => {
   return (firstName || lastName)
     ? `${firstName} ${lastName}`.trim()
     : user.value.name || user.value.full_name || 'Student'
+})
+
+const studentInitials = computed(() =>
+  studentName.value
+    .split(' ')
+    .map((part) => part[0] || '')
+    .join('')
+    .toUpperCase()
+    .slice(0, 2) || 'ST'
+)
+
+const studentAvatar = computed(() => {
+  const profile = user.value.student_profile || user.value.studentProfile || {}
+  return (
+    user.value.avatar_url ||
+    user.value.avatar ||
+    user.value.photo_url ||
+    user.value.profile_photo_url ||
+    profile.avatar_url ||
+    profile.avatar ||
+    profile.photo_url ||
+    profile.profile_photo_url ||
+    ''
+  )
 })
 
 const studentClass = computed(() => {

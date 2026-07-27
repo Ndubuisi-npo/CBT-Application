@@ -89,6 +89,7 @@ import AppButton from '../../shared/AppButton.vue'
 import { getStudentExam, startStudentExam } from '../services/api/studentExams'
 import { fmtDateTime } from '../../../js/lib/helpers'
 import { useSchoolAdminUiStore } from '../../schooladmincomponents/stores/ui'
+import { requestFullscreen } from '../../../js/examProtection'
 
 const props = defineProps({ id: { type: String, required: true } })
 const route = useRoute()
@@ -152,13 +153,14 @@ const beginExam = async () => {
   starting.value = true
   startError.value = null
   try {
+    await requestFullscreen()
     await startStudentExam(examId)
     router.push({ name: 'StudentExam', params: { id: examId } })
   } catch (err) {
     const status = err?.status || 0
 
     if (status === 409) {
-      // Attempt already exists N/A resume
+      // Attempt already exists - resume
       router.push({ name: 'StudentExam', params: { id: examId } })
       return
     }
