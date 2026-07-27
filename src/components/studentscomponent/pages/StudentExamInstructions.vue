@@ -94,17 +94,43 @@
       <p class="text-slate-500">Exam not found or no longer available.</p>
       <AppButton class="mt-4" text="Back to Dashboard" variant="primary" @click="$router.push({ name: 'StudentDashboard' })" />
     </div>
+
+    <div
+      v-if="fullscreenPromptVisible"
+      class="fixed inset-0 z-[60] flex flex-col items-center justify-center gap-4 bg-[#0B1F3A] px-4 text-center"
+    >
+      <Maximize class="h-10 w-10 text-[#D4AF37]" />
+      <div class="flex flex-col items-center gap-2">
+        <img
+          v-if="studentAvatar"
+          :src="studentAvatar"
+          :alt="`${studentName} avatar`"
+          class="h-16 w-16 rounded-2xl object-cover ring-2 ring-white/20"
+        />
+        <div
+          v-else
+          class="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/10 text-lg font-bold text-white ring-2 ring-white/20"
+        >
+          {{ studentInitials }}
+        </div>
+        <p class="text-sm font-semibold text-white">{{ studentName }}</p>
+      </div>
+      <p class="text-lg font-semibold text-white">Fullscreen required</p>
+      <p class="max-w-xs text-sm text-slate-300">This exam must be taken in fullscreen. Click below to continue.</p>
+      <AppButton text="Return to fullscreen" variant="primary" @click="returnToFullscreen" />
+    </div>
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
+import { Maximize } from 'lucide-vue-next'
 import AppButton from '../../shared/AppButton.vue'
 import { getStudentExam, startStudentExam } from '../services/api/studentExams'
 import { fmtDateTime } from '../../../js/lib/helpers'
 import { useSchoolAdminUiStore } from '../../schooladmincomponents/stores/ui'
-import { disableProtection } from '../../../js/examProtection'
+import { disableProtection, requestFullscreen } from '../../../js/examProtection'
 import { getAuthUser } from '../../../js/lib/auth'
 
 const props = defineProps({ id: { type: String, required: true } })
@@ -118,6 +144,8 @@ const exam = ref(null)
 const loading = ref(true)
 const starting = ref(false)
 const startError = ref(null)
+const fullscreenPromptVisible = ref(false)
+let leavingInstructions = false
 
 const user = computed(() => getAuthUser() || {})
 const studentName = computed(() => {
@@ -188,7 +216,30 @@ const questionCount = computed(() => {
   return Array.isArray(exam.value?.questions) ? exam.value.questions.length : 0
 })
 
+const isFullscreenActive = () => Boolean(
+  document.fullscreenElement ||
+  document.webkitFullscreenElement ||
+  document.mozFullScreenElement ||
+  document.msFullscreenElement
+)
+
+const onFullscreenChange = () => {
+  if (leavingInstructions) return
+  fullscreenPromptVisible.value = !isFullscreenActive()
+}
+
+const returnToFullscreen = async () => {
+  await requestFullscreen()
+  fullscreenPromptVisible.value = false
+}
+
 onMounted(async () => {
+  document.addEventListener('fullscreenchange', onFullscreenChange)
+  document.addEventListener('webkitfullscreenchange', onFullscreenChange)
+  document.addEventListener('mozfullscreenchange', onFullscreenChange)
+  document.addEventListener('MSFullscreenChange', onFullscreenChange)
+  fullscreenPromptVisible.value = !isFullscreenActive()
+
   try {
     exam.value = await getStudentExam(examId)
   } catch (err) {
@@ -219,13 +270,22 @@ const beginExam = async () => {
 }
 
 const goBack = () => {
+  leavingInstructions = true
   disableProtection()
   router.push({ name: 'StudentDashboard' })
 }
 
 onBeforeRouteLeave((to) => {
+  leavingInstructions = true
   if (to.name !== 'StudentExam') {
     disableProtection()
   }
+})
+
+onUnmounted(() => {
+  document.removeEventListener('fullscreenchange', onFullscreenChange)
+  document.removeEventListener('webkitfullscreenchange', onFullscreenChange)
+  document.removeEventListener('mozfullscreenchange', onFullscreenChange)
+  document.removeEventListener('MSFullscreenChange', onFullscreenChange)
 })
 </script>

@@ -93,6 +93,26 @@
         </article>
       </div>
     </SectionCard>
+
+    <div
+      v-if="examToStart"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 px-4"
+    >
+      <div class="w-full max-w-md rounded-[24px] bg-white p-6 shadow-2xl">
+        <h2 class="text-xl font-semibold text-slate-900">Enter Examination?</h2>
+        <p class="mt-3 text-sm leading-6 text-slate-600">
+          You are about to enter {{ examToStart.title || 'this exam' }}. The exam will open in fullscreen mode,
+          and you are not be allowed to go back until the exam is completed or submitted.
+        </p>
+        <p class="mt-3 text-sm leading-6 text-amber-700">
+          Make sure you are ready before continuing.
+        </p>
+        <div class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+          <AppButton text="Cancel" variant="ghost" @click="cancelStartExam" />
+          <AppButton text="Enter Exam" variant="primary" @click="confirmStartExam" />
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -118,6 +138,7 @@ const logoutLoading = ref(false)
 const allResults = ref([])
 const resultsLoading = ref(false)
 const inProgressAttempts = ref([])
+const examToStart = ref(null)
 
 const user = computed(() => getAuthUser() || {})
 const studentName = computed(() => {
@@ -221,8 +242,19 @@ const loadResults = async () => {
 // Starting an exam is a normal in-app route change into the instructions
 // page, which starts the attempt and then routes into the protected exam
 // view (see StudentExamInstructions.vue / StudentExam.vue).
-const startExam = async (exam) => {
+const startExam = (exam) => {
+  examToStart.value = exam
+}
+
+const cancelStartExam = () => {
+  examToStart.value = null
+}
+
+const confirmStartExam = async () => {
+  const exam = examToStart.value
+  if (!exam) return
   await requestFullscreen().catch(() => {})
+  examToStart.value = null
   router.push({ name: 'StudentExamInstructions', params: { id: exam.id } })
 }
 
