@@ -72,6 +72,7 @@ export async function apiFetch(path, options = {}) {
 
   const headers = {
     'Accept': 'application/json',
+    ...(options.headers || {}),
   }
 
   const isFormData = options.body instanceof FormData
@@ -83,10 +84,6 @@ export async function apiFetch(path, options = {}) {
     headers.Authorization = `Bearer ${authToken}`
   }
 
-  // Caller-supplied headers (e.g. a one-off Authorization override) always win
-  // over the global token above.
-  Object.assign(headers, options.headers || {})
-  
   if (tenantHandle) {
     headers['X-Tenant'] = tenantHandle
   }
@@ -113,18 +110,13 @@ export async function apiFetch(path, options = {}) {
     if (timeoutId) clearTimeout(timeoutId)
   }
 
-  // Auto-logout on 401 (skippable — e.g. the SEB verify call wants to render
-  // its own error state instead of yanking the student out to /login)
+  // Auto-logout on 401
   if (response.status === 401) {
-    if (!options.skipAuthRedirect) {
-      clearApiState()
-      if (typeof window !== 'undefined') {
-        window.location.href = '/login'
-      }
+    clearApiState()
+    if (typeof window !== 'undefined') {
+      window.location.href = '/login'
     }
-    const error = new Error('Session expired. Please log in again.')
-    error.status = 401
-    throw error
+    throw new Error('Session expired. Please log in again.')
   }
 
   const contentType = response.headers.get('content-type') || ''

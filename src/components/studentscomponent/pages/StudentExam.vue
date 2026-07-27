@@ -243,13 +243,39 @@
         </div>
       </div>
     </div>
+
+    <!-- Anti-cheat: tab switch / window blur overlay. Timer and auto-save
+         keep running underneath; this only blocks interaction and hides
+         content until the student returns. -->
+    <div
+      v-if="protectionState.overlayVisible"
+      class="fixed inset-0 z-[60] flex flex-col items-center justify-center gap-3 bg-[#0B1F3A] px-4 text-center"
+    >
+      <Eye class="h-10 w-10 text-[#D4AF37]" />
+      <p class="text-lg font-semibold text-white">Return to the exam to continue</p>
+      <p class="max-w-xs text-sm text-slate-300">
+        The exam is paused while this tab isn't in focus. Your timer and answers are unaffected.
+      </p>
+    </div>
+
+    <!-- Anti-cheat: fullscreen re-entry prompt. Browsers only grant
+         fullscreen from a real click, so this button is the gesture. -->
+    <div
+      v-if="protectionState.fullscreenPromptVisible"
+      class="fixed inset-0 z-[60] flex flex-col items-center justify-center gap-4 bg-[#0B1F3A] px-4 text-center"
+    >
+      <Maximize class="h-10 w-10 text-[#D4AF37]" />
+      <p class="text-lg font-semibold text-white">Fullscreen required</p>
+      <p class="max-w-xs text-sm text-slate-300">This exam must be taken in fullscreen. Click below to continue.</p>
+      <AppButton text="Return to fullscreen" variant="primary" @click="reenterFullscreen" />
+    </div>
   </div>
 </template>
 
 <script setup>
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { CheckCircle2, Clock, Flag } from 'lucide-vue-next'
+import { CheckCircle2, Clock, Flag, Eye, Maximize } from 'lucide-vue-next'
 import AppButton from '../../shared/AppButton.vue'
 import {
   getStudentExamAttempt,
@@ -260,6 +286,7 @@ import {
   submitStudentAttempt,
 } from '../services/api/studentExams'
 import { useSchoolAdminUiStore } from '../../schooladmincomponents/stores/ui'
+import { enableProtection, disableProtection, protectionState, reenterFullscreen } from '../../../js/examProtection'
 import { fmtDateTime } from '../../../js/lib/helpers'
 import { normalizeQuestionText } from '../../../js/lib/questionText'
 import { isChoiceBased, isFillInBlank, isMultipleAnswer, QUESTION_TYPE_LABELS, buildAnswerPayload } from '../../../types/question'
@@ -668,6 +695,7 @@ const submitExam = async () => {
     await submitStudentAttempt(attemptId.value)
     clearInterval(timerInterval)
     submitted.value = true
+    disableProtection()
   } catch (err) {
     uiStore.addToast({
       title: 'Submit failed',
@@ -682,13 +710,16 @@ const autoSubmit = async () => {
   if (submitted.value || !attemptId.value) return
   try {
     await submitStudentAttempt(attemptId.value)
+  } finally {
     submitted.value = true
-  } catch {
-    submitted.value = true
+    disableProtection()
   }
 }
 
-const goToDashboard = () => router.push({ name: 'StudentDashboard' })
+const goToDashboard = () => {
+  disableProtection()
+  router.push({ name: 'StudentDashboard' })
+}
 
 // ── Load ───────────────────────────────────────────────────────────────────
 
@@ -765,6 +796,7 @@ onMounted(async () => {
       (attempt.exam?.duration_minutes || attempt.duration_minutes || 60) * 60
 
     startTimer(timeRemaining)
+    enableProtection()
   } catch (err) {
     error.value = err.message || 'Failed to load the exam. Please try again.'
   } finally {
@@ -777,6 +809,7 @@ onMounted(async () => {
 onUnmounted(() => {
   clearInterval(timerInterval)
   clearTimeout(fitbSaveTimer)
+  disableProtection()
   document.removeEventListener('visibilitychange', onVisibilityChange)
 })
 </script>

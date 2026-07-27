@@ -52,8 +52,6 @@
                   text="Start"
                   size="sm"
                   variant="primary"
-                  :processing="launchingExamId === exam.id"
-                  :disabled="launchingExamId !== null"
                   @click="startExam(exam)"
                 />
               </div>
@@ -82,15 +80,6 @@
       </div>
     </SectionCard>
   </div>
-
-  <div
-    v-if="launchingExamId"
-    class="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-[#0B1F3A]/95 px-4 text-center"
-  >
-    <div class="h-12 w-12 animate-spin rounded-full border-4 border-[#D4AF37] border-t-transparent" />
-    <p class="text-lg font-semibold text-white">Launching Secure Exam Browser...</p>
-    <p class="max-w-xs text-sm text-slate-300">Please do not close this window.</p>
-  </div>
 </template>
 
 <script setup>
@@ -100,7 +89,6 @@ import SectionCard from '../../schooladmincomponents/components/SectionCard.vue'
 import AppButton from '../../shared/AppButton.vue'
 import NotificationBell from '../../shared/NotificationBell.vue'
 import { getAvailableExams, getStudentExamAttempt } from '../services/api/studentExams'
-import { startSebExam } from '../services/api/studentSeb'
 import { getStudentResults } from '../services/api/studentResults'
 import { useSchoolAdminUiStore } from '../../schooladmincomponents/stores/ui'
 import { getAuthUser, logout } from '../../../js/lib/auth'
@@ -115,7 +103,6 @@ const logoutLoading = ref(false)
 const allResults = ref([])
 const resultsLoading = ref(false)
 const inProgressAttempts = ref([])
-const launchingExamId = ref(null)
 
 const user = computed(() => getAuthUser() || {})
 const studentName = computed(() => {
@@ -192,34 +179,11 @@ const loadResults = async () => {
   }
 }
 
-// Starting an exam hands off to the Secure Exam Browser client. This is a
-// handoff to a different application, not an in-app route change, so it
-// deliberately bypasses Vue Router — assigning window.location.href lets
-// the OS intercept the URL and open the installed SEB client.
-const startExam = async (exam) => {
-  if (launchingExamId.value) return
-
-  launchingExamId.value = exam.id
-  try {
-    const response = await startSebExam(exam.id)
-    const sebLaunchUrl = response?.seb_launch_url ?? response?.data?.seb_launch_url
-
-    if (!sebLaunchUrl) {
-      throw new Error('The server did not return a secure launch URL.')
-    }
-
-    // Leave launchingExamId set (and the overlay up) through the handoff —
-    // the redirect isn't instant, and there's no "success" state to return
-    // to on this page once it fires.
-    window.location.href = sebLaunchUrl
-  } catch (err) {
-    uiStore.addToast({
-      title: 'Error',
-      message: err.message || 'Could not start the exam. Please try again.',
-      variant: 'error',
-    })
-    launchingExamId.value = null
-  }
+// Starting an exam is a normal in-app route change into the instructions
+// page, which starts the attempt and then routes into the protected exam
+// view (see StudentExamInstructions.vue / StudentExam.vue).
+const startExam = (exam) => {
+  router.push({ name: 'StudentExamInstructions', params: { id: exam.id } })
 }
 
 const resumeExam = (exam) => {
