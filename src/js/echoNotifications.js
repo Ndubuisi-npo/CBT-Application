@@ -54,7 +54,7 @@ export function initializeRealtimeNotifications() {
       key: window.__PUSHER_APP_KEY__,
       cluster: window.__PUSHER_APP_CLUSTER__,
       forceTLS: true,
-      authEndpoint: `${window.API_BASE_URL}/broadcasting/auth`,
+      authEndpoint: `api/broadcasting/auth`,
       auth: {
         headers: {
           Authorization: `Bearer ${token}`,
