@@ -9,7 +9,7 @@ import { apiFetch } from '../../../../js/lib/api'
  * @returns {Promise<{ seb_launch_url: string }>}
  */
 export async function startSebExam(examId) {
-  return await apiFetch(`/api/exams/${examId}/start`, {
+  return await apiFetch(`/api/student/exams/${examId}/start`, {
     method: 'POST',
   })
 }
