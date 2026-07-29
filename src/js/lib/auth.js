@@ -120,6 +120,17 @@ export async function login(credentials) {
   persistAuth(authState)
   setApiToken(authState.token)
 
+  // Reconnect realtime notifications for the newly authenticated user.
+  // Dynamic import avoids a static circular dependency, since
+  // echoNotifications.js itself imports getAuthUser/getAuthToken/etc. from
+  // this module.
+  try {
+    const { initializeRealtimeNotifications } = await import('../echoNotifications')
+    initializeRealtimeNotifications()
+  } catch {
+    // Realtime notifications are a non-critical enhancement - never block login on this.
+  }
+
   return authState
 }
 
@@ -138,6 +149,17 @@ export async function logout() {
     await apiFetch('/api/auth/logout', { method: 'POST' })
   } catch {
     // Logout API call failed - clear local state anyway
+  }
+
+  // Destroy/disconnect Echo completely on logout. Centralized here (rather
+  // than left to each caller) so every logout path - ProfileDropdown,
+  // settings pages, forced-logout-after-password-change, exam leave, etc. -
+  // is guaranteed to tear down the realtime connection.
+  try {
+    const { teardownRealtimeNotifications } = await import('../echoNotifications')
+    teardownRealtimeNotifications()
+  } catch {
+    // Non-critical - never block logout on this.
   }
 
   clearAuth()

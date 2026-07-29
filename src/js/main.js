@@ -20,11 +20,13 @@ app.use(pinia);
 app.use(router);
 app.mount('#app');
 
-initializeRealtimeNotifications();
-
-// Prime the notification bell for whichever role is logged in (school
-// admin, teacher, or student — GET /notifications + GET
-// /notifications/unread-count). No-op on public/unauthenticated pages.
+// Echo must only ever exist for logged-in users — guests never attempt to
+// connect to private/presence channels.
 if (getAuthUser()) {
+  initializeRealtimeNotifications();
+
+  // Prime the notification bell for whichever role is logged in (school
+  // admin, teacher, or student — GET /notifications + GET
+  // /notifications/unread-count). No-op on public/unauthenticated pages.
   void useNotificationStore().initialize();
 }

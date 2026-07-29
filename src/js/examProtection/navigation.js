@@ -9,9 +9,11 @@
 
 let beforeUnloadHandler = null
 let popStateHandler = null
+let backAttemptCount = 0
 
 export function attachNavigationGuard({ onBackAttempt } = {}) {
   detachNavigationGuard()
+  backAttemptCount = 0
 
   beforeUnloadHandler = (e) => {
     e.preventDefault()
@@ -25,7 +27,8 @@ export function attachNavigationGuard({ onBackAttempt } = {}) {
   history.pushState({ examGuard: true }, '', window.location.href)
   popStateHandler = () => {
     history.pushState({ examGuard: true }, '', window.location.href)
-    onBackAttempt?.()
+    backAttemptCount += 1
+    onBackAttempt?.(backAttemptCount)
   }
   window.addEventListener('popstate', popStateHandler)
 
@@ -41,4 +44,5 @@ export function detachNavigationGuard() {
     window.removeEventListener('popstate', popStateHandler)
     popStateHandler = null
   }
+  backAttemptCount = 0
 }

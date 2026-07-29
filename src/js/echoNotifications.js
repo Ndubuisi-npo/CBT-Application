@@ -18,6 +18,12 @@ let activeChannelName = null
  * token, only available after initializeAuthState(), is ready) and
  * subscribes the current user to their private notification channel.
  *
+ * Guests must never reach this far: callers are expected to check
+ * isAuthenticated()/getAuthUser() before invoking this (see main.js and
+ * lib/auth.js's login()). The token/channelName guard below is a defensive
+ * second line, not the primary gate, so it stays silent for the guest case
+ * instead of warning.
+ *
  * Safe to call multiple times (e.g. after login/logout) - it tears down any
  * previous subscription first.
  */
@@ -28,8 +34,9 @@ export function initializeRealtimeNotifications() {
   const user = getAuthUser()
   const channelName = buildChannelName(user)
 
-  if (!token || !channelName) {
-    console.warn('[Realtime Notifications] No authenticated user/token available to subscribe notifications.')
+  if (!token || !user || !channelName) {
+    // No authenticated user - nothing to subscribe to. Not a warning: this
+    // is the expected state for guests on public pages.
     return
   }
 
@@ -54,7 +61,7 @@ export function initializeRealtimeNotifications() {
       key: window.__PUSHER_APP_KEY__,
       cluster: window.__PUSHER_APP_CLUSTER__,
       forceTLS: true,
-      authEndpoint: `api/broadcasting/auth`,
+      authEndpoint: '/api/broadcasting/auth',
       auth: {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -92,7 +99,7 @@ export function initializeRealtimeNotifications() {
   }
 }
 
-/** Tears down the realtime subscription - call this on logout. */
+/** Destroys the realtime subscription and the Echo instance itself - call this on logout. */
 export function teardownRealtimeNotifications() {
   if (typeof window === 'undefined' || !window.Echo) return
   try {
@@ -101,6 +108,10 @@ export function teardownRealtimeNotifications() {
   } catch (error) {
     console.warn('[Realtime Notifications] Failed to disconnect Echo:', error)
   } finally {
+    // The Echo instance must only exist for logged-in users - drop the
+    // reference entirely rather than leaving a disconnected instance around
+    // (it may still hold the previous user's auth token in its config).
+    window.Echo = null
     activeChannelName = null
   }
 }

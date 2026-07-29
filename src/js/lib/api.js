@@ -1,5 +1,23 @@
 const DEFAULT_BASE_URL = 'https://cbt-application-ufyd.onrender.com'
 
+// Root domain tenant subdomains are generated under, e.g. a handle of
+// "greenfield" resolves to "greenfield.educbt.name.ng". Centralized here so
+// nothing else in the frontend hardcodes a domain (localhost or otherwise).
+export const TENANT_ROOT_DOMAIN = 'educbt.name.ng'
+
+/**
+ * Builds a full tenant URL for the given website handle, e.g.
+ * buildTenantUrl('greenfield') -> 'https://greenfield.educbt.name.ng/login'
+ * buildTenantUrl('greenfield', '/student/dashboard') -> 'https://greenfield.educbt.name.ng/student/dashboard'
+ */
+export function buildTenantUrl(handle, path = '/login') {
+  const cleanHandle = (handle || '').trim().toLowerCase()
+  if (!cleanHandle) return null
+
+  const cleanPath = path.startsWith('/') ? path : `/${path}`
+  return `https://${cleanHandle}.${TENANT_ROOT_DOMAIN}${cleanPath}`
+}
+
 function normalizeOrigin(rawBaseUrl) {
   // In development, use /api (vite proxy handles it)
   // In production, use the full URL

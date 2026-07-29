@@ -23,7 +23,7 @@ import { attachMouseGuards } from './mouse'
 import { attachClipboardGuards } from './clipboard'
 import { attachFullscreenGuard, requestFullscreen, exitFullscreen } from './fullscreen'
 import { attachVisibilityGuard } from './visibility'
-import { attachNavigationGuard } from './navigation'
+import { attachNavigationGuard, detachNavigationGuard } from './navigation'
 import { injectProtectionStyles, removeProtectionStyles, setContentObscured } from './styles'
 
 export const protectionState = reactive({
@@ -34,9 +34,32 @@ export const protectionState = reactive({
   // Fullscreen was exited and the browser refused a silent re-request —
   // needs a real click from the student to re-enter.
   fullscreenPromptVisible: false,
+  // First Back attempt is trapped silently; a repeated attempt surfaces the
+  // "Leave Exam?" confirmation dialog. Shared by the full exam-taking
+  // protection suite (enableProtection) and the lighter, navigation-only
+  // guard used on the Instructions page (enableBackNavigationGuard) so both
+  // pages present the exact same dialog/behavior.
+  leaveConfirmVisible: false,
 })
 
 let cleanupFns = []
+let backGuardCleanup = null
+
+/**
+ * Single source of truth for the "trap Back, and on a repeated attempt show
+ * the Leave Exam? dialog" behavior. Used by both enableProtection() (full
+ * exam-taking protection) and enableBackNavigationGuard() (Instructions
+ * page) so the two never drift apart.
+ */
+function createNavigationGuardCleanup() {
+  return attachNavigationGuard({
+    onBackAttempt: (count) => {
+      if (count > 1) {
+        protectionState.leaveConfirmVisible = true
+      }
+    },
+  })
+}
 
 /**
  * @param {{ fullscreen?: boolean }} options fullscreen defaults to true;
@@ -50,6 +73,7 @@ export function enableProtection(options = {}) {
   protectionState.active = true
   protectionState.overlayVisible = false
   protectionState.fullscreenPromptVisible = false
+  protectionState.leaveConfirmVisible = false
 
   injectProtectionStyles()
 
@@ -67,7 +91,7 @@ export function enableProtection(options = {}) {
         setContentObscured(false)
       },
     }),
-    attachNavigationGuard(),
+    createNavigationGuardCleanup(),
   ]
 
   if (fullscreen) {
@@ -94,6 +118,7 @@ export function disableProtection() {
     exitFullscreen().catch(() => {})
     protectionState.overlayVisible = false
     protectionState.fullscreenPromptVisible = false
+    protectionState.leaveConfirmVisible = false
     return
   }
 
@@ -106,6 +131,7 @@ export function disableProtection() {
   protectionState.active = false
   protectionState.overlayVisible = false
   protectionState.fullscreenPromptVisible = false
+  protectionState.leaveConfirmVisible = false
 }
 
 /**
@@ -119,4 +145,33 @@ export function reenterFullscreen() {
   })
 }
 
-export { requestFullscreen, exitFullscreen }
+/**
+ * Lightweight counterpart to enableProtection() for pages that only need
+ * the Back-gesture trap + "Leave Exam?" dialog (e.g. the Instructions page,
+ * before the full exam anti-cheat suite is active), reusing the exact same
+ * navigation.js trap and protectionState.leaveConfirmVisible flag as
+ * enableProtection() so the two pages behave identically. Safe to call
+ * alongside enableProtection() (e.g. handing off from Instructions into the
+ * Exam page): calling either enable function tears down and replaces any
+ * previous navigation guard first.
+ */
+export function enableBackNavigationGuard() {
+  if (backGuardCleanup) return
+  protectionState.leaveConfirmVisible = false
+  backGuardCleanup = createNavigationGuardCleanup()
+}
+
+export function disableBackNavigationGuard() {
+  if (backGuardCleanup) {
+    backGuardCleanup()
+    backGuardCleanup = null
+  }
+  protectionState.leaveConfirmVisible = false
+}
+
+/** "Stay" button handler: dismiss the dialog, remain on the page. */
+export function dismissLeaveConfirm() {
+  protectionState.leaveConfirmVisible = false
+}
+
+export { requestFullscreen, exitFullscreen, detachNavigationGuard }

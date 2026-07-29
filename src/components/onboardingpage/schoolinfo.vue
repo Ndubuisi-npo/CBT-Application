@@ -38,14 +38,19 @@
               <span class="shrink-0 text-slate-500">https://</span>
               <input
                 id="website"
-                v-model="formData.handle"
+                :value="formData.handle"
                 type="text"
                 placeholder="e.g. lekki"
                 maxlength="10"
+                inputmode="text"
+                autocomplete="off"
+                autocapitalize="off"
+                spellcheck="false"
+                @input="onHandleInput"
                 @keydown.space.prevent
                 class="min-w-0 flex-1 bg-transparent py-3 outline-none placeholder:text-slate-400 sm:py-4"
               />
-              <span class="hidden shrink-0 text-slate-500 sm:inline">.localhost:5173</span>
+              <span class="hidden shrink-0 text-slate-500 sm:inline">.{{ tenantRootDomain }}</span>
               <div class="ml-2 shrink-0 sm:ml-3">
                 <Loader2 v-if="handleStatus === 'checking'" class="h-5 w-5 animate-spin text-slate-400" />
                 <Check v-else-if="handleStatus === 'available'" class="h-5 w-5 text-green-500" />
@@ -54,9 +59,10 @@
             </div>
           </div>
           <div class="space-y-1">
-            <p class="text-sm text-slate-500 sm:hidden">Your site: {{ formData.handle || 'yourhandle' }}.localhost:5173</p>
-            <p class="text-sm text-slate-500">Choose a unique handle (max 10 characters)</p>
-            <p v-if="errors.handle" class="text-sm text-red-500">{{ errors.handle }}</p>
+            <p class="text-sm text-slate-500 sm:hidden">Your site: {{ formData.handle || 'yourhandle' }}.{{ tenantRootDomain }}</p>
+            <p class="text-sm text-slate-500">Choose a unique handle (max 10 characters, letters and numbers only)</p>
+            <p v-if="handleFormatWarning" class="text-sm text-amber-600">{{ handleFormatWarning }}</p>
+            <p v-else-if="errors.handle" class="text-sm text-red-500">{{ errors.handle }}</p>
             <p v-else-if="handleError" class="text-sm text-red-500">{{ handleError }}</p>
             <p v-else-if="handleStatus === 'available'" class="text-sm text-green-500">Handle is available!</p>
             <p v-else-if="handleStatus === 'taken'" class="text-sm text-red-500">This handle is already taken</p>
@@ -145,6 +151,9 @@ import { ArrowRight, ChevronDown, School2, Check, X, Loader2 } from 'lucide-vue-
 import { debounce } from 'lodash'
 import { checkHandle } from './api/onboarding'
 import nigerianStatesData from './data/nigerian-states.json'
+import { TENANT_ROOT_DOMAIN } from '../../js/lib/api'
+
+const tenantRootDomain = TENANT_ROOT_DOMAIN
 
 const props = defineProps<{
   formData: {
@@ -173,6 +182,29 @@ const emit = defineEmits<{
 // Handle checking state
 const handleStatus = ref<'idle' | 'checking' | 'available' | 'taken'>('idle')
 const handleError = ref('')
+// Friendly message shown briefly when the user types a character that isn't
+// allowed in a website handle (it gets stripped automatically as they type).
+const handleFormatWarning = ref('')
+let handleFormatWarningTimeout: ReturnType<typeof setTimeout> | null = null
+
+// Website handles may only contain lowercase letters and numbers - no
+// spaces, punctuation, or symbols of any kind.
+const sanitizeHandle = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, '')
+
+const onHandleInput = (event: Event) => {
+  const raw = (event.target as HTMLInputElement).value
+  const sanitized = sanitizeHandle(raw).slice(0, 10)
+
+  props.formData.handle = sanitized
+
+  if (raw.toLowerCase().replace(/[^a-z0-9]/g, '').length !== raw.length || raw !== raw.toLowerCase()) {
+    handleFormatWarning.value = 'Only lowercase letters and numbers are allowed - anything else is removed automatically.'
+    if (handleFormatWarningTimeout) clearTimeout(handleFormatWarningTimeout)
+    handleFormatWarningTimeout = setTimeout(() => {
+      handleFormatWarning.value = ''
+    }, 2500)
+  }
+}
 
 // Form validation state
 const errors = ref({

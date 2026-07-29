@@ -118,6 +118,16 @@
       <p class="max-w-xs text-sm text-slate-300">This exam must be taken in fullscreen. Click below to continue.</p>
       <AppButton text="Return to fullscreen" variant="primary" @click="returnToFullscreen" />
     </div>
+
+    <!-- Same Back-gesture trap + "Leave Exam?" dialog used on the Exam page
+         (src/js/examProtection), so leaving via Back behaves identically on
+         both pages. -->
+    <LeaveExamDialog
+      :visible="protectionState.leaveConfirmVisible"
+      :leaving="leavingExam"
+      @stay="dismissLeaveConfirm"
+      @leave="confirmLeaveExam"
+    />
   </div>
 </template>
 
@@ -126,10 +136,19 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import { Maximize } from 'lucide-vue-next'
 import AppButton from '../../shared/AppButton.vue'
+import LeaveExamDialog from '../../shared/LeaveExamDialog.vue'
 import { getStudentExam, startStudentExam } from '../services/api/studentExams'
 import { fmtDateTime } from '../../../js/lib/helpers'
 import { useSchoolAdminUiStore } from '../../schooladmincomponents/stores/ui'
-import { disableProtection, requestFullscreen } from '../../../js/examProtection'
+import {
+  disableProtection,
+  requestFullscreen,
+  protectionState,
+  enableBackNavigationGuard,
+  disableBackNavigationGuard,
+  dismissLeaveConfirm,
+} from '../../../js/examProtection'
+import { leaveExam } from '../../../js/examProtection/leaveExam'
 import { getAuthUser } from '../../../js/lib/auth'
 
 const props = defineProps({ id: { type: String, required: true } })
@@ -144,6 +163,7 @@ const loading = ref(true)
 const starting = ref(false)
 const startError = ref(null)
 const fullscreenPromptVisible = ref(false)
+const leavingExam = ref(false)
 let leavingInstructions = false
 
 const user = computed(() => getAuthUser() || {})
@@ -239,6 +259,10 @@ onMounted(async () => {
   document.addEventListener('MSFullscreenChange', onFullscreenChange)
   fullscreenPromptVisible.value = !isFullscreenActive()
 
+  // Same Back-gesture trap used on the Exam page: first attempt does
+  // nothing, a repeated attempt shows the "Leave Exam?" dialog.
+  enableBackNavigationGuard()
+
   try {
     exam.value = await getStudentExam(examId)
   } catch (err) {
@@ -253,12 +277,14 @@ const beginExam = async () => {
   startError.value = null
   try {
     await startStudentExam(examId)
+    disableBackNavigationGuard()
     router.push({ name: 'StudentExam', params: { id: examId } })
   } catch (err) {
     const status = err?.status || 0
 
     if (status === 409) {
       // Attempt already exists - resume
+      disableBackNavigationGuard()
       router.push({ name: 'StudentExam', params: { id: examId } })
       return
     }
@@ -268,16 +294,24 @@ const beginExam = async () => {
   }
 }
 
-const goBack = () => {
+// "Stay" - dismiss the dialog, remain on the Instructions page.
+// (dismissLeaveConfirm imported directly from examProtection, used as-is in the template)
+
+// "Leave" - logout the student, clear exam session/temp data, redirect to login.
+const confirmLeaveExam = async () => {
   leavingInstructions = true
-  disableProtection()
-  router.push({ name: 'StudentDashboard' })
+  leavingExam.value = true
+  await leaveExam(router, () => {
+    exam.value = null
+    startError.value = null
+  })
 }
 
 onBeforeRouteLeave((to) => {
   leavingInstructions = true
   if (to.name !== 'StudentExam') {
     disableProtection()
+    disableBackNavigationGuard()
   }
 })
 
@@ -286,5 +320,6 @@ onUnmounted(() => {
   document.removeEventListener('webkitfullscreenchange', onFullscreenChange)
   document.removeEventListener('mozfullscreenchange', onFullscreenChange)
   document.removeEventListener('MSFullscreenChange', onFullscreenChange)
+  disableBackNavigationGuard()
 })
 </script>

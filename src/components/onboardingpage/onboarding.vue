@@ -77,6 +77,7 @@ import ChoosePlan from './chooseplan.vue'
 import Review from './review.vue'
 import SchoolInfo from './schoolinfo.vue'
 import { registerOnboarding } from './api/onboarding'
+import { buildTenantUrl } from '../../js/lib/api'
 
 const steps = ['School Info', 'Admin Details', 'Choose Plan', 'Review']
 
@@ -158,12 +159,10 @@ const submitRegistration = async () => {
     }
     
     await registerOnboarding(payload)
-    
-    const tenantPrefix = formData.value.handle?.trim()
-    const host = window.location.host
-    const loginUrl = tenantPrefix
-      ? `${window.location.protocol}//${tenantPrefix}.${host}/login`
-      : '/login'
+
+    // Redirect immediately to the tenant's own subdomain login page, e.g.
+    // https://greenfield.educbt.name.ng/login
+    const loginUrl = buildTenantUrl(formData.value.handle, '/login') || '/login'
 
     window.location.href = loginUrl
   } catch (error: any) {

@@ -314,6 +314,15 @@
       <p class="max-w-xs text-sm text-slate-300">This exam must be taken in fullscreen. Click below to continue.</p>
       <AppButton text="Return to fullscreen" variant="primary" @click="reenterFullscreen" />
     </div>
+
+    <!-- Back-gesture trap + "Leave Exam?" dialog (js/examProtection): first
+         attempt is silently trapped, a repeated attempt shows this. -->
+    <LeaveExamDialog
+      :visible="protectionState.leaveConfirmVisible"
+      :leaving="leavingExam"
+      @stay="dismissLeaveConfirm"
+      @leave="confirmLeaveExam"
+    />
   </div>
 </template>
 
@@ -322,6 +331,7 @@ import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { CheckCircle2, Clock, Flag, Eye, Maximize } from 'lucide-vue-next'
 import AppButton from '../../shared/AppButton.vue'
+import LeaveExamDialog from '../../shared/LeaveExamDialog.vue'
 import {
   getStudentExamAttempt,
   getStudentExamQuestions,
@@ -332,7 +342,8 @@ import {
 } from '../services/api/studentExams'
 import { useSchoolAdminUiStore } from '../../schooladmincomponents/stores/ui'
 import { getAuthUser } from '../../../js/lib/auth'
-import { enableProtection, disableProtection, protectionState, reenterFullscreen } from '../../../js/examProtection'
+import { enableProtection, disableProtection, protectionState, reenterFullscreen, dismissLeaveConfirm } from '../../../js/examProtection'
+import { leaveExam } from '../../../js/examProtection/leaveExam'
 import { fmtDateTime } from '../../../js/lib/helpers'
 import { normalizeQuestionText } from '../../../js/lib/questionText'
 import { isChoiceBased, isFillInBlank, isMultipleAnswer, QUESTION_TYPE_LABELS, buildAnswerPayload } from '../../../types/question'
@@ -365,6 +376,7 @@ const submitted = ref(false)
 const submitting = ref(false)
 const showSubmitConfirm = ref(false)
 const savedIndicator = ref(false)
+const leavingExam = ref(false)
 
 const user = computed(() => getAuthUser() || {})
 const studentName = computed(() => {
@@ -798,6 +810,20 @@ const autoSubmit = async () => {
 const goToDashboard = () => {
   disableProtection()
   router.push({ name: 'StudentDashboard' })
+}
+
+// "Leave" from the shared "Leave Exam?" dialog (surfaced after a repeated
+// Back-gesture attempt - see js/examProtection). Logs the student out,
+// clears this attempt's in-memory answers/timer, and redirects to login.
+const confirmLeaveExam = async () => {
+  leavingExam.value = true
+  clearInterval(timerInterval)
+  clearTimeout(fitbSaveTimer)
+  await leaveExam(router, () => {
+    Object.keys(answers).forEach((key) => delete answers[key])
+    Object.keys(flagged).forEach((key) => delete flagged[key])
+    attemptId.value = null
+  })
 }
 
 // ── Load ───────────────────────────────────────────────────────────────────

@@ -28,14 +28,17 @@ export default defineConfig({
                 rewrite: (path) => path,
             },
             // Laravel Echo's private-channel auth handshake (see
-            // src/js/echoNotifications.js) posts to `${API_BASE_URL}/broadcasting/auth`.
-            // API_BASE_URL is intentionally '' in dev (see src/js/lib/api.js), so that
-            // request resolves relative to the current page origin
-            // (e.g. http://pss.localhost:5173/broadcasting/auth) instead of the real
-            // backend. Without this proxy entry, Vite's SPA fallback serves index.html
-            // for that path instead of a real auth response, and every private-channel
-            // subscription silently fails — no console error, it just never receives
-            // realtime notifications.
+            // src/js/echoNotifications.js) posts to the absolute path
+            // `/api/broadcasting/auth`, which the `/api` proxy above already
+            // covers. This extra `/broadcasting` rule is kept as a fallback
+            // in case any code path still resolves against a bare
+            // `/broadcasting/...` path. API_BASE_URL is intentionally '' in
+            // dev (see src/js/lib/api.js), so requests resolve relative to
+            // the current page origin instead of the real backend. Without
+            // this proxy entry, Vite's SPA fallback serves index.html for
+            // that path instead of a real auth response, and every
+            // private-channel subscription silently fails — no console
+            // error, it just never receives realtime notifications.
             '/broadcasting': {
                 target: 'https://cbt-application-ufyd.onrender.com',
                 changeOrigin: true,
