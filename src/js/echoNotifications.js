@@ -1,6 +1,7 @@
 import Echo from 'laravel-echo'
 import { getAuthUser, getAuthRole, getAuthToken, getTenantSlug } from './lib/auth'
 import { useNotificationStore } from '../components/shared/stores/notifications'
+import { getTenantHandle } from './lib/api'
 
 const buildChannelName = (user) => {
   if (!user || !user.id) return null
@@ -64,6 +65,7 @@ export function initializeRealtimeNotifications() {
       authEndpoint: '/api/broadcasting/auth',
       auth: {
         headers: {
+          'X-Tenant': getTenantHandle(),
           Authorization: `Bearer ${token}`,
           Accept: 'application/json',
         },
