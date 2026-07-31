@@ -130,23 +130,6 @@ export async function updateExamQuestion(examId, examQuestionId, payload) {
   }
 }
 
-/**
- * Bulk-replace an exam's question list in a single request.
- * payload: { questions: [{ question_id, marks, is_marks_locked, order }] }
- * Ref: FE-MD-100 section 07-02-00 — the draft is sent to the server only at
- * submit, in one request, never per local action.
- */
-export async function bulkSetExamQuestions(examId, questions) {
-  try {
-    return await apiFetch(`/api/exams/${examId}`, {
-      method: 'PUT',
-      body: JSON.stringify({ questions }),
-    })
-  } catch (error) {
-    throw new Error(extractErrorMessage(error, 'Unable to save exam questions.'))
-  }
-}
-
 export async function startStudentAttempt(examId) {
   // Called by teacher (impersonating student) or by student directly
   try {

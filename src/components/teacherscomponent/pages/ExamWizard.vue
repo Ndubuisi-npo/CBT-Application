@@ -400,7 +400,7 @@
       <div class="flex flex-wrap items-center gap-2">
         <AppButton text="Previous" variant="ghost" :disabled="currentStep === 1" @click="currentStep -= 1" />
         <AppButton v-if="currentStep < 4" text="Next Step" variant="primary" @click="nextStep" />
-        <AppButton v-else text="Save Draft" variant="primary" @click="openSaveDialog" />
+        <AppButton v-else text="Create Exam" variant="primary" @click="openSaveDialog" />
       </div>
     </div>
 
@@ -408,7 +408,7 @@
       <div class="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-2xl">
         <div class="flex items-start justify-between gap-4">
           <div>
-            <p class="text-xs font-semibold uppercase tracking-[0.24em] text-[#D4AF37]">Save Draft</p>
+            <p class="text-xs font-semibold uppercase tracking-[0.24em] text-[#D4AF37]">Create Exam</p>
             <h2 class="mt-2 text-2xl font-semibold text-slate-900">{{ wizard.title || 'Untitled exam draft' }}</h2>
           </div>
           <AppButton :icon="X" variant="ghost" @click="showSaveModal = false" />
@@ -476,6 +476,7 @@ const showSaveModal = ref(false)
 const autosaveLabel    = ref('Not saved yet')
 const saving           = ref(false)
 const createdExamId    = ref(null)
+const linkedQuestionIds = ref(new Map()) // question_id -> exam_question id already saved on the backend
 
 const questionFilters = reactive({ topic: '' })
 const questionBankLoaded = ref(false)
@@ -683,6 +684,24 @@ const blockedByMarksFault = () => {
   return false
 }
 
+// 07-02-00: create the exam once (if needed) or update its details, then
+// sync the draft question list against the backend using the per-question
+// endpoints (the backend has no bulk/replace endpoint — PUT /api/exams/{id}
+// does not accept a `questions` field).
+const persistExam = async () => {
+  if (!createdExamId.value) {
+    const record = await examsStore.createExam(buildPayload())
+    createdExamId.value = record.id
+  } else {
+    await examsStore.updateExam(createdExamId.value, buildPayload())
+  }
+  linkedQuestionIds.value = await examsStore.syncExamQuestions(
+    createdExamId.value,
+    marksEngine.draftQuestions.value,
+    linkedQuestionIds.value,
+  )
+}
+
 const saveDraft = async () => {
   if (!wizard.title) {
     uiStore.addToast({ title: 'Title required', message: 'Add a title before saving.', variant: 'error' })
@@ -691,13 +710,7 @@ const saveDraft = async () => {
   if (blockedByMarksFault()) return
   saving.value = true
   try {
-    if (createdExamId.value) {
-      await examsStore.updateExam(createdExamId.value, buildPayload())
-    } else {
-      const record = await examsStore.createExam(buildPayload())
-      createdExamId.value = record.id
-    }
-    await submitQuestionsToExam(createdExamId.value)
+    await persistExam()
     autosaveLabel.value = 'Saved just now'
     uiStore.addToast({ title: 'Draft saved', message: 'Exam saved as draft.', variant: 'success' })
   } catch (err) {
@@ -705,13 +718,6 @@ const saveDraft = async () => {
   } finally {
     saving.value = false
   }
-}
-
-// 07-02-00: send the full draft questions list in one PUT request to
-// /api/exams/{id}. This is the only point in the flow that persists questions.
-const submitQuestionsToExam = async (examId) => {
-  if (!selectedQuestions.value.length) return
-  await examsStore.bulkSetQuestions(examId, marksEngine.draftQuestions.value)
 }
 
 const openSaveDialog = () => {
@@ -728,18 +734,11 @@ const saveExam = async () => {
   showSaveModal.value = false
   saving.value = true
   try {
-    let examId = createdExamId.value
-    if (!examId) {
-      const record = await examsStore.createExam(buildPayload())
-      examId = record.id
-      createdExamId.value = examId
-    }
-    await submitQuestionsToExam(examId)
-    // Admin-review workflow removed — teacher saves directly as draft
+    await persistExam()
     autosaveLabel.value = 'Saved'
     uiStore.addToast({
-      title: 'Exam saved as draft',
-      message: 'Your exam is ready. Go to Exams to launch it.',
+      title: 'Exam created',
+      message: 'Your exam has been created. Launch it from the Exams page when ready.',
       variant: 'success',
     })
     router.push('/teachers/exams')

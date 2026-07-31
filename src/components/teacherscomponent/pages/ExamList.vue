@@ -99,10 +99,9 @@
               <!-- Always available -->
               <AppButton :icon="Eye" text="Preview" variant="ghost" size="sm" @click="previewExam(exam)" />
 
-              <!-- Edit/Questions N/A only for draft -->
+              <!-- Edit N/A only for draft -->
               <template v-if="store.canEdit(exam)">
                 <AppButton :icon="Edit3" text="Continue Draft" variant="outline" size="sm" @click="$router.push('/teachers/exam-wizard')" />
-                <AppButton :icon="ListChecks" text="Questions" variant="secondary" size="sm" @click="manageQuestions(exam)" />
               </template>
 
               <!-- Results N/A completed exams only -->
@@ -164,14 +163,6 @@
       @close="closeFormModal"
     />
 
-    <!-- Question management panel -->
-    <ExamQuestionsPanel
-      v-if="questionsPanelExam"
-      :exam="questionsPanelExam"
-      @close="questionsPanelExam = null"
-      @updated="loadExams"
-    />
-
     <!-- Results panel -->
     <ExamResultsPanel
       v-if="resultsExam"
@@ -190,13 +181,12 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
-import { BarChart2, Edit3, Eye, FileQuestion, ListChecks, Plus, Trash2 } from 'lucide-vue-next'
+import { BarChart2, Edit3, Eye, FileQuestion, Plus, Trash2 } from 'lucide-vue-next'
 import AppButton from '../../shared/AppButton.vue'
 import SectionCard from '../components/SectionCard.vue'
 import { displayOrNA } from '../../../js/lib/utils'
 import ConfirmModal from '../components/ConfirmModal.vue'
 import ExamFormModal from '../components/ExamFormModal.vue'
-import ExamQuestionsPanel from '../components/ExamQuestionsPanel.vue'
 import ExamResultsPanel from '../components/ExamResultsPanel.vue'
 import ExamPreviewModal from '../components/ExamPreviewModal.vue'
 import { useTeacherExamsStore } from '../stores/exams'
@@ -212,7 +202,6 @@ const processingId = ref(null)
 const pendingAction = ref(null)  // { examId, action, title, message, confirmLabel, variant, extraField? }
 const showFormModal = ref(false)
 const editingExam = ref(null)
-const questionsPanelExam = ref(null)
 const resultsExam = ref(null)
 const previewExamData = ref(null)
 
@@ -295,10 +284,6 @@ const onExamSaved = async () => {
   closeFormModal()
   await loadExams()
   uiStore.addToast({ title: 'Exam saved', message: 'Your exam has been saved.', variant: 'success' })
-}
-
-const manageQuestions = (exam) => {
-  questionsPanelExam.value = exam
 }
 
 const viewResults = (exam) => {

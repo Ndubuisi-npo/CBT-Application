@@ -18,7 +18,6 @@ import {
   addQuestionToExam,
   removeQuestionFromExam,
   updateExamQuestion,
-  bulkSetExamQuestions,
   getStudentAttempts,
   forceSubmitAttempt,
   getExamResults,
@@ -312,19 +311,45 @@ export const useTeacherExamsStore = defineStore('teacher-exams', {
     },
 
     /**
-     * Submit procedure (FE-MD-100 07-02-00): send the full draft questions
-     * list in one PUT request to /api/exams/{id}.
+     * Sync an exam's question list against a draft, using the per-question
+     * endpoints (no bulk/replace endpoint exists on the backend). Diffs
+     * `linkedIds` (a Map of question_id -> exam_question id already saved
+     * for this exam) against the draft: adds new questions, updates marks/
+     * order for ones already linked, and removes ones no longer in the
+     * draft. Returns the updated Map for the caller to keep as state.
      */
-    async bulkSetQuestions(examId, draftQuestions) {
-      const payload = draftQuestions.map((q) => ({
-        question_id: q.question_id,
-        marks: q.marks,
-        is_marks_locked: q.is_marks_locked,
-        order: q.order,
-      }))
-      const result = await bulkSetExamQuestions(examId, payload)
-      this.currentExamQuestions = Array.isArray(result) ? result : (result?.data || payload)
-      return this.currentExamQuestions
+    async syncExamQuestions(examId, draftQuestions, linkedIds) {
+      const next = new Map(linkedIds)
+      const draftIds = new Set(draftQuestions.map((q) => String(q.question_id)))
+
+      // Remove questions dropped from the draft
+      for (const [qid, examQuestionId] of [...next.entries()]) {
+        if (!draftIds.has(qid)) {
+          await this.removeQuestion(examId, examQuestionId)
+          next.delete(qid)
+        }
+      }
+
+      // Add new questions / sync marks+order for existing ones
+      for (let i = 0; i < draftQuestions.length; i++) {
+        const q = draftQuestions[i]
+        const qid = String(q.question_id)
+        const order = i + 1
+        if (next.has(qid)) {
+          await this.updateQuestion(examId, next.get(qid), { marks: q.marks, order })
+        } else {
+          const result = await this.addQuestion(examId, { question_id: q.question_id, marks: q.marks, order })
+          const examQuestionId = result?.id ?? result?.exam_question_id ?? result?.data?.id
+          if (examQuestionId) next.set(qid, examQuestionId)
+        }
+      }
+
+      // Keep the exams list's question count in sync so the list page
+      // reflects the save immediately, without waiting on a refetch.
+      const idx = this.exams.findIndex((e) => e.id === examId)
+      if (idx !== -1) this.exams[idx] = { ...this.exams[idx], question_count: next.size, questions_count: next.size }
+
+      return next
     },
 
     // ── Monitoring ────────────────────────────────────────────────────────────
