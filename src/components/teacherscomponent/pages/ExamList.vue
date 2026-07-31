@@ -4,7 +4,7 @@
     <SectionCard title="Exam Management" subtitle="Create, manage, and submit your exams. The school admin activates them for students.">
       <template #header>
         <div class="flex flex-wrap items-center gap-3">
-          <AppButton data-tour="create-exam-btn" :icon="Plus" text="Create Exam" variant="primary" @click="$router.push('/teachers/exams/create')" />
+          <AppButton data-tour="create-exam-btn" :icon="Plus" text="Create Exam" variant="primary" @click="$router.push('/teachers/exam-wizard')" />
           <AppButton :icon="FileQuestion" text="Question Bank" variant="outline" @click="$router.push('/teachers/questions')" />
         </div>
       </template>
@@ -101,7 +101,7 @@
 
               <!-- Edit/Questions N/A only for draft -->
               <template v-if="store.canEdit(exam)">
-                <AppButton :icon="Edit3" text="Continue Draft" variant="outline" size="sm" @click="$router.push(`/teachers/exams/create?edit=${exam.id}`)" />
+                <AppButton :icon="Edit3" text="Continue Draft" variant="outline" size="sm" @click="$router.push('/teachers/exam-wizard')" />
                 <AppButton :icon="ListChecks" text="Questions" variant="secondary" size="sm" @click="manageQuestions(exam)" />
               </template>
 
@@ -135,7 +135,7 @@
         >
           <p class="font-medium text-slate-700">No exams found</p>
           <p class="mt-2">Create your first exam to get started.</p>
-          <AppButton class="mt-4" :icon="Plus" text="Create Exam" variant="primary" @click="$router.push('/teachers/exams/create')" />
+          <AppButton class="mt-4" :icon="Plus" text="Create Exam" variant="primary" @click="$router.push('/teachers/exam-wizard')" />
         </div>
       </div>
     </SectionCard>

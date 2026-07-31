@@ -32,7 +32,6 @@ import TeacherImportPage from '../components/schooladmincomponents/pages/Teacher
 import TeachersDashboard from '../components/teacherscomponent/pages/TeachersDashboard.vue'
 import TeachersExamList from '../components/teacherscomponent/pages/ExamList.vue'
 import TeachersExamWizard from '../components/teacherscomponent/pages/ExamWizard.vue'
-import TeachersExamCreatePage from '../components/teacherscomponent/pages/ExamCreatePage.vue'
 import TeachersQuestionBank from '../components/teacherscomponent/pages/QuestionBank.vue'
 import TeachersQuestionCreatePage from '../components/teacherscomponent/pages/QuestionCreatePage.vue'
 import TeachersTopicsPage from '../components/teacherscomponent/pages/TopicsPage.vue'
@@ -128,7 +127,6 @@ const routes = [
 
           // Exam list + Create Exam page + Wizard
           { path: 'exams', name: 'TeachersExamList', component: TeachersExamList },
-          { path: 'exams/create', name: 'TeachersExamCreate', component: TeachersExamCreatePage },
           { path: 'exam-wizard', name: 'TeachersExamWizard', component: TeachersExamWizard },
 
           // Students + Student Results (Features 2 & 3)

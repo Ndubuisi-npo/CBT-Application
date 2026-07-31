@@ -99,8 +99,23 @@
                     <option value="">All topics</option>
                     <option v-for="topic in questionTopics" :key="topic" :value="topic">{{ topic }}</option>
                   </select>
+                  <label class="flex items-center gap-2 text-sm text-slate-600">
+                    Total Marks
+                    <input v-model.number="wizard.totalMarks" type="number" min="0" class="wizard-input w-28" placeholder="100" />
+                  </label>
                 </div>
                 <div class="text-sm text-slate-500">{{ selectedQuestions.length }} question(s) selected</div>
+              </div>
+
+              <!-- 06-00-00 fault isolation banners -->
+              <div v-if="marksEngine.lockedExceedsTotal.value" class="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                Locked marks exceed total. Reduce a locked question.
+              </div>
+              <div v-else-if="marksEngine.allLocked.value && Math.abs(marksEngine.submitCheck.value.difference) > 0.01" class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                All questions are locked. The sum of marks ({{ marksEngine.submitCheck.value.sum }}) must equal the exam total ({{ wizard.totalMarks ?? 0 }}) before you can save.
+              </div>
+              <div v-else-if="marksEngine.zeroPoolNoMarksLeft.value" class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
+                No marks left to distribute — locked questions already use the full exam total.
               </div>
 
               <div class="grid gap-6 xl:grid-cols-[1fr_0.9fr]">
@@ -117,7 +132,7 @@
                           <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">Multiple Choice</span>
                         </div>
                         <h4 class="text-base font-semibold text-slate-900">{{ question.content }}</h4>
-                        <p class="text-sm text-slate-500">{{ question.topic }} • {{ question.className }} • {{ question.marks }} marks</p>
+                        <p class="text-sm text-slate-500">{{ question.topic }} • {{ question.className }} • {{ question.default_marks ?? question.marks }} marks</p>
                       </div>
                       <AppButton
                         :text="isSelected(question.id) ? 'Remove' : 'Add Question'"
@@ -142,7 +157,12 @@
                   </div>
 
                   <div v-else class="space-y-3">
-                    <article v-for="(question, index) in selectedQuestions" :key="question.id" class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                    <article
+                      v-for="(question, index) in selectedQuestions"
+                      :key="question.id"
+                      class="rounded-2xl border p-4"
+                      :class="question.draft.is_marks_locked ? 'border-amber-200 bg-amber-50/40' : marksEngine.zeroPoolNoMarksLeft.value ? 'border-slate-200 bg-slate-100' : 'border-slate-200 bg-slate-50'"
+                    >
                       <div class="flex items-start justify-between gap-3">
                         <div class="space-y-2">
                           <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Question {{ index + 1 }}</p>
@@ -150,24 +170,64 @@
                           <div class="flex flex-wrap gap-2">
                             <span class="rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-600">{{ question.topic }}</span>
                             <span class="rounded-full bg-white px-3 py-1 text-xs font-medium text-emerald-700">Correct answer stored</span>
+                            <span
+                              class="rounded-full px-3 py-1 text-xs font-medium"
+                              :class="question.draft.is_marks_locked ? 'bg-amber-100 text-amber-800' : 'bg-slate-200 text-slate-700'"
+                            >
+                              {{ question.draft.is_marks_locked ? 'Locked' : 'Unlocked' }}
+                            </span>
                           </div>
                         </div>
                         <div class="flex items-center gap-2">
                           <AppButton text="Up" variant="ghost" size="sm" :disabled="index === 0" @click="moveQuestion(index, -1)" />
                           <AppButton text="Down" variant="ghost" size="sm" :disabled="index === selectedQuestions.length - 1" @click="moveQuestion(index, 1)" />
+                          <AppButton
+                            :text="question.draft.is_marks_locked ? 'Unlock' : 'Lock'"
+                            :variant="question.draft.is_marks_locked ? 'outline' : 'secondary'"
+                            size="sm"
+                            @click="toggleQuestionLock(question.id)"
+                          />
                         </div>
                       </div>
 
                       <div class="mt-4 grid gap-3 sm:grid-cols-[120px_1fr]">
                         <label class="wizard-field">
                           <span>Marks</span>
-                          <input v-model.number="wizard.questionMarks[question.id]" type="number" min="1" class="wizard-input" />
+                          <input
+                            :value="question.draft.marks"
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            class="wizard-input"
+                            :class="question.draft.is_marks_locked ? '' : 'bg-slate-100 text-slate-500'"
+                            :disabled="!question.draft.is_marks_locked"
+                            @input="updateQuestionMarks(question.id, $event.target.value)"
+                          />
                         </label>
                         <div class="rounded-2xl bg-white px-4 py-3 text-sm text-slate-500">
-                          Auto-grading will compare the student option against the teacher-selected correct option for this question.
+                          {{
+                            question.draft.is_marks_locked
+                              ? 'Teacher-controlled mark. Unlock to let the system redistribute it.'
+                              : 'System-controlled mark. Lock to set a fixed mark for this question.'
+                          }}
                         </div>
                       </div>
                     </article>
+                  </div>
+
+                  <div class="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-600">
+                    <div class="flex items-center justify-between">
+                      <span>Locked sum</span>
+                      <span class="font-semibold text-slate-900">{{ marksEngine.lockedSum.value }}</span>
+                    </div>
+                    <div class="mt-1 flex items-center justify-between">
+                      <span>Remaining for unlocked pool</span>
+                      <span class="font-semibold text-slate-900">{{ marksEngine.remaining.value }}</span>
+                    </div>
+                    <div class="mt-1 flex items-center justify-between">
+                      <span>Allocated total</span>
+                      <span class="font-semibold text-slate-900">{{ marksEngine.submitCheck.value.sum }} / {{ wizard.totalMarks ?? 0 }}</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -182,6 +242,10 @@
                 <label class="wizard-field">
                   <span>Total Marks</span>
                   <input v-model.number="wizard.totalMarks" type="number" min="0" class="wizard-input" />
+                </label>
+                <label class="wizard-field">
+                  <span>Pass Mark (%)</span>
+                  <input v-model.number="wizard.passMark" type="number" min="0" max="100" class="wizard-input" />
                 </label>
                 <label class="wizard-field">
                   <span>Max Attempts</span>
@@ -233,7 +297,8 @@
                 </div>
                 <div class="rounded-2xl border border-slate-200 bg-white p-5">
                   <p class="text-sm text-slate-500">Total Marks</p>
-                  <p class="mt-3 text-3xl font-semibold text-slate-900">{{ totalMarks }}</p>
+                  <p class="mt-3 text-3xl font-semibold text-slate-900">{{ wizard.totalMarks ?? 0 }}</p>
+                  <p class="mt-2 text-xs text-slate-400">Allocated preview total: {{ totalMarks }}</p>
                 </div>
                 <div class="rounded-2xl border border-slate-200 bg-white p-5">
                   <p class="text-sm text-slate-500">Duration</p>
@@ -380,6 +445,7 @@ import { useSchoolAdminUiStore } from '../../schooladmincomponents/stores/ui'
 import SectionCard from '../components/SectionCard.vue'
 import { useTeacherExamsStore } from '../stores/exams'
 import { toDatetimeLocalIsoWithOffset } from '../../../js/lib/helpers'
+import { useExamMarksDistribution } from '../composables/useExamMarksDistribution'
 
 const router   = useRouter()
 const uiStore  = useSchoolAdminUiStore()
@@ -392,7 +458,7 @@ const steps = [
   { id: 4, short: 'Step 4', title: 'Review & Save', description: 'Confirm everything before saving the draft.' },
 ]
 
-// Reference data — loaded from API; fallback to empty arrays
+// Reference data  loaded from API; fallback to empty arrays
 const subjects   = computed(() => examsStore.subjects.map((s) => ({ id: s.id, name: s.name || s.title || s.code })))
 const classLevels = computed(() => examsStore.classLevels)
 const classArms   = computed(() => examsStore.classArms)
@@ -423,8 +489,6 @@ const wizard = reactive({
   session_id: '',
   type: 'exam',
   instructions: '',
-  selectedQuestionIds: [],
-  questionMarks: {},
   duration: 60,
   totalMarks: null,
   passMark: 50,
@@ -444,9 +508,20 @@ const wizard = reactive({
 // Question bank from API
 const questionOptions  = computed(() => examsStore.questionBank)
 
+// FE-MD-100: draft-state marks distribution engine. The exam total marks
+// value drives the live preview for unlocked questions.
+const totalMarksRef = computed(() => wizard.totalMarks)
+const marksEngine = useExamMarksDistribution(totalMarksRef)
+
+// Selected questions = draft entries (question_id, marks, is_marks_locked,
+// order) merged with their display details from the question bank.
 const selectedQuestions = computed(() =>
-  wizard.selectedQuestionIds
-    .map((id) => questionOptions.value.find((q) => String(q.id) === String(id)))
+  marksEngine.draftQuestions.value
+    .map((draft) => {
+      const details = questionOptions.value.find((q) => String(q.id) === String(draft.question_id))
+      if (!details) return null
+      return { ...details, draft }
+    })
     .filter(Boolean)
 )
 
@@ -458,9 +533,8 @@ const filteredQuestionOptions = computed(() =>
   })
 )
 
-const totalMarks = computed(() =>
-  selectedQuestions.value.reduce((sum, q) => sum + Number(wizard.questionMarks[q.id] || q.default_marks || q.marks || 0), 0)
-)
+// Allocated preview total (sum of current draft marks) — for display only.
+const totalMarks = computed(() => marksEngine.submitCheck.value.sum)
 
 const currentStepLabel = computed(() => steps.find((s) => s.id === currentStep.value)?.title || '')
 const statusLabel      = computed(() => wizard.status)
@@ -477,8 +551,8 @@ const validationChecklist = computed(() => [
   },
   {
     label: 'Question paper prepared',
-    help:  'At least one question is needed.',
-    valid: selectedQuestions.value.length > 0,
+    help:  'At least one question is needed, and allocated marks must match the exam total.',
+    valid: selectedQuestions.value.length > 0 && marksEngine.canSubmit.value,
   },
   {
     label: 'Scheduling and scoring configured',
@@ -494,31 +568,61 @@ const studentToggles = [
   { key: 'showResultsInstantly',label: 'Show results instantly',           help: 'Release scores immediately after submission.' },
 ]
 
-const isSelected = (id) => wizard.selectedQuestionIds.includes(String(id))
+const isSelected = (id) => marksEngine.draftQuestions.value.some((q) => String(q.question_id) === String(id))
 
+// Trigger event: add / remove a question (04-01-00 #1, #2)
 const toggleQuestion = (question) => {
   const sid = String(question.id)
   if (isSelected(sid)) {
-    wizard.selectedQuestionIds = wizard.selectedQuestionIds.filter((i) => i !== sid)
-    delete wizard.questionMarks[sid]
+    marksEngine.removeQuestion(sid)
   } else {
-    wizard.selectedQuestionIds.push(sid)
-    wizard.questionMarks[sid] = question.default_marks ?? question.marks ?? 1
+    marksEngine.addQuestion({
+      question_id: sid,
+      default_marks: question.default_marks ?? question.marks ?? 1,
+      marks: question.default_marks ?? question.marks ?? 1,
+    })
+  }
+  autosaveLabel.value = 'Unsaved changes'
+}
+
+// Trigger event: lock / unlock a question (04-01-00 #3, #4)
+const toggleQuestionLock = (questionId) => {
+  const sid = String(questionId)
+  const draft = marksEngine.draftQuestions.value.find((q) => String(q.question_id) === sid)
+  if (!draft) return
+  if (draft.is_marks_locked) {
+    marksEngine.unlockQuestion(sid) // 04-02-00: fresh automatic value, not the stale one
+  } else {
+    marksEngine.lockQuestion(sid) // 04-02-00: keep current value, remove from pool
+  }
+  autosaveLabel.value = 'Unsaved changes'
+}
+
+// Trigger event: edit the marks value of a locked question (04-01-00 #5)
+const updateQuestionMarks = (questionId, value) => {
+  const { accepted, max } = marksEngine.editLockedMarks(questionId, value)
+  if (!accepted) {
+    // 05-03-00: block the input, show an inline error, do not let it reach submit
+    uiStore.addToast({
+      title: 'Marks exceed remaining total',
+      message: `This question can hold at most ${max} mark(s) without exceeding the exam total.`,
+      variant: 'error',
+    })
+    return
   }
   autosaveLabel.value = 'Unsaved changes'
 }
 
 const moveQuestion = (index, direction) => {
+  const ids = selectedQuestions.value.map((q) => q.draft.question_id)
   const next = index + direction
-  if (next < 0 || next >= wizard.selectedQuestionIds.length) return
-  const arr = [...wizard.selectedQuestionIds]
-  ;[arr[index], arr[next]] = [arr[next], arr[index]]
-  wizard.selectedQuestionIds = arr
+  if (next < 0 || next >= ids.length) return
+  ;[ids[index], ids[next]] = [ids[next], ids[index]]
+  marksEngine.reorder(ids)
 }
 
 const resetQuestionSelection = () => {
-  wizard.selectedQuestionIds = []
-  wizard.questionMarks       = {}
+  marksEngine.setQuestions([])
 }
 
 const loadQuestionBank = async (force = false) => {
@@ -544,7 +648,7 @@ const jumpToStep = (step) => {
   if (step <= currentStep.value || validateStep()) currentStep.value = step
 }
 
-// ── API save / submit ─────────────────────────────────────────────────────────
+// -- API save / submit ---------------------------------------------------------
 
 const buildPayload = () => ({
   title:            wizard.title,
@@ -561,11 +665,30 @@ const buildPayload = () => ({
   instructions:     wizard.instructions,
 })
 
+// 07-01-00 / 06-00-00: refuse to submit while a fault condition is active.
+const blockedByMarksFault = () => {
+  if (!selectedQuestions.value.length) return false
+  if (marksEngine.lockedExceedsTotal.value) {
+    uiStore.addToast({ title: 'Locked marks exceed total', message: 'Reduce a locked question before saving.', variant: 'error' })
+    return true
+  }
+  if (!marksEngine.canSubmit.value) {
+    uiStore.addToast({
+      title: 'Marks do not match exam total',
+      message: `Allocated marks (${marksEngine.submitCheck.value.sum}) must equal the exam total (${wizard.totalMarks ?? 0}).`,
+      variant: 'error',
+    })
+    return true
+  }
+  return false
+}
+
 const saveDraft = async () => {
   if (!wizard.title) {
     uiStore.addToast({ title: 'Title required', message: 'Add a title before saving.', variant: 'error' })
     return
   }
+  if (blockedByMarksFault()) return
   saving.value = true
   try {
     if (createdExamId.value) {
@@ -573,9 +696,8 @@ const saveDraft = async () => {
     } else {
       const record = await examsStore.createExam(buildPayload())
       createdExamId.value = record.id
-      // Add selected questions
-      await addQuestionsToExam(record.id)
     }
+    await submitQuestionsToExam(createdExamId.value)
     autosaveLabel.value = 'Saved just now'
     uiStore.addToast({ title: 'Draft saved', message: 'Exam saved as draft.', variant: 'success' })
   } catch (err) {
@@ -585,12 +707,11 @@ const saveDraft = async () => {
   }
 }
 
-const addQuestionsToExam = async (examId) => {
-  for (let i = 0; i < wizard.selectedQuestionIds.length; i++) {
-    const qId = wizard.selectedQuestionIds[i]
-    const marks = wizard.questionMarks[qId] ?? 1
-    await examsStore.addQuestion(examId, { question_id: qId, marks, order: i + 1 }).catch(() => {})
-  }
+// 07-02-00: send the full draft questions list in one PUT request to
+// /api/exams/{id}. This is the only point in the flow that persists questions.
+const submitQuestionsToExam = async (examId) => {
+  if (!selectedQuestions.value.length) return
+  await examsStore.bulkSetQuestions(examId, marksEngine.draftQuestions.value)
 }
 
 const openSaveDialog = () => {
@@ -598,10 +719,12 @@ const openSaveDialog = () => {
     validateStep()
     return
   }
+  if (blockedByMarksFault()) return
   showSaveModal.value = true
 }
 
 const saveExam = async () => {
+  if (blockedByMarksFault()) return
   showSaveModal.value = false
   saving.value = true
   try {
@@ -610,8 +733,8 @@ const saveExam = async () => {
       const record = await examsStore.createExam(buildPayload())
       examId = record.id
       createdExamId.value = examId
-      await addQuestionsToExam(examId)
     }
+    await submitQuestionsToExam(examId)
     // Admin-review workflow removed — teacher saves directly as draft
     autosaveLabel.value = 'Saved'
     uiStore.addToast({
@@ -627,7 +750,7 @@ const saveExam = async () => {
   }
 }
 
-// ── Lifecycle ─────────────────────────────────────────────────────────────────
+// -- Lifecycle -----------------------------------------------------------------
 
 onMounted(async () => {
   await examsStore.fetchRefData()

@@ -97,9 +97,8 @@
                 <option v-for="s in subjects" :key="s.id" :value="s.id">{{ s.name }}</option>
               </select>
             </div>
-            <div>
-              <label class="block text-sm font-medium text-slate-700">Marks</label>
-              <input v-model.number="form.marks" type="number" min="0.5" step="0.5" class="sa-input mt-1.5" placeholder="1" />
+            <div class="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
+              Marks are assigned later in the exam wizard when the question is added to an exam.
             </div>
           </div>
         </section>
@@ -850,7 +849,6 @@ const submitQuestion = async (status) => {
       subject_id: form.subject_id,
       class_level_id: form.class_level_id || undefined,
       class_arm_id: form.class_arm_id || undefined,
-      marks: form.marks || 1,
       status,
       options,
       // Send allow_multiple_answers for MCQ
@@ -887,8 +885,6 @@ onMounted(async () => {
         form.subject_id = existing.subject?.id || existing.subject_id || ''
         form.class_level_id = existing.class_level?.id || existing.class_level_id || ''
         form.class_arm_id = existing.class_arm?.id || existing.class_arm_id || ''
-        form.marks = existing.marks || existing.default_marks || 1
-
         if (existing.type === 'fill_in_blank') {
           if (existing.acceptable_answers?.length) {
             form.acceptable_answers = existing.acceptable_answers.map((a) => ({

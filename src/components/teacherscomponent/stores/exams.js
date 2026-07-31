@@ -18,6 +18,7 @@ import {
   addQuestionToExam,
   removeQuestionFromExam,
   updateExamQuestion,
+  bulkSetExamQuestions,
   getStudentAttempts,
   forceSubmitAttempt,
   getExamResults,
@@ -308,6 +309,22 @@ export const useTeacherExamsStore = defineStore('teacher-exams', {
         (q.id === examQuestionId || q.exam_question_id === examQuestionId) ? result : q,
       )
       return result
+    },
+
+    /**
+     * Submit procedure (FE-MD-100 07-02-00): send the full draft questions
+     * list in one PUT request to /api/exams/{id}.
+     */
+    async bulkSetQuestions(examId, draftQuestions) {
+      const payload = draftQuestions.map((q) => ({
+        question_id: q.question_id,
+        marks: q.marks,
+        is_marks_locked: q.is_marks_locked,
+        order: q.order,
+      }))
+      const result = await bulkSetExamQuestions(examId, payload)
+      this.currentExamQuestions = Array.isArray(result) ? result : (result?.data || payload)
+      return this.currentExamQuestions
     },
 
     // ── Monitoring ────────────────────────────────────────────────────────────
