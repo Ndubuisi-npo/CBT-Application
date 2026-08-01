@@ -476,7 +476,6 @@ const showSaveModal = ref(false)
 const autosaveLabel    = ref('Not saved yet')
 const saving           = ref(false)
 const createdExamId    = ref(null)
-const linkedQuestionIds = ref(new Map()) // question_id -> exam_question id already saved on the backend
 
 const questionFilters = reactive({ topic: '' })
 const questionBankLoaded = ref(false)
@@ -685,9 +684,9 @@ const blockedByMarksFault = () => {
 }
 
 // 07-02-00: create the exam once (if needed) or update its details, then
-// sync the draft question list against the backend using the per-question
-// endpoints (the backend has no bulk/replace endpoint — PUT /api/exams/{id}
-// does not accept a `questions` field).
+// submit the complete draft selection to POST /api/exams/{id}/questions —
+// this endpoint replaces the exam's whole question set with the given
+// selection (it is not incremental), so the full draft is sent every save.
 const persistExam = async () => {
   if (!createdExamId.value) {
     const record = await examsStore.createExam(buildPayload())
@@ -695,11 +694,7 @@ const persistExam = async () => {
   } else {
     await examsStore.updateExam(createdExamId.value, buildPayload())
   }
-  linkedQuestionIds.value = await examsStore.syncExamQuestions(
-    createdExamId.value,
-    marksEngine.draftQuestions.value,
-    linkedQuestionIds.value,
-  )
+  await examsStore.setQuestions(createdExamId.value, marksEngine.draftQuestions.value)
 }
 
 const saveDraft = async () => {

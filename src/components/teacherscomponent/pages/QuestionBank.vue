@@ -788,21 +788,30 @@ const addSelectedToAssessment = async () => {
   if (!selectedSet.size || !assessmentId.value) return
 
   try {
-    // Add each selected question to the exam via teacher exams store
-    const questions = [...selectedSet]
-    let added = 0
-    for (let i = 0; i < questions.length; i++) {
-      try {
-        await examsStore.addQuestion(assessmentId.value, {
-          question_id: questions[i],
+    // This endpoint replaces the exam's whole question set, so fetch what's
+    // already there first and merge the newly selected questions in.
+    const existing = await examsStore.fetchExamQuestions(assessmentId.value)
+    const existingIds = new Set(existing.map((q) => String(q.question_id ?? q.id)))
+    const merged = [
+      ...existing.map((q, idx) => ({
+        question_id: q.question_id ?? q.id,
+        order: q.order ?? idx + 1,
+        marks: q.marks ?? 1,
+        is_marks_locked: Boolean(q.is_marks_locked),
+      })),
+      ...[...selectedSet]
+        .filter((id) => !existingIds.has(String(id)))
+        .map((id, idx) => ({
+          question_id: id,
+          order: existing.length + idx + 1,
           marks: 1,
-          order: i + 1,
-        })
-        added++
-      } catch {
-        // ignore individual failures
-      }
-    }
+          is_marks_locked: false,
+        })),
+    ]
+
+    await examsStore.setQuestions(assessmentId.value, merged)
+    const added = merged.length - existing.length
+
     uiStore.addToast({
       title: 'Questions added',
       message: `${added} question${added !== 1 ? 's' : ''} added to exam.`,

@@ -26,12 +26,11 @@ flow) referenced by the manual.
   (it was "Save Draft", which was confusing given it's also the create-and-
   finish action), and it always navigates to `/teachers/exams` on success.
 - **`src/components/teacherscomponent/services/api/exams.js`** and
-  **`stores/exams.js`** — questions are now saved by *diffing* the wizard's
-  draft against what's already linked to the exam, using the confirmed-
-  working per-question endpoints (`POST` to add, `PATCH` to update
-  marks/order, `DELETE` to remove — see Backend contract below). This
-  replaced an earlier attempt at a single bulk `PUT /api/exams/{id}` call,
-  which turned out not to be supported by the backend (see note below).
+  **`stores/exams.js`** — questions are saved with `POST /api/exams/{id}/questions`,
+  body `{ questions: [...] }`. This endpoint is not incremental: it replaces
+  the exam's entire question set with whatever selection is sent (even a
+  single question is still sent as a one-item array), so the wizard always
+  submits its full current draft on every save.
 
 ## Removed (superseded / dead code)
 
@@ -48,24 +47,25 @@ flow) referenced by the manual.
 
 ## Backend contract (confirmed)
 
-There is **no bulk/replace endpoint**. `PUT /api/exams/{id}` only updates the
-exam's own scalar fields — a `questions` array in that body is silently
-ignored (confirmed by inspecting the live API responses: the exam saved
-correctly, but `question_count` stayed `0`). Questions are saved individually:
+`PUT /api/exams/{id}` only updates the exam's own scalar fields — a
+`questions` array in that body is silently ignored (confirmed by inspecting
+live API responses: the exam saved correctly, but `question_count` stayed
+`0`). Questions are saved through their own endpoint, which sets the exam's
+*entire* question set in one call rather than adding incrementally:
 
 ```
-POST   /api/exams/{examId}/questions            body: { question_id, marks, order }
-PATCH  /api/exams/{examId}/questions/{linkId}    body: { marks?, order? }
-DELETE /api/exams/{examId}/questions/{linkId}
+POST /api/exams/{examId}/questions
+Body: { "questions": [ { "question_id", "order", "marks", "is_marks_locked" }, ... ] }
 ```
 
-The wizard now keeps a local `question_id -> exam_question id` map for the
-current session and, on every save, diffs the current draft against it:
-new questions are `POST`ed, questions still present get their marks/order
-`PATCH`ed, and questions removed from the draft are `DELETE`d. Basic exam
-fields (title, subject, dates, total marks, etc.) are saved separately via
-`POST /api/exams` (create) / `PATCH /api/exams/{id}` (update) — both already
-confirmed working from the API previews.
+A selection of one question still goes in the array — this is "submit a
+selection", not "add one question". `store.setQuestions(examId, questions)`
+sends the wizard's full current draft on every save (create/update exam
+fields via `POST`/`PATCH /api/exams`, then this call). `QuestionBank.vue`'s
+"add to assessment" action was also updated to match: it now fetches the
+exam's existing questions first and merges the newly selected ones in before
+calling `setQuestions`, since posting just the new selection would otherwise
+wipe out whatever was already on the exam.
 
 ## Not changed
 

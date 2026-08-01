@@ -15,9 +15,7 @@ import {
   forceCompleteExam,
   publishExam,
   getExamQuestions,
-  addQuestionToExam,
-  removeQuestionFromExam,
-  updateExamQuestion,
+  setExamQuestions,
   getStudentAttempts,
   forceSubmitAttempt,
   getExamResults,
@@ -289,67 +287,31 @@ export const useTeacherExamsStore = defineStore('teacher-exams', {
       return this.currentExamQuestions
     },
 
-    async addQuestion(examId, payload) {
-      const result = await addQuestionToExam(examId, payload)
-      this.currentExamQuestions.push(result)
-      return result
-    },
-
-    async removeQuestion(examId, examQuestionId) {
-      await removeQuestionFromExam(examId, examQuestionId)
-      this.currentExamQuestions = this.currentExamQuestions.filter(
-        (q) => q.id !== examQuestionId && q.exam_question_id !== examQuestionId,
-      )
-    },
-
-    async updateQuestion(examId, examQuestionId, payload) {
-      const result = await updateExamQuestion(examId, examQuestionId, payload)
-      this.currentExamQuestions = this.currentExamQuestions.map((q) =>
-        (q.id === examQuestionId || q.exam_question_id === examQuestionId) ? result : q,
-      )
-      return result
-    },
-
     /**
-     * Sync an exam's question list against a draft, using the per-question
-     * endpoints (no bulk/replace endpoint exists on the backend). Diffs
-     * `linkedIds` (a Map of question_id -> exam_question id already saved
-     * for this exam) against the draft: adds new questions, updates marks/
-     * order for ones already linked, and removes ones no longer in the
-     * draft. Returns the updated Map for the caller to keep as state.
+     * Set an exam's complete question set in one request. Not incremental —
+     * this replaces the exam's entire question list with the given
+     * selection, so callers must always send the full desired set (even a
+     * single question still goes in the array).
+     * questions: [{ question_id, order, marks, is_marks_locked }, ...]
      */
-    async syncExamQuestions(examId, draftQuestions, linkedIds) {
-      const next = new Map(linkedIds)
-      const draftIds = new Set(draftQuestions.map((q) => String(q.question_id)))
-
-      // Remove questions dropped from the draft
-      for (const [qid, examQuestionId] of [...next.entries()]) {
-        if (!draftIds.has(qid)) {
-          await this.removeQuestion(examId, examQuestionId)
-          next.delete(qid)
-        }
-      }
-
-      // Add new questions / sync marks+order for existing ones
-      for (let i = 0; i < draftQuestions.length; i++) {
-        const q = draftQuestions[i]
-        const qid = String(q.question_id)
-        const order = i + 1
-        if (next.has(qid)) {
-          await this.updateQuestion(examId, next.get(qid), { marks: q.marks, order })
-        } else {
-          const result = await this.addQuestion(examId, { question_id: q.question_id, marks: q.marks, order })
-          const examQuestionId = result?.id ?? result?.exam_question_id ?? result?.data?.id
-          if (examQuestionId) next.set(qid, examQuestionId)
-        }
-      }
+    async setQuestions(examId, questions) {
+      const payload = questions.map((q) => ({
+        question_id: q.question_id,
+        order: q.order,
+        marks: q.marks,
+        is_marks_locked: Boolean(q.is_marks_locked),
+      }))
+      const result = await setExamQuestions(examId, payload)
+      this.currentExamQuestions = Array.isArray(result) ? result : (result?.data || result?.questions || payload)
 
       // Keep the exams list's question count in sync so the list page
       // reflects the save immediately, without waiting on a refetch.
       const idx = this.exams.findIndex((e) => e.id === examId)
-      if (idx !== -1) this.exams[idx] = { ...this.exams[idx], question_count: next.size, questions_count: next.size }
+      if (idx !== -1) {
+        this.exams[idx] = { ...this.exams[idx], question_count: payload.length, questions_count: payload.length }
+      }
 
-      return next
+      return this.currentExamQuestions
     },
 
     // ── Monitoring ────────────────────────────────────────────────────────────

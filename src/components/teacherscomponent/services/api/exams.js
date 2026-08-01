@@ -96,37 +96,21 @@ export async function getExamQuestions(examId) {
   }
 }
 
-export async function addQuestionToExam(examId, payload) {
-  // payload: { question_id, marks, order }
+/**
+ * Set an exam's complete question set in one request. This endpoint is not
+ * incremental — it accepts a selection (1 or many questions) and makes that
+ * the exam's entire question list, replacing whatever was there before.
+ * A single selected question still goes in the array.
+ * payload: { questions: [{ question_id, order, marks, is_marks_locked }, ...] }
+ */
+export async function setExamQuestions(examId, questions) {
   try {
     return await apiFetch(`/api/exams/${examId}/questions`, {
       method: 'POST',
-      body: JSON.stringify(payload),
+      body: JSON.stringify({ questions }),
     })
   } catch (error) {
-    throw new Error(extractErrorMessage(error, 'Unable to add question to exam.'))
-  }
-}
-
-export async function removeQuestionFromExam(examId, examQuestionId) {
-  try {
-    return await apiFetch(`/api/exams/${examId}/questions/${examQuestionId}`, {
-      method: 'DELETE',
-    })
-  } catch (error) {
-    throw new Error(extractErrorMessage(error, 'Unable to remove question from exam.'))
-  }
-}
-
-export async function updateExamQuestion(examId, examQuestionId, payload) {
-  // payload: { marks?, order? }
-  try {
-    return await apiFetch(`/api/exams/${examId}/questions/${examQuestionId}`, {
-      method: 'PATCH',
-      body: JSON.stringify(payload),
-    })
-  } catch (error) {
-    throw new Error(extractErrorMessage(error, 'Unable to update exam question.'))
+    throw new Error(extractErrorMessage(error, 'Unable to save exam questions.'))
   }
 }
 
