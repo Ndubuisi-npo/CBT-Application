@@ -45,6 +45,7 @@ import AppInput from '../../shared/AppInput.vue'
 import FormSection from '../../shared/FormSection.vue'
 import ResponsiveFormGrid from '../../shared/ResponsiveFormGrid.vue'
 import DrawerFooter from '../../shared/DrawerFooter.vue'
+import { toDateInputValue } from '../../../js/lib/helpers'
 
 const props = defineProps({
   show: { type: Boolean, default: false },
@@ -66,8 +67,8 @@ const resetForm = (source) => {
   const t = source || {}
   Object.assign(form, {
     name: t.name || '',
-    startDate: (t.startDate || t.start_date || '').split?.('T')[0] || '',
-    endDate: (t.endDate || t.end_date || '').split?.('T')[0] || '',
+    startDate: toDateInputValue(t.startDate || t.start_date),
+    endDate: toDateInputValue(t.endDate || t.end_date),
     isCurrent: t.current || t.is_current || t.status === 'Active' || false,
   })
   Object.assign(errors, { name: '', startDate: '', endDate: '' })

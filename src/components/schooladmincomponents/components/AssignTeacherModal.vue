@@ -14,7 +14,7 @@
               <select v-model="form.teacherId" class="sa-input">
                 <option value="">Choose a teacher...</option>
                 <option v-for="teacher in teachers" :key="teacher.id" :value="teacher.id">
-                  {{ teacher.first_name }} {{ teacher.last_name }} ({{ teacher.teacher_profile?.staff_id || 'No ID' }})
+                  {{ teacher.first_name }} {{ teacher.last_name }} ({{ teacherDisplayId(teacher) }})
                 </option>
               </select>
             </FormField>
@@ -65,6 +65,18 @@ const errors = reactive({
 const loading = ref(false)
 
 const teachers = computed(() => teachersStore.teachers || [])
+
+// The API returns the profile relation as `teacherProfile` (camelCase, per
+// the `include=teacherProfile` request in the teachers store), but the
+// original code only ever checked the snake_case `teacher_profile` key -
+// so `staff_id` was always undefined and this showed "No ID" even when the
+// teacher genuinely had one. Check both casings (matching the pattern used
+// elsewhere, e.g. TeachersPage.vue), then fall back to the teacher's own
+// record id before ever showing "No ID".
+const teacherDisplayId = (teacher) => {
+  const profile = teacher?.teacherProfile || teacher?.teacher_profile || teacher?.profile
+  return profile?.staff_id || teacher?.staff_id || teacher?.id || 'No ID'
+}
 
 const resetForm = () => {
   Object.assign(form, { teacherId: '' })

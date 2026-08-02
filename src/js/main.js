@@ -21,8 +21,14 @@ app.use(router);
 app.mount('#app');
 
 // Echo must only ever exist for logged-in users — guests never attempt to
-// connect to private/presence channels.
-if (getAuthUser()) {
+// connect to private/presence channels. We also explicitly skip this on the
+// login page itself: someone can land there with a leftover (possibly
+// stale/expired) auth record still in localStorage, and in that case no
+// notification/broadcasting requests should fire until a real login
+// succeeds (see lib/auth.js login(), which triggers this itself).
+const isLoginPage = window.location.pathname === '/login';
+
+if (getAuthUser() && !isLoginPage) {
   initializeRealtimeNotifications();
 
   // Prime the notification bell for whichever role is logged in (school

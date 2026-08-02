@@ -182,9 +182,10 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { useRoute } from 'vue-router'
 import { ArrowRight, Check, ShieldCheck, Sparkles } from 'lucide-vue-next'
 import { fetchPlans } from './api/plans'
-import { normalizePlanFeatures } from '../../js/lib/plans'
+import { normalizePlanFeatures, getStoredSelectedPlan, findMatchingPlan, clearStoredSelectedPlan } from '../../js/lib/plans'
 
 const props = defineProps<{
   formData: {
@@ -200,6 +201,7 @@ const emit = defineEmits<{
 
 interface Plan {
   id: string
+  slug?: string
   name: string
   range: string
   price: number | null
@@ -211,6 +213,7 @@ interface Plan {
   features: string[]
 }
 
+const route = useRoute()
 const isAnnual = ref(true)
 const plans = ref<Plan[]>([])
 const loading = ref(true)
@@ -228,7 +231,8 @@ const transformPlans = (apiPlans: any[]): Plan[] => {
     maxTeachers: plan.max_teachers ? `Up to ${plan.max_teachers}` : 'Unlimited',
     maxExamsPerTerm: plan.max_exams_per_term ? `Up to ${plan.max_exams_per_term}` : 'Unlimited',
     features: normalizePlanFeatures(plan.features),
-    id: plan.id
+    id: plan.id,
+    slug: plan.slug
   }))
 }
 
@@ -238,6 +242,25 @@ onMounted(async () => {
     plans.value = transformPlans(Array.isArray(apiPlans) ? apiPlans : [])
     if (plans.value.length === 0) {
       throw new Error('No plans were returned from the server.')
+    }
+
+    // Preselect the plan chosen on the landing page (if any), but only if
+    // the user hasn't already picked one during this onboarding session
+    // (e.g. after navigating back and forth between steps).
+    if (!props.formData.plan_id) {
+      const queryPlan = typeof route.query.plan === 'string' ? route.query.plan : null
+      const stored = getStoredSelectedPlan()
+
+      // The landing page passes the slug/id via the "?plan=" query string;
+      // sessionStorage carries the richer { id, slug } reference in case the
+      // query string gets dropped along the way.
+      const matched =
+        findMatchingPlan(plans.value, { id: queryPlan, slug: queryPlan }) ||
+        findMatchingPlan(plans.value, stored || {})
+
+      if (matched) {
+        props.formData.plan_id = matched.id
+      }
     }
   } catch (error) {
     const planError = error instanceof Error ? error.message : String(error)

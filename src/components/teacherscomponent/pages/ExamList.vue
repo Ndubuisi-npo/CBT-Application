@@ -101,7 +101,7 @@
 
               <!-- Edit N/A only for draft -->
               <template v-if="store.canEdit(exam)">
-                <AppButton :icon="Edit3" text="Continue Draft" variant="outline" size="sm" @click="$router.push('/teachers/exam-wizard')" />
+                <AppButton :icon="Edit3" text="Continue Draft" variant="outline" size="sm" @click="$router.push(`/teachers/exam-wizard/${exam.id}`)" />
               </template>
 
               <!-- Results N/A completed exams only -->

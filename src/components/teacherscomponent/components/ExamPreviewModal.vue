@@ -10,6 +10,9 @@
             {{ exam.classLevel?.name || exam.class_arm?.name || exam.class_name || exam.className || 'N/A' }} &nbsp;|&nbsp;
             {{ questionCount }} questions
           </p>
+          <p class="mt-3 inline-flex items-center gap-2 rounded-full bg-[#0B1F3A] px-4 py-1.5 text-sm font-semibold text-white">
+            Total Marks: {{ examTotalMarks }}
+          </p>
         </div>
         <button type="button" class="p-2 text-slate-400 hover:text-slate-600" @click="$emit('close')">✕</button>
       </div>
@@ -35,6 +38,7 @@
                 <div class="text-base font-semibold leading-7 text-slate-900" v-html="renderQuestionText(getQuestionText(question))" />
               </div>
               <span class="inline-block rounded-full bg-slate-100 px-3 py-0.5 text-xs font-semibold text-slate-600">{{ getTypeLabel(question) }}</span>
+              <span class="ml-2 inline-block rounded-full bg-amber-50 px-3 py-0.5 text-xs font-semibold text-amber-700">{{ getQuestionMarks(question) }} mark{{ getQuestionMarks(question) === 1 ? '' : 's' }}</span>
 
               <!-- MCQ / True-False options -->
               <div v-if="isChoiceType(question) && getOptions(question).length" class="grid gap-2 md:grid-cols-2">
@@ -91,6 +95,12 @@ const questions = ref([])
 const loading = ref(false)
 
 const questionCount = computed(() => questions.value.length)
+
+// GET /api/exams returns total_marks on the exam record itself.
+const examTotalMarks = computed(() => props.exam.total_marks ?? props.exam.totalMarks ?? 0)
+
+// GET /api/exams/{id}/questions returns `marks` per question.
+const getQuestionMarks = (q) => q?.marks ?? q?.default_marks ?? 0
 
 const escapeHtml = (unsafe = '') => {
   return String(unsafe)

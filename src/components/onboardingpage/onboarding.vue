@@ -78,6 +78,7 @@ import Review from './review.vue'
 import SchoolInfo from './schoolinfo.vue'
 import { registerOnboarding } from './api/onboarding'
 import { buildTenantUrl } from '../../js/lib/api'
+import { clearStoredSelectedPlan } from '../../js/lib/plans'
 
 const steps = ['School Info', 'Admin Details', 'Choose Plan', 'Review']
 
@@ -159,6 +160,8 @@ const submitRegistration = async () => {
     }
     
     await registerOnboarding(payload)
+
+    clearStoredSelectedPlan()
 
     // Redirect immediately to the tenant's own subdomain login page, e.g.
     // https://greenfield.educbt.name.ng/login

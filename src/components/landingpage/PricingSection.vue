@@ -113,7 +113,7 @@
 import { ref, onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
 import { fetchPlans } from '../onboardingpage/api/plans'
-import { normalizePlanFeatures } from '../../js/lib/plans'
+import { normalizePlanFeatures, storeSelectedPlan } from '../../js/lib/plans'
 
 const plans = ref([])
 const isAnnual = ref(false)
@@ -132,6 +132,11 @@ const displayPrice = (plan) => {
 }
 
 const goToOnboarding = (plan) => {
+  // Persist the selected plan so the onboarding "Choose Plan" step can
+  // preselect it automatically once it loads (navigation below is a full
+  // page load, so Pinia state would be lost - sessionStorage survives it).
+  storeSelectedPlan(plan)
+
   // navigate to onboarding with optional plan slug as query
   const url = `/onboarding?plan=${plan.slug || plan.id}`
   window.location.href = url

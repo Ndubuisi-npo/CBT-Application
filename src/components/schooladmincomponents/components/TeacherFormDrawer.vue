@@ -64,6 +64,7 @@ import FormSection from '../../shared/FormSection.vue'
 import ResponsiveFormGrid from '../../shared/ResponsiveFormGrid.vue'
 import DrawerFooter from '../../shared/DrawerFooter.vue'
 import { validateAccountEmail } from '../../../js/lib/validators'
+import { toDateInputValue } from '../../../js/lib/helpers'
 
 const props = defineProps({
   show: { type: Boolean, default: false },
@@ -99,7 +100,7 @@ const resetForm = (source) => {
     gender: profile.gender || t.gender || '',
     qualification: profile.qualification || t.qualification || '',
     staff_id: profile.staff_id || t.staff_id || '',
-    date_joined: (profile.date_joined || profile.dateJoined || t.date_joined || t.dateJoined || '')?.slice?.(0, 10) || '',
+    date_joined: toDateInputValue(profile.date_joined || profile.dateJoined || t.date_joined || t.dateJoined),
   })
   Object.assign(errors, emptyForm())
   Object.keys(touched).forEach((k) => (touched[k] = false))

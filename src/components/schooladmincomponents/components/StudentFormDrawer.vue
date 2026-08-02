@@ -97,6 +97,7 @@ import FormSection from '../../shared/FormSection.vue'
 import ResponsiveFormGrid from '../../shared/ResponsiveFormGrid.vue'
 import DrawerFooter from '../../shared/DrawerFooter.vue'
 import { fetchClassLevels, fetchClassArms } from '../../../js/api/classManagement'
+import { toDateInputValue } from '../../../js/lib/helpers'
 
 const props = defineProps({
   show: { type: Boolean, default: false },
@@ -162,9 +163,9 @@ const resetForm = (source) => {
     email: t.email || t.user?.email || '',
     phone: t.phone || t.user?.phone || '',
     gender: profile.gender || t.gender || '',
-    date_of_birth: profile.date_of_birth || t.date_of_birth || '',
+    date_of_birth: toDateInputValue(profile.date_of_birth || t.date_of_birth),
     admission_number: profile.admission_number || t.admission_number || '',
-    admission_date: (profile.admission_date || profile.admissionDate || t.admission_date || '')?.slice?.(0, 10) || '',
+    admission_date: toDateInputValue(profile.admission_date || profile.admissionDate || t.admission_date),
     class_level_id: classLevel.id || profile.class_level_id || '',
     class_arm_id: classArm.id || profile.class_arm_id || '',
     guardian_name: profile.guardian_name || t.guardian_name || '',

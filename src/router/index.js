@@ -128,6 +128,7 @@ const routes = [
           // Exam list + Create Exam page + Wizard
           { path: 'exams', name: 'TeachersExamList', component: TeachersExamList },
           { path: 'exam-wizard', name: 'TeachersExamWizard', component: TeachersExamWizard },
+          { path: 'exam-wizard/:id', name: 'TeachersExamWizardEdit', component: TeachersExamWizard },
 
           // Students + Student Results (Features 2 & 3)
           { path: 'students', name: 'TeachersStudentsPage', component: TeachersStudentsPage },
@@ -257,6 +258,15 @@ router.beforeEach((to, from, next) => {
     to.path.startsWith('/notifications')
 
   const isLoginPage = to.path === '/login'
+
+  // An already-authenticated visitor shouldn't land on the login page at
+  // all (e.g. stale bookmark, browser back-navigation) — send them straight
+  // to their dashboard instead, so no login-page-only code path can ever
+  // run notification/broadcasting requests for a signed-in session.
+  if (isLoginPage && isAuthenticated()) {
+    next(roleRedirectMap[getAuthRole()] || '/login')
+    return
+  }
 
   if (requiresAuth && !isLoginPage) {
     if (!isAuthenticated()) { next('/login'); return }

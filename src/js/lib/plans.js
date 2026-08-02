@@ -53,3 +53,61 @@ export function normalizePlan(plan) {
     features: normalizePlanFeatures(plan.features),
   }
 }
+
+// --- Landing page -> Onboarding plan selection persistence ---
+// When a user picks a plan on the landing page (before onboarding has even
+// mounted), we stash a lightweight reference to it here so the "Choose Plan"
+// onboarding step can preselect it once the full plan list has loaded.
+const SELECTED_PLAN_STORAGE_KEY = 'educbt_selected_plan'
+
+export function storeSelectedPlan(plan) {
+  if (typeof window === 'undefined' || !plan) return
+  try {
+    const payload = {
+      id: plan.id ?? null,
+      slug: plan.slug ?? null,
+    }
+    window.sessionStorage.setItem(SELECTED_PLAN_STORAGE_KEY, JSON.stringify(payload))
+  } catch (err) {
+    // sessionStorage may be unavailable (e.g. private browsing); fail silently
+    console.error('Unable to store selected plan:', err)
+  }
+}
+
+export function getStoredSelectedPlan() {
+  if (typeof window === 'undefined') return null
+  try {
+    const raw = window.sessionStorage.getItem(SELECTED_PLAN_STORAGE_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    if (!parsed || (!parsed.id && !parsed.slug)) return null
+    return parsed
+  } catch (err) {
+    return null
+  }
+}
+
+export function clearStoredSelectedPlan() {
+  if (typeof window === 'undefined') return
+  try {
+    window.sessionStorage.removeItem(SELECTED_PLAN_STORAGE_KEY)
+  } catch (err) {
+    // no-op
+  }
+}
+
+// Finds a plan within a list matching the previously stored selection
+// (by id first, falling back to slug), and by the "?plan=" query param
+// used when linking directly from the landing page pricing section.
+export function findMatchingPlan(plans, { id, slug } = {}) {
+  if (!Array.isArray(plans) || !plans.length) return null
+  if (id != null) {
+    const byId = plans.find((p) => String(p.id) === String(id))
+    if (byId) return byId
+  }
+  if (slug) {
+    const bySlug = plans.find((p) => p.slug && String(p.slug) === String(slug))
+    if (bySlug) return bySlug
+  }
+  return null
+}

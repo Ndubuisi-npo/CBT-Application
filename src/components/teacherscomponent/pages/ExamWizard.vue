@@ -1,12 +1,9 @@
 <template>
   <div class="space-y-6">
-    <SectionCard title="Exam Creation Wizard" subtitle="Build objective exams that the system can score automatically from the correct answers you set.">
+    <SectionCard :title="createdExamId ? 'Continue Exam Draft' : 'Exam Creation Wizard'" subtitle="Build objective exams that the system can score automatically from the correct answers you set.">
       <template #header>
         <div class="flex flex-wrap items-center gap-3">
-          <button type="button" class="rounded-full bg-slate-100 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-slate-600">
-            Multiple Choice Only
-          </button>
-          <AppButton text="Save Draft" variant="outline" size="sm" @click="saveDraft" />
+          <AppButton text="Save Draft" variant="outline" size="sm" :processing="saving" loading-text="Saving…" @click="saveDraft" />
         </div>
       </template>
 
@@ -95,9 +92,9 @@
               <div class="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-slate-50 p-4">
                 <div class="flex flex-wrap gap-2">
                   <input v-model="questionSearch" type="text" class="wizard-input min-w-[240px]" placeholder="Search question bank" />
-                  <select v-model="questionFilters.topic" class="wizard-input min-w-[200px]">
-                    <option value="">All topics</option>
-                    <option v-for="topic in questionTopics" :key="topic" :value="topic">{{ topic }}</option>
+                  <select v-model="questionFilters.type" class="wizard-input min-w-[200px]">
+                    <option value="">All question types</option>
+                    <option v-for="qType in questionTypeOptions" :key="qType.value" :value="qType.value">{{ qType.label }}</option>
                   </select>
                   <label class="flex items-center gap-2 text-sm text-slate-600">
                     Total Marks
@@ -129,10 +126,10 @@
                     <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                       <div class="space-y-3">
                         <div class="flex flex-wrap gap-2">
-                          <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">Multiple Choice</span>
+                          <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{{ questionTypeLabel(question) }}</span>
                         </div>
                         <h4 class="text-base font-semibold text-slate-900">{{ question.content }}</h4>
-                        <p class="text-sm text-slate-500">{{ question.topic }} • {{ question.className }} • {{ question.default_marks ?? question.marks }} marks</p>
+                        <p class="text-sm text-slate-500"> {{ question.class_level_name }}</p>
                       </div>
                       <AppButton
                         :text="isSelected(question.id) ? 'Remove' : 'Add Question'"
@@ -160,8 +157,8 @@
                     <article
                       v-for="(question, index) in selectedQuestions"
                       :key="question.id"
-                      class="rounded-2xl border p-4"
-                      :class="question.draft.is_marks_locked ? 'border-amber-200 bg-amber-50/40' : marksEngine.zeroPoolNoMarksLeft.value ? 'border-slate-200 bg-slate-100' : 'border-slate-200 bg-slate-50'"
+                      class="rounded-2xl border-2 p-4 transition-colors"
+                      :class="question.draft.is_marks_locked ? 'border-amber-300 bg-amber-50/60' : marksEngine.zeroPoolNoMarksLeft.value ? 'border-slate-200 bg-slate-100' : 'border-slate-200 bg-slate-50'"
                     >
                       <div class="flex items-start justify-between gap-3">
                         <div class="space-y-2">
@@ -171,9 +168,11 @@
                             <span class="rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-600">{{ question.topic }}</span>
                             <span class="rounded-full bg-white px-3 py-1 text-xs font-medium text-emerald-700">Correct answer stored</span>
                             <span
-                              class="rounded-full px-3 py-1 text-xs font-medium"
-                              :class="question.draft.is_marks_locked ? 'bg-amber-100 text-amber-800' : 'bg-slate-200 text-slate-700'"
+                              class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold"
+                              :class="question.draft.is_marks_locked ? 'bg-amber-500 text-white' : 'bg-slate-200 text-slate-700'"
                             >
+                              <Lock v-if="question.draft.is_marks_locked" class="h-3 w-3" />
+                              <LockOpen v-else class="h-3 w-3" />
                               {{ question.draft.is_marks_locked ? 'Locked' : 'Unlocked' }}
                             </span>
                           </div>
@@ -183,7 +182,8 @@
                           <AppButton text="Down" variant="ghost" size="sm" :disabled="index === selectedQuestions.length - 1" @click="moveQuestion(index, 1)" />
                           <AppButton
                             :text="question.draft.is_marks_locked ? 'Unlock' : 'Lock'"
-                            :variant="question.draft.is_marks_locked ? 'outline' : 'secondary'"
+                            :icon="question.draft.is_marks_locked ? LockOpen : Lock"
+                            :variant="question.draft.is_marks_locked ? 'warning' : 'secondary'"
                             size="sm"
                             @click="toggleQuestionLock(question.id)"
                           />
@@ -257,7 +257,14 @@
                 </label>
               </div>
 
-              <div class="">
+              <!--
+                Student Experience section — temporarily removed from the UI
+                per product request (Task 11). The underlying `wizard`
+                fields, `studentToggles` config, and payload wiring are all
+                left untouched; flip this back to `v-if="true"` (or drop the
+                v-if entirely) to restore it.
+              -->
+              <div v-if="false">
                 <div class="rounded-2xl border border-slate-200 bg-slate-50 p-5">
                   <h3 class="text-lg font-semibold text-slate-900">Student Experience</h3>
                   <div class="mt-4 space-y-4">
@@ -411,7 +418,7 @@
             <p class="text-xs font-semibold uppercase tracking-[0.24em] text-[#D4AF37]">Create Exam</p>
             <h2 class="mt-2 text-2xl font-semibold text-slate-900">{{ wizard.title || 'Untitled exam draft' }}</h2>
           </div>
-          <AppButton :icon="X" variant="ghost" @click="showSaveModal = false" />
+          <AppButton :icon="X" variant="ghost" :disabled="saving" @click="showSaveModal = false" />
         </div>
 
         <div class="mt-6 space-y-4">
@@ -419,7 +426,8 @@
             v-for="option in saveOptions"
             :key="option.state"
             type="button"
-            class="w-full rounded-2xl border p-5 text-left transition hover:border-[#D4AF37]/70 hover:bg-slate-50"
+            :disabled="saving"
+            class="w-full rounded-2xl border p-5 text-left transition hover:border-[#D4AF37]/70 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
             @click="saveExam"
           >
             <div class="flex items-center justify-between gap-4">
@@ -427,7 +435,11 @@
                 <h3 class="text-lg font-semibold text-slate-900">{{ option.label }}</h3>
                 <p class="mt-2 text-sm leading-6 text-slate-500">{{ option.description }}</p>
               </div>
-              <span class="rounded-full px-3 py-1 text-xs font-semibold" :class="option.badgeClass">{{ option.state }}</span>
+              <span v-if="saving" class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold" :class="option.badgeClass">
+                <span class="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent"></span>
+                Saving…
+              </span>
+              <span v-else class="rounded-full px-3 py-1 text-xs font-semibold" :class="option.badgeClass">{{ option.state }}</span>
             </div>
           </button>
         </div>
@@ -438,16 +450,18 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
-import { X } from 'lucide-vue-next'
+import { useRouter, useRoute } from 'vue-router'
+import { X, Lock, LockOpen } from 'lucide-vue-next'
 import AppButton from '../../shared/AppButton.vue'
 import { useSchoolAdminUiStore } from '../../schooladmincomponents/stores/ui'
 import SectionCard from '../components/SectionCard.vue'
 import { useTeacherExamsStore } from '../stores/exams'
-import { toDatetimeLocalIsoWithOffset } from '../../../js/lib/helpers'
+import { toDatetimeLocalIsoWithOffset, toDatetimeLocalInputValue } from '../../../js/lib/helpers'
 import { useExamMarksDistribution } from '../composables/useExamMarksDistribution'
+import { QUESTION_TYPE_LABELS } from '../../../types/question'
 
 const router   = useRouter()
+const route    = useRoute()
 const uiStore  = useSchoolAdminUiStore()
 const examsStore = useTeacherExamsStore()
 
@@ -464,7 +478,15 @@ const classLevels = computed(() => examsStore.classLevels)
 const classArms   = computed(() => examsStore.classArms)
 const sessions    = computed(() => examsStore.sessions)
 const terms       = computed(() => examsStore.terms)
-const questionTopics = computed(() => [...new Set(questionOptions.value.map((q) => q.topic).filter(Boolean))])
+// Question Type filter options — derived from whatever types are actually
+// present in the question bank, so this naturally supports any additional
+// types the backend adds later without hardcoding a fixed list (Task 8).
+const questionTypeOptions = computed(() => {
+  const presentTypes = [...new Set(questionOptions.value.map((q) => q.type).filter(Boolean))]
+  return presentTypes.map((type) => ({ value: type, label: QUESTION_TYPE_LABELS[type] || type }))
+})
+
+const questionTypeLabel = (question) => QUESTION_TYPE_LABELS[question?.type] || question?.type || 'Question'
 
 const saveOptions = [
   { state: 'Draft', label: 'Save as draft', description: 'Save now and launch from the Exams page when ready.', badgeClass: 'bg-slate-100 text-slate-700' },
@@ -477,7 +499,7 @@ const autosaveLabel    = ref('Not saved yet')
 const saving           = ref(false)
 const createdExamId    = ref(null)
 
-const questionFilters = reactive({ topic: '' })
+const questionFilters = reactive({ type: '' })
 const questionBankLoaded = ref(false)
 
 const wizard = reactive({
@@ -528,8 +550,8 @@ const selectedQuestions = computed(() =>
 const filteredQuestionOptions = computed(() =>
   questionOptions.value.filter((q) => {
     const matchesSearch = !questionSearch.value || (q.content || '').toLowerCase().includes(questionSearch.value.toLowerCase())
-    const matchesTopic  = !questionFilters.topic || q.topic === questionFilters.topic
-    return matchesSearch && matchesTopic
+    const matchesType   = !questionFilters.type || q.type === questionFilters.type
+    return matchesSearch && matchesType
   })
 )
 
@@ -698,6 +720,7 @@ const persistExam = async () => {
 }
 
 const saveDraft = async () => {
+  if (saving.value) return
   if (!wizard.title) {
     uiStore.addToast({ title: 'Title required', message: 'Add a title before saving.', variant: 'error' })
     return
@@ -725,6 +748,7 @@ const openSaveDialog = () => {
 }
 
 const saveExam = async () => {
+  if (saving.value) return
   if (blockedByMarksFault()) return
   showSaveModal.value = false
   saving.value = true
@@ -746,9 +770,84 @@ const saveExam = async () => {
 
 // -- Lifecycle -----------------------------------------------------------------
 
+// Task 7: "Continue Draft" must restore every previously entered field,
+// exactly like editing an existing exam — title, instructions, subject,
+// class, class arm, schedule, duration, pass mark, selected questions,
+// question order, and question settings (marks/lock state).
+const loadExistingExam = async (examId) => {
+  try {
+    const exam = await examsStore.fetchExam(examId)
+    if (!exam) return
+
+    createdExamId.value = exam.id
+
+    // The exam doesn't store session_id directly — derive it from the
+    // term relationship, same approach as ExamFormModal.vue.
+    const sessionId = exam.term?.academic_session_id
+      || exam.session_id
+      || exam.academic_session_id
+      || exam.term?.session_id
+      || ''
+
+    const classLevelId = exam.class_level_id || exam.classLevelId || exam.class_level?.id || ''
+
+    await Promise.all([
+      classLevelId ? examsStore.fetchArms(classLevelId) : Promise.resolve(),
+      sessionId ? examsStore.fetchTerms(sessionId) : Promise.resolve(),
+    ])
+
+    Object.assign(wizard, {
+      title: exam.title || '',
+      subject_id: exam.subject_id || exam.subject?.id || '',
+      class_level_id: classLevelId,
+      class_arm_id: exam.class_arm_id || exam.classArmId || exam.class_arm?.id || '',
+      term_id: exam.term_id || exam.term?.id || exam.termId || '',
+      session_id: sessionId,
+      type: exam.type || 'exam',
+      instructions: exam.instructions || '',
+      duration: exam.duration_minutes ?? exam.duration ?? 60,
+      totalMarks: exam.total_marks ?? exam.totalMarks ?? null,
+      passMark: exam.pass_mark ?? exam.passMark ?? 50,
+      maxAttempts: exam.max_attempts ?? exam.maxAttempts ?? 1,
+      scheduledStart: toDatetimeLocalInputValue(exam.scheduled_start || exam.scheduledStart || ''),
+      randomizeQuestions: exam.randomize_questions ?? exam.randomizeQuestions ?? true,
+      randomizeOptions: exam.randomize_options ?? exam.randomizeOptions ?? true,
+      allowReview: exam.allow_review ?? exam.allowReview ?? false,
+      showResultsInstantly: exam.show_results_instantly ?? exam.showResultsInstantly ?? false,
+      status: exam.status || 'draft',
+    })
+
+    // Restore selected questions, their order, and their marks/lock settings.
+    const existingQuestions = await examsStore.fetchExamQuestions(examId).catch(() => [])
+    if (Array.isArray(existingQuestions) && existingQuestions.length) {
+      marksEngine.setQuestions(
+        existingQuestions
+          .slice()
+          .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+          .map((q) => ({
+            question_id: q.question_id ?? q.id,
+            marks: q.marks ?? q.default_marks ?? 1,
+            default_marks: q.default_marks ?? q.marks ?? 1,
+            is_marks_locked: Boolean(q.is_marks_locked),
+            order: q.order,
+          })),
+      )
+    }
+
+    autosaveLabel.value = 'Draft loaded'
+  } catch (err) {
+    uiStore.addToast({ title: 'Unable to load draft', message: err.message || 'Please try again.', variant: 'error' })
+  }
+}
+
 onMounted(async () => {
   await examsStore.fetchRefData()
   await loadQuestionBank().catch(() => {})
+
+  const examId = route.params.id
+  if (examId) {
+    await loadExistingExam(examId)
+  }
 })
 
 watch(currentStep, async (step) => {
