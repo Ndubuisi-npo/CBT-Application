@@ -1,6 +1,13 @@
 <template>
   <div class="space-y-6">
-    <SectionCard :title="createdExamId ? 'Continue Exam Draft' : 'Exam Creation Wizard'" subtitle="Build objective exams that the system can score automatically from the correct answers you set.">
+    <!-- Breadcrumb - identical structure/styling whether creating a new exam or continuing a draft -->
+    <nav class="flex items-center gap-1.5 text-xs text-slate-500">
+      <RouterLink to="/teachers/exams" class="transition hover:text-slate-900">My Exams</RouterLink>
+      <span class="text-slate-300">/</span>
+      <span class="font-medium text-slate-700">{{ isEditingDraft ? 'Continue Draft' : 'Create Exam' }}</span>
+    </nav>
+
+    <SectionCard :title="isEditingDraft ? 'Continue Exam Draft' : 'Exam Creation Wizard'" subtitle="Build objective exams that the system can score automatically from the correct answers you set.">
       <template #header>
         <div class="flex flex-wrap items-center gap-3">
           <AppButton text="Save Draft" variant="outline" size="sm" :processing="saving" loading-text="Saving…" @click="saveDraft" />
@@ -42,7 +49,7 @@
                 </label>
                 <label class="wizard-field">
                   <span>Class Level</span>
-                  <select v-model="wizard.class_level_id" class="wizard-input" @change="examsStore.fetchArms(wizard.class_level_id)">
+                  <select v-model="wizard.class_level_id" class="wizard-input" @change="onClassLevelChange">
                     <option value="">Select class</option>
                     <option v-for="c in classLevels" :key="c.id" :value="c.id">{{ c.name }}</option>
                   </select>
@@ -450,7 +457,7 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { useRouter, useRoute, RouterLink } from 'vue-router'
 import { X, Lock, LockOpen } from 'lucide-vue-next'
 import AppButton from '../../shared/AppButton.vue'
 import { useSchoolAdminUiStore } from '../../schooladmincomponents/stores/ui'
@@ -498,6 +505,11 @@ const showSaveModal = ref(false)
 const autosaveLabel    = ref('Not saved yet')
 const saving           = ref(false)
 const createdExamId    = ref(null)
+
+// Known synchronously from the route (unlike createdExamId, which is only
+// set once the draft finishes loading) - drives the breadcrumb/title so
+// there's no flash of "Create Exam" while continuing a draft.
+const isEditingDraft = computed(() => Boolean(route.params.id))
 
 const questionFilters = reactive({ type: '' })
 const questionBankLoaded = ref(false)
@@ -591,6 +603,16 @@ const studentToggles = [
 ]
 
 const isSelected = (id) => marksEngine.draftQuestions.value.some((q) => String(q.question_id) === String(id))
+
+// Class Arm depends on Class Level - when the level changes by hand, the
+// previously selected arm (which belonged to the old level) is no longer
+// valid, so clear it and reload the arm options for the new level.
+const onClassLevelChange = async () => {
+  wizard.class_arm_id = ''
+  if (wizard.class_level_id) {
+    await examsStore.fetchArms(wizard.class_level_id)
+  }
+}
 
 // Trigger event: add / remove a question (04-01-00 #1, #2)
 const toggleQuestion = (question) => {
@@ -789,7 +811,7 @@ const loadExistingExam = async (examId) => {
       || exam.term?.session_id
       || ''
 
-    const classLevelId = exam.class_level_id || exam.classLevelId || exam.class_level?.id || ''
+    const classLevelId = exam.class_level_id || exam.classLevelId || exam.class_level?.id || exam.classLevel?.id || ''
 
     await Promise.all([
       classLevelId ? examsStore.fetchArms(classLevelId) : Promise.resolve(),
@@ -800,7 +822,7 @@ const loadExistingExam = async (examId) => {
       title: exam.title || '',
       subject_id: exam.subject_id || exam.subject?.id || '',
       class_level_id: classLevelId,
-      class_arm_id: exam.class_arm_id || exam.classArmId || exam.class_arm?.id || '',
+      class_arm_id: exam.class_arm_id || exam.classArmId || exam.class_arm?.id || exam.classArm?.id || '',
       term_id: exam.term_id || exam.term?.id || exam.termId || '',
       session_id: sessionId,
       type: exam.type || 'exam',

@@ -191,6 +191,7 @@ const props = defineProps<{
   formData: {
     subjectCount: string
     plan_id: string
+    billing_cycle?: string
   }
 }>()
 
@@ -249,17 +250,30 @@ onMounted(async () => {
     // (e.g. after navigating back and forth between steps).
     if (!props.formData.plan_id) {
       const queryPlan = typeof route.query.plan === 'string' ? route.query.plan : null
+      const queryBilling = typeof route.query.billing === 'string' ? route.query.billing : null
       const stored = getStoredSelectedPlan()
 
       // The landing page passes the slug/id via the "?plan=" query string;
-      // sessionStorage carries the richer { id, slug } reference in case the
-      // query string gets dropped along the way.
+      // sessionStorage carries the richer { id, slug, billingCycle }
+      // reference in case the query string gets dropped along the way.
       const matched =
         findMatchingPlan(plans.value, { id: queryPlan, slug: queryPlan }) ||
         findMatchingPlan(plans.value, stored || {})
 
       if (matched) {
         props.formData.plan_id = matched.id
+
+        // Restore the exact variant (e.g. "Yearly Premium" vs "Monthly
+        // Premium") by also restoring which billing cycle was toggled on
+        // the landing page when the plan was picked.
+        const billingCycle = queryBilling === 'yearly' || queryBilling === 'monthly'
+          ? queryBilling
+          : stored?.billingCycle
+
+        if (billingCycle) {
+          isAnnual.value = billingCycle === 'yearly'
+        }
+        props.formData.billing_cycle = isAnnual.value ? 'yearly' : 'monthly'
       }
     }
   } catch (error) {
@@ -288,6 +302,7 @@ const displayedPrice = (plan: Plan) => {
 
 const selectPlan = (plan: Plan) => {
   props.formData.plan_id = plan.id
+  props.formData.billing_cycle = isAnnual.value ? 'yearly' : 'monthly'
   // Don't emit submit-registration here - just select the plan
 }
 </script>

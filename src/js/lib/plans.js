@@ -60,12 +60,17 @@ export function normalizePlan(plan) {
 // onboarding step can preselect it once the full plan list has loaded.
 const SELECTED_PLAN_STORAGE_KEY = 'educbt_selected_plan'
 
-export function storeSelectedPlan(plan) {
+export function storeSelectedPlan(plan, billingCycle) {
   if (typeof window === 'undefined' || !plan) return
   try {
     const payload = {
       id: plan.id ?? null,
       slug: plan.slug ?? null,
+      // 'monthly' | 'yearly' - the billing cycle the user had toggled to
+      // when they picked this plan, so e.g. "Yearly Premium" is preserved
+      // as distinct from "Monthly Premium" even though both share the same
+      // underlying plan record.
+      billingCycle: billingCycle === 'yearly' ? 'yearly' : 'monthly',
     }
     window.sessionStorage.setItem(SELECTED_PLAN_STORAGE_KEY, JSON.stringify(payload))
   } catch (err) {

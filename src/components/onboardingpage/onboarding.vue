@@ -100,6 +100,7 @@ const formData = ref({
   password: '',
   confirmPassword: '',
   plan_id: '',
+  billing_cycle: '',
 })
 
 const currentComponent = computed(() => {
@@ -156,7 +157,8 @@ const submitRegistration = async () => {
       phone: formData.value.phone,
       jobTitle: formData.value.jobTitle,
       password: formData.value.password,
-      plan_id: formData.value.plan_id
+      plan_id: formData.value.plan_id,
+      billing_cycle: formData.value.billing_cycle || 'monthly',
     }
     
     await registerOnboarding(payload)

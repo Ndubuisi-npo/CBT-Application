@@ -132,13 +132,18 @@ const displayPrice = (plan) => {
 }
 
 const goToOnboarding = (plan) => {
-  // Persist the selected plan so the onboarding "Choose Plan" step can
-  // preselect it automatically once it loads (navigation below is a full
-  // page load, so Pinia state would be lost - sessionStorage survives it).
-  storeSelectedPlan(plan)
+  const billingCycle = isAnnual.value ? 'yearly' : 'monthly'
 
-  // navigate to onboarding with optional plan slug as query
-  const url = `/onboarding?plan=${plan.slug || plan.id}`
+  // Persist the selected plan (tier + billing cycle) so the onboarding
+  // "Choose Plan" step can preselect the exact same variant once it loads
+  // (navigation below is a full page load, so Pinia state would be lost -
+  // sessionStorage survives it).
+  storeSelectedPlan(plan, billingCycle)
+
+  // navigate to onboarding with the plan slug and billing cycle as query
+  // params (sessionStorage is the primary source of truth; the query
+  // string is a fallback in case storage gets cleared along the way).
+  const url = `/onboarding?plan=${plan.slug || plan.id}&billing=${billingCycle}`
   window.location.href = url
 }
 
