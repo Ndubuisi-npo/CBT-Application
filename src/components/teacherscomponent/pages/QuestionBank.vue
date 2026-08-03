@@ -679,7 +679,6 @@ const submitQuestion = async (status) => {
     class_level_id: form.class_level_id || form.className,
     class_arm_id: form.class_arm_id || null,
     status,
-    default_marks: form.marks,
     content: form.content.trim(),
     options: optionsPayload,
   }

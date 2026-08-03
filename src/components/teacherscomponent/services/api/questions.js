@@ -43,10 +43,6 @@ export async function createQuestion(payload) {
 
     if (payload.subject_id) body.subject_id = payload.subject_id
 
-    if (payload.default_marks !== undefined || payload.marks !== undefined) {
-      body.default_marks = Number(payload.default_marks ?? payload.marks ?? 1)
-    }
-
     if (payload.is_active !== undefined) body.is_active = payload.is_active
     if (payload.status !== undefined) body.status = payload.status
 
@@ -76,8 +72,6 @@ export async function updateQuestion(id, payload) {
       body.content_format = detectContentFormat(payload.content)
     }
     if (payload.type !== undefined) body.type = payload.type
-    if (payload.default_marks !== undefined) body.default_marks = payload.default_marks
-    else if (payload.marks !== undefined) body.default_marks = payload.marks
     if (payload.image_url !== undefined) body.image_url = payload.image_url
     if (payload.is_active !== undefined) body.is_active = payload.is_active
     if (payload.status !== undefined) body.status = payload.status
