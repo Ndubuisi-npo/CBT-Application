@@ -20,12 +20,31 @@
           </FormField>
 
           <FormField label="Class Level" :error="errors.class_level_id">
-            <select v-model="form.class_level_id" class="w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#D4AF37]">
+            <select
+              v-model="form.class_level_id"
+              class="w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#D4AF37]"
+              @change="() => { form.class_arm_id = ''; loadClassArms(form.class_level_id) }"
+            >
               <option value="">Select a class level</option>
               <option v-for="classLevel in classLevelOptions" :key="classLevel.value" :value="classLevel.value">
                 {{ classLevel.label }}
               </option>
             </select>
+          </FormField>
+
+          <FormField label="Class Arm" :error="errors.class_arm_id">
+            <select
+              v-model="form.class_arm_id"
+              class="w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#D4AF37]"
+              :disabled="!form.class_level_id || loadingClassArms"
+            >
+              <option value="">Select class arm</option>
+              <option v-for="arm in classArmOptions" :key="arm.value" :value="arm.value">
+                {{ arm.label }}
+              </option>
+            </select>
+            <p v-if="form.class_level_id && loadingClassArms" class="mt-1 text-xs text-slate-400">Loading arms…</p>
+            <p v-if="form.class_level_id && !loadingClassArms && !classArmOptions.length" class="mt-1 text-xs text-slate-400">No arms found for this class level.</p>
           </FormField>
 
           <FormField label="Academic Session" :error="errors.academic_session_id">
@@ -62,6 +81,7 @@ import { X } from 'lucide-vue-next'
 import AppButton from '../../shared/AppButton.vue'
 import FormField from './FormField.vue'
 import { useSchoolAdminClassesStore } from '../stores/classes'
+import { useSchoolAdminClassArmsStore } from '../stores/classArms'
 import { useSchoolAdminSessionsStore } from '../stores/sessions'
 import { useSchoolAdminTeachersStore } from '../stores/teachers'
 
@@ -77,12 +97,14 @@ const isEdit = computed(() => !!props.assignment)
 const form = reactive({
   user_id: '',
   class_level_id: '',
+  class_arm_id: '',
   academic_session_id: ''
 })
 
 const errors = reactive({
   user_id: '',
   class_level_id: '',
+  class_arm_id: '',
   academic_session_id: ''
 })
 
@@ -90,8 +112,31 @@ const loading = ref(false)
 
 // Store instances
 const classesStore = useSchoolAdminClassesStore()
+const classArmsStore = useSchoolAdminClassArmsStore()
 const sessionsStore = useSchoolAdminSessionsStore()
 const teachersStore = useSchoolAdminTeachersStore()
+
+const classArmOptions = computed(() => {
+  return classArmsStore.classArms.map((arm) => ({
+    value: arm.id,
+    label: arm.name,
+  }))
+})
+
+const loadingClassArms = computed(() => classArmsStore.loading)
+
+const loadClassArms = async (classLevelId) => {
+  if (!classLevelId) {
+    classArmsStore.classArms = []
+    return
+  }
+
+  try {
+    await classArmsStore.fetchClassArms(classLevelId)
+  } catch (error) {
+    // ignore failure; no arms will be shown
+  }
+}
 
 // Computed options for selects
 const teacherOptions = computed(() => {
@@ -116,8 +161,8 @@ const sessionOptions = computed(() => {
 })
 
 const resetForm = () => {
-  Object.assign(form, { user_id: '', class_level_id: '', academic_session_id: '' })
-  Object.assign(errors, { user_id: '', class_level_id: '', academic_session_id: '' })
+  Object.assign(form, { user_id: '', class_level_id: '', class_arm_id: '', academic_session_id: '' })
+  Object.assign(errors, { user_id: '', class_level_id: '', class_arm_id: '', academic_session_id: '' })
 }
 
 // Fetch related data only when the modal is opened
@@ -152,11 +197,15 @@ watch(() => props.show, async (show) => {
 })
 
 // Watch for assignment changes and update form
-watch(() => props.assignment, (assignment) => {
+watch(() => props.assignment, async (assignment) => {
   if (assignment) {
     form.user_id = assignment.user_id || ''
     form.class_level_id = assignment.class_level_id || ''
     form.academic_session_id = assignment.academic_session_id || ''
+    form.class_arm_id = assignment.class_arm_id || ''
+    if (form.class_level_id) {
+      await loadClassArms(form.class_level_id)
+    }
   } else {
     resetForm()
   }
@@ -165,6 +214,7 @@ watch(() => props.assignment, (assignment) => {
 const validate = () => {
   errors.user_id = form.user_id ? '' : 'Teacher is required.'
   errors.class_level_id = form.class_level_id ? '' : 'Class level is required.'
+  errors.class_arm_id = ''
   errors.academic_session_id = form.academic_session_id ? '' : 'Academic session is required.'
   return !errors.user_id && !errors.class_level_id && !errors.academic_session_id
 }
@@ -178,6 +228,7 @@ const submit = async () => {
     const payload = {
       user_id: form.user_id,
       class_level_id: form.class_level_id,
+      class_arm_id: form.class_arm_id || undefined,
       academic_session_id: form.academic_session_id
     }
     

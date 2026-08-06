@@ -4,9 +4,14 @@
       <div>
         <h3 class="text-lg font-semibold text-emerald-900">Import successful!</h3>
         <p class="mt-2 text-sm text-emerald-700">
-          {{ importResult.imported }} {{ entityLabel }}{{ importResult.imported !== 1 ? 's' : '' }} imported
-          <span v-if="importResult.skipped > 0">, {{ importResult.skipped }} skipped</span>
-          <span v-if="importResult.updated > 0">, {{ importResult.updated }} updated</span>
+          <template v-if="typeof importResult.imported === 'number'">
+            {{ importResult.imported }} {{ entityLabel }}{{ importResult.imported !== 1 ? 's' : '' }} imported
+            <span v-if="importResult.skipped > 0">, {{ importResult.skipped }} skipped</span>
+            <span v-if="importResult.updated > 0">, {{ importResult.updated }} updated</span>
+          </template>
+          <template v-else>
+            Your {{ entityLabel }} bulk upload was accepted. You will be notified when it finishes processing.
+          </template>
         </p>
       </div>
       <Check class="h-6 w-6 text-emerald-600" />

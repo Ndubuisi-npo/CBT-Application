@@ -94,7 +94,7 @@ import { useSchoolAdminUiStore } from '../stores/ui'
 import { isNameTakenError } from '../../../js/lib/api'
 
 const route = useRoute()
-const headings = ['Class Name', 'Teacher', 'Actions']
+const headings = ['Class Arm Name', 'Teacher', 'Actions']
 const classArmsStore = useSchoolAdminClassArmsStore()
 const classLevelsStore = useSchoolAdminClassLevelsStore()
 const uiStore = useSchoolAdminUiStore()

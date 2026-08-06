@@ -1,12 +1,5 @@
 <template>
   <div class="space-y-6">
-    <!-- Breadcrumb - identical structure/styling whether creating a new exam or continuing a draft -->
-    <nav class="flex items-center gap-1.5 text-xs text-slate-500">
-      <RouterLink to="/teachers/exams" class="transition hover:text-slate-900">My Exams</RouterLink>
-      <span class="text-slate-300">/</span>
-      <span class="font-medium text-slate-700">{{ isEditingDraft ? 'Continue Draft' : 'Create Exam' }}</span>
-    </nav>
-
     <SectionCard :title="isEditingDraft ? 'Continue Exam Draft' : 'Exam Creation Wizard'" subtitle="Build objective exams that the system can score automatically from the correct answers you set.">
       <template #header>
         <div class="flex flex-wrap items-center gap-3">

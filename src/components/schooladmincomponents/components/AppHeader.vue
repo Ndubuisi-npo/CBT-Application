@@ -129,6 +129,7 @@ const currentClassLevelName = computed(() => currentClassLevel.value?.name || 'C
 const pageTitle = computed(() => {
   if (route.path.startsWith('/school-admin/terms/')) return 'Terms'
   if (route.path.startsWith('/school-admin/classes/')) return 'Arms'
+  if (route.path.startsWith('/teachers/exam-wizard')) return 'Exam Wizard'
   return titles[route.path] || route.path.split('/').pop()?.replace(/-/g, ' ') || 'Home'
 })
 
@@ -169,6 +170,14 @@ const breadcrumbs = computed(() => {
       ...base,
       { label: 'Students', to: parentPath },
       { label: currentLabel },
+    ]
+  }
+
+  if (route.path.startsWith('/teachers/exam-wizard')) {
+    return [
+      ...base,
+      { label: 'My Exam', to: '/teachers/exams' },
+      { label: pageTitle.value },
     ]
   }
 

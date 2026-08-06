@@ -71,7 +71,9 @@ export const useSchoolAdminTeachersStore = defineStore(
             },
 
             async fetchTeacher(id) {
-                const record = await getTeacher(id);
+                const record = await getTeacher(id, {
+                    include: 'teacherProfile,assignedClasses,assignedClasses.class_level,teacherAssignments,teacherAssignments.subject,teacherAssignments.class_level',
+                });
                 if (record?.id) {
                     this.teachers = this.teachers.map((item) =>
                         item.id === record.id ? record : item,
@@ -90,7 +92,9 @@ export const useSchoolAdminTeachersStore = defineStore(
                 // Try to refetch the full record if API returned a minimal shape
                 if (record && record.id) {
                     try {
-                        const full = await getTeacher(record.id)
+                        const full = await getTeacher(record.id, {
+                            include: 'teacherProfile,assignedClasses,assignedClasses.class_level,teacherAssignments,teacherAssignments.subject,teacherAssignments.class_level',
+                        })
                         record = full || record
                     } catch (err) {
                         // ignore refetch failure; keep returned record
@@ -139,10 +143,12 @@ export const useSchoolAdminTeachersStore = defineStore(
                 // Refetch created teacher to ensure list has full nested shape
                 if (record && record.id) {
                     try {
-                        const full = await getTeacher(record.id)
-                        record = full || record
+                        const full = await getTeacher(record.id, {
+                            include: 'teacherProfile,assignedClasses,assignedClasses.class_level,teacherAssignments,teacherAssignments.subject,teacherAssignments.class_level',
+                        });
+                        record = full || record;
                     } catch (err) {
-                        // ignore and use original create response
+                        // ignore refetch failure; keep returned record
                     }
                 }
 
@@ -150,9 +156,9 @@ export const useSchoolAdminTeachersStore = defineStore(
                 this.totalTeachers++;
 
                 try {
-                    await this.fetchTeachers({ status: 'active' })
+                    await this.fetchTeachers({ status: 'active' });
                 } catch (err) {
-                    console.warn('Failed to refresh active teacher list after creation.', err)
+                    console.warn('Failed to refresh active teacher list after creation.', err);
                 }
 
                 return record;

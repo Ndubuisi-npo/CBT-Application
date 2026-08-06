@@ -13,7 +13,7 @@
         </p>
       </div>
       <div v-if="!showArchived" class="flex flex-wrap items-center gap-2">
-        <AppButton :icon="UploadCloud" text="Import" variant="outline" size="sm" @click="goToImport" />
+        <AppButton :icon="UploadCloud" text="Bulk Upload Teachers" variant="outline" size="sm" @click="goToImport" />
         <AppButton data-tour="create-teacher-btn" :icon="Plus" text="Add Teacher" variant="primary" size="sm" @click="openModal()" />
       </div>
       <div v-else>
@@ -308,7 +308,7 @@ const initials = (t) => `${t.first_name?.[0] || ''}${t.last_name?.[0] || ''}`.to
 const teacherFullName = (t) => `${t.first_name || ''} ${t.last_name || ''}`.trim() || 'Teacher'
 
 const teacherActions = (teacher) => [
-  { key: 'view', label: 'View', icon: Eye, onClick: () => viewTeacher(teacher) },
+  { key: 'view', label: 'Preview', icon: Eye, onClick: () => viewTeacher(teacher) },
   { key: 'edit', label: 'Edit', icon: Pencil, onClick: () => editTeacher(teacher) },
   {
     key: 'revoke',

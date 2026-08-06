@@ -258,7 +258,12 @@ const teacherActivities = ref([])
 
 const teacherId = computed(() => route.params.id)
 
-const tp = computed(() => teacher.value?.teacherProfile || teacher.value?.teacher_profile || teacher.value?.profile || null)
+const tp = computed(() => teacher.value?.teacherProfile
+  || teacher.value?.teacher_profile
+  || teacher.value?.profile
+  || teacher.value?.user?.teacherProfile
+  || teacher.value?.user?.teacher_profile
+  || null)
 
 const fullName = computed(() => {
   const t = teacher.value || {}

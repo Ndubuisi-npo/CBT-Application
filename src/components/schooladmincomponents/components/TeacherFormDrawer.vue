@@ -78,7 +78,12 @@ const isEdit = computed(() => !!props.teacher)
 
 const tp = computed(() => {
   if (!props.teacher) return null
-  return props.teacher.teacherProfile || props.teacher.teacher_profile || props.teacher.profile || null
+  return props.teacher.teacherProfile
+    || props.teacher.teacher_profile
+    || props.teacher.profile
+    || props.teacher.user?.teacherProfile
+    || props.teacher.user?.teacher_profile
+    || null
 })
 
 const emptyForm = () => ({ firstName: '', lastName: '', email: '', phone: '', gender: '', qualification: '', staff_id: '', date_joined: '' })

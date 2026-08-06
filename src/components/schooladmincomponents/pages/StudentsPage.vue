@@ -13,7 +13,7 @@
         </p>
       </div>
       <div v-if="!showArchived" class="flex flex-wrap items-center gap-2">
-        <AppButton :icon="UploadCloud" text="Import" variant="outline" size="sm" @click="goToImport" />
+        <AppButton :icon="UploadCloud" text="Bulk Upload Students" variant="outline" size="sm" @click="goToImport" />
         <AppButton data-tour="create-student-btn" :icon="Plus" text="Add Student" variant="primary" size="sm" @click="openModal()" />
       </div>
       <div v-else class="flex items-center gap-2">
@@ -420,7 +420,7 @@ const initials = (s) =>
 const studentFullName = (s) => `${s.first_name || ''} ${s.last_name || ''}`.trim() || 'Student'
 
 const studentActions = (student) => [
-  { key: 'view', label: 'View', icon: Eye, onClick: () => viewStudent(student) },
+  { key: 'view', label: 'Preview', icon: Eye, onClick: () => viewStudent(student) },
   { key: 'edit', label: 'Edit', icon: Pencil, onClick: () => editStudent(student) },
   {
     key: 'revoke',

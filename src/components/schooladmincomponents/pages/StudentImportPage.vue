@@ -3,8 +3,8 @@
     <!-- Idle state: Dropzone + template download -->
     <FileDropzone
       v-if="state.page === 'idle'"
-      title="Import Students"
-      subtitle="Upload a CSV file to import student records in bulk."
+      title="Bulk Upload Students"
+      subtitle="Upload a CSV file to upload student records in bulk."
       template-filename="student_import_template.csv"
       :get-template="getImportTemplate"
       @file-selected="handleFileSelected"
@@ -146,8 +146,8 @@ async function handleConfirmImport(policy) {
   try {
     const response = await importStudents(state.file, { dryRun: false, overwriteExisting: policy })
 
-    if (response.status === 201) {
-      state.importResult = response.body.data
+    if (response.ok) {
+      state.importResult = response.body.data ?? response.body
       state.page = 'done'
     } else {
       state.errorMessage = response.body?.message ?? 'Import failed'

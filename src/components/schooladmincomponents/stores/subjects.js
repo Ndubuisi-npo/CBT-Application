@@ -47,5 +47,8 @@ export const useSchoolAdminSubjectsStore = defineStore('school-admin-subjects', 
     async removeAssignment(subjectId, assignmentId) {
       return await removeAssignment(subjectId, assignmentId)
     },
+    async deleteAssignment(subjectId, assignmentId) {
+      return await this.removeAssignment(subjectId, assignmentId)
+    },
   },
 })

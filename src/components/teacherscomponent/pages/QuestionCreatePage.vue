@@ -92,10 +92,11 @@
               <label class="block text-sm font-medium text-slate-700">
                 Subject <span class="text-red-500">*</span>
               </label>
-              <select v-model="form.subject_id" class="sa-input mt-1.5">
+              <select v-model="form.subject_id" class="sa-input mt-1.5" :disabled="!form.class_level_id || !form.class_arm_id">
                 <option value="">Select subject</option>
                 <option v-for="s in subjects" :key="s.id" :value="s.id">{{ s.name }}</option>
               </select>
+              <p v-if="!form.class_level_id || !form.class_arm_id" class="mt-1 text-xs text-slate-400">Select a class level and class arm first to view available subjects.</p>
             </div>
             <div class="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
               Marks are assigned later in the exam wizard when the question is added to an exam.
@@ -766,6 +767,7 @@ const loadMetadata = async () => {
 
 const onClassLevelChange = async () => {
   form.class_arm_id = ''
+  form.subject_id = ''
   if (form.class_level_id) {
     await examsStore.loadClassArms(form.class_level_id)
     classArms.value = examsStore.classArms || []

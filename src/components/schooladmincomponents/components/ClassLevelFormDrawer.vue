@@ -12,7 +12,7 @@
     <form id="class-level-form" @submit.prevent="submit">
       <FormSection title="Class Level Details">
         <ResponsiveFormGrid :cols="1">
-          <AppInput v-model="form.name" label="Class Level Name" placeholder="JSS 1" required :error="errors.name" @blur="touch('name')" />
+          <AppInput v-model="form.name" label="Class Level Category" placeholder="JSS 1" required :error="errors.name" @blur="touch('name')" />
         </ResponsiveFormGrid>
       </FormSection>
     </form>
@@ -65,7 +65,7 @@ watch(() => props.show, (show) => { if (!show) resetForm(props.classLevel) })
 
 const touch = (field) => { touched[field] = true; validateField(field) }
 const validateField = (field) => {
-  if (field === 'name') errors.name = form.name?.trim() ? '' : 'Class level name is required.'
+  if (field === 'name') errors.name = form.name?.trim() ? '' : 'Class level category is required.'
 }
 const validate = () => { touch('name'); return !errors.name }
 
