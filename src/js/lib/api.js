@@ -131,7 +131,13 @@ export async function apiFetch(path, options = {}) {
   // Auto-logout on 401
   if (response.status === 401) {
     clearApiState()
-    if (typeof window !== 'undefined') {
+    try {
+      const { clearAuth } = await import('./auth')
+      clearAuth()
+    } catch {
+      // Ignore cleanup failures and continue with the redirect flow.
+    }
+    if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
       window.location.href = '/login'
     }
     throw new Error('Session expired. Please log in again.')

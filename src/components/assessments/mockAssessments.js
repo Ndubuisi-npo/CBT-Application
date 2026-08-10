@@ -257,8 +257,14 @@ export const toggleAssessmentStatus = (id) => {
 export const openAssessmentForTeachers = (id) => {
   const assessment = getAssessmentById(id)
   if (!assessment) return null
-  assessment.isOpenForTeachers = true
-  assessment.status = assessment.status === 'draft' ? 'active' : assessment.status
+  assessment.isOpenForTeachers = !assessment.isOpenForTeachers
+  if (assessment.isOpenForTeachers) {
+    assessment.status = assessment.status === 'draft' ? 'active' : assessment.status
+  } else if (assessment.isOpenForStudents) {
+    assessment.status = 'student-active'
+  } else {
+    assessment.status = 'draft'
+  }
   return assessment
 }
 export const openAssessmentForStudents = (id) => {
@@ -299,6 +305,17 @@ export const openSubmissionForStudents = (assessmentId, submissionId) => {
     assessment.isOpenForStudents = remaining.length > 0
     assessment.status = assessment.isOpenForStudents ? 'student-active' : (assessment.isOpenForTeachers ? 'active' : 'draft')
   }
+  return submission
+}
+export const addSubmissionComment = (assessmentId, submissionId, text) => {
+  const submission = getSubmissionById(assessmentId, submissionId)
+  if (!submission || !text?.trim()) return null
+  if (!submission.comments) submission.comments = []
+  submission.comments.push({
+    id: `${submissionId}-${submission.comments.length + 1}`,
+    text: text.trim(),
+    createdAt: new Date().toISOString(),
+  })
   return submission
 }
 export const getSubmissionsByAssessment = (assessmentId) => submissions.filter((item) => item.assessmentId === Number(assessmentId))

@@ -70,7 +70,7 @@ function normalizeAuthUser(response, fallbackUser = null) {
   return response?.user ?? response?.admin ?? response ?? fallbackUser
 }
 
-function clearAuth() {
+export function clearAuth() {
   authState = {
     user: null,
     token: null,

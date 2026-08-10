@@ -44,6 +44,35 @@
     </div>
 
     <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <h2 class="text-lg font-semibold text-slate-900">Teacher Comments</h2>
+        <p class="text-sm text-slate-500">Leave feedback for this submission.</p>
+      </div>
+
+      <div class="mt-4 rounded-2xl border border-slate-100 bg-slate-50 p-4">
+        <label class="text-sm font-semibold text-slate-700" for="teacher-comment">New comment</label>
+        <textarea
+          id="teacher-comment"
+          v-model="commentText"
+          rows="4"
+          class="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none ring-0 focus:border-[#0B1F3A]"
+          placeholder="Add a comment for the teacher about this submission..."
+        />
+        <div class="mt-3 flex justify-end">
+          <AppButton text="Save Comment" variant="primary" size="sm" @click="submitComment" />
+        </div>
+      </div>
+
+      <div v-if="submission.comments?.length" class="mt-4 space-y-3">
+        <div v-for="comment in submission.comments" :key="comment.id" class="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+          <p class="text-sm text-slate-700">{{ comment.text }}</p>
+          <p class="mt-2 text-xs text-slate-500">{{ formatDate(comment.createdAt) }}</p>
+        </div>
+      </div>
+      <p v-else class="mt-4 text-sm text-slate-500">No comments yet.</p>
+    </section>
+
+    <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
       <h2 class="text-lg font-semibold text-slate-900">Questions</h2>
       <div class="mt-4 space-y-4">
         <div
@@ -97,6 +126,7 @@ import {
   getSubmissionStatusLabel,
   getClassLevelName,
   getClassArmName,
+  addSubmissionComment,
 } from '../../assessments/mockAssessments'
 
 const route = useRoute()
@@ -105,6 +135,7 @@ const assessmentId = route.params.assessmentId
 const submissionId = route.params.submissionId
 const assessment = ref(getAssessmentById(assessmentId))
 const submission = ref(getSubmissionById(assessmentId, submissionId) || { questions: [] })
+const commentText = ref('')
 
 const teacherName = computed(() => getTeacherName(submission.value.teacherId))
 const subjectName = computed(() => getSubjectName(submission.value.subjectId))
@@ -118,6 +149,13 @@ const completionText = computed(() => {
   if (!assessment.value) return 'No assessment selected.'
   return totalMarks.value >= assessment.value.totalMarks ? 'Assessment Complete' : `Remaining Marks: ${remainingMarks.value}`
 })
+
+const submitComment = () => {
+  if (!commentText.value.trim()) return
+  addSubmissionComment(assessmentId, submissionId, commentText.value)
+  submission.value = getSubmissionById(assessmentId, submissionId) || { questions: [] }
+  commentText.value = ''
+}
 
 const formatDate = (value) => {
   if (!value) return 'N/A'

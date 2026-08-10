@@ -25,40 +25,37 @@
           <thead class="bg-slate-50 text-[10px] uppercase tracking-[0.22em] text-slate-500">
             <tr>
               <th class="px-5 py-3">Assessment</th>
-              <th class="px-5 py-3">Session</th>
-              <th class="px-5 py-3">Term</th>
+              <th class="px-5 py-3">Type</th>
+              <th class="px-5 py-3 text-right">Marks</th>
               <th class="px-5 py-3">Class</th>
-              <th class="px-5 py-3">Due</th>
-              <th class="px-5 py-3">Total Marks</th>
               <th class="px-5 py-3">Status</th>
-              <th class="px-5 py-3">Submissions</th>
-              <th class="px-5 py-3">Created</th>
               <th class="px-5 py-3"></th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100 bg-white">
-            <tr v-for="assessment in pagedAssessments" :key="assessment.id" class="group hover:bg-slate-50">
-              <td class="px-5 py-4 w-[260px] max-w-xs">
-                <p class="font-semibold text-slate-900">{{ assessment.title }}</p>
-                <p class="mt-1 text-xs text-slate-500 truncate">{{ assessment.description }}</p>
+            <tr v-for="assessment in pagedAssessments" :key="assessment.id" class="group align-top hover:bg-slate-50">
+              <td class="w-[320px] max-w-[360px] px-5 py-4">
+                <p class="text-[15px] font-semibold leading-5 text-slate-900">{{ assessment.title }}</p>
               </td>
-              <td class="px-5 py-4">{{ getSessionName(assessment.sessionId) }}</td>
-              <td class="px-5 py-4">{{ getTermLabel(assessment.term) }}</td>
-              <td class="px-5 py-4">{{ getClassLevelName(assessment.classLevelId) }}{{ assessment.classArmId ? ` ${getClassArmName(assessment.classArmId)}` : '' }}</td>
-              <td class="px-5 py-4">{{ assessment.dueDate }} · {{ assessment.dueTime }}</td>
-              <td class="px-5 py-4">{{ assessment.totalMarks }}</td>
+              <td class="px-5 py-4 text-slate-600">{{ getAssessmentTypeLabel(assessment) }}</td>
+              <td class="px-5 py-4 text-right font-medium text-slate-700">{{ assessment.totalMarks }}</td>
+              <td class="px-5 py-4 text-slate-600">{{ getClassLevelName(assessment.classLevelId) }}{{ assessment.classArmId ? ` ${getClassArmName(assessment.classArmId)}` : '' }}</td>
               <td class="px-5 py-4">
-                <AppBadge :label="assessment.status" :variant="getStatusVariant(assessment.status)" />
+                <AppBadge :label="getAssessmentStatusLabel(assessment)" :variant="getStatusVariant(assessment.status)" />
               </td>
-              <td class="px-5 py-4">{{ countSubmissions(assessment.id) }}</td>
-              <td class="px-5 py-4">{{ assessment.createdAt }}</td>
               <td class="px-5 py-4">
-                <div class="flex flex-wrap gap-2">
-                  <AppButton v-if="!assessment.isOpenForTeachers" text="Open for Teachers" variant="outline" size="sm" @click="openForTeachers(assessment)" />
-                  <AppButton :text="assessment.isOpenForStudents ? 'Deactivate for Students' : 'Activate for Students'" variant="primary" size="sm" @click="openForStudents(assessment)" />
+                <div class="flex flex-wrap items-center justify-end gap-2">
+                  <AppButton
+                    :text="assessment.isOpenForTeachers ? 'Close for Teachers' : 'Open for Teachers'"
+                    variant="outline"
+                    size="sm"
+                    @click="openForTeachers(assessment)"
+                  />
+                  <AppButton :text="assessment.isOpenForStudents ? 'Deactivate for Students' : 'Publish for Students'" variant="primary" size="sm" @click="openForStudents(assessment)" />
                   <ResponsiveTableActions
                     :actions="actionItems(assessment)"
                     :entity-label="assessment.title"
+                    :always-visible="false"
                   />
                 </div>
               </td>
@@ -213,11 +210,16 @@ const copyAssessment = (assessment) => {
 }
 
 const countSubmissions = (assessmentId) => getSubmissionsByAssessment(assessmentId).length
+const getAssessmentTypeLabel = (assessment) => (assessment.category === 'exam' ? 'Exam' : 'Test')
+const getAssessmentStatusLabel = (assessment) => {
+  if (assessment.isOpenForStudents) return 'Student Active'
+  if (assessment.isOpenForTeachers) return 'Teacher Open'
+  return assessment.status === 'draft' ? 'Draft' : 'Active'
+}
 const actionItems = (assessment) => [
   { key: 'view', label: 'View Submissions', icon: null, onClick: () => viewAssessment(assessment) },
   { key: 'edit', label: 'Edit', icon: null, onClick: () => editAssessment(assessment) },
-  { key: 'activate', label: assessment.status === 'active' ? 'Deactivate' : 'Activate', variant: assessment.status === 'active' ? 'danger' : 'success', onClick: () => activateToggle(assessment) },
   { key: 'duplicate', label: 'Duplicate', icon: null, onClick: () => copyAssessment(assessment) },
-  { key: 'delete', label: 'Delete', variant: 'danger', onClick: () => confirmDelete(assessment) },
+  { key: 'delete', label: 'Delete', variant: 'danger', onClick: () => confirmDelete(assessment), hidden: false },
 ]
 </script>

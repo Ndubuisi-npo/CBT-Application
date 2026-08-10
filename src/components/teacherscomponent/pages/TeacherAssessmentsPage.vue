@@ -22,25 +22,29 @@
         <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
           <thead class="bg-slate-50 text-[10px] uppercase tracking-[0.22em] text-slate-500">
             <tr>
-              <th class="px-5 py-3">Title</th>
-              <th class="px-5 py-3">Description</th>
-              <th class="px-5 py-3">Due</th>
+              <th class="px-5 py-3">Assessment</th>
+              <th class="px-5 py-3">Type</th>
+              <th class="px-5 py-3 text-right">Marks</th>
               <th class="px-5 py-3">Class</th>
-              <th class="px-5 py-3">Marks</th>
               <th class="px-5 py-3">Status</th>
-              <th class="px-5 py-3">Action</th>
+              <th class="px-5 py-3"></th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100 bg-white">
-            <tr v-for="assessment in visibleAssessments" :key="assessment.id" class="group hover:bg-slate-50">
-              <td class="px-5 py-4 font-semibold text-slate-900">{{ assessment.title }}</td>
-              <td class="px-5 py-4 text-slate-500">{{ assessment.description }}</td>
-              <td class="px-5 py-4">{{ assessment.dueDate }} · {{ assessment.dueTime }}</td>
-              <td class="px-5 py-4">{{ getClassLevelName(assessment.classLevelId) }}{{ assessment.classArmId ? ` ${getClassArmName(assessment.classArmId)}` : '' }}</td>
-              <td class="px-5 py-4">{{ assessment.totalMarks }}</td>
-              <td class="px-5 py-4"><AppBadge :label="assessment.status" :variant="getStatusVariant(assessment.status)" /></td>
+            <tr v-for="assessment in visibleAssessments" :key="assessment.id" class="group align-top hover:bg-slate-50">
+              <td class="w-[320px] max-w-[360px] px-5 py-4">
+                <p class="text-[15px] font-semibold leading-5 text-slate-900">{{ assessment.title }}</p>
+              </td>
+              <td class="px-5 py-4 text-slate-600">{{ getAssessmentTypeLabel(assessment) }}</td>
+              <td class="px-5 py-4 text-right font-medium text-slate-700">{{ assessment.totalMarks }}</td>
+              <td class="px-5 py-4 text-slate-600">{{ getClassLevelName(assessment.classLevelId) }}{{ assessment.classArmId ? ` ${getClassArmName(assessment.classArmId)}` : '' }}</td>
               <td class="px-5 py-4">
-                <AppButton text="Open" variant="outline" size="sm" @click="selectAssessment(assessment.id)" />
+                <AppBadge :label="getAssessmentStatusLabel(assessment)" :variant="getStatusVariant(assessment.status)" />
+              </td>
+              <td class="px-5 py-4">
+                <div class="flex justify-end">
+                  <AppButton text="Open" variant="outline" size="sm" @click="selectAssessment(assessment.id)" />
+                </div>
               </td>
             </tr>
           </tbody>
@@ -82,6 +86,13 @@ const visibleAssessments = computed(() => {
     return matchesSearch && matchesClass
   })
 })
+
+const getAssessmentTypeLabel = (assessment) => (assessment.category === 'exam' ? 'Exam' : 'Test')
+const getAssessmentStatusLabel = (assessment) => {
+  if (assessment.isOpenForStudents) return 'Student Active'
+  if (assessment.isOpenForTeachers) return 'Teacher Open'
+  return assessment.status === 'draft' ? 'Draft' : 'Active'
+}
 
 const selectAssessment = (id) => {
   selectedAssessmentId.value = id
