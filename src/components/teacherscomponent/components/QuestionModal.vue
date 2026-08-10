@@ -18,9 +18,6 @@
                 <option value="multiple_choice">Multiple Choice</option>
                 <option value="true_false">True/False</option>
                 <option value="fill_in_the_blank">Fill in the Blank</option>
-                <option value="essay">Essay</option>
-                <option value="match_pairs">Match the Pairs</option>
-                <option value="ordering">Ordering</option>
               </select>
             </div>
 

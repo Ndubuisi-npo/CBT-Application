@@ -4,7 +4,6 @@
       title="Submission Detail"
       subtitle="Review the teacher assessment submission and the questions created for it."
       eyebrow="Assessment Management"
-      :breadcrumbs="breadcrumbs"
     >
       <template #actions>
         <AppButton text="Back to submissions" variant="outline" size="sm" @click="router.push(`/school-admin/assessments/${assessmentId}/submissions`)" />
@@ -119,13 +118,6 @@ const completionText = computed(() => {
   if (!assessment.value) return 'No assessment selected.'
   return totalMarks.value >= assessment.value.totalMarks ? 'Assessment Complete' : `Remaining Marks: ${remainingMarks.value}`
 })
-
-const breadcrumbs = computed(() => [
-  { label: 'School Admin', to: '/school-admin/dashboard' },
-  { label: 'Assessment Management', to: '/school-admin/assessments' },
-  { label: assessment.value?.title || 'Submissions', to: `/school-admin/assessments/${assessmentId}/submissions` },
-  { label: getTeacherName(submission.value.teacherId) },
-])
 
 const formatDate = (value) => {
   if (!value) return 'N/A'

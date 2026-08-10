@@ -28,7 +28,6 @@ import SchoolAdminExamApprovals from '../components/schooladmincomponents/pages/
 import StudentImportPage from '../components/schooladmincomponents/pages/StudentImportPage.vue'
 import TeacherImportPage from '../components/schooladmincomponents/pages/TeacherImportPage.vue'
 import AssessmentsPage from '../components/schooladmincomponents/pages/AssessmentsPage.vue'
-import AssessmentFormPage from '../components/schooladmincomponents/pages/AssessmentFormPage.vue'
 import AssessmentSubmissionsPage from '../components/schooladmincomponents/pages/AssessmentSubmissionsPage.vue'
 import AssessmentSubmissionDetailPage from '../components/schooladmincomponents/pages/AssessmentSubmissionDetailPage.vue'
 
@@ -104,8 +103,6 @@ const routes = [
             component: SchoolAdminSubjectAssignTeacher,
           },
           { path: 'assessments', name: 'SchoolAdminAssessments', component: AssessmentsPage },
-          { path: 'assessments/new', name: 'SchoolAdminAssessmentCreate', component: AssessmentFormPage },
-          { path: 'assessments/:id/edit', name: 'SchoolAdminAssessmentEdit', component: AssessmentFormPage, props: true },
           { path: 'assessments/:id/submissions', name: 'SchoolAdminAssessmentSubmissions', component: AssessmentSubmissionsPage, props: true },
           { path: 'assessments/:assessmentId/submissions/:submissionId', name: 'SchoolAdminAssessmentSubmissionDetail', component: AssessmentSubmissionDetailPage, props: true },
           { path: 'settings', name: 'SchoolAdminSettings', component: SchoolAdminSettings },

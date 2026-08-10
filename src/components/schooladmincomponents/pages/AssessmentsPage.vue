@@ -4,7 +4,6 @@
       title="Assessment Management"
       subtitle="View, search and operate on all assessments in the mock school system."
       eyebrow="Assessment Management"
-      :breadcrumbs="[{ label: 'School Admin', to: '/school-admin/dashboard' }, { label: 'Assessment Management' }]"
     >
       <template #actions>
         <AppButton text="Create Assessment" variant="primary" size="sm" @click="createAssessment" />
@@ -73,6 +72,13 @@
         </div>
       </div>
     </section>
+
+    <AssessmentModal
+      :show="showModal"
+      :assessment="activeAssessment"
+      @close="closeModal"
+      @submit="handleSubmit"
+    />
   </div>
 </template>
 
@@ -84,6 +90,7 @@ import AppButton from '../../shared/AppButton.vue'
 import AppInput from '../../shared/AppInput.vue'
 import AppPageHeader from '../../shared/AppPageHeader.vue'
 import AppSelect from '../../shared/AppSelect.vue'
+import AssessmentModal from '../components/AssessmentModal.vue'
 import ResponsiveTableActions from '../../shared/ResponsiveTableActions.vue'
 import {
   getAllAssessments,
@@ -98,6 +105,7 @@ import {
   deleteAssessment,
   duplicateAssessment,
   toggleAssessmentStatus,
+  saveAssessment,
 } from '../../assessments/mockAssessments'
 
 const router = useRouter()
@@ -151,9 +159,31 @@ const refreshAssessments = () => {
   if (page.value > totalPages.value) page.value = totalPages.value
 }
 
-const createAssessment = () => router.push('/school-admin/assessments/new')
+const showModal = ref(false)
+const activeAssessment = ref(null)
+
+const openModal = (assessment) => {
+  activeAssessment.value = assessment
+  showModal.value = true
+}
+const closeModal = () => {
+  showModal.value = false
+  activeAssessment.value = null
+}
+const handleSubmit = (payload) => {
+  // The trimmed modal only edits a subset of fields, so preserve everything
+  // else on edit and provide sensible defaults for a brand-new assessment.
+  const base = activeAssessment.value
+    ? {}
+    : { description: '', status: 'draft', sessionId: '', term: '', dueDate: '', dueTime: '' }
+  saveAssessment({ ...base, ...payload })
+  refreshAssessments()
+  closeModal()
+}
+
+const createAssessment = () => openModal(null)
 const viewAssessment = (assessment) => router.push(`/school-admin/assessments/${assessment.id}/submissions`)
-const editAssessment = (assessment) => router.push(`/school-admin/assessments/${assessment.id}/edit`)
+const editAssessment = (assessment) => openModal(assessment)
 const confirmDelete = (assessment) => {
   if (!window.confirm(`Delete ${assessment.title}? This will remove it from the mock assessment list.`)) return
   deleteAssessment(assessment.id)

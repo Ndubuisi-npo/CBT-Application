@@ -4,7 +4,6 @@
       title="Assessment Workspace"
       subtitle="Create a subject assignment and manage questions for this active assessment." 
       eyebrow="Assessments"
-      :breadcrumbs="breadcrumbs"
     />
 
     <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -29,7 +28,7 @@
           <AppSelect v-model="assignment.subjectId" label="Subject" :options="subjectOptions" placeholder="Choose subject" required :error="errors.subjectId" @blur="touch('subjectId')" />
           <AppInput v-model="assignment.description" label="Short Description" placeholder="e.g. Mathematics assignment for algebra" required :error="errors.description" @blur="touch('description')" />
         </div>
-        <AppButton text="Create Assignment" variant="primary" size="sm" @click="createAssignment" />
+        <AppButton text="Select Assesment" variant="primary" size="sm" @click="createAssignment" />
       </div>
 
       <div v-if="assignedSubject" class="mt-6 rounded-2xl bg-slate-50 p-5">
@@ -151,12 +150,6 @@ const assignment = reactive({ subjectId: '', description: '' })
 const errors = reactive({ subjectId: '', description: '' })
 const showQuestionModal = ref(false)
 const activeQuestion = ref(null)
-
-const breadcrumbs = computed(() => [
-  { label: 'Teacher Portal', to: '/teachers/dashboard' },
-  { label: 'Assessments', to: '/teachers/assessments' },
-  { label: assessment.value?.title || 'Assessment' },
-])
 
 const marksUsed = computed(() => assignedSubject.value ? assignedSubject.value.questions.reduce((sum, q) => sum + q.marks, 0) : 0)
 const remainingMarks = computed(() => Math.max(0, (assessment.value?.totalMarks || 0) - marksUsed.value))

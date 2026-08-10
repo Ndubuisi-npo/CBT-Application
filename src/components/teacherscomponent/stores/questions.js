@@ -64,7 +64,7 @@ export const useTeachersQuestionsStore = defineStore(
                 });
             },
             questionTypes() {
-                return ['Multiple Choice', 'True/False', 'Fill in the Blank', 'Essay', 'Match the Pairs', 'Ordering'];
+                return ['Multiple Choice', 'True/False', 'Fill in the Blank'];
             },
             difficulties() {
                 return ['Easy', 'Medium', 'Hard'];

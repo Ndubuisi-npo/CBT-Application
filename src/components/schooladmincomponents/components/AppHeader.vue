@@ -49,6 +49,7 @@ import { useSchoolAdminTeachersStore } from '../stores/teachers'
 import { useSchoolAdminStudentsStore } from '../stores/students'
 import { useSchoolAdminSessionsStore } from '../stores/sessions'
 import { useSchoolAdminClassLevelsStore } from '../stores/classLevels'
+import { getAssessmentById, getTeacherName, getSubmissionById } from '../../assessments/mockAssessments'
 
 defineEmits(['toggle-sidebar'])
 
@@ -76,12 +77,14 @@ const titles = {
   '/school-admin/settings': 'Settings',
   '/school-admin/profile': 'Profile',
   '/school-admin/exams': 'Exam Approvals',
+  '/school-admin/assessments': 'Assessment Management',
   '/school-admin/notifications': 'Notifications',
   '/teachers/dashboard': 'Dashboard',
   '/teachers/my-classes': 'My Classes',
   '/teachers/questions': 'Question Bank',
   '/teachers/exam-wizard': 'Exam Wizard',
   '/teachers/exams': 'My Exams',
+  '/teachers/assessments': 'Assessments',
   '/teachers/notifications': 'Notifications',
   '/teachers/students': 'Students',
   '/teachers/attendance': 'Attendance',
@@ -125,6 +128,21 @@ const currentStudentName = computed(() => {
 
 const currentSessionName = computed(() => currentSession.value?.name || 'Session')
 const currentClassLevelName = computed(() => currentClassLevel.value?.name || 'Class Level')
+
+const currentAssessment = computed(() => {
+  const id = route.params.assessmentId || route.params.id
+  return id ? getAssessmentById(id) : null
+})
+const currentAssessmentTitle = computed(() => currentAssessment.value?.title || 'Assessment')
+
+const currentSubmission = computed(() => {
+  const assessmentId = route.params.assessmentId || route.params.id
+  const submissionId = route.params.submissionId
+  return assessmentId && submissionId ? getSubmissionById(assessmentId, submissionId) : null
+})
+const currentSubmissionTeacherName = computed(() =>
+  currentSubmission.value ? getTeacherName(currentSubmission.value.teacherId) : 'Submission'
+)
 
 const pageTitle = computed(() => {
   if (route.path.startsWith('/school-admin/terms/')) return 'Terms'
@@ -217,6 +235,39 @@ const breadcrumbs = computed(() => {
     return [
       ...base,
       { label: 'Teachers' },
+    ]
+  }
+
+  if (route.path === '/school-admin/assessments') {
+    return [
+      ...base,
+      { label: 'Assessment Management' },
+    ]
+  }
+
+  if (route.path.startsWith('/school-admin/assessments/')) {
+    return [
+      ...base,
+      { label: 'Assessment Management', to: '/school-admin/assessments' },
+      { label: currentAssessmentTitle.value, to: route.path.includes('/submissions') && !route.params.submissionId ? undefined : `/school-admin/assessments/${route.params.assessmentId || route.params.id}/submissions` },
+      ...(route.path.includes('/submissions/')
+        ? [{ label: getTeacherName(currentAssessment.value?.submissionTeacherId ?? route.params.submissionId) || 'Submission' }]
+        : []),
+    ]
+  }
+
+  if (route.path === '/teachers/assessments') {
+    return [
+      ...base,
+      { label: 'Assessments' },
+    ]
+  }
+
+  if (route.path.startsWith('/teachers/assessments/')) {
+    return [
+      ...base,
+      { label: 'Assessments', to: '/teachers/assessments' },
+      { label: currentAssessmentTitle.value },
     ]
   }
 

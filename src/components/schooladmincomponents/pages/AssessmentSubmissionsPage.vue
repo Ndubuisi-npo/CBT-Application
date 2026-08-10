@@ -4,7 +4,6 @@
       title="Teacher Submissions"
       subtitle="Review the teachers who submitted work for this assessment."
       eyebrow="Assessment Management"
-      :breadcrumbs="breadcrumbs"
     >
       <template #actions>
         <AppButton text="Back to assessments" variant="outline" size="sm" @click="router.push('/school-admin/assessments')" />
@@ -73,12 +72,6 @@ const router = useRouter()
 const assessmentId = route.params.id
 const assessment = ref(getAssessmentById(assessmentId))
 const submissions = ref(getSubmissionsByAssessment(assessmentId))
-
-const breadcrumbs = computed(() => [
-  { label: 'School Admin', to: '/school-admin/dashboard' },
-  { label: 'Assessment Management', to: '/school-admin/assessments' },
-  { label: assessment.value?.title || 'Submissions' },
-])
 
 const viewSubmission = (submission) => router.push(`/school-admin/assessments/${assessmentId}/submissions/${submission.id}`)
 

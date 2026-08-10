@@ -4,7 +4,6 @@
       :title="isEdit ? 'Edit Assessment' : 'Create Assessment'"
       :subtitle="isEdit ? 'Update assessment details and save them to the mock state.' : 'Create a new mock assessment for the school admin view.'"
       eyebrow="Assessment Management"
-      :breadcrumbs="breadcrumbs"
     />
 
     <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -103,12 +102,6 @@ const statusOptions = [
   { label: 'Active', value: 'active' },
   { label: 'Closed', value: 'closed' },
 ]
-
-const breadcrumbs = computed(() => [
-  { label: 'School Admin', to: '/school-admin/dashboard' },
-  { label: 'Assessment Management', to: '/school-admin/assessments' },
-  { label: isEdit.value ? 'Edit Assessment' : 'Create Assessment' },
-])
 
 const touch = (field) => {
   touched[field] = true

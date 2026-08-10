@@ -4,7 +4,6 @@
       title="Assessments"
       subtitle="Open active assessments and create subject assignments for your classroom." 
       eyebrow="Assessments"
-      :breadcrumbs="[{ label: 'Teacher Portal', to: '/teachers/dashboard' }, { label: 'Assessments' }]"
     />
 
     <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">

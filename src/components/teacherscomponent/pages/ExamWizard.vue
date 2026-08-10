@@ -668,21 +668,14 @@ const loadQuestionBank = async (force = false) => {
   questionBankLoaded.value = true
 }
 
-const validateStep = () => {
-  const [basicReady, questionReady, settingsReady] = validationChecklist.value.map((i) => i.valid)
-  const map = { 1: basicReady, 2: questionReady, 3: settingsReady, 4: true }
-  if (!map[currentStep.value]) {
-    uiStore.addToast({ title: 'Complete the current step', message: 'Some required fields are missing.', variant: 'error' })
-  }
-  return map[currentStep.value]
-}
+const validateStep = () => true
 
 const nextStep = () => {
-  if (validateStep() && currentStep.value < 4) currentStep.value += 1
+  if (currentStep.value < 4) currentStep.value += 1
 }
 
 const jumpToStep = (step) => {
-  if (step <= currentStep.value || validateStep()) currentStep.value = step
+  if (step >= 1 && step <= 4) currentStep.value = step
 }
 
 // -- API save / submit ---------------------------------------------------------
