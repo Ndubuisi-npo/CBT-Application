@@ -43,7 +43,10 @@
               <td class="px-5 py-4">{{ formatDate(submission.submissionDate) }}</td>
               <td class="px-5 py-4"><AppBadge :label="getSubmissionStatusLabel(submission.status)" :variant="submission.status === 'submitted' ? 'success' : submission.status === 'pending' ? 'warning' : 'default'" /></td>
               <td class="px-5 py-4">
-                <AppButton text="View" variant="outline" size="sm" @click="viewSubmission(submission)" />
+                <div class="flex flex-wrap gap-2">
+                  <AppButton text="View" variant="outline" size="sm" @click="viewSubmission(submission)" />
+                  <AppButton :text="submission.isActiveForStudents ? 'Deactivate for Students' : 'Activate for Students'" variant="primary" size="sm" @click="activateSubmissionForStudents(submission)" />
+                </div>
               </td>
             </tr>
           </tbody>
@@ -65,6 +68,7 @@ import {
   getTeacherName,
   getSubjectName,
   getSubmissionStatusLabel,
+  openSubmissionForStudents,
 } from '../../assessments/mockAssessments'
 
 const route = useRoute()
@@ -74,6 +78,10 @@ const assessment = ref(getAssessmentById(assessmentId))
 const submissions = ref(getSubmissionsByAssessment(assessmentId))
 
 const viewSubmission = (submission) => router.push(`/school-admin/assessments/${assessmentId}/submissions/${submission.id}`)
+const activateSubmissionForStudents = (submission) => {
+  openSubmissionForStudents(assessmentId, submission.id)
+  submissions.value = getSubmissionsByAssessment(assessmentId)
+}
 
 const formatDate = (value) => {
   if (!value) return 'N/A'

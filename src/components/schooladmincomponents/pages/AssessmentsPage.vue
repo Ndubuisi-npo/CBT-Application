@@ -53,10 +53,14 @@
               <td class="px-5 py-4">{{ countSubmissions(assessment.id) }}</td>
               <td class="px-5 py-4">{{ assessment.createdAt }}</td>
               <td class="px-5 py-4">
-                <ResponsiveTableActions
-                  :actions="actionItems(assessment)"
-                  :entity-label="assessment.title"
-                />
+                <div class="flex flex-wrap gap-2">
+                  <AppButton v-if="!assessment.isOpenForTeachers" text="Open for Teachers" variant="outline" size="sm" @click="openForTeachers(assessment)" />
+                  <AppButton :text="assessment.isOpenForStudents ? 'Deactivate for Students' : 'Activate for Students'" variant="primary" size="sm" @click="openForStudents(assessment)" />
+                  <ResponsiveTableActions
+                    :actions="actionItems(assessment)"
+                    :entity-label="assessment.title"
+                  />
+                </div>
               </td>
             </tr>
           </tbody>
@@ -106,6 +110,8 @@ import {
   duplicateAssessment,
   toggleAssessmentStatus,
   saveAssessment,
+  openAssessmentForTeachers,
+  openAssessmentForStudents,
 } from '../../assessments/mockAssessments'
 
 const router = useRouter()
@@ -191,6 +197,14 @@ const confirmDelete = (assessment) => {
 }
 const activateToggle = (assessment) => {
   toggleAssessmentStatus(assessment.id)
+  refreshAssessments()
+}
+const openForTeachers = (assessment) => {
+  openAssessmentForTeachers(assessment.id)
+  refreshAssessments()
+}
+const openForStudents = (assessment) => {
+  openAssessmentForStudents(assessment.id)
   refreshAssessments()
 }
 const copyAssessment = (assessment) => {

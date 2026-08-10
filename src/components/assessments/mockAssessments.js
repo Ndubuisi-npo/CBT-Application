@@ -63,6 +63,8 @@ const assessments = [
     dueTime: '11:30',
     totalMarks: 20,
     status: 'active',
+    isOpenForTeachers: true,
+    isOpenForStudents: false,
     createdAt: '2026-08-01',
   },
   {
@@ -80,6 +82,8 @@ const assessments = [
     dueTime: '14:00',
     totalMarks: 20,
     status: 'active',
+    isOpenForTeachers: true,
+    isOpenForStudents: false,
     createdAt: '2026-08-05',
   },
   {
@@ -97,6 +101,8 @@ const assessments = [
     dueTime: '09:00',
     totalMarks: 10,
     status: 'active',
+    isOpenForTeachers: true,
+    isOpenForStudents: false,
     createdAt: '2026-08-08',
   },
   {
@@ -114,6 +120,8 @@ const assessments = [
     dueTime: '10:00',
     totalMarks: 60,
     status: 'active',
+    isOpenForTeachers: true,
+    isOpenForStudents: false,
     createdAt: '2026-08-10',
   },
 ]
@@ -130,6 +138,7 @@ const submissions = [
     ],
     submissionDate: '2026-08-28T14:10:00Z',
     status: 'submitted',
+    isActiveForStudents: false,
   },
   {
     id: 1002,
@@ -142,6 +151,7 @@ const submissions = [
     ],
     submissionDate: '2026-08-29T08:15:00Z',
     status: 'pending',
+    isActiveForStudents: false,
   },
   {
     id: 1003,
@@ -153,6 +163,7 @@ const submissions = [
     ],
     submissionDate: '2026-08-31T12:55:00Z',
     status: 'submitted',
+    isActiveForStudents: false,
   },
 ]
 
@@ -196,7 +207,7 @@ const buildAssessmentTitle = ({ category, subjectId, classLevelId, classArmId })
 
 export const getAllAssessments = () => assessments.map((assessment) => ({ ...assessment }))
 export const getActiveAssessments = () => assessments.filter((assessment) => assessment.status === 'active').map((assessment) => ({ ...assessment }))
-export const getTeacherAssessments = (teacherId) => assessments.filter((assessment) => assessment.teacherId === Number(teacherId) && assessment.status === 'active').map((assessment) => ({ ...assessment }))
+export const getTeacherAssessments = (teacherId) => assessments.filter((assessment) => assessment.teacherId === Number(teacherId) && assessment.isOpenForTeachers).map((assessment) => ({ ...assessment }))
 export const getAssessmentById = (id) => assessments.find((assessment) => assessment.id === Number(id)) || null
 export const getAssessmentLabel = (assessment) => {
   if (!assessment) return 'Unknown assessment'
@@ -242,6 +253,53 @@ export const toggleAssessmentStatus = (id) => {
   if (!assessment) return null
   assessment.status = assessment.status === 'active' ? 'closed' : 'active'
   return assessment
+}
+export const openAssessmentForTeachers = (id) => {
+  const assessment = getAssessmentById(id)
+  if (!assessment) return null
+  assessment.isOpenForTeachers = true
+  assessment.status = assessment.status === 'draft' ? 'active' : assessment.status
+  return assessment
+}
+export const openAssessmentForStudents = (id) => {
+  const assessment = getAssessmentById(id)
+  if (!assessment) return null
+  assessment.isOpenForStudents = !assessment.isOpenForStudents
+  submissions
+    .filter((item) => item.assessmentId === Number(id))
+    .forEach((submission) => {
+      submission.isActiveForStudents = assessment.isOpenForStudents
+      if (assessment.isOpenForStudents) {
+        submission.status = submission.status === 'submitted' || submission.status === 'reviewed' ? submission.status : 'active'
+      } else {
+        submission.status = submission.status === 'active' ? 'pending' : submission.status
+      }
+    })
+  if (assessment.isOpenForStudents) {
+    assessment.status = 'student-active'
+  } else {
+    assessment.status = assessment.isOpenForTeachers ? 'active' : 'draft'
+  }
+  return assessment
+}
+export const openSubmissionForStudents = (assessmentId, submissionId) => {
+  const submission = getSubmissionById(assessmentId, submissionId)
+  if (!submission) return null
+  submission.isActiveForStudents = !submission.isActiveForStudents
+  if (submission.isActiveForStudents) {
+    if (submission.status !== 'submitted' && submission.status !== 'reviewed') {
+      submission.status = 'active'
+    }
+  } else if (submission.status === 'active') {
+    submission.status = 'pending'
+  }
+  const assessment = getAssessmentById(assessmentId)
+  if (assessment) {
+    const remaining = submissions.filter((item) => item.assessmentId === Number(assessmentId) && item.isActiveForStudents)
+    assessment.isOpenForStudents = remaining.length > 0
+    assessment.status = assessment.isOpenForStudents ? 'student-active' : (assessment.isOpenForTeachers ? 'active' : 'draft')
+  }
+  return submission
 }
 export const getSubmissionsByAssessment = (assessmentId) => submissions.filter((item) => item.assessmentId === Number(assessmentId))
 export const getSubmissionById = (assessmentId, submissionId) => submissions.find((item) => item.assessmentId === Number(assessmentId) && item.id === Number(submissionId)) || null
@@ -343,12 +401,15 @@ export const getSubmissionStatusLabel = (status) => {
   if (status === 'submitted') return 'Submitted'
   if (status === 'pending') return 'Pending'
   if (status === 'reviewed') return 'Reviewed'
+  if (status === 'active') return 'Active for Students'
+  if (status === 'student-active') return 'Active for Students'
   return 'Unknown'
 }
 export const getStatusVariant = (status) => {
   if (status === 'draft') return 'warning'
   if (status === 'active') return 'success'
   if (status === 'closed') return 'danger'
+  if (status === 'student-active') return 'success'
   return 'default'
 }
 export const getQuestionTypes = () => [
