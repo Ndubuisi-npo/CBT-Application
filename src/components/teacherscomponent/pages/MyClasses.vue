@@ -1,7 +1,10 @@
 <template>
   <div class="space-y-6">
     <SectionCard title="Assigned Classes" subtitle="A deeper view of class workload, attendance, and performance support needs.">
-      <div class="grid gap-4 pt-6 lg:grid-cols-2 2xl:grid-cols-4">
+      <div v-if="!classOverview.length" class="grid gap-4 pt-6 lg:grid-cols-2 2xl:grid-cols-4">
+        <div v-for="i in 4" :key="i" class="h-48 animate-pulse rounded-2xl bg-slate-100" />
+      </div>
+      <div v-else class="grid gap-4 pt-6 lg:grid-cols-2 2xl:grid-cols-4">
         <article v-for="classItem in classOverview" :key="classItem.id" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <div class="flex items-start justify-between gap-3">
             <div>
@@ -33,7 +36,10 @@
 
     <div class="grid gap-6 xl:grid-cols-[1fr_0.95fr]">
       <SectionCard title="Student Support Snapshot" subtitle="Identify top performers and learners needing intervention across your classes.">
-        <div class="space-y-4 pt-6">
+        <div v-if="!teacherStudents.length" class="space-y-4 pt-6">
+          <div v-for="i in 3" :key="i" class="h-28 animate-pulse rounded-2xl bg-slate-100" />
+        </div>
+        <div v-else class="space-y-4 pt-6">
           <article
             v-for="student in teacherStudents"
             :key="student.id"

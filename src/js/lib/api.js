@@ -35,13 +35,20 @@ export const API_BASE_URL = origin
 let authToken = ''
 const DEFAULT_TIMEOUT_MS = 30000
 
+function readStoredAuthToken() {
+  if (typeof window === 'undefined') return ''
+  const token = localStorage.getItem('authToken')
+  return typeof token === 'string' ? token : ''
+}
+
+function syncAuthTokenFromStorage() {
+  authToken = readStoredAuthToken()
+  return authToken
+}
+
 // Initialize from localStorage on module load
 export function initializeApiState() {
-  const savedToken = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null
-  
-  if (savedToken) {
-    authToken = savedToken
-  }
+  syncAuthTokenFromStorage()
 }
 
 export function setApiToken(token) {
@@ -60,6 +67,10 @@ export function clearApiState() {
   if (typeof window !== 'undefined') {
     localStorage.removeItem('authToken')
   }
+}
+
+export function getApiToken() {
+  return authToken || syncAuthTokenFromStorage()
 }
 
 export function getTenantHandle() {
@@ -98,8 +109,9 @@ export async function apiFetch(path, options = {}) {
     headers['Content-Type'] = headers['Content-Type'] || 'application/json'
   }
 
-  if (authToken) {
-    headers.Authorization = `Bearer ${authToken}`
+  const activeToken = getApiToken()
+  if (activeToken) {
+    headers.Authorization = `Bearer ${activeToken}`
   }
 
   if (tenantHandle) {

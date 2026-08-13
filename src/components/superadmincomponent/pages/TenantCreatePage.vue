@@ -1,7 +1,13 @@
 <template>
   <div class="space-y-6">
     <SectionCard title="Create Tenant" subtitle="Provision a new school workspace with plan assignment and administrator ownership.">
-      <TenantForm :form="form" :plans="plans" :loading="loading" @submit="handleSubmit" />
+      <div v-if="loading && !plans.length" class="space-y-4">
+        <div class="h-12 animate-pulse rounded-2xl bg-slate-100" />
+        <div class="grid gap-4 md:grid-cols-2">
+          <div v-for="i in 6" :key="i" class="h-12 animate-pulse rounded-2xl bg-slate-100" />
+        </div>
+      </div>
+      <TenantForm v-else :form="form" :plans="plans" :loading="loading" @submit="handleSubmit" />
     </SectionCard>
   </div>
 </template>

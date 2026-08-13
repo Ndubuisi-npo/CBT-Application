@@ -134,10 +134,8 @@ const isTeacherSection = computed(() => route.path.startsWith('/teachers'))
 const notificationStore = useNotificationStore()
 
 const teacherStudentNotifications = computed(() => notificationStore.unreadByCategory('students', 'teacher'))
-const teacherExamNotifications = computed(() => notificationStore.unreadByCategory('exams', 'teacher'))
 const adminStudentNotifications = computed(() => notificationStore.unreadByCategory('students', 'school_admin'))
 const adminTeacherNotifications = computed(() => notificationStore.unreadByCategory('teachers', 'school_admin'))
-const adminExamNotifications = computed(() => notificationStore.unreadByCategory('exams', 'school_admin'))
 const adminSessionNotifications = computed(() => notificationStore.unreadByCategory('academic_sessions', 'school_admin'))
 
 const navGroups = computed(() => {
@@ -150,9 +148,8 @@ const navGroups = computed(() => {
         ],
       },
       {
-        label: 'Exams',
+        label: 'Assessments',
         items: [
-          { label: 'My Exams', to: '/teachers/exams', icon: ClipboardList, count: teacherExamNotifications.value, tour: 'nav-exams' },
           { label: 'Assessments', to: '/teachers/assessments', icon: ClipboardList, tour: 'nav-assessments' },
           { label: 'Question Bank', to: '/teachers/questions', icon: FileQuestion, tour: 'nav-question-bank' },
         ],
@@ -193,12 +190,6 @@ const navGroups = computed(() => {
       items: [
         { label: 'Teachers', to: '/school-admin/teachers', icon: Users, count: adminTeacherNotifications.value, tour: 'nav-teachers' },
         { label: 'Students', to: '/school-admin/students', icon: GraduationCap, count: adminStudentNotifications.value, tour: 'nav-students' },
-      ],
-    },
-    {
-      label: 'Oversight',
-      items: [
-        { label: 'Exam Approvals', to: '/school-admin/exams', icon: ClipboardList, count: adminExamNotifications.value, tour: 'nav-exam-approvals' },
       ],
     },
     {

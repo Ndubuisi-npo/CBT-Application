@@ -9,11 +9,13 @@
       @file-selected="handleFileSelected"
     />
 
-    <div v-if="state.page === 'file_selected'" class="rounded-2xl border border-slate-200 bg-white p-12 text-center">
-      <div class="flex justify-center">
-        <div class="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-[#0B1F3A]"></div>
+    <div v-if="state.page === 'file_selected'" class="rounded-2xl border border-slate-200 bg-white p-6">
+      <div class="space-y-4">
+        <div class="h-6 w-40 animate-pulse rounded-xl bg-slate-100" />
+        <div class="grid gap-4 md:grid-cols-2">
+          <div v-for="i in 4" :key="i" class="h-16 animate-pulse rounded-2xl bg-slate-100" />
+        </div>
       </div>
-      <p class="mt-4 text-sm text-slate-600">Validating your file...</p>
     </div>
 
     <ImportPreviewModal

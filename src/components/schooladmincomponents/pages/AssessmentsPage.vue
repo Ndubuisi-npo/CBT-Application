@@ -2,7 +2,7 @@
   <div class="space-y-6">
     <AppPageHeader
       title="Assessment Management"
-      subtitle="View, search and operate on all assessments in the mock school system."
+      subtitle="Create assessments, open them for teachers, and activate them for students."
       eyebrow="Assessment Management"
     >
       <template #actions>
@@ -11,49 +11,59 @@
     </AppPageHeader>
 
     <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div class="grid gap-4 lg:grid-cols-4">
+      <div class="grid gap-4 lg:grid-cols-3">
         <AppInput v-model="searchQuery" label="Search" placeholder="Search assessments…" />
         <AppSelect v-model="filterStatus" label="Status" :options="statusOptions" placeholder="All statuses" />
-        <AppSelect v-model="filterSession" label="Session" :options="sessionOptions" placeholder="All sessions" />
         <AppSelect v-model="filterClassLevel" label="Class Level" :options="classLevelOptions" placeholder="All levels" />
       </div>
     </section>
 
     <section class="rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div class="overflow-x-auto">
+      <div v-if="store.loading && !filteredAssessments.length" class="p-5">
+        <SkeletonRows :rows="6" :columns="6" />
+      </div>
+      <div v-else class="overflow-x-auto">
         <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
           <thead class="bg-slate-50 text-[10px] uppercase tracking-[0.22em] text-slate-500">
             <tr>
               <th class="px-5 py-3">Assessment</th>
-              <th class="px-5 py-3">Type</th>
-              <th class="px-5 py-3 text-right">Marks</th>
+              <th class="px-5 py-3 text-right">Marks Cap</th>
               <th class="px-5 py-3">Class</th>
+              <th class="px-5 py-3">Term</th>
               <th class="px-5 py-3">Status</th>
               <th class="px-5 py-3"></th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100 bg-white">
+            <tr v-if="!pagedAssessments.length">
+              <td colspan="6" class="px-5 py-10 text-center text-sm text-slate-500">No assessments found.</td>
+            </tr>
             <tr v-for="assessment in pagedAssessments" :key="assessment.id" class="group align-top hover:bg-slate-50">
               <td class="w-[320px] max-w-[360px] px-5 py-4">
                 <p class="text-[15px] font-semibold leading-5 text-slate-900">{{ assessment.title }}</p>
+                <p v-if="submissionCount(assessment) !== null" class="mt-1 text-xs text-slate-500">
+                  {{ submissionCount(assessment) }} submission{{ submissionCount(assessment) === 1 ? '' : 's' }}
+                </p>
               </td>
-              <td class="px-5 py-4 text-slate-600">{{ getAssessmentTypeLabel(assessment) }}</td>
-              <td class="px-5 py-4 text-right font-medium text-slate-700">{{ assessment.totalMarks }}</td>
-              <td class="px-5 py-4 text-slate-600">{{ getClassLevelName(assessment.classLevelId) }}{{ assessment.classArmId ? ` ${getClassArmName(assessment.classArmId)}` : '' }}</td>
+              <td class="px-5 py-4 text-right font-medium text-slate-700">{{ totalMarks(assessment) }}</td>
+              <td class="px-5 py-4 text-slate-600">{{ classText(assessment) }}</td>
+              <td class="px-5 py-4 text-slate-600">{{ termText(assessment) }}</td>
               <td class="px-5 py-4">
                 <AppBadge :label="getAssessmentStatusLabel(assessment)" :variant="getStatusVariant(assessment.status)" />
               </td>
               <td class="px-5 py-4">
                 <div class="flex flex-wrap items-center justify-end gap-2">
                   <AppButton
-                    :text="assessment.isOpenForTeachers ? 'Close for Teachers' : 'Open for Teachers'"
-                    variant="outline"
+                    v-for="action in lifecycleActions(assessment)"
+                    :key="action.key"
+                    :text="action.label"
+                    :variant="action.variant"
                     size="sm"
-                    @click="openForTeachers(assessment)"
+                    :processing="transitioning === `${assessment.id}:${action.key}`"
+                    @click="action.onClick"
                   />
-                  <AppButton :text="assessment.isOpenForStudents ? 'Deactivate for Students' : 'Publish for Students'" variant="primary" size="sm" @click="openForStudents(assessment)" />
                   <ResponsiveTableActions
-                    :actions="actionItems(assessment)"
+                    :actions="rowMenuActions(assessment)"
                     :entity-label="assessment.title"
                     :always-visible="false"
                   />
@@ -80,11 +90,16 @@
       @close="closeModal"
       @submit="handleSubmit"
     />
+    <OpenForTeachersModal
+      :show="showReopenModal"
+      :assessment="targetAssessment"
+      @close="showReopenModal = false"
+      @submit="handleReopen"
+    />
   </div>
 </template>
-
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import AppBadge from '../../shared/AppBadge.vue'
 import AppButton from '../../shared/AppButton.vue'
@@ -92,78 +107,71 @@ import AppInput from '../../shared/AppInput.vue'
 import AppPageHeader from '../../shared/AppPageHeader.vue'
 import AppSelect from '../../shared/AppSelect.vue'
 import AssessmentModal from '../components/AssessmentModal.vue'
+import OpenForTeachersModal from '../components/OpenForTeachersModal.vue'
 import ResponsiveTableActions from '../../shared/ResponsiveTableActions.vue'
-import {
-  getAllAssessments,
-  getSessionOptions,
-  getClassLevelOptions,
-  getTermLabel,
-  getClassLevelName,
-  getClassArmName,
-  getSessionName,
-  getStatusVariant,
-  getSubmissionsByAssessment,
-  deleteAssessment,
-  duplicateAssessment,
-  toggleAssessmentStatus,
-  saveAssessment,
-  openAssessmentForTeachers,
-  openAssessmentForStudents,
-} from '../../assessments/mockAssessments'
+import SkeletonRows from '../components/SkeletonRows.vue'
+import { useAssessmentsStore, getStatusVariant, getAssessmentStatusLabel } from '../stores/assessments'
 
 const router = useRouter()
-const assessments = ref(getAllAssessments())
+const store = useAssessmentsStore()
 const searchQuery = ref('')
 const filterStatus = ref('')
-const filterSession = ref('')
 const filterClassLevel = ref('')
-const sortKey = ref('createdAt')
-const sortDirection = ref('desc')
 const page = ref(1)
 const pageSize = 8
+const transitioning = ref(null)
 
+// The 5 real statuses (§2/§4 of the integration guide) — no invented
+// "closed"/"active" aliases, no AssessmentType.
 const statusOptions = [
   { label: 'Draft', value: 'draft' },
-  { label: 'Active', value: 'active' },
-  { label: 'Closed', value: 'closed' },
+  { label: 'Open for Teachers', value: 'open' },
+  { label: 'Submissions Closed', value: 'submissions_closed' },
+  { label: 'Active for Students', value: 'active' },
+  { label: 'Completed', value: 'completed' },
 ]
-const sessionOptions = getSessionOptions()
-const classLevelOptions = getClassLevelOptions()
+const classLevelOptions = computed(() => store.classLevelOptions)
+
+onMounted(async () => {
+  await Promise.all([store.fetchRefData(), store.fetchAssessments()])
+})
+
+const classLevelName = (id) => store.classLevelOptions.find((o) => String(o.value) === String(id))?.label || ''
+const classArmName = (id) => store.classArmOptions.find((o) => String(o.value) === String(id))?.label || ''
+const classText = (a) => {
+  const nestedLevel = a.classLevel?.name || a.class_level?.name || ''
+  const levelId = a.class_level_id ?? a.classLevelId
+  const armId = a.class_arm_id ?? a.classArmId
+  const level = nestedLevel || classLevelName(levelId)
+  const arm = armId ? ` ${classArmName(armId)}` : ' (whole level)'
+  return `${level}${arm}`.trim() || '—'
+}
+const termText = (a) => a.term?.name || a.term_name || a.term?.title || '—'
+const totalMarks = (a) => a.total_marks ?? a.totalMarks ?? '—'
+// question_count/submission_count are computed fields only present when the
+// backend explicitly counted them on this endpoint (§8) — never assume presence.
+const submissionCount = (a) => (typeof a.submission_count === 'number' ? a.submission_count : null)
 
 const filteredAssessments = computed(() => {
   const query = searchQuery.value.trim().toLowerCase()
-  let items = assessments.value.filter((assessment) => {
-    const matchesSearch = query
-      ? `${assessment.title} ${assessment.description}`.toLowerCase().includes(query)
-      : true
-    const matchesStatus = filterStatus.value ? assessment.status === filterStatus.value : true
-    const matchesSession = filterSession.value ? assessment.sessionId === Number(filterSession.value) : true
-    const matchesLevel = filterClassLevel.value ? assessment.classLevelId === Number(filterClassLevel.value) : true
-    return matchesSearch && matchesStatus && matchesSession && matchesLevel
+  return store.assessments.filter((assessment) => {
+    const matchesSearch = query ? `${assessment.title || ''}`.toLowerCase().includes(query) : true
+    const matchesStatus = filterStatus.value ? (assessment.status || '').toLowerCase() === filterStatus.value : true
+    const levelId = assessment.class_level_id ?? assessment.classLevelId
+    const matchesLevel = filterClassLevel.value ? String(levelId) === String(filterClassLevel.value) : true
+    return matchesSearch && matchesStatus && matchesLevel
   })
-
-  items.sort((a, b) => {
-    const A = a[sortKey.value]
-    const B = b[sortKey.value]
-    if (A === B) return 0
-    return sortDirection.value === 'asc' ? (A > B ? 1 : -1) : A > B ? -1 : 1
-  })
-
-  return items
 })
 
 const totalPages = computed(() => Math.max(1, Math.ceil(filteredAssessments.value.length / pageSize)))
-const firstItem = computed(() => ((page.value - 1) * pageSize) + 1)
+const firstItem = computed(() => (filteredAssessments.value.length ? ((page.value - 1) * pageSize) + 1 : 0))
 const lastItem = computed(() => Math.min(filteredAssessments.value.length, page.value * pageSize))
 const pagedAssessments = computed(() => filteredAssessments.value.slice((page.value - 1) * pageSize, page.value * pageSize))
 
-const refreshAssessments = () => {
-  assessments.value = getAllAssessments()
-  if (page.value > totalPages.value) page.value = totalPages.value
-}
-
 const showModal = ref(false)
 const activeAssessment = ref(null)
+const showReopenModal = ref(false)
+const targetAssessment = ref(null)
 
 const openModal = (assessment) => {
   activeAssessment.value = assessment
@@ -173,53 +181,109 @@ const closeModal = () => {
   showModal.value = false
   activeAssessment.value = null
 }
-const handleSubmit = (payload) => {
-  // The trimmed modal only edits a subset of fields, so preserve everything
-  // else on edit and provide sensible defaults for a brand-new assessment.
-  const base = activeAssessment.value
-    ? {}
-    : { description: '', status: 'draft', sessionId: '', term: '', dueDate: '', dueTime: '' }
-  saveAssessment({ ...base, ...payload })
-  refreshAssessments()
-  closeModal()
+
+const handleSubmit = async (payload) => {
+  const { id, ...rest } = payload
+  try {
+    if (id) {
+      await store.updateAssessment(id, rest)
+    } else {
+      await store.createAssessment(rest)
+    }
+    closeModal()
+  } catch {
+    // Store surfaces the error toast; keep the modal open so the user can retry.
+  }
 }
 
 const createAssessment = () => openModal(null)
-const viewAssessment = (assessment) => router.push(`/school-admin/assessments/${assessment.id}/submissions`)
+const viewSubmissions = (assessment) => router.push(`/school-admin/assessments/${assessment.id}/submissions`)
 const editAssessment = (assessment) => openModal(assessment)
-const confirmDelete = (assessment) => {
-  if (!window.confirm(`Delete ${assessment.title}? This will remove it from the mock assessment list.`)) return
-  deleteAssessment(assessment.id)
-  refreshAssessments()
-}
-const activateToggle = (assessment) => {
-  toggleAssessmentStatus(assessment.id)
-  refreshAssessments()
-}
-const openForTeachers = (assessment) => {
-  openAssessmentForTeachers(assessment.id)
-  refreshAssessments()
-}
-const openForStudents = (assessment) => {
-  openAssessmentForStudents(assessment.id)
-  refreshAssessments()
-}
-const copyAssessment = (assessment) => {
-  duplicateAssessment(assessment.id)
-  refreshAssessments()
+const confirmDelete = async (assessment) => {
+  if (!window.confirm(`Delete "${assessment.title}"? This cannot be undone.`)) return
+  await store.deleteAssessment(assessment.id).catch(() => {})
 }
 
-const countSubmissions = (assessmentId) => getSubmissionsByAssessment(assessmentId).length
-const getAssessmentTypeLabel = (assessment) => (assessment.category === 'exam' ? 'Exam' : 'Test')
-const getAssessmentStatusLabel = (assessment) => {
-  if (assessment.isOpenForStudents) return 'Student Active'
-  if (assessment.isOpenForTeachers) return 'Teacher Open'
-  return assessment.status === 'draft' ? 'Draft' : 'Active'
+const runTransition = async (assessment, key, fn) => {
+  transitioning.value = `${assessment.id}:${key}`
+  try {
+    await fn()
+  } catch {
+    // Store already surfaced the error toast (invalid transitions, missing
+    // approved submissions on activate, timing validation, etc.).
+  } finally {
+    transitioning.value = null
+  }
 }
-const actionItems = (assessment) => [
-  { key: 'view', label: 'View Submissions', icon: null, onClick: () => viewAssessment(assessment) },
-  { key: 'edit', label: 'Edit', icon: null, onClick: () => editAssessment(assessment) },
-  { key: 'duplicate', label: 'Duplicate', icon: null, onClick: () => copyAssessment(assessment) },
-  { key: 'delete', label: 'Delete', variant: 'danger', onClick: () => confirmDelete(assessment), hidden: false },
-]
+
+const onOpen = (assessment) => {
+  if (!assessment.submission_closes_at && !assessment.submissionClosesAt) {
+    window.alert('Set a submission deadline (edit the assessment) before opening it to teachers.')
+    return
+  }
+  runTransition(assessment, 'open', () => store.openAssessment(assessment.id))
+}
+const onCloseSubmissions = (assessment) => runTransition(assessment, 'close', () => store.closeSubmissions(assessment.id))
+const onReopen = (assessment) => {
+  targetAssessment.value = assessment
+  showReopenModal.value = true
+}
+const handleReopen = async ({ submission_closes_at }) => {
+  if (!targetAssessment.value) return
+  await runTransition(targetAssessment.value, 'reopen', () => store.reopenAssessment(targetAssessment.value.id, { submission_closes_at }))
+  showReopenModal.value = false
+  targetAssessment.value = null
+}
+const onActivate = (assessment) => {
+  const start = assessment.student_starts_at ?? assessment.studentStartsAt
+  const end = assessment.student_ends_at ?? assessment.studentEndsAt
+  if (!start || !end) {
+    window.alert('Set both a student start and end time (edit the assessment) before activating it.')
+    return
+  }
+  if (!window.confirm('Activate this assessment? Every approved submission will be turned into a live exam for students.')) return
+  runTransition(assessment, 'activate', () => store.activateAssessment(assessment.id))
+}
+const onComplete = (assessment) => {
+  if (!window.confirm('Mark this assessment complete?')) return
+  runTransition(assessment, 'complete', () => store.completeAssessment(assessment.id))
+}
+
+// Status-gated action buttons — mirrors the state machine in §4 of the
+// integration guide so invalid transitions are never offered.
+const lifecycleActions = (assessment) => {
+  const status = (assessment.status || '').toLowerCase()
+  if (status === 'draft') {
+    return [{ key: 'open', label: 'Open for Teachers', variant: 'primary', onClick: () => onOpen(assessment) }]
+  }
+  if (status === 'open') {
+    return [{ key: 'close', label: 'Close Submissions', variant: 'outline', onClick: () => onCloseSubmissions(assessment) }]
+  }
+  if (status === 'submissions_closed') {
+    return [
+      { key: 'reopen', label: 'Reopen', variant: 'outline', onClick: () => onReopen(assessment) },
+      { key: 'activate', label: 'Activate', variant: 'primary', onClick: () => onActivate(assessment) },
+    ]
+  }
+  if (status === 'active') {
+    return [{ key: 'complete', label: 'Complete', variant: 'primary', onClick: () => onComplete(assessment) }]
+  }
+  return []
+}
+
+const rowMenuActions = (assessment) => {
+  const status = (assessment.status || '').toLowerCase()
+  return [
+    { key: 'view', label: 'View Submissions', onClick: () => viewSubmissions(assessment) },
+    { key: 'edit', label: 'Edit', onClick: () => editAssessment(assessment) },
+    {
+      key: 'delete',
+      label: 'Delete',
+      variant: 'danger',
+      onClick: () => confirmDelete(assessment),
+      // Delete is only valid while draft or open (§4 endpoints table).
+      hidden: !['draft', 'open'].includes(status),
+    },
+  ]
+}
 </script>

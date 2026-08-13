@@ -10,7 +10,7 @@
             Good {{ timeOfDay }}, {{ userName }}
           </h1>
           <p class="mt-2 max-w-md text-sm leading-6 text-slate-300">
-            You own the full exam lifecycle N/A create, launch, and publish results directly from here.
+            Build submissions for open assessments, manage your question bank, and track student results — all from here.
           </p>
         </div>
         <div class="flex flex-wrap gap-2 sm:shrink-0">
@@ -114,7 +114,7 @@
                   {{ getExamSubjectName(exam) }} · {{ getExamClassLevelName(exam) }}
                 </p>
               </div>
-              <AppButton text="Monitor" variant="primary" size="sm" @click="goTo('/teachers/exams')" />
+              <AppButton text="Monitor" variant="primary" size="sm" @click="goTo('/teachers/assessments')" />
             </div>
           </div>
         </section>
@@ -148,7 +148,7 @@
         <section class="rounded-2xl border border-slate-200 bg-white p-6">
           <div class="mb-5 flex items-center justify-between">
             <h2 class="text-lg font-semibold text-slate-900">Recent Exams</h2>
-            <AppButton text="View All" variant="ghost" size="sm" @click="goTo('/teachers/exams')" />
+            <AppButton text="View All" variant="ghost" size="sm" @click="goTo('/teachers/assessments')" />
           </div>
 
           <div v-if="examsStore.loading" class="space-y-3">
@@ -162,7 +162,7 @@
             <p class="mt-4 text-sm font-semibold text-slate-900">No exams yet</p>
             <p class="mt-1 text-sm text-slate-500">Create your first exam to get started.</p>
             <div class="mt-4">
-              <AppButton :icon="Plus" text="Create Exam" variant="primary" size="sm" @click="goTo('/teachers/exams')" />
+              <AppButton :icon="Plus" text="Create Exam" variant="primary" size="sm" @click="goTo('/teachers/assessments')" />
             </div>
           </div>
 
@@ -186,7 +186,7 @@
                   {{ getExamSubjectName(exam) }} · {{ getExamClassLevelName(exam) }} · {{ exam.duration_minutes || exam.duration || 'N/A' }} min
                 </p>
               </div>
-              <AppButton text="Open" variant="outline" size="sm" @click="goTo('/teachers/exams')" />
+              <AppButton text="Open" variant="outline" size="sm" @click="goTo('/teachers/assessments')" />
             </div>
           </div>
         </section>
@@ -312,13 +312,13 @@ const statusBadgeClass = (status) => {
 }
 
 const quickActions = [
-  { label: 'Create Exam', to: '/teachers/exams', icon: ClipboardList },
+  { label: 'Assessments', to: '/teachers/assessments', icon: ClipboardList },
   { label: 'Question Bank', to: '/teachers/questions', icon: FileQuestion },
   { label: 'Students', to: '/teachers/students', icon: Users },
 ]
 
 const shortcutLinks = [
-  { label: 'All Exams', to: '/teachers/exams', icon: ClipboardList },
+  { label: 'All Assessments', to: '/teachers/assessments', icon: ClipboardList },
   { label: 'Question Bank', to: '/teachers/questions', icon: FileQuestion },
   { label: 'My Students', to: '/teachers/students', icon: Users },
   { label: 'Settings', to: '/teachers/settings', icon: FilePen },

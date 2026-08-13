@@ -14,7 +14,12 @@
       </template>
 
       <div v-if="!selectedExamId" class="py-8 text-center text-sm text-slate-400">Select an exam above to view submissions.</div>
-      <div v-else-if="loadingAttempts" class="py-8 text-center text-sm text-slate-500">Loading submissions…</div>
+      <div v-else-if="loadingAttempts" class="space-y-4 pt-6">
+        <div class="grid gap-4 md:grid-cols-4">
+          <div v-for="i in 4" :key="i" class="h-20 animate-pulse rounded-2xl bg-slate-100" />
+        </div>
+        <div class="h-52 animate-pulse rounded-2xl bg-slate-100" />
+      </div>
       <div v-else-if="!attempts.length" class="py-8 text-center text-sm text-slate-500 border border-dashed border-slate-300 rounded-2xl mt-4">
         No submissions yet for this exam.
       </div>

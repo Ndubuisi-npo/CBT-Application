@@ -1,233 +1,125 @@
 <template>
-  <div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center">
+  <div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center p-4">
     <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" @click="$emit('close')"></div>
-    <div class="relative w-full max-w-4xl max-h-[90vh] transform overflow-y-auto rounded-lg bg-white shadow-xl transition-all">
-      <div class="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-6 h-full flex flex-col">
-        <div class="flex items-center justify-between mb-4">
-          <h3 class="text-lg font-semibold text-slate-900">{{ isEdit ? 'Edit Question' : 'Create Question' }}</h3>
+    <div class="relative w-full max-w-2xl max-h-[90vh] transform overflow-y-auto rounded-lg bg-white shadow-xl transition-all">
+      <div class="flex h-full flex-col bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-6">
+        <div class="mb-4 flex items-center justify-between">
+          <h3 class="text-lg font-semibold text-slate-900">{{ isEdit ? 'Edit Question' : 'Add Question' }}</h3>
           <AppButton @click="$emit('close')" :icon="X" variant="ghost" class="text-slate-400 hover:text-slate-600" />
         </div>
-        
+
         <div class="flex-1 overflow-y-auto">
-          <form class="space-y-6" @submit.prevent="submit">
-            <!-- Question Type Selection -->
-            <div class="space-y-2">
-              <label class="block text-sm font-medium text-slate-700">Question Type</label>
-              <select v-model="form.type" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" @change="onTypeChange">
-                <option value="">Select Question Type</option>
-                <option value="multiple_choice">Multiple Choice</option>
-                <option value="true_false">True/False</option>
-                <option value="fill_in_the_blank">Fill in the Blank</option>
-              </select>
-            </div>
+          <form class="space-y-5" @submit.prevent="submit">
+            <AppSelect
+              v-model="form.type"
+              :options="typeOptions"
+              label="Question Type"
+              placeholder="Select question type"
+              required
+              :error="errors.type"
+              @update:modelValue="onTypeChange"
+            />
 
-            <!-- Basic Question Fields -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-slate-700">Subject</label>
-                <input v-model="form.subject" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" required />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-slate-700">Topic</label>
-                <input v-model="form.topic" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" required />
-              </div>
-            </div>
+            <AppTextarea
+              v-model="form.content"
+              label="Question"
+              placeholder="Enter your question here…"
+              :rows="4"
+              :error="errors.content"
+            />
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-slate-700">Class</label>
-                <input v-model="form.class" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" required />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-slate-700">Difficulty</label>
-                <select v-model="form.difficulty" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
-                  <option value="Easy">Easy</option>
-                  <option value="Medium">Medium</option>
-                  <option value="Hard">Hard</option>
-                </select>
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-slate-700">Points</label>
-                <input v-model="form.points" type="number" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" required />
-              </div>
-            </div>
-
-            <!-- Question Content -->
-            <div>
-              <label class="block text-sm font-medium text-slate-700">Question</label>
-              <div class="border border-slate-300 rounded-lg">
-                <textarea 
-                  v-model="form.question_text" 
-                  class="w-full p-3 text-sm min-h-[120px]" 
-                  placeholder="Enter your question here..."
-                  required
-                ></textarea>
-              </div>
-            </div>
+            <AppInput
+              v-model="form.marks"
+              type="number"
+              label="Marks"
+              placeholder="1"
+              required
+              :error="errors.marks"
+            />
 
             <div>
-              <label class="block text-sm font-medium text-slate-700">Explanation (Optional)</label>
-              <textarea 
-                v-model="form.explanation" 
-                class="w-full p-3 text-sm min-h-[100px]" 
-                placeholder="Provide an explanation or notes for this question"
-              ></textarea>
+              <label class="block text-sm font-medium text-slate-700">Question Image URL (optional)</label>
+              <input
+                v-model="form.image_url"
+                type="text"
+                placeholder="https://…"
+                class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              />
             </div>
 
-            <!-- Image Upload -->
-            <div>
-              <label class="block text-sm font-medium text-slate-700">Question Image (Optional)</label>
-              <div class="flex items-center gap-4">
-                <input 
-                  type="file" 
-                  @change="handleImageUpload" 
-                  accept="image/*" 
-                  class="text-sm text-slate-600 file:mr-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                />
-                <div v-if="form.image_url" class="h-20 w-20 rounded-lg border border-slate-200 overflow-hidden">
-                  <img :src="form.image_url" alt="Question image" class="h-full w-full object-cover" />
-                </div>
-              </div>
-            </div>
-
-            <!-- Dynamic Fields Based on Question Type -->
-<div v-if="form.type === 'multiple_choice'" class="space-y-4">
-              <h4 class="font-medium text-slate-900">Answer Options</h4>
+            <!-- MCQ options -->
+            <div v-if="form.type === 'mcq'" class="space-y-3">
+              <h4 class="text-sm font-semibold text-slate-900">Answer Options</h4>
               <div v-for="(option, index) in form.options" :key="index" class="flex items-center gap-2">
-                <input 
-                  type="radio" 
-                  :name="'correct_answer'" 
-                  :value="index" 
-                  v-model="form.correct_answer" 
+                <input
+                  type="radio"
+                  name="mcq_correct"
+                  :checked="option.is_correct"
+                  @change="setCorrect(index)"
                   class="h-4 w-4"
                 />
-                <input 
-                  v-model="form.options[index]" 
-                  class="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm" 
+                <input
+                  v-model="option.label"
+                  class="w-14 rounded-lg border border-slate-300 px-2 py-2 text-sm"
+                  placeholder="A"
+                />
+                <input
+                  v-model="option.content"
+                  class="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm"
                   :placeholder="`Option ${index + 1}`"
-                  required
                 />
-                <AppButton 
+                <AppButton
                   v-if="form.options.length > 2"
-                  @click="removeOption(index)" 
-                  :icon="X" 
-                  variant="ghost" 
+                  type="button"
+                  @click="removeOption(index)"
+                  :icon="X"
+                  variant="ghost"
                   size="xs"
                 />
               </div>
-              <AppButton @click="addOption" :icon="Plus" text="Add Option" variant="outline" size="sm" />
+              <p v-if="errors.options" class="text-xs text-rose-600">{{ errors.options }}</p>
+              <AppButton type="button" @click="addOption" :icon="Plus" text="Add Option" variant="outline" size="sm" />
             </div>
 
-            <div v-if="form.type === 'true_false'" class="space-y-4">
-              <h4 class="font-medium text-slate-900">Answer</h4>
+            <!-- True/False -->
+            <div v-if="form.type === 'true_false'" class="space-y-3">
+              <h4 class="text-sm font-semibold text-slate-900">Correct Answer</h4>
               <div class="flex gap-4">
-                <label class="flex items-center gap-2">
-                  <input type="radio" v-model="form.correct_answer" :value="true" class="h-4 w-4" />
-                  <span>True</span>
+                <label class="flex items-center gap-2 text-sm text-slate-700">
+                  <input type="radio" :checked="trueFalseAnswer === true" @change="trueFalseAnswer = true" class="h-4 w-4" />
+                  True
                 </label>
-                <label class="flex items-center gap-2">
-                  <input type="radio" v-model="form.correct_answer" :value="false" class="h-4 w-4" />
-                  <span>False</span>
+                <label class="flex items-center gap-2 text-sm text-slate-700">
+                  <input type="radio" :checked="trueFalseAnswer === false" @change="trueFalseAnswer = false" class="h-4 w-4" />
+                  False
                 </label>
               </div>
+              <p v-if="errors.options" class="text-xs text-rose-600">{{ errors.options }}</p>
             </div>
 
-            <div v-if="form.type === 'fill_in_the_blank'" class="space-y-4">
-              <h4 class="font-medium text-slate-900">Acceptable Answers</h4>
-              <div v-for="(answer, index) in form.acceptable_answers" :key="index" class="flex items-center gap-2">
-                <input 
-                  v-model="form.acceptable_answers[index]" 
-                  class="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm" 
-                  placeholder="Acceptable answer"
-                  required
-                />
-                <AppButton 
-                  v-if="form.acceptable_answers.length > 1"
-                  @click="removeAcceptableAnswer(index)" 
-                  :icon="X" 
-                  variant="ghost" 
-                  size="xs"
-                />
-              </div>
-              <AppButton @click="addAcceptableAnswer" :icon="Plus" text="Add Answer" variant="outline" size="sm" />
-            </div>
+            <!-- Fill in the blank: backend contract omits `options` entirely
+                 for this type (§3/§7) — there's no acceptable-answers array
+                 documented, so we don't invent one. -->
+            <p v-if="form.type === 'fill_in_blank'" class="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 text-xs text-slate-500">
+              Fill-in-the-blank questions don't use options. Use the explanation field below to note the expected
+              answer for reviewers if needed.
+            </p>
 
-            <div v-if="form.type === 'essay'" class="space-y-4">
-              <h4 class="font-medium text-slate-900">Essay Settings</h4>
-              <div>
-                <label class="block text-sm font-medium text-slate-700">Word Limit (Optional)</label>
-                <input 
-                  v-model="form.word_limit" 
-                  type="number" 
-                  class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" 
-                  placeholder="Maximum number of words"
-                />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-slate-700">Sample Answer (Optional)</label>
-                <textarea 
-                  v-model="form.sample_answer" 
-                  class="w-full p-3 text-sm min-h-[100px]" 
-                  placeholder="Sample answer for reference"
-                ></textarea>
-              </div>
-            </div>
+            <AppTextarea
+              v-model="form.explanation"
+              label="Explanation (optional)"
+              placeholder="Shown to students after grading, if your workflow surfaces it…"
+              :rows="3"
+            />
 
-            <div v-if="form.type === 'match_pairs'" class="space-y-4">
-              <h4 class="font-medium text-slate-900">Matching Pairs</h4>
-              <div v-for="(pair, index) in form.matching_pairs" :key="index" class="grid grid-cols-2 gap-4">
-                <div>
-                  <label class="block text-sm font-medium text-slate-700">Item {{ index + 1 }}</label>
-                  <input 
-                    v-model="form.matching_pairs[index].item" 
-                    class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" 
-                    placeholder="Item to match"
-                    required
-                  />
-                </div>
-                <div>
-                  <label class="block text-sm font-medium text-slate-700">Match {{ index + 1 }}</label>
-                  <input 
-                    v-model="form.matching_pairs[index].match" 
-                    class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" 
-                    placeholder="Matching item"
-                    required
-                  />
-                </div>
-              </div>
-              <AppButton @click="addMatchingPair" :icon="Plus" text="Add Pair" variant="outline" size="sm" />
-            </div>
-
-            <div v-if="form.type === 'ordering'" class="space-y-4">
-              <h4 class="font-medium text-slate-900">Ordering Items</h4>
-              <div v-for="(item, index) in form.ordering_items" :key="index" class="flex items-center gap-2">
-                <span class="w-8 text-center font-medium">{{ index + 1 }}.</span>
-                <input 
-                  v-model="form.ordering_items[index]" 
-                  class="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm" 
-                  placeholder="Item to order"
-                  required
-                />
-                <AppButton 
-                  v-if="form.ordering_items.length > 2"
-                  @click="removeOrderingItem(index)" 
-                  :icon="X" 
-                  variant="ghost" 
-                  size="xs"
-                />
-              </div>
-              <AppButton @click="addOrderingItem" :icon="Plus" text="Add Item" variant="outline" size="sm" />
-            </div>
-
-            <div class="flex gap-2">
-              <AppButton 
-                type="submit" 
-                :text="isEdit ? 'Update Question' : 'Create Question'" 
-                full-width 
-                variant="primary" 
-                :loadingText="isEdit ? 'Updating Question...' : 'Creating Question...'"
-                :processing="loading" 
-                :disabled="loading"
+            <div class="flex gap-2 pt-2">
+              <AppButton
+                type="submit"
+                :text="isEdit ? 'Save Question' : 'Add Question'"
+                full-width
+                variant="primary"
+                :processing="saving"
+                :disabled="saving"
               />
               <AppButton type="button" text="Cancel" variant="outline" @click="$emit('close')" />
             </div>
@@ -239,192 +131,161 @@
 </template>
 
 <script setup>
-import { reactive, watch, computed, ref } from 'vue'
+import { computed, reactive, watch } from 'vue'
 import { X, Plus } from 'lucide-vue-next'
 import AppButton from '../../shared/AppButton.vue'
+import AppInput from '../../shared/AppInput.vue'
+import AppSelect from '../../shared/AppSelect.vue'
+import AppTextarea from '../../shared/AppTextarea.vue'
 
 const props = defineProps({
   show: { type: Boolean, default: false },
-  question: { type: Object, default: null }
+  question: { type: Object, default: null },
+  saving: { type: Boolean, default: false },
 })
 
 const emit = defineEmits(['close', 'submit'])
 
 const isEdit = computed(() => !!props.question)
-const loading = ref(false)
 
-const form = reactive({
+// The three types the backend supports (§3/§7) — no essay/matching/ordering.
+const typeOptions = [
+  { label: 'Multiple Choice', value: 'mcq' },
+  { label: 'True / False', value: 'true_false' },
+  { label: 'Fill in the Blank', value: 'fill_in_blank' },
+]
+
+const blankOption = () => ({ label: '', content: '', is_correct: false, image_url: null })
+const trueFalseOptions = () => [
+  { label: 'True', content: 'True', is_correct: false, image_url: null },
+  { label: 'False', content: 'False', is_correct: false, image_url: null },
+]
+
+const defaultForm = () => ({
   id: null,
   type: '',
-  subject: '',
-  topic: '',
-  class: '',
-  difficulty: 'Medium',
-  points: 1,
-  question_text: '',
+  content: '',
+  marks: 1,
   image_url: '',
-  correct_answer: null,
-  options: ['', ''],
-  acceptable_answers: [''],
-  word_limit: null,
-  sample_answer: '',
-  matching_pairs: [{ item: '', match: '' }],
-  ordering_items: ['', ''],
-  explanation: ''
+  explanation: '',
+  options: [blankOption(), blankOption()],
 })
 
-const resetForm = () => {
-  Object.assign(form, {
-    id: null,
-    type: '',
-    subject: '',
-    topic: '',
-    class: '',
-    difficulty: 'Medium',
-    points: 1,
-    question_text: '',
-    image_url: '',
-    correct_answer: null,
-    options: ['', ''],
-    acceptable_answers: [''],
-    word_limit: null,
-    sample_answer: '',
-    matching_pairs: [{ item: '', match: '' }],
-    ordering_items: ['', '']
-  })
-}
+const form = reactive(defaultForm())
+const errors = reactive({ type: '', content: '', marks: '', options: '' })
 
-// Watch for question changes and update form
-watch(() => props.question, (question) => {
-  if (question) {
-    Object.assign(form, {
-      id: question.id,
-      type: question.type || '',
-      subject: question.subject || '',
-      topic: question.topic || '',
-      class: question.class || '',
-      difficulty: question.difficulty || 'Medium',
-      points: question.points || 1,
-      question_text: question.question_text || '',
-      image_url: question.image_url || '',
-      correct_answer: question.correct_answer || null,
-      options: question.options || ['', ''],
-      acceptable_answers: question.acceptable_answers || [''],
-      word_limit: question.word_limit || null,
-      sample_answer: question.sample_answer || '',
-      matching_pairs: question.matching_pairs || [{ item: '', match: '' }],
-      ordering_items: question.ordering_items || ['', '']
-    })
-  } else {
-    resetForm()
-  }
-}, { immediate: true })
-
-// Watch for modal close to reset form
-watch(() => props.show, (show) => {
-  if (!show) {
-    loading.value = false
-    resetForm()
-  }
+const trueFalseAnswer = computed({
+  get: () => {
+    const correct = form.options.find((o) => o.is_correct)
+    if (!correct) return null
+    return correct.content === 'True'
+  },
+  set: (value) => {
+    form.options = trueFalseOptions().map((o) => ({ ...o, is_correct: o.content === (value ? 'True' : 'False') }))
+  },
 })
 
-const onTypeChange = () => {
-  // Reset type-specific fields when type changes
-  form.correct_answer = null
-  form.options = ['', '']
-  form.acceptable_answers = ['']
-  form.word_limit = null
-  form.sample_answer = ''
-  form.matching_pairs = [{ item: '', match: '' }]
-  form.ordering_items = ['', '']
-}
+const resetForm = () => Object.assign(form, defaultForm())
+const resetErrors = () => Object.assign(errors, { type: '', content: '', marks: '', options: '' })
 
-const addOption = () => {
-  form.options.push('')
-}
-
-const removeOption = (index) => {
-  form.options.splice(index, 1)
-  if (form.correct_answer === index) {
-    form.correct_answer = null
-  }
-}
-
-const addAcceptableAnswer = () => {
-  form.acceptable_answers.push('')
-}
-
-const removeAcceptableAnswer = (index) => {
-  form.acceptable_answers.splice(index, 1)
-}
-
-const addMatchingPair = () => {
-  form.matching_pairs.push({ item: '', match: '' })
-}
-
-const removeOrderingItem = (index) => {
-  form.ordering_items.splice(index, 1)
-}
-
-const addOrderingItem = () => {
-  form.ordering_items.push('')
-}
-
-const handleImageUpload = (event) => {
-  const file = event.target.files[0]
-  if (file) {
-    // In a real app, you would upload to server and get URL
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      form.image_url = e.target.result
+watch(
+  () => props.question,
+  (question) => {
+    resetErrors()
+    if (question) {
+      Object.assign(form, {
+        id: question.id ?? null,
+        type: question.type || '',
+        content: question.content || '',
+        marks: question.marks ?? 1,
+        image_url: question.image_url || '',
+        explanation: question.explanation || '',
+        options: Array.isArray(question.options) && question.options.length
+          ? question.options.map((o) => ({
+              label: o.label ?? '',
+              content: o.content ?? '',
+              is_correct: !!o.is_correct,
+              image_url: o.image_url ?? null,
+            }))
+          : question.type === 'true_false'
+            ? trueFalseOptions()
+            : [blankOption(), blankOption()],
+      })
+    } else {
+      resetForm()
     }
-    reader.readAsDataURL(file)
+  },
+  { immediate: true }
+)
+
+watch(
+  () => props.show,
+  (show) => {
+    if (!show) {
+      resetErrors()
+    }
   }
+)
+
+const onTypeChange = (type) => {
+  errors.options = ''
+  if (type === 'true_false') {
+    form.options = trueFalseOptions()
+  } else if (type === 'mcq') {
+    form.options = [blankOption(), blankOption()]
+  } else {
+    form.options = []
+  }
+}
+
+const addOption = () => form.options.push(blankOption())
+const removeOption = (index) => form.options.splice(index, 1)
+const setCorrect = (index) => {
+  form.options = form.options.map((o, i) => ({ ...o, is_correct: i === index }))
 }
 
 const validate = () => {
-  // Basic validation
-  if (!form.type) return false
-  if (!form.question_text?.trim()) return false
-  if (!form.subject?.trim()) return false
-  if (!form.topic?.trim()) return false
-  if (!form.class?.trim()) return false
-  
-  // Type-specific validation
-  if (form.type === 'multiple_choice' && form.options.filter(opt => opt.trim()).length < 2) return false
-  if (form.type === 'true_false' && form.correct_answer === null) return false
-  if (form.type === 'fill_in_the_blank' && !form.acceptable_answers.filter(ans => ans.trim()).length) return false
-  if (form.type === 'match_pairs' && !form.matching_pairs.filter(pair => pair.item.trim() && pair.match.trim()).length) return false
-  if (form.type === 'ordering' && !form.ordering_items.filter(item => item.trim()).length) return false
-  
-  return true
+  resetErrors()
+  if (!form.type) errors.type = 'Select a question type.'
+  if (!form.content.trim()) errors.content = 'Question content is required.'
+  if (!(Number(form.marks) > 0)) errors.marks = 'Marks must be greater than zero.'
+
+  if (form.type === 'mcq') {
+    const filled = form.options.filter((o) => o.content.trim())
+    if (filled.length < 2) errors.options = 'Add at least two options.'
+    else if (!form.options.some((o) => o.is_correct)) errors.options = 'Mark one option as correct.'
+  }
+  if (form.type === 'true_false' && !form.options.some((o) => o.is_correct)) {
+    errors.options = 'Select True or False as the correct answer.'
+  }
+
+  return !Object.values(errors).some(Boolean)
 }
 
-const submit = async () => {
+const submit = () => {
   if (!validate()) return
-  
-  loading.value = true
-  
-  try {
-    const payload = {
-      id: props.question?.id,
-      type: form.type,
-      text: form.question_text,
-      marks: Number(form.points),
-      difficulty: form.difficulty,
-      options: form.options.filter((opt) => opt.trim()),
-      correctAnswer: form.correct_answer,
-      explanation: form.explanation || '',
-      subject: form.subject,
-      topic: form.topic,
-      class: form.class,
-    }
-    
-    emit('submit', payload)
-  } catch (error) {
-    console.error('Failed to save question:', error)
-  } finally {
-    // Keep loading state active until parent closes modal
+
+  const payload = {
+    id: form.id,
+    type: form.type,
+    content: form.content.trim(),
+    marks: Number(form.marks),
+    explanation: form.explanation?.trim() || null,
+    image_url: form.image_url?.trim() || null,
   }
+
+  if (form.type !== 'fill_in_blank') {
+    payload.options = form.options
+      .filter((o) => o.content.trim())
+      .map((o, index) => ({
+        content: o.content.trim(),
+        is_correct: !!o.is_correct,
+        label: o.label?.trim() || null,
+        image_url: o.image_url || null,
+        order: index + 1,
+      }))
+  }
+
+  emit('submit', payload)
 }
 </script>

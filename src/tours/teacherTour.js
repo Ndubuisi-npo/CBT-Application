@@ -4,10 +4,8 @@
  * Step definitions for the Teacher onboarding tour.
  *
  * This is the "much more detailed" tour required by the task, but still
- * trimmed to the essential workflow: dashboard orientation, the exam
- * lifecycle, a real walk-through of the Create Exam form (not just a
- * pointer at the page), Question Bank, Students, and Settings — plus how
- * to restart the tour later.
+ * trimmed to the essential workflow: dashboard orientation, the Question
+ * Bank, Students, and Settings — plus how to restart the tour later.
  */
 
 import { useSchoolAdminUiStore } from '../components/schooladmincomponents/stores/ui'
@@ -28,7 +26,7 @@ export function getTeacherTourSteps() {
       beforeShow: revealSidebar,
       title: 'Welcome to your Teacher workspace 👋',
       description:
-        'From here you can create exams, manage questions, monitor student performance, and access your teaching tools.',
+        'From here you can build assessment submissions, manage questions, monitor student performance, and access your teaching tools.',
       side: 'right',
       align: 'start',
     },
@@ -38,16 +36,7 @@ export function getTeacherTourSteps() {
       selector: '[data-tour="teacher-stats-cards"]',
       title: 'Teaching overview',
       description:
-        'Keep track of your exams, active assessments, and recent activity at a glance.',
-      side: 'bottom',
-    },
-    {
-      id: 'create-exam',
-      route: '/teachers/exams',
-      selector: '[data-tour="create-exam-btn"]',
-      title: 'Create your first exam',
-      description:
-        'Start here to create an exam. Once created, you can add questions, schedule it, and publish it for students.',
+        'Keep track of your assessments, submissions, and recent activity at a glance.',
       side: 'bottom',
     },
     {
@@ -56,7 +45,7 @@ export function getTeacherTourSteps() {
       selector: '[data-tour="question-bank-page"]',
       title: 'Question Bank',
       description:
-        'Create reusable questions and use them across multiple exams to save time.',
+        'Create reusable questions and use them across multiple assessments to save time.',
       side: 'top',
     },
     {

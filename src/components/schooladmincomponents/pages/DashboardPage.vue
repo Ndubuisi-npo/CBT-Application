@@ -102,10 +102,11 @@
         <div class="flex items-start gap-3 rounded-2xl border border-blue-200 bg-blue-50/70 px-5 py-4">
           <Info class="mt-0.5 h-4 w-4 shrink-0 text-blue-500" />
           <div>
-            <p class="text-sm font-semibold text-blue-900">Exam management is owned by teachers</p>
+            <p class="text-sm font-semibold text-blue-900">Assessments are a shared workflow</p>
             <p class="mt-1 text-sm text-blue-700">
-              Teachers create, configure, launch, and publish results for all exams. As school admin, you define the
-              academic structure N/A classes, subjects, and sessions N/A that teachers build on.
+              You create assessments and open them for teachers, who build submissions you then review and
+              publish for students. As school admin, you also define the academic structure — classes, subjects,
+              and sessions — that everything builds on.
             </p>
           </div>
         </div>
@@ -163,9 +164,10 @@
 import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import {
-  ArrowRight,
+   ArrowRight,
   CalendarRange,
   ChevronRight,
+  ClipboardList,
   Columns3,
   GraduationCap,
   Info,
@@ -244,10 +246,10 @@ const navCards = [
     iconColor: 'text-rose-600',
   },
   {
-    label: 'Exam Approvals',
-    caption: 'Review and approve teacher-submitted exams.',
-    to: '/school-admin/exams',
-    icon: CalendarRange,
+    label: 'Assessment Management',
+    caption: 'Open assessments for teachers and review submissions.',
+    to: '/school-admin/assessments',
+    icon: ClipboardList,
     iconBg: 'bg-slate-100',
     iconColor: 'text-slate-600',
   },

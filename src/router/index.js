@@ -24,7 +24,6 @@ import SchoolAdminSubjects from '../components/schooladmincomponents/pages/Subje
 import SchoolAdminSubjectAssignTeacher from '../components/schooladmincomponents/pages/SubjectAssignTeacherPage.vue'
 import SchoolAdminSettings from '../components/schooladmincomponents/pages/SettingsPage.vue'
 import SchoolAdminProfile from '../components/schooladmincomponents/pages/ProfilePage.vue'
-import SchoolAdminExamApprovals from '../components/schooladmincomponents/pages/ExamApprovalsPage.vue'
 import StudentImportPage from '../components/schooladmincomponents/pages/StudentImportPage.vue'
 import TeacherImportPage from '../components/schooladmincomponents/pages/TeacherImportPage.vue'
 import AssessmentsPage from '../components/schooladmincomponents/pages/AssessmentsPage.vue'
@@ -33,8 +32,6 @@ import AssessmentSubmissionDetailPage from '../components/schooladmincomponents/
 
 // ─── Teacher ──────────────────────────────────────────────────────────────────
 import TeachersDashboard from '../components/teacherscomponent/pages/TeachersDashboard.vue'
-import TeachersExamList from '../components/teacherscomponent/pages/ExamList.vue'
-import TeachersExamWizard from '../components/teacherscomponent/pages/ExamWizard.vue'
 import TeachersQuestionBank from '../components/teacherscomponent/pages/QuestionBank.vue'
 import TeachersQuestionCreatePage from '../components/teacherscomponent/pages/QuestionCreatePage.vue'
 import TeacherAssessmentsPage from '../components/teacherscomponent/pages/TeacherAssessmentsPage.vue'
@@ -95,7 +92,6 @@ const routes = [
           { path: 'students', name: 'SchoolAdminStudents', component: SchoolAdminStudents },
           { path: 'students/import', name: 'SchoolAdminStudentImport', component: StudentImportPage },
           { path: 'students/:id', name: 'SchoolAdminStudentProfile', component: SchoolAdminStudentProfile, props: true },
-          { path: 'exams', name: 'SchoolAdminExamApprovals', component: SchoolAdminExamApprovals },
           { path: 'subjects', name: 'SchoolAdminSubjects', component: SchoolAdminSubjects },
           {
             path: 'subjects/:id/assign-teacher',
@@ -133,10 +129,6 @@ const routes = [
 
           { path: 'topics', name: 'TeachersTopicsPage', component: TeachersTopicsPage },
 
-          // Exam list + Create Exam page + Wizard
-          { path: 'exams', name: 'TeachersExamList', component: TeachersExamList },
-          { path: 'exam-wizard', name: 'TeachersExamWizard', component: TeachersExamWizard },
-          { path: 'exam-wizard/:id', name: 'TeachersExamWizardEdit', component: TeachersExamWizard },
           { path: 'assessments', name: 'TeachersAssessments', component: TeacherAssessmentsPage },
           { path: 'assessments/:id', name: 'TeachersAssessmentDetail', component: TeacherAssessmentPage, props: true },
 

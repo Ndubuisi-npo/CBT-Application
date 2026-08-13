@@ -25,7 +25,12 @@
       </template>
 
       <div v-if="!selectedExamId" class="py-8 text-center text-sm text-slate-400">Select an exam to manage attendance.</div>
-      <div v-else-if="loading" class="py-8 text-center text-sm text-slate-500">Loading students…</div>
+      <div v-else-if="loading" class="space-y-4 py-6">
+        <div class="grid gap-4 md:grid-cols-3">
+          <div v-for="i in 3" :key="i" class="h-20 animate-pulse rounded-2xl bg-slate-100" />
+        </div>
+        <div class="h-48 animate-pulse rounded-2xl bg-slate-100" />
+      </div>
       <div v-else-if="loadError" class="py-6 text-center text-sm text-rose-600">
         {{ loadError }}
         <button class="ml-2 underline font-semibold" @click="loadStudents">Retry</button>

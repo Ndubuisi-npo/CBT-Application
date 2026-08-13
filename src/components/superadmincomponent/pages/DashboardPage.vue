@@ -1,6 +1,9 @@
 <template>
   <div class="space-y-6">
-    <section class="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+    <section v-if="isInitialLoading" class="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+      <div v-for="i in 4" :key="i" class="h-28 animate-pulse rounded-2xl bg-slate-100" />
+    </section>
+    <section v-else class="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
       <OverviewCard title="Total Tenants" :value="metrics.totalTenants" change="" progress="78%" :icon="Building2" />
       <OverviewCard title="Active Subscriptions" :value="metrics.activeSubscriptions" change="" progress="69%" :icon="BadgeCheck" />
       <OverviewCard title="Suspended Tenants" :value="metrics.suspendedTenants" change="" progress="22%" :icon="ShieldAlert" :positive="false" />
@@ -8,7 +11,10 @@
     </section>
 
     <SectionCard title="Recent Tenant Activity" subtitle="Operational visibility across your school portfolio.">
-        <div class="space-y-4">
+        <div v-if="isInitialLoading" class="space-y-4">
+          <div v-for="i in 4" :key="i" class="h-20 animate-pulse rounded-2xl bg-slate-100" />
+        </div>
+        <div v-else class="space-y-4">
           <div v-for="tenant in tenants.slice(0, 8)" :key="tenant.id" class="flex flex-col gap-4 rounded-2xl border border-slate-100 bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p class="font-semibold text-slate-900">{{ tenant.name }}</p>
@@ -36,6 +42,8 @@ import { useSuperAdminPlans } from '../composables/useSuperAdminPlans'
 
 const { fetchTenants, tenants } = useSuperAdminTenants()
 const { plans, fetchPlans } = useSuperAdminPlans()
+
+const isInitialLoading = computed(() => !tenants.value.length || !plans.value.length)
 
 onMounted(() => {
   if (!tenants.value.length) fetchTenants()

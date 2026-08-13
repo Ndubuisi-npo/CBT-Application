@@ -49,7 +49,7 @@ import { useSchoolAdminTeachersStore } from '../stores/teachers'
 import { useSchoolAdminStudentsStore } from '../stores/students'
 import { useSchoolAdminSessionsStore } from '../stores/sessions'
 import { useSchoolAdminClassLevelsStore } from '../stores/classLevels'
-import { getAssessmentById, getTeacherName, getSubmissionById } from '../../assessments/mockAssessments'
+import { useAssessmentsStore } from '../stores/assessments'
 
 defineEmits(['toggle-sidebar'])
 
@@ -58,6 +58,16 @@ const teachersStore = useSchoolAdminTeachersStore()
 const studentsStore = useSchoolAdminStudentsStore()
 const sessionsStore = useSchoolAdminSessionsStore()
 const classLevelsStore = useSchoolAdminClassLevelsStore()
+const assessmentsStore = useAssessmentsStore()
+
+// Best-effort name off a submission record (teacher data may be embedded).
+const submissionTeacherName = (submission) => {
+  if (!submission) return 'Submission'
+  const t = submission.teacher || submission.user || submission
+  const first = t?.first_name || t?.firstName || ''
+  const last = t?.last_name || t?.lastName || ''
+  return `${first} ${last}`.trim() || t?.name || 'Submission'
+}
 
 const isTeacher = computed(() => route.path.startsWith('/teachers'))
 const rootLabel = computed(() => isTeacher.value ? 'Teacher Portal' : 'School Admin')
@@ -76,14 +86,11 @@ const titles = {
   '/school-admin/subjects': 'Subjects',
   '/school-admin/settings': 'Settings',
   '/school-admin/profile': 'Profile',
-  '/school-admin/exams': 'Exam Approvals',
   '/school-admin/assessments': 'Assessment Management',
   '/school-admin/notifications': 'Notifications',
   '/teachers/dashboard': 'Dashboard',
   '/teachers/my-classes': 'My Classes',
   '/teachers/questions': 'Question Bank',
-  '/teachers/exam-wizard': 'Exam Wizard',
-  '/teachers/exams': 'My Exams',
   '/teachers/assessments': 'Assessments',
   '/teachers/notifications': 'Notifications',
   '/teachers/students': 'Students',
@@ -131,23 +138,27 @@ const currentClassLevelName = computed(() => currentClassLevel.value?.name || 'C
 
 const currentAssessment = computed(() => {
   const id = route.params.assessmentId || route.params.id
-  return id ? getAssessmentById(id) : null
+  if (!id) return null
+  return (
+    assessmentsStore.assessments.find((item) => String(item.id) === String(id)) ||
+    (String(assessmentsStore.current?.id) === String(id) ? assessmentsStore.current : null)
+  )
 })
 const currentAssessmentTitle = computed(() => currentAssessment.value?.title || 'Assessment')
 
 const currentSubmission = computed(() => {
-  const assessmentId = route.params.assessmentId || route.params.id
   const submissionId = route.params.submissionId
-  return assessmentId && submissionId ? getSubmissionById(assessmentId, submissionId) : null
+  if (!submissionId) return null
+  return (
+    assessmentsStore.submissions.find((item) => String(item.id) === String(submissionId)) ||
+    (String(assessmentsStore.currentSubmission?.id) === String(submissionId) ? assessmentsStore.currentSubmission : null)
+  )
 })
-const currentSubmissionTeacherName = computed(() =>
-  currentSubmission.value ? getTeacherName(currentSubmission.value.teacherId) : 'Submission'
-)
+const currentSubmissionTeacherName = computed(() => submissionTeacherName(currentSubmission.value))
 
 const pageTitle = computed(() => {
   if (route.path.startsWith('/school-admin/terms/')) return 'Terms'
   if (route.path.startsWith('/school-admin/classes/')) return 'Arms'
-  if (route.path.startsWith('/teachers/exam-wizard')) return 'Exam Wizard'
   return titles[route.path] || route.path.split('/').pop()?.replace(/-/g, ' ') || 'Home'
 })
 
@@ -188,14 +199,6 @@ const breadcrumbs = computed(() => {
       ...base,
       { label: 'Students', to: parentPath },
       { label: currentLabel },
-    ]
-  }
-
-  if (route.path.startsWith('/teachers/exam-wizard')) {
-    return [
-      ...base,
-      { label: 'My Exam', to: '/teachers/exams' },
-      { label: pageTitle.value },
     ]
   }
 
@@ -251,7 +254,7 @@ const breadcrumbs = computed(() => {
       { label: 'Assessment Management', to: '/school-admin/assessments' },
       { label: currentAssessmentTitle.value, to: route.path.includes('/submissions') && !route.params.submissionId ? undefined : `/school-admin/assessments/${route.params.assessmentId || route.params.id}/submissions` },
       ...(route.path.includes('/submissions/')
-        ? [{ label: getTeacherName(currentAssessment.value?.submissionTeacherId ?? route.params.submissionId) || 'Submission' }]
+        ? [{ label: currentSubmissionTeacherName.value }]
         : []),
     ]
   }

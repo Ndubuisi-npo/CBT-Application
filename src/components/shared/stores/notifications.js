@@ -46,10 +46,56 @@ const SEVERITY_TO_PRIORITY = {
  * naturally comes out empty and is treated as "applies to everyone" by
  * matchesRole() above.
  */
+/**
+ * The backend (including the new Assessment events — see the frontend
+ * integration guide §6) sends an `action: { url, label }` object, using
+ * `url`/`label` keys. The old normalizer passed that straight through as
+ * `link`, but the consumer (NotificationsPage's goTo()) reads `link.to` —
+ * a key the backend never sends — so the "View" button silently never
+ * appeared for real notifications. Normalize the key names here, once,
+ * so every consumer can keep using `link.to` / `link.label`.
+ *
+ * The Assessment backend's `action.url` values are written from the
+ * backend's own routing perspective (e.g. `/admin/assessments/{id}`,
+ * `/teacher/assessments/{id}/submissions/{id}`, `/student/assessments/{id}`)
+ * and don't line up 1:1 with this app's actual route paths (e.g. admin
+ * assessments live under `/school-admin/...`, teachers under `/teachers/...`,
+ * and students have no dedicated assessment page — activated assessments
+ * surface as ordinary exams on the student dashboard). Remap those known
+ * shapes; anything unrecognized is passed through as-is.
+ */
+function mapNotificationUrl(rawUrl) {
+  if (!rawUrl || typeof rawUrl !== 'string') return rawUrl || null
+
+  let adminSubmission = rawUrl.match(/^\/admin\/assessments\/([^/]+)\/submissions\/([^/]+)\/?$/)
+  if (adminSubmission) return `/school-admin/assessments/${adminSubmission[1]}/submissions/${adminSubmission[2]}`
+
+  let adminAssessment = rawUrl.match(/^\/admin\/assessments\/([^/]+)\/?$/)
+  if (adminAssessment) return `/school-admin/assessments/${adminAssessment[1]}/submissions`
+
+  let teacherSubmission = rawUrl.match(/^\/teacher\/assessments\/([^/]+)\/submissions\/([^/]+)\/?$/)
+  if (teacherSubmission) return `/teachers/assessments/${teacherSubmission[1]}`
+
+  let teacherAssessment = rawUrl.match(/^\/teacher\/assessments\/([^/]+)\/?$/)
+  if (teacherAssessment) return `/teachers/assessments/${teacherAssessment[1]}`
+
+  if (/^\/student\/assessments\/[^/]+\/?$/.test(rawUrl)) return '/student/dashboard'
+
+  return rawUrl
+}
+
 function normalizeNotification(raw) {
   if (!raw || typeof raw !== 'object') return null
   const data = raw.data && typeof raw.data === 'object' ? raw.data : {}
   const severity = raw.priority || data.priority || data.type || null
+
+  const rawLink = raw.link || data.link || data.action || null
+  const link = rawLink
+    ? {
+        to: mapNotificationUrl(rawLink.to || rawLink.url || (typeof rawLink === 'string' ? rawLink : null)),
+        label: rawLink.label || 'View',
+      }
+    : null
 
   return {
     id: raw.id,
@@ -62,7 +108,7 @@ function normalizeNotification(raw) {
     createdAt: raw.created_at || raw.createdAt || new Date().toISOString(),
     priority: SEVERITY_TO_PRIORITY[severity] || 'normal',
     sender: raw.sender || data.sender || 'System',
-    link: raw.link || data.link || data.action || null,
+    link: link && link.to ? link : null,
     archived: !!raw.archived,
   }
 }

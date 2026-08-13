@@ -1,5 +1,21 @@
 <template>
-  <div class="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
+  <div v-if="profileStore.loading" class="space-y-6">
+    <div class="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
+      <div class="h-64 animate-pulse rounded-2xl bg-slate-100" />
+      <div class="space-y-4 rounded-2xl border border-slate-200 bg-white p-5">
+        <div class="h-4 w-32 animate-pulse rounded bg-slate-100" />
+        <div class="h-11 animate-pulse rounded-2xl bg-slate-100" />
+        <div class="h-11 animate-pulse rounded-2xl bg-slate-100" />
+        <div class="grid gap-5 md:grid-cols-2">
+          <div class="h-11 animate-pulse rounded-2xl bg-slate-100" />
+          <div class="h-11 animate-pulse rounded-2xl bg-slate-100" />
+        </div>
+        <div class="h-11 animate-pulse rounded-2xl bg-slate-100" />
+      </div>
+    </div>
+  </div>
+
+  <div v-else class="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
     <SectionCard title="School Identity" subtitle="Upload branding assets and confirm tenant profile details.">
       <div class="space-y-5">
         <div class="rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 p-6 text-center">
