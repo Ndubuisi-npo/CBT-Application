@@ -26,7 +26,6 @@ import {
   getClassArms,
   getAcademicSessions,
   getTerms,
-  getTeachers,
   getTeacherAssessments,
 } from '../services/api/assessments'
 
@@ -136,16 +135,14 @@ export const useAssessmentsStore = defineStore('assessments', {
      * Reference data — reused endpoints, loaded once per surface.
      * ------------------------------------------------------------------ */
     async fetchRefData() {
-      const [subjects, classLevels, sessions, teachers] = await Promise.all([
+      const [subjects, classLevels, sessions] = await Promise.all([
         getSubjects().catch(() => []),
         getClassLevels().catch(() => []),
         getAcademicSessions().catch(() => []),
-        getTeachers().catch(() => []),
       ])
       this.refData.subjects = Array.isArray(subjects) ? subjects : []
       this.refData.classLevels = Array.isArray(classLevels) ? classLevels : []
       this.refData.sessions = Array.isArray(sessions) ? sessions : []
-      this.refData.teachers = Array.isArray(teachers) ? teachers : []
     },
 
     async fetchClassArms(classLevelId) {
