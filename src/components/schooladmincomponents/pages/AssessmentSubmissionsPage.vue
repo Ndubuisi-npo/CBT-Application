@@ -74,7 +74,7 @@
         </table>
       </div>
 
-      <div v-if="submissions.length" class="grid gap-3 p-4 sm:grid-cols-2 lg:hidden">
+      <div v-if="submissions.length" class="grid min-w-0 gap-3 overflow-hidden p-4 sm:grid-cols-2 lg:hidden">
         <ResponsiveDataCard
           v-for="submission in submissions"
           :key="submission.id"
@@ -87,6 +87,9 @@
             { label: 'Submitted', value: formatDate(submission.submitted_at) },
           ]"
         >
+          <template #title>
+            <p class="max-w-full whitespace-normal break-words text-sm font-semibold leading-5 text-slate-900 [overflow-wrap:anywhere]">{{ teacherName(submission) }}</p>
+          </template>
           <template #badge>
             <AppBadge :label="getSubmissionStatusLabel(submission.status)" :variant="getSubmissionStatusVariant(submission.status)" />
           </template>

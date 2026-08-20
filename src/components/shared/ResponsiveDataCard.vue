@@ -26,11 +26,11 @@
 -->
 <template>
   <div
-    class="group relative rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition"
+    class="group relative min-w-0 w-full rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition"
     :class="clickable ? 'cursor-pointer active:scale-[0.99] hover:border-slate-300 hover:shadow-md' : ''"
     @click="clickable && $emit('click')"
   >
-    <div class="flex items-start gap-3">
+    <div class="flex min-w-0 flex-wrap items-start gap-3">
       <!-- Avatar -->
       <slot name="avatar">
         <img
@@ -49,9 +49,9 @@
       </slot>
 
       <!-- Title block -->
-      <div class="min-w-0 flex-1">
-        <div class="flex items-start justify-between gap-2">
-          <div class="min-w-0">
+      <div class="min-w-0 flex-1 basis-0">
+        <div class="flex min-w-0 flex-wrap items-start justify-between gap-2">
+          <div class="min-w-0 flex-1 basis-0">
             <slot name="title">
               <p class="truncate text-sm font-semibold text-slate-900">{{ title }}</p>
             </slot>
@@ -64,7 +64,7 @@
       </div>
 
       <!-- Kebab actions (top-right, always accessible on touch) -->
-      <div v-if="$slots.actions" class="shrink-0" @click.stop>
+      <div v-if="$slots.actions" class="ml-auto shrink-0" @click.stop>
         <slot name="actions" />
       </div>
     </div>
