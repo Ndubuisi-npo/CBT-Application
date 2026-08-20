@@ -4,7 +4,10 @@
       <template #header>
         <AppButton @click="openModal()" :icon="Plus" text="Create and Assign" variant="primary" size="sm" />
       </template>
-      <SkeletonRows v-if="isLoading" :columns="5" />
+      <SkeletonRows v-if="isLoading" :columns="5" class="hidden lg:block" />
+      <div v-if="isLoading" class="grid gap-3 p-4 sm:grid-cols-2 lg:hidden">
+        <div v-for="i in 4" :key="i" class="h-28 animate-pulse rounded-2xl bg-slate-100" />
+      </div>
       <div v-else-if="hasError" class="text-center py-8">
         <p class="text-slate-600">Subject not found or an error occurred.</p>
         <AppButton @click="$router.push('/school-admin/subjects')" text="Back to Subjects" variant="ghost" class="mt-4" />

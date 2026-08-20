@@ -4,7 +4,6 @@ export async function getTeachers(params = {}) {
   try {
     const queryString = new URLSearchParams(params).toString()
     const url = queryString ? `/api/teachers?${queryString}` : '/api/teachers'
-
     return await apiFetch(url)
   } catch (error) {
     throw new Error(extractErrorMessage(error, 'Unable to fetch teachers.'))

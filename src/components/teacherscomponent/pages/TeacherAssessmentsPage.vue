@@ -15,9 +15,12 @@
 
     <section class="rounded-2xl border border-slate-200 bg-white shadow-sm">
       <div v-if="store.loading && !visibleAssessments.length" class="p-5">
-        <SkeletonRows :rows="6" :columns="6" />
+        <SkeletonRows :rows="6" :columns="6" class="hidden lg:block" />
+        <div class="grid gap-3 sm:grid-cols-2 lg:hidden">
+          <div v-for="i in 6" :key="i" class="h-40 animate-pulse rounded-2xl bg-slate-100" />
+        </div>
       </div>
-      <div v-else class="overflow-x-auto">
+      <div v-else class="hidden overflow-x-auto lg:block">
         <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
           <thead class="bg-slate-50 text-[10px] uppercase tracking-[0.22em] text-slate-500">
             <tr>
@@ -52,6 +55,28 @@
           </tbody>
         </table>
       </div>
+
+      <div v-if="visibleAssessments.length" class="grid gap-3 p-4 sm:grid-cols-2 lg:hidden">
+        <ResponsiveDataCard
+          v-for="assessment in visibleAssessments"
+          :key="assessment.id"
+          avatar-color="bg-[#0B1F3A]/10 text-[#0B1F3A]"
+          :avatar-text="(assessment.title || '?').slice(0, 2).toUpperCase()"
+          :title="assessment.title"
+          :fields="[
+            { label: 'Marks Cap', value: assessment.total_marks ?? assessment.totalMarks ?? '—' },
+            { label: 'Class', value: classText(assessment) },
+            { label: 'Term', value: termText(assessment) },
+          ]"
+        >
+          <template #badge>
+            <AppBadge :label="getAssessmentStatusLabel(assessment)" :variant="getStatusVariant(assessment.status)" />
+          </template>
+          <template #actions>
+            <AppButton text="Open" variant="outline" size="sm" @click="openAssessment(assessment.id)" />
+          </template>
+        </ResponsiveDataCard>
+      </div>
     </section>
   </div>
 </template>
@@ -64,6 +89,7 @@ import AppButton from '../../shared/AppButton.vue'
 import AppInput from '../../shared/AppInput.vue'
 import AppPageHeader from '../../shared/AppPageHeader.vue'
 import AppSelect from '../../shared/AppSelect.vue'
+import ResponsiveDataCard from '../../shared/ResponsiveDataCard.vue'
 import SkeletonRows from '../../schooladmincomponents/components/SkeletonRows.vue'
 import { useAssessmentsStore, getStatusVariant, getAssessmentStatusLabel } from '../../schooladmincomponents/stores/assessments'
 
@@ -75,7 +101,10 @@ const filterClassLevel = ref('')
 const classLevelOptions = computed(() => store.classLevelOptions)
 
 onMounted(async () => {
-  await Promise.all([store.fetchRefData(), store.fetchTeacherAssessments()])
+  await Promise.all([
+    store.fetchRefData(),
+    store.fetchTeacherAssessments(),
+  ])
 })
 
 const classLevelName = (id) => store.classLevelOptions.find((o) => String(o.value) === String(id))?.label || ''

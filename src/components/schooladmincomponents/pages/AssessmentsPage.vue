@@ -20,9 +20,12 @@
 
     <section class="rounded-2xl border border-slate-200 bg-white shadow-sm">
       <div v-if="store.loading && !filteredAssessments.length" class="p-5">
-        <SkeletonRows :rows="6" :columns="6" />
+        <SkeletonRows :rows="6" :columns="6" class="hidden lg:block" />
+        <div class="grid gap-3 sm:grid-cols-2 lg:hidden">
+          <div v-for="i in 6" :key="i" class="h-40 animate-pulse rounded-2xl bg-slate-100" />
+        </div>
       </div>
-      <div v-else class="overflow-x-auto">
+      <div v-else class="hidden overflow-x-auto lg:block">
         <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
           <thead class="bg-slate-50 text-[10px] uppercase tracking-[0.22em] text-slate-500">
             <tr>
@@ -74,6 +77,40 @@
         </table>
       </div>
 
+      <div v-if="!store.loading && pagedAssessments.length" class="grid gap-3 p-4 sm:grid-cols-2 lg:hidden">
+        <ResponsiveDataCard
+          v-for="assessment in pagedAssessments"
+          :key="assessment.id"
+          avatar-color="bg-[#0B1F3A]/10 text-[#0B1F3A]"
+          :avatar-text="(assessment.title || '?').slice(0, 2).toUpperCase()"
+          :title="assessment.title"
+          :fields="[
+            { label: 'Marks Cap', value: totalMarks(assessment) },
+            { label: 'Class', value: classText(assessment) },
+            { label: 'Term', value: termText(assessment) },
+            { label: 'Submissions', value: submissionCount(assessment) ?? '—' },
+          ]"
+        >
+          <template #badge>
+            <AppBadge :label="getAssessmentStatusLabel(assessment)" :variant="getStatusVariant(assessment.status)" />
+          </template>
+          <template #actions>
+            <ResponsiveTableActions :actions="rowMenuActions(assessment)" :entity-label="assessment.title" always-visible />
+          </template>
+          <div class="flex flex-wrap gap-2">
+            <AppButton
+              v-for="action in lifecycleActions(assessment)"
+              :key="action.key"
+              :text="action.label"
+              :variant="action.variant"
+              size="sm"
+              :processing="transitioning === `${assessment.id}:${action.key}`"
+              @click="action.onClick"
+            />
+          </div>
+        </ResponsiveDataCard>
+      </div>
+
       <div class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-5 py-4">
         <p class="text-xs text-slate-500">Showing {{ firstItem }}–{{ lastItem }} of {{ filteredAssessments.length }}</p>
         <div class="flex items-center gap-2">
@@ -109,6 +146,7 @@ import AppSelect from '../../shared/AppSelect.vue'
 import AssessmentModal from '../components/AssessmentModal.vue'
 import OpenForTeachersModal from '../components/OpenForTeachersModal.vue'
 import ResponsiveTableActions from '../../shared/ResponsiveTableActions.vue'
+import ResponsiveDataCard from '../../shared/ResponsiveDataCard.vue'
 import SkeletonRows from '../components/SkeletonRows.vue'
 import { useAssessmentsStore, getStatusVariant, getAssessmentStatusLabel } from '../stores/assessments'
 

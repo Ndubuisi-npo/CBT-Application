@@ -1,7 +1,10 @@
 <template>
   <div class="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
     <SectionCard title="Classes" subtitle="Manage classes and class levels.">
-      <SkeletonRows v-if="classesStore.loading" :columns="3" />
+      <SkeletonRows v-if="classesStore.loading" :columns="3" class="hidden lg:block" />
+      <div v-if="classesStore.loading" class="grid gap-3 p-4 sm:grid-cols-2 lg:hidden">
+        <div v-for="i in 4" :key="i" class="h-28 animate-pulse rounded-2xl bg-slate-100" />
+      </div>
       <div v-else class="overflow-hidden rounded-2xl border border-slate-200">
         <div class="overflow-x-auto">
           <table class="min-w-full divide-y divide-slate-200 bg-white">

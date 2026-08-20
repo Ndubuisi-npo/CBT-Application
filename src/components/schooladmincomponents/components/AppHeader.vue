@@ -1,8 +1,17 @@
 <template>
   <header class="sticky top-0 z-30 border-b border-slate-200/80 bg-white/95 backdrop-blur-xl">
     <div class="flex h-16 items-center justify-between gap-4 px-4 sm:px-6">
-      <!-- Left: mobile hamburger + breadcrumb/title -->
+      <!-- Left: mobile back, hamburger + breadcrumb/title -->
       <div class="flex min-w-0 items-center gap-3">
+        <button
+          type="button"
+          class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#D4AF37] lg:hidden"
+          aria-label="Go back"
+          title="Go back"
+          @click="router.back()"
+        >
+          <ArrowLeft class="h-5 w-5" />
+        </button>
         <button
           type="button"
           class="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#D4AF37] lg:hidden"
@@ -41,8 +50,8 @@
 
 <script setup>
 import { computed, onMounted, watch } from 'vue'
-import { RouterLink, useRoute } from 'vue-router'
-import { ChevronRight, Menu } from 'lucide-vue-next'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { ArrowLeft, ChevronRight, Menu } from 'lucide-vue-next'
 import ProfileDropdown from './ProfileDropdown.vue'
 import NotificationBell from '../../shared/NotificationBell.vue'
 import { useSchoolAdminTeachersStore } from '../stores/teachers'
@@ -54,6 +63,7 @@ import { useAssessmentsStore } from '../stores/assessments'
 defineEmits(['toggle-sidebar'])
 
 const route = useRoute()
+const router = useRouter()
 const teachersStore = useSchoolAdminTeachersStore()
 const studentsStore = useSchoolAdminStudentsStore()
 const sessionsStore = useSchoolAdminSessionsStore()

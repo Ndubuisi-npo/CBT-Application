@@ -4,7 +4,6 @@ export async function getStudents(params = {}) {
   try {
     const queryString = new URLSearchParams(params).toString()
     const url = queryString ? `/api/students?${queryString}` : '/api/students'
-
     return await apiFetch(url)
   } catch (error) {
     throw new Error(extractErrorMessage(error, 'Unable to fetch students.'))

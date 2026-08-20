@@ -38,13 +38,16 @@
 
     <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
       <div v-if="store.loading && !submissions.length" class="p-2">
-        <SkeletonRows :rows="5" :columns="6" />
+        <SkeletonRows :rows="5" :columns="6" class="hidden lg:block" />
+        <div class="grid gap-3 sm:grid-cols-2 lg:hidden">
+          <div v-for="i in 5" :key="i" class="h-36 animate-pulse rounded-2xl bg-slate-100" />
+        </div>
       </div>
       <div v-else-if="!submissions.length" class="rounded-2xl border border-dashed border-slate-200 bg-white py-14 text-center text-sm text-slate-500">
         No teacher submissions have been created for this assessment yet.
       </div>
 
-      <div v-else class="overflow-x-auto">
+      <div v-else class="hidden overflow-x-auto lg:block">
         <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
           <thead class="bg-slate-50 text-[10px] uppercase tracking-[0.22em] text-slate-500">
             <tr>
@@ -70,6 +73,28 @@
           </tbody>
         </table>
       </div>
+
+      <div v-if="submissions.length" class="grid gap-3 p-4 sm:grid-cols-2 lg:hidden">
+        <ResponsiveDataCard
+          v-for="submission in submissions"
+          :key="submission.id"
+          avatar-color="bg-emerald-50 text-emerald-700"
+          :avatar-text="teacherName(submission).slice(0, 2).toUpperCase()"
+          :title="teacherName(submission)"
+          :fields="[
+            { label: 'Subject', value: subjectName(submission) },
+            { label: 'Total Marks', value: submission.total_marks ?? submission.totalMarks ?? 0 },
+            { label: 'Submitted', value: formatDate(submission.submitted_at) },
+          ]"
+        >
+          <template #badge>
+            <AppBadge :label="getSubmissionStatusLabel(submission.status)" :variant="getSubmissionStatusVariant(submission.status)" />
+          </template>
+          <template #actions>
+            <AppButton text="Review" variant="outline" size="sm" @click="viewSubmission(submission)" />
+          </template>
+        </ResponsiveDataCard>
+      </div>
     </section>
   </div>
 </template>
@@ -80,6 +105,7 @@ import { useRoute, useRouter } from 'vue-router'
 import AppBadge from '../../shared/AppBadge.vue'
 import AppButton from '../../shared/AppButton.vue'
 import AppPageHeader from '../../shared/AppPageHeader.vue'
+import ResponsiveDataCard from '../../shared/ResponsiveDataCard.vue'
 import SkeletonRows from '../components/SkeletonRows.vue'
 import { fmtDateTime } from '../../../js/lib/helpers'
 import {
