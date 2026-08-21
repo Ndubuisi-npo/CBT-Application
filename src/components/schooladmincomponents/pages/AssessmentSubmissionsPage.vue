@@ -1,212 +1,177 @@
 <template>
   <div class="space-y-6">
     <AppPageHeader
-      title="Teacher Submissions"
-      subtitle="Review the papers teachers have built for this assessment."
+      title="Assessment Submissions"
+      subtitle="Review scheduled assessments and add or edit their submission configuration."
       eyebrow="Assessment Management"
-    >
-      <template #actions>
-        <AppButton text="Back to assessments" variant="outline" size="sm" @click="router.push('/school-admin/assessments')" />
-      </template>
-    </AppPageHeader>
+    />
 
-    <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div class="flex flex-wrap items-center justify-between gap-4">
-        <div class="min-w-0">
-          <div class="flex items-center gap-3">
-            <p class="font-semibold text-slate-900">{{ assessment?.title }}</p>
-            <AppBadge v-if="assessment" :label="getAssessmentStatusLabel(assessment)" :variant="getStatusVariant(assessment.status)" />
-          </div>
-          <p class="mt-1 text-xs text-slate-500">{{ classText }} • Marks cap {{ assessmentTotalMarks }}</p>
-        </div>
-        <div class="flex flex-wrap gap-2">
-          <AppButton
-            v-for="action in lifecycleActions"
-            :key="action.key"
-            :text="action.label"
-            :variant="action.variant"
-            size="sm"
-            :processing="transitioning === action.key"
-            @click="action.onClick"
-          />
-        </div>
-      </div>
-      <p v-if="assessment && (assessment.status || '').toLowerCase() === 'submissions_closed' && !approvedCount" class="mt-3 rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 text-xs text-amber-700">
-        No submission has been approved yet — activation requires at least one.
-      </p>
-    </section>
-
-    <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div v-if="store.loading && !submissions.length" class="p-2">
-        <SkeletonRows :rows="5" :columns="6" class="hidden lg:block" />
-        <div class="grid gap-3 sm:grid-cols-2 lg:hidden">
-          <div v-for="i in 5" :key="i" class="h-36 animate-pulse rounded-2xl bg-slate-100" />
-        </div>
-      </div>
-      <div v-else-if="!submissions.length" class="rounded-2xl border border-dashed border-slate-200 bg-white py-14 text-center text-sm text-slate-500">
-        No teacher submissions have been created for this assessment yet.
-      </div>
-
-      <div v-else class="hidden overflow-x-auto lg:block">
+    <section class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
           <thead class="bg-slate-50 text-[10px] uppercase tracking-[0.22em] text-slate-500">
             <tr>
-              <th class="px-5 py-3">Teacher</th>
-              <th class="px-5 py-3">Subject</th>
-              <th class="px-5 py-3">Total Marks</th>
-              <th class="px-5 py-3">Submitted</th>
-              <th class="px-5 py-3">Status</th>
+              <th class="px-5 py-3">Assessment</th>
+              <th class="px-5 py-3">Class</th>
+              <th class="px-5 py-3">Session</th>
+              <th class="px-5 py-3">Term</th>
+              <th class="px-5 py-3">Submission Status</th>
+              <th class="px-5 py-3">Assessment Status</th>
               <th class="px-5 py-3"></th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100 bg-white">
-            <tr v-for="submission in submissions" :key="submission.id" class="group hover:bg-slate-50">
-              <td class="px-5 py-4">{{ teacherName(submission) }}</td>
-              <td class="px-5 py-4">{{ subjectName(submission) }}</td>
-              <td class="px-5 py-4">{{ submission.total_marks ?? submission.totalMarks ?? 0 }}</td>
-              <td class="px-5 py-4">{{ formatDate(submission.submitted_at) }}</td>
-              <td class="px-5 py-4"><AppBadge :label="getSubmissionStatusLabel(submission.status)" :variant="getSubmissionStatusVariant(submission.status)" /></td>
+            <tr v-if="!assessmentRows.length">
+              <td colspan="7" class="px-5 py-12 text-center text-slate-500">No scheduled assessments yet.</td>
+            </tr>
+            <tr v-for="assessment in assessmentRows" :key="assessment.id" class="hover:bg-slate-50">
               <td class="px-5 py-4">
-                <AppButton text="Review" variant="outline" size="sm" @click="viewSubmission(submission)" />
+                <p class="font-semibold text-slate-900">{{ assessment.title }}</p>
+                <p class="mt-1 text-xs text-slate-500">{{ assessment.description || 'No description provided.' }}</p>
+                <p class="mt-1 text-xs text-slate-500">Marks: {{ assessment.total_marks ?? '—' }}</p>
+              </td>
+              <td class="px-5 py-4 text-slate-600">{{ classText(assessment) }}</td>
+              <td class="px-5 py-4 text-slate-600">{{ sessionName(assessment) }}</td>
+              <td class="px-5 py-4 text-slate-600">{{ termName(assessment) }}</td>
+              <td class="px-5 py-4"><AppBadge :label="questionSubmissionStatusLabel(assessment)" :variant="questionSubmissionVariant(assessment)" /></td>
+              <td class="px-5 py-4"><AppBadge :label="assessmentStatusLabel(assessment)" :variant="assessmentVariant(assessment)" /></td>
+              <td class="px-5 py-4">
+                <div class="flex flex-wrap justify-end gap-2">
+                  <AppButton :text="assessment.submission_configuration ? 'Edit Submission' : 'Add Submission'" variant="primary" size="sm" @click="editAssessment(assessment)" />
+                </div>
               </td>
             </tr>
           </tbody>
         </table>
       </div>
+    </section>
 
-      <div v-if="submissions.length" class="grid min-w-0 gap-3 overflow-hidden p-4 sm:grid-cols-2 lg:hidden">
-        <ResponsiveDataCard
-          v-for="submission in submissions"
-          :key="submission.id"
-          avatar-color="bg-emerald-50 text-emerald-700"
-          :avatar-text="teacherName(submission).slice(0, 2).toUpperCase()"
-          :title="teacherName(submission)"
-          :fields="[
-            { label: 'Subject', value: subjectName(submission) },
-            { label: 'Total Marks', value: submission.total_marks ?? submission.totalMarks ?? 0 },
-            { label: 'Submitted', value: formatDate(submission.submitted_at) },
-          ]"
-        >
-          <template #title>
-            <p class="max-w-full whitespace-normal break-words text-sm font-semibold leading-5 text-slate-900 [overflow-wrap:anywhere]">{{ teacherName(submission) }}</p>
-          </template>
-          <template #badge>
-            <AppBadge :label="getSubmissionStatusLabel(submission.status)" :variant="getSubmissionStatusVariant(submission.status)" />
-          </template>
-          <template #actions>
-            <AppButton text="Review" variant="outline" size="sm" @click="viewSubmission(submission)" />
-          </template>
-        </ResponsiveDataCard>
+    <section v-if="selectedAssessment" class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
+      <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-[0.24em] text-[#D4AF37]">Selected assessment</p>
+            <h2 class="mt-1 text-2xl font-semibold text-slate-900">{{ selectedAssessment.title }}</h2>
+          </div>
+          <AppButton text="Back to schedule" variant="outline" size="sm" @click="router.push('/school-admin/assessment-schedule')" />
+        </div>
+        <p class="mt-2 text-sm text-slate-500">{{ selectedAssessment.description || 'No description provided.' }}</p>
+        <div class="mt-4 flex flex-wrap gap-2">
+          <AppBadge :label="questionSubmissionStatusLabel(selectedAssessment)" :variant="questionSubmissionVariant(selectedAssessment)" />
+          <AppBadge :label="assessmentStatusLabel(selectedAssessment)" :variant="assessmentVariant(selectedAssessment)" />
+          <AppBadge :label="selectedTermLabel" variant="primary" />
+        </div>
       </div>
+
+      <form class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm" @submit.prevent="saveSubmission">
+        <h3 class="text-lg font-semibold text-slate-900">{{ selectedAssessment.submission_configuration ? 'Edit Submission' : 'Add Submission' }}</h3>
+        <div class="mt-4 space-y-4">
+          <AppInput v-model="form.question_submission_ends" label="question_submission_ends" type="datetime-local" required :error="errors.question_submission_ends" />
+          <AppInput v-model="form.assessment_starts" label="assessment_starts" type="datetime-local" required :error="errors.assessment_starts" />
+          <AppInput v-model="form.assessment_ends" label="assessment_ends" type="datetime-local" required :error="errors.assessment_ends" />
+        </div>
+        <div class="mt-4 rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
+          <p><span class="font-semibold text-slate-900">question_submission_status:</span> {{ questionSubmissionStatusLabel(selectedAssessment) }}</p>
+          <p class="mt-1"><span class="font-semibold text-slate-900">assessment_status:</span> {{ assessmentStatusLabel(selectedAssessment) }}</p>
+          <p class="mt-1"><span class="font-semibold text-slate-900">term:</span> {{ selectedTermLabel }}</p>
+        </div>
+        <p v-if="saveError" class="mt-4 rounded-2xl border border-rose-100 bg-rose-50 px-3 py-2 text-sm text-rose-700">{{ saveError }}</p>
+        <div class="mt-4 flex flex-wrap gap-2">
+          <AppButton :text="selectedAssessment.submission_configuration ? 'Update Submission' : 'Create Submission'" variant="primary" :processing="saving" type="submit" />
+          <AppButton text="Continue to Submission Setup" variant="outline" @click="router.push(`/school-admin/assessment-submissions/${selectedAssessment.id}`)" />
+        </div>
+      </form>
     </section>
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, reactive, ref, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppBadge from '../../shared/AppBadge.vue'
 import AppButton from '../../shared/AppButton.vue'
+import AppInput from '../../shared/AppInput.vue'
 import AppPageHeader from '../../shared/AppPageHeader.vue'
-import ResponsiveDataCard from '../../shared/ResponsiveDataCard.vue'
-import SkeletonRows from '../components/SkeletonRows.vue'
-import { fmtDateTime } from '../../../js/lib/helpers'
-import {
-  useAssessmentsStore,
-  getSubmissionStatusLabel,
-  getSubmissionStatusVariant,
-  getStatusVariant,
-  getAssessmentStatusLabel,
-} from '../stores/assessments'
+import { useAssessmentsStore, getAssessmentStatusLabel, getStatusVariant } from '../stores/assessments'
 
 const route = useRoute()
 const router = useRouter()
 const store = useAssessmentsStore()
-const assessmentId = route.params.id
-const transitioning = ref(null)
+const saving = ref(false)
+const saveError = ref('')
+const errors = reactive({})
 
-const assessment = computed(() => store.current)
-const submissions = computed(() => store.submissions)
-const approvedCount = computed(() => submissions.value.filter((s) => (s.status || '').toLowerCase() === 'approved').length)
+const form = reactive({ question_submission_ends: '', assessment_starts: '', assessment_ends: '' })
+
+const assessmentRows = computed(() => store.scheduledAssessments)
+const selectedAssessment = computed(() => store.selectedAssessment || store.getAssessmentById(route.params.assessmentId || route.params.id))
+const selectedTermLabel = computed(() => store.activeTermLabel)
+
+const classText = (assessment) => {
+  const level = store.classLevelOptions.find((option) => String(option.value) === String(assessment.class_level_id ?? assessment.classLevelId))?.label || '—'
+  const arm = assessment.class_arm_id ?? assessment.classArmId
+    ? store.classArmOptions.find((option) => String(option.value) === String(assessment.class_arm_id ?? assessment.classArmId))?.label || ''
+    : 'Whole level'
+  return `${level} · ${arm}`
+}
+const sessionName = (assessment) => store.sessionOptions.find((option) => String(option.value) === String(assessment.session_id ?? assessment.sessionId))?.label || '—'
+const termName = (assessment) => store.activeTermLabel || assessment.term?.name || '—'
+
+const questionSubmissionStatusLabel = (assessment) => ((assessment?.question_submission_status || 'open') === 'open' ? 'Question submission open' : 'Question submission closed')
+const questionSubmissionVariant = (assessment) => ((assessment?.question_submission_status || 'open') === 'open' ? 'success' : 'default')
+const assessmentVariant = (assessment) => getStatusVariant(assessment?.assessment_status || assessment?.status)
+const assessmentStatusLabel = (assessment) => getAssessmentStatusLabel(assessment?.assessment_status || assessment?.status)
+
+const clearErrors = () => {
+  Object.keys(errors).forEach((key) => delete errors[key])
+  saveError.value = ''
+}
+
+const validate = () => {
+  clearErrors()
+  if (!form.question_submission_ends) errors.question_submission_ends = 'Required.'
+  if (!form.assessment_starts) errors.assessment_starts = 'Required.'
+  if (!form.assessment_ends) errors.assessment_ends = 'Required.'
+  const q = new Date(form.question_submission_ends)
+  const s = new Date(form.assessment_starts)
+  const e = new Date(form.assessment_ends)
+  if (form.question_submission_ends && form.assessment_starts && s < q) errors.assessment_starts = 'Must be after question submission ends.'
+  if (form.assessment_starts && form.assessment_ends && e <= s) errors.assessment_ends = 'Must be after assessment starts.'
+  return !Object.keys(errors).length
+}
+
+const editAssessment = (assessment) => {
+  store.selectAssessment(assessment.id)
+  form.question_submission_ends = assessment.question_submission_ends || ''
+  form.assessment_starts = assessment.assessment_starts || ''
+  form.assessment_ends = assessment.assessment_ends || ''
+}
+
+const saveSubmission = async () => {
+  if (!selectedAssessment.value || !validate()) return
+  saving.value = true
+  try {
+    await store.saveSubmissionConfiguration(selectedAssessment.value.id, { ...form, question_submission_status: 'open', assessment_status: 'pending' })
+  } catch (error) {
+    saveError.value = error?.message || 'Unable to save submission configuration.'
+  } finally {
+    saving.value = false
+  }
+}
+
+watch(selectedAssessment, (assessment) => {
+  if (!assessment) return
+  store.selectAssessment(assessment.id)
+  form.question_submission_ends = assessment.question_submission_ends || ''
+  form.assessment_starts = assessment.assessment_starts || ''
+  form.assessment_ends = assessment.assessment_ends || ''
+}, { immediate: true })
 
 onMounted(async () => {
-  await Promise.all([
-    store.fetchRefData(),
-    store.fetchAssessment(assessmentId),
-    store.fetchSubmissions(assessmentId),
-  ])
+  await Promise.all([store.fetchRefData(), store.fetchAssessments()])
+  if (route.params.assessmentId) {
+    const assessment = store.getAssessmentById(route.params.assessmentId)
+    if (assessment) editAssessment(assessment)
+  }
 })
-
-const teacherName = (submission) => {
-  const t = submission.teacher || {}
-  const first = t.first_name || t.firstName || ''
-  const last = t.last_name || t.lastName || ''
-  return `${first} ${last}`.trim() || t.name || 'Unknown teacher'
-}
-const subjectName = (submission) => {
-  if (submission.subject?.name) return submission.subject.name
-  const subjectId = submission.subject_id ?? submission.subjectId
-  return store.subjectOptions.find((o) => String(o.value) === String(subjectId))?.label || 'Unknown subject'
-}
-
-const classLevelName = (id) => store.classLevelOptions.find((o) => String(o.value) === String(id))?.label || ''
-const classArmName = (id) => store.classArmOptions.find((o) => String(o.value) === String(id))?.label || ''
-const classText = computed(() => {
-  const a = assessment.value
-  if (!a) return '—'
-  const levelId = a.class_level_id ?? a.classLevelId
-  const armId = a.class_arm_id ?? a.classArmId
-  const arm = armId ? ` ${classArmName(armId)}` : ' (whole level)'
-  return `${classLevelName(levelId)}${arm}`.trim() || '—'
-})
-const assessmentTotalMarks = computed(() => assessment.value?.total_marks ?? assessment.value?.totalMarks ?? '—')
-
-const viewSubmission = (submission) => router.push(`/school-admin/assessments/${assessmentId}/submissions/${submission.id}`)
-
-const runTransition = async (key, fn) => {
-  transitioning.value = key
-  try {
-    await fn()
-  } catch {
-    // Store already surfaced the error toast.
-  } finally {
-    transitioning.value = null
-  }
-}
-
-// Same status-gated lifecycle as the assessments list — kept here too so
-// admins reviewing submissions don't have to leave the page to activate.
-const lifecycleActions = computed(() => {
-  const a = assessment.value
-  if (!a) return []
-  const status = (a.status || '').toLowerCase()
-  if (status === 'open') {
-    return [{ key: 'close', label: 'Close Submissions', variant: 'outline', onClick: () => runTransition('close', () => store.closeSubmissions(a.id)) }]
-  }
-  if (status === 'submissions_closed') {
-    return [
-      {
-        key: 'activate',
-        label: 'Activate for Students',
-        variant: 'primary',
-        onClick: () => {
-          const start = a.student_starts_at ?? a.studentStartsAt
-          const end = a.student_ends_at ?? a.studentEndsAt
-          if (!start || !end) {
-            window.alert('Set both a student start and end time (edit the assessment) before activating it.')
-            return
-          }
-          if (!window.confirm('Activate this assessment? Every approved submission becomes a live exam for students.')) return
-          runTransition('activate', () => store.activateAssessment(a.id))
-        },
-      },
-    ]
-  }
-  if (status === 'active') {
-    return [{ key: 'complete', label: 'Complete', variant: 'primary', onClick: () => runTransition('complete', () => store.completeAssessment(a.id)) }]
-  }
-  return []
-})
-
-const formatDate = (value) => (value ? fmtDateTime(value) : 'N/A')
 </script>

@@ -245,14 +245,6 @@ const navCards = [
     iconBg: 'bg-rose-50',
     iconColor: 'text-rose-600',
   },
-  {
-    label: 'Assessment Management',
-    caption: 'Open assessments for teachers and review submissions.',
-    to: '/school-admin/assessments',
-    icon: ClipboardList,
-    iconBg: 'bg-slate-100',
-    iconColor: 'text-slate-600',
-  },
 ]
 
 const summaryItems = computed(() => [

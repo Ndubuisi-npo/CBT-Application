@@ -58,6 +58,7 @@
               isActive(item.to)
                 ? 'bg-white/12 text-white'
                 : 'text-white/60 hover:bg-white/8 hover:text-white',
+              item.child ? 'ml-4' : '',
               collapsed ? 'justify-center' : '',
             ]"
             :title="collapsed ? item.label : undefined"
@@ -73,6 +74,7 @@
               class="h-5 w-5 shrink-0 transition-colors"
               :class="isActive(item.to) ? 'text-[#D4AF37]' : 'text-white/50 group-hover:text-white/80'"
             />
+            <ChevronRight v-if="item.child && !collapsed" class="h-3.5 w-3.5 shrink-0 text-white/25" />
             <span v-if="!collapsed" class="truncate">{{ item.label }}</span>
             <span v-if="!collapsed && item.count > 0" class="ml-auto rounded-full bg-[#D4AF37]/90 px-2 py-0.5 text-[10px] font-semibold text-white">
               {{ item.count }}
@@ -109,6 +111,7 @@ import {
   CheckSquare,
   ClipboardList,
   Columns3,
+  CalendarDays,
   FileQuestion,
   GraduationCap,
   LayoutDashboard,
@@ -117,6 +120,7 @@ import {
   Settings,
   Shapes,
   Users,
+  ChevronRight,
 } from 'lucide-vue-next'
 import { useSchoolAdminProfileStore } from '../stores/profile'
 import { useNotificationStore } from '../../shared/stores/notifications'
@@ -182,7 +186,13 @@ const navGroups = computed(() => {
         { label: 'Sessions', to: '/school-admin/sessions', icon: CalendarRange, count: adminSessionNotifications.value, tour: 'nav-sessions' },
         { label: 'Class Levels', to: '/school-admin/class-levels', icon: Columns3, tour: 'nav-class-levels' },
         { label: 'Subjects', to: '/school-admin/subjects', icon: Shapes, tour: 'nav-subjects' },
-        { label: 'Assessment Management', to: '/school-admin/assessments', icon: ClipboardList, tour: 'nav-assessments' },
+      ],
+    },
+    {
+      label: 'Assessment Management',
+      items: [
+        { label: 'Assessment Schedule', to: '/school-admin/assessment-schedule', icon: CalendarDays, tour: 'nav-assessment-schedule' },
+        { label: 'Assessment Submissions', to: '/school-admin/assessment-submissions', icon: ClipboardList, tour: 'nav-assessment-submissions' },
       ],
     },
     {

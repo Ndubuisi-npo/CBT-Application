@@ -96,7 +96,8 @@ const titles = {
   '/school-admin/subjects': 'Subjects',
   '/school-admin/settings': 'Settings',
   '/school-admin/profile': 'Profile',
-  '/school-admin/assessments': 'Assessment Management',
+  '/school-admin/assessment-schedule': 'Assessment Schedule',
+  '/school-admin/assessment-submissions': 'Assessment Submissions',
   '/school-admin/notifications': 'Notifications',
   '/teachers/dashboard': 'Dashboard',
   '/teachers/my-classes': 'My Classes',
@@ -251,17 +252,26 @@ const breadcrumbs = computed(() => {
     ]
   }
 
-  if (route.path === '/school-admin/assessments') {
+  if (route.path === '/school-admin/assessment-schedule') {
     return [
       ...base,
-      { label: 'Assessment Management' },
+      { label: 'Assessment Management', to: '/school-admin/assessment-schedule' },
+      { label: 'Assessment Schedule' },
+    ]
+  }
+
+  if (route.path === '/school-admin/assessment-submissions') {
+    return [
+      ...base,
+      { label: 'Assessment Management', to: '/school-admin/assessment-submissions' },
+      { label: 'Assessment Submissions' },
     ]
   }
 
   if (route.path.startsWith('/school-admin/assessments/')) {
     return [
       ...base,
-      { label: 'Assessment Management', to: '/school-admin/assessments' },
+      { label: 'Assessment Submissions', to: '/school-admin/assessment-submissions' },
       { label: currentAssessmentTitle.value, to: route.path.includes('/submissions') && !route.params.submissionId ? undefined : `/school-admin/assessments/${route.params.assessmentId || route.params.id}/submissions` },
       ...(route.path.includes('/submissions/')
         ? [{ label: currentSubmissionTeacherName.value }]

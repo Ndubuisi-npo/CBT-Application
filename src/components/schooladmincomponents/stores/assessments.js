@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { useSchoolAdminUiStore } from './ui'
+import { useSchoolAdminSessionsStore } from './sessions'
 import {
   getAssessments,
   getAssessment,
@@ -29,14 +30,12 @@ import {
   getTeacherAssessments,
 } from '../services/api/assessments'
 
-/* Submission question types — the three the backend supports (§3/§7). */
 export const QUESTION_TYPES = [
   { label: 'Multiple Choice', value: 'mcq' },
   { label: 'True / False', value: 'true_false' },
   { label: 'Fill in the Blank', value: 'fill_in_blank' },
 ]
 
-/* Assessment status → badge variant. The five real statuses (§2). */
 export const getStatusVariant = (status) => {
   switch ((status || '').toLowerCase()) {
     case 'draft': return 'warning'
@@ -48,8 +47,6 @@ export const getStatusVariant = (status) => {
   }
 }
 
-/* Assessment status → human label. Driven by the single `status` string (§4);
- * there are no isOpenForTeachers/isOpenForStudents flags on the contract. */
 export const getAssessmentStatusLabel = (assessment) => {
   const status = (typeof assessment === 'string' ? assessment : assessment?.status || '').toLowerCase()
   switch (status) {
@@ -58,6 +55,7 @@ export const getAssessmentStatusLabel = (assessment) => {
     case 'submissions_closed': return 'Submissions Closed'
     case 'active': return 'Active for Students'
     case 'completed': return 'Completed'
+    case 'pending': return 'Pending'
     default: return 'Unknown'
   }
 }
@@ -81,11 +79,85 @@ export const getSubmissionStatusVariant = (status) => {
   }
 }
 
+const STORAGE_KEY = 'sa_assessment_workflow_v1'
+
 const toOptions = (list, labelKey = 'name', valueKey = 'id') =>
   (Array.isArray(list) ? list : []).map((item) => ({
     label: item[labelKey] ?? item.title ?? item.label ?? String(item[valueKey]),
     value: item[valueKey],
   }))
+
+const toDateKey = (value) => {
+  if (!value) return ''
+  const date = value instanceof Date ? value : new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+  return date.toISOString().slice(0, 10)
+}
+
+const toInputDateTime = (value) => {
+  if (!value) return ''
+  const date = value instanceof Date ? value : new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+  const pad = (n) => String(n).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
+}
+
+const normalizeAssessment = (assessment) => {
+  const submission = assessment?.submission_configuration || assessment?.submissionConfiguration || null
+  const scheduledDate =
+    assessment?.scheduled_date ||
+    assessment?.scheduledDate ||
+    assessment?.assessment_date ||
+    assessment?.assessmentDate ||
+    assessment?.created_at ||
+    assessment?.createdAt ||
+    ''
+
+  return {
+    ...assessment,
+    scheduled_date: scheduledDate,
+    scheduledDate: scheduledDate,
+    created_at: assessment?.created_at ?? assessment?.createdAt ?? scheduledDate,
+    createdAt: assessment?.createdAt ?? assessment?.created_at ?? scheduledDate,
+    session_id: assessment?.session_id ?? assessment?.sessionId ?? '',
+    class_level_id: assessment?.class_level_id ?? assessment?.classLevelId ?? '',
+    class_arm_id: assessment?.class_arm_id ?? assessment?.classArmId ?? '',
+    term_id: assessment?.term_id ?? assessment?.termId ?? submission?.term_id ?? submission?.termId ?? '',
+    question_submission_ends: assessment?.question_submission_ends ?? assessment?.questionSubmissionEnds ?? submission?.question_submission_ends ?? submission?.questionSubmissionEnds ?? '',
+    assessment_starts: assessment?.assessment_starts ?? assessment?.assessmentStarts ?? submission?.assessment_starts ?? submission?.assessmentStarts ?? '',
+    assessment_ends: assessment?.assessment_ends ?? assessment?.assessmentEnds ?? submission?.assessment_ends ?? submission?.assessmentEnds ?? '',
+    question_submission_status: assessment?.question_submission_status ?? assessment?.questionSubmissionStatus ?? submission?.question_submission_status ?? submission?.questionSubmissionStatus ?? 'open',
+    assessment_status: assessment?.assessment_status ?? assessment?.assessmentStatus ?? submission?.assessment_status ?? submission?.assessmentStatus ?? 'pending',
+    submission_configuration: submission
+      ? {
+          ...submission,
+          question_submission_ends: submission.question_submission_ends ?? submission.questionSubmissionEnds ?? '',
+          assessment_starts: submission.assessment_starts ?? submission.assessmentStarts ?? '',
+          assessment_ends: submission.assessment_ends ?? submission.assessmentEnds ?? '',
+          question_submission_status: submission.question_submission_status ?? submission.questionSubmissionStatus ?? 'open',
+          assessment_status: submission.assessment_status ?? submission.assessmentStatus ?? 'pending',
+        }
+      : null,
+    __workflowLocal: assessment?.__workflowLocal ?? false,
+  }
+}
+
+const readWorkflowState = () => {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (!raw) return { schedules: [] }
+    const parsed = JSON.parse(raw)
+    return { schedules: Array.isArray(parsed?.schedules) ? parsed.schedules : [] }
+  } catch {
+    return { schedules: [] }
+  }
+}
+
+const writeWorkflowState = (schedules) => {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ schedules }))
+  } catch {}
+}
 
 export const useAssessmentsStore = defineStore('assessments', {
   state: () => ({
@@ -103,6 +175,10 @@ export const useAssessmentsStore = defineStore('assessments', {
     },
     loading: false,
     error: null,
+    calendarLoading: false,
+    currentMonth: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString(),
+    selectedDate: '',
+    selectedAssessmentId: null,
   }),
 
   getters: {
@@ -120,29 +196,72 @@ export const useAssessmentsStore = defineStore('assessments', {
           : ''
         return { label: name || option.label, value: option.value }
       }),
+    scheduledAssessments: (state) => state.assessments.map(normalizeAssessment).filter((item) => item.scheduled_date),
+    selectedAssessment: (state) => state.assessments.find((item) => String(item.id) === String(state.selectedAssessmentId)) || null,
+    selectedDateAssessments: (state) => {
+      const key = toDateKey(state.selectedDate)
+      return state.assessments.map(normalizeAssessment).filter((item) => toDateKey(item.scheduled_date) === key)
+    },
+    activeTermLabel: (state) => {
+      const currentTerm = state.refData.terms.find((term) => term.current || term.is_current || term.status === 'Current' || term.status === 'Active')
+      return currentTerm?.name || currentTerm?.title || currentTerm?.label || 'Active term'
+    },
   },
 
   actions: {
     _toast(title, message, variant = 'error') {
       try {
         useSchoolAdminUiStore().addToast({ title, message, variant })
-      } catch {
-        // UI store may be unavailable in non-UI contexts; degrade silently.
+      } catch {}
+    },
+
+    _persistLocalWorkflow() {
+      const localRecords = this.assessments.filter((item) => item.__workflowLocal)
+      writeWorkflowState(localRecords)
+    },
+
+    _mergeLocalWorkflow() {
+      const local = readWorkflowState().schedules.map(normalizeAssessment)
+      if (!local.length) return
+      const byId = new Map(this.assessments.map((item) => [String(item.id), item]))
+      local.forEach((item) => byId.set(String(item.id), item))
+      this.assessments = Array.from(byId.values())
+    },
+
+    getAssessmentById(id) {
+      return this.assessments.find((item) => String(item.id) === String(id)) || null
+    },
+
+    setCurrentMonth(value) {
+      const date = value instanceof Date ? value : new Date(value)
+      if (Number.isNaN(date.getTime())) return
+      this.currentMonth = new Date(date.getFullYear(), date.getMonth(), 1).toISOString()
+    },
+
+    selectDate(value) {
+      this.selectedDate = toDateKey(value)
+      if (this.selectedDate) {
+        this.setCurrentMonth(new Date(this.selectedDate))
       }
     },
 
-    /* ------------------------------------------------------------------ *
-     * Reference data — reused endpoints, loaded once per surface.
-     * ------------------------------------------------------------------ */
+    selectAssessment(id) {
+      this.selectedAssessmentId = id
+      const assessment = this.getAssessmentById(id)
+      if (assessment?.scheduled_date) this.selectDate(assessment.scheduled_date)
+    },
+
     async fetchRefData() {
+      const sessionsStore = useSchoolAdminSessionsStore()
       const [subjects, classLevels, sessions] = await Promise.all([
         getSubjects().catch(() => []),
         getClassLevels().catch(() => []),
-        getAcademicSessions().catch(() => []),
+        sessionsStore.sessions.length ? Promise.resolve(sessionsStore.sessions) : getAcademicSessions().catch(() => []),
       ])
       this.refData.subjects = Array.isArray(subjects) ? subjects : []
       this.refData.classLevels = Array.isArray(classLevels) ? classLevels : []
       this.refData.sessions = Array.isArray(sessions) ? sessions : []
+      this._mergeLocalWorkflow()
     },
 
     async fetchClassArms(classLevelId) {
@@ -173,15 +292,18 @@ export const useAssessmentsStore = defineStore('assessments', {
       return this.refData.terms
     },
 
-    /* ------------------------------------------------------------------ *
-     * Assessments (school admin)
-     * ------------------------------------------------------------------ */
     async fetchAssessments(params = {}) {
       this.loading = true
       this.error = null
       try {
         const data = await getAssessments(params)
-        this.assessments = Array.isArray(data) ? data : (data?.data ?? [])
+        const apiRecords = Array.isArray(data) ? data : (data?.data ?? [])
+        const localRecords = readWorkflowState().schedules
+        const byId = new Map()
+        ;[...apiRecords, ...localRecords].map(normalizeAssessment).forEach((item) => {
+          if (item?.id != null) byId.set(String(item.id), item)
+        })
+        this.assessments = Array.from(byId.values())
       } catch (error) {
         this.error = error?.message || 'Failed to load assessments.'
         this.assessments = []
@@ -195,7 +317,7 @@ export const useAssessmentsStore = defineStore('assessments', {
       this.loading = true
       this.error = null
       try {
-        this.current = await getAssessment(id)
+        this.current = normalizeAssessment(await getAssessment(id))
         return this.current
       } catch (error) {
         this.error = error?.message || 'Failed to load assessment.'
@@ -212,7 +334,7 @@ export const useAssessmentsStore = defineStore('assessments', {
       this.error = null
       try {
         const data = await getTeacherAssessments(params)
-        this.assessments = Array.isArray(data) ? data : (data?.data ?? [])
+        this.assessments = (Array.isArray(data) ? data : (data?.data ?? [])).map(normalizeAssessment)
       } catch (error) {
         this.error = error?.message || 'Failed to load assessments.'
         this.assessments = []
@@ -224,8 +346,8 @@ export const useAssessmentsStore = defineStore('assessments', {
 
     async createAssessment(payload) {
       try {
-        const record = await apiCreateAssessment(payload)
-        if (record?.id) this.assessments = [record, ...this.assessments]
+        const record = normalizeAssessment(await apiCreateAssessment(payload))
+        if (record?.id) this.assessments = [record, ...this.assessments.filter((item) => String(item.id) !== String(record.id))]
         this._toast('Assessment created', 'The assessment was created successfully.', 'success')
         return record
       } catch (error) {
@@ -237,8 +359,8 @@ export const useAssessmentsStore = defineStore('assessments', {
 
     async updateAssessment(id, payload) {
       try {
-        const record = await apiUpdateAssessment(id, payload)
-        this.assessments = this.assessments.map((item) => (item.id === id ? { ...item, ...record } : item))
+        const record = normalizeAssessment(await apiUpdateAssessment(id, payload))
+        this.assessments = this.assessments.map((item) => (String(item.id) === String(id) ? { ...item, ...record } : item))
         if (this.current?.id === id) this.current = { ...this.current, ...record }
         this._toast('Assessment updated', 'The assessment was updated successfully.', 'success')
         return record
@@ -252,7 +374,8 @@ export const useAssessmentsStore = defineStore('assessments', {
     async deleteAssessment(id) {
       try {
         await apiDeleteAssessment(id)
-        this.assessments = this.assessments.filter((item) => item.id !== id)
+        this.assessments = this.assessments.filter((item) => String(item.id) !== String(id))
+        this._persistLocalWorkflow()
         this._toast('Assessment deleted', 'The assessment was removed.', 'success')
       } catch (error) {
         this.error = error?.message || 'Failed to delete assessment.'
@@ -261,10 +384,6 @@ export const useAssessmentsStore = defineStore('assessments', {
       }
     },
 
-    /* ------------------------------------------------------------------ *
-     * Assessment transitions (§4). Timing windows are captured at draft
-     * create/edit time; only reopen accepts a datetime body here.
-     * ------------------------------------------------------------------ */
     async openAssessment(id) {
       try {
         const record = await apiOpenAssessment(id)
@@ -331,20 +450,68 @@ export const useAssessmentsStore = defineStore('assessments', {
     },
 
     _applyAssessment(id, record, fallbackPatch = {}) {
-      const patch = record && record.id ? record : fallbackPatch
-      this.assessments = this.assessments.map((item) => (item.id === id ? { ...item, ...patch } : item))
-      if (this.current?.id === id) this.current = { ...this.current, ...patch }
+      const patch = record && record.id ? normalizeAssessment(record) : fallbackPatch
+      this.assessments = this.assessments.map((item) => (String(item.id) === String(id) ? normalizeAssessment({ ...item, ...patch }) : item))
+      if (this.current?.id === id) this.current = normalizeAssessment({ ...this.current, ...patch })
+      this._persistLocalWorkflow()
     },
 
-    /* ------------------------------------------------------------------ *
-     * Teacher submission
-     * ------------------------------------------------------------------ */
+    async createScheduledAssessment(payload) {
+      const record = normalizeAssessment({
+        ...payload,
+        id: payload.id || `local-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        __workflowLocal: true,
+      })
+      this.assessments = [record, ...this.assessments.filter((item) => String(item.id) !== String(record.id))]
+      this.selectAssessment(record.id)
+      this._persistLocalWorkflow()
+      this._toast('Assessment scheduled', 'The assessment was added to your calendar.', 'success')
+      return record
+    },
+
+    async saveScheduledAssessment(id, payload) {
+      const existing = this.getAssessmentById(id)
+      const record = normalizeAssessment({ ...(existing || {}), ...payload, id, __workflowLocal: true })
+      this.assessments = this.assessments.map((item) => (String(item.id) === String(id) ? record : item))
+      this.selectAssessment(record.id)
+      this._persistLocalWorkflow()
+      this._toast('Assessment updated', 'The schedule changes were saved.', 'success')
+      return record
+    },
+
+    async saveSubmissionConfiguration(assessmentId, payload) {
+      const existing = this.getAssessmentById(assessmentId)
+      if (!existing) throw new Error('Assessment not found.')
+      const submission = {
+        id: existing.submission_configuration?.id || `submission-${assessmentId}`,
+        assessment_id: assessmentId,
+        question_submission_ends: payload.question_submission_ends,
+        assessment_starts: payload.assessment_starts,
+        assessment_ends: payload.assessment_ends,
+        question_submission_status: payload.question_submission_status || 'open',
+        assessment_status: payload.assessment_status || 'pending',
+      }
+      const record = normalizeAssessment({
+        ...existing,
+        submission_configuration: submission,
+        question_submission_ends: submission.question_submission_ends,
+        assessment_starts: submission.assessment_starts,
+        assessment_ends: submission.assessment_ends,
+        question_submission_status: submission.question_submission_status,
+        assessment_status: submission.assessment_status,
+        __workflowLocal: true,
+      })
+      this.assessments = this.assessments.map((item) => (String(item.id) === String(assessmentId) ? record : item))
+      this._persistLocalWorkflow()
+      this._toast('Submission configuration saved', 'The submission workflow is now attached to the assessment.', 'success')
+      return record.submission_configuration
+    },
+
     async fetchMySubmission(assessmentId) {
       try {
         this.currentSubmission = await getMySubmission(assessmentId)
         return this.currentSubmission
-      } catch (error) {
-        // No submission yet is not a hard error — show the create form.
+      } catch {
         this.currentSubmission = null
         return null
       }
@@ -379,36 +546,24 @@ export const useAssessmentsStore = defineStore('assessments', {
     async addQuestion(submissionId, payload) {
       try {
         const response = await apiAddQuestion(submissionId, payload)
-        // New response shape: { success: true, data: { question: {...}, submission: {...} } }
         const responseData = response?.data ? response : response
         if (responseData?.submission) {
-          // Update submission with new totals from response
           if (this.currentSubmission) {
             this.currentSubmission.total_marks = responseData.submission.total_marks
             this.currentSubmission.question_count = responseData.submission.question_count
           }
-          // Fetch full submission to get the questions array
           await this.fetchSubmission(submissionId, { silent: true })
         }
         return responseData?.question || response
       } catch (error) {
-        // Handle 422 cap breach error with user-friendly message
-        if (error?.status === 422) {
-          this.error = error?.data?.message || 'Adding this question would exceed the assessment cap.'
-        } else {
-          this.error = error?.message || 'Failed to add question.'
-        }
+        this.error = error?.status === 422
+          ? error?.data?.message || 'Adding this question would exceed the assessment cap.'
+          : error?.message || 'Failed to add question.'
         this._toast('Unable to add question', this.error)
         throw error
       }
     },
 
-    /**
-     * Add several questions in one go (e.g. importing from the question
-     * bank). Still calls the documented single-question POST endpoint (§7)
-     * once per question — there's no bulk-create endpoint — but only
-     * refetches the submission once at the end instead of after every item.
-     */
     async addQuestions(submissionId, payloads) {
       try {
         for (const payload of payloads) {
@@ -417,14 +572,10 @@ export const useAssessmentsStore = defineStore('assessments', {
         await this.fetchSubmission(submissionId, { silent: true })
         this._toast('Questions added', `${payloads.length} question${payloads.length === 1 ? '' : 's'} added to your submission.`, 'success')
       } catch (error) {
-        // Handle 422 cap breach error with user-friendly message
-        if (error?.status === 422) {
-          this.error = error?.data?.message || 'Adding this question would exceed the assessment cap.'
-        } else {
-          this.error = error?.message || 'Failed to add questions.'
-        }
+        this.error = error?.status === 422
+          ? error?.data?.message || 'Adding this question would exceed the assessment cap.'
+          : error?.message || 'Failed to add questions.'
         this._toast('Unable to add questions', this.error)
-        // Refresh anyway so the UI reflects whatever succeeded before the failure.
         await this.fetchSubmission(submissionId, { silent: true }).catch(() => {})
         throw error
       }
@@ -433,15 +584,12 @@ export const useAssessmentsStore = defineStore('assessments', {
     async deleteQuestion(submissionId, questionId) {
       try {
         const response = await apiDeleteQuestion(submissionId, questionId)
-        // New response shape: { success: true, data: { submission: {...} } }
         const responseData = response?.data ? response : response
         if (responseData?.submission) {
-          // Update submission with new totals from response
           if (this.currentSubmission) {
             this.currentSubmission.total_marks = responseData.submission.total_marks
             this.currentSubmission.question_count = responseData.submission.question_count
           }
-          // Fetch full submission to get the updated questions array
           await this.fetchSubmission(submissionId, { silent: true })
         }
       } catch (error) {
@@ -465,9 +613,6 @@ export const useAssessmentsStore = defineStore('assessments', {
       }
     },
 
-    /* ------------------------------------------------------------------ *
-     * Admin review
-     * ------------------------------------------------------------------ */
     async fetchSubmissions(assessmentId) {
       this.loading = true
       this.error = null
@@ -489,7 +634,6 @@ export const useAssessmentsStore = defineStore('assessments', {
         this.error = null
       }
       try {
-        // GET /submissions/{id} includes submissionQuestions array when eager-loaded
         this.currentSubmission = await getSubmission(submissionId)
         return this.currentSubmission
       } catch (error) {
@@ -531,10 +675,12 @@ export const useAssessmentsStore = defineStore('assessments', {
 
     _applySubmission(submissionId, record, fallbackPatch = {}) {
       const patch = record && record.id ? record : fallbackPatch
-      this.submissions = this.submissions.map((item) => (item.id === submissionId ? { ...item, ...patch } : item))
+      this.submissions = this.submissions.map((item) => (String(item.id) === String(submissionId) ? { ...item, ...patch } : item))
       if (this.currentSubmission?.id === submissionId) {
         this.currentSubmission = { ...this.currentSubmission, ...patch }
       }
     },
+
+    formatDateTimeValue: toInputDateTime,
   },
 })
