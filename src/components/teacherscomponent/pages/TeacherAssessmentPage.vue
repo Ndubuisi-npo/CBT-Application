@@ -3,7 +3,7 @@
     <AppPageHeader
       title="Assessment Workspace"
       subtitle="Create your submission and manage questions for this assessment."
-      eyebrow="Assessments"
+      eyebrow="Submissions"
     />
 
     <div v-if="loadingSubmission && !assessment" class="space-y-6">

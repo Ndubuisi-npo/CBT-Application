@@ -149,12 +149,13 @@ const navGroups = computed(() => {
         label: '',
         items: [
           { label: 'Dashboard', to: '/teachers/dashboard', icon: LayoutDashboard },
+          { label: 'Calendar', to: '/teachers/calendar', icon: CalendarDays },
         ],
       },
       {
-        label: 'Assessments',
+        label: 'Submissions',
         items: [
-          { label: 'Assessments', to: '/teachers/assessments', icon: ClipboardList, tour: 'nav-assessments' },
+          { label: 'Submissions', to: '/teachers/assessments', icon: ClipboardList, tour: 'nav-assessments' },
           { label: 'Question Bank', to: '/teachers/questions', icon: FileQuestion, tour: 'nav-question-bank' },
         ],
       },

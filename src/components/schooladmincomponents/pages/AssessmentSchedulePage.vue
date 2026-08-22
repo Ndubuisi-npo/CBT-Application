@@ -33,8 +33,11 @@
               type="button"
               class="group relative min-h-[116px] border-r border-b border-slate-200 p-2 text-left transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/30"
               :class="[cell.isCurrentMonth ? 'bg-white' : 'bg-[#FBFAF7] text-slate-400', isSelected(cell.dateKey) ? 'bg-[#0B1F3A]/5 ring-1 ring-inset ring-[#0B1F3A]/20' : '']"
+              :style="cell.tintColor ? { backgroundColor: `rgba(${cell.tintColor}, 0.07)` } : {}"
               :aria-label="`Select ${cell.label}`"
               @click="selectCell(cell)"
+              @mouseenter="hoveredCell = cell.dateKey"
+              @mouseleave="hoveredCell === cell.dateKey && (hoveredCell = '')"
             >
               <div class="flex items-start justify-between gap-2">
                 <span
@@ -54,16 +57,35 @@
                   v-for="assessment in cell.previewAssessments"
                   :key="assessment.id"
                   type="button"
-                  class="flex w-full items-center gap-2 rounded-lg border border-[#0B1F3A]/10 bg-[#0B1F3A]/4 px-2 py-1 text-left text-[11px] text-slate-700 transition hover:border-[#D4AF37]/40 hover:bg-[#D4AF37]/10"
+                  class="flex w-full items-center gap-2 rounded-lg border px-2 py-1 text-left text-[11px] text-slate-700 transition hover:border-[#D4AF37]/40"
+                  :style="{
+                    borderColor: `rgba(${hexToRgb(scheduleColor(assessment))}, 0.35)`,
+                    backgroundColor: `rgba(${hexToRgb(scheduleColor(assessment))}, 0.08)`,
+                  }"
                   @click.stop="openAssessment(assessment)"
                 >
-                  <span class="h-2 w-2 rounded-full bg-[#D4AF37]" />
+                  <span class="h-2 w-2 shrink-0 rounded-full" :style="{ backgroundColor: scheduleColor(assessment) }" />
                   <span class="min-w-0 flex-1 truncate">
                     <span class="font-semibold text-[#0B1F3A]">{{ assessment.startTime || 'All day' }}</span>
                     {{ assessment.title || 'Assessment' }}
                   </span>
                 </button>
                 <p v-if="cell.moreCount" class="text-[11px] font-medium text-slate-500">+{{ cell.moreCount }} more</p>
+              </div>
+
+              <!-- Hover overlay: quick add/edit affordance, mirrors the reference screenshots -->
+              <div
+                v-if="hoveredCell === cell.dateKey && !isSelected(cell.dateKey)"
+                class="pointer-events-none absolute inset-x-2 bottom-2 flex justify-start opacity-0 transition-opacity duration-150 group-hover:opacity-100"
+              >
+                <span
+                  class="pointer-events-none inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-semibold text-white shadow-sm"
+                  :class="cell.assessments.length ? 'bg-[#0B1F3A]/85' : 'bg-slate-700/85'"
+                >
+                  <Pencil v-if="cell.assessments.length" class="h-3 w-3" />
+                  <Plus v-else class="h-3 w-3" />
+                  {{ cell.assessments.length ? 'Edit schedule' : 'Set schedule' }}
+                </span>
               </div>
             </button>
           </div>
@@ -172,7 +194,7 @@
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { CalendarDays } from 'lucide-vue-next'
+import { CalendarDays, Pencil, Plus } from 'lucide-vue-next'
 import AppBadge from '../../shared/AppBadge.vue'
 import AppButton from '../../shared/AppButton.vue'
 import AppEmptyState from '../../shared/AppEmptyState.vue'
@@ -183,6 +205,7 @@ import AppTextarea from '../../shared/AppTextarea.vue'
 import { useSchoolAdminSessionsStore } from '../stores/sessions'
 import { useSchoolAdminClassArmsStore } from '../stores/classArms'
 import { useAssessmentsStore, getAssessmentStatusLabel, getStatusVariant } from '../stores/assessments'
+import { getScheduleColor, hexToRgb, getDateRangeKeys } from '../../../js/lib/scheduleColors'
 
 const router = useRouter()
 const assessmentStore = useAssessmentsStore()
@@ -191,6 +214,8 @@ const classArmsStore = useSchoolAdminClassArmsStore()
 
 const today = new Date()
 const weekdays = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']
+const hoveredCell = ref('')
+const scheduleColor = (assessment) => getScheduleColor(assessment?.id)
 const savingAssessment = ref(false)
 const savingSubmission = ref(false)
 const saveError = ref('')
@@ -243,6 +268,22 @@ const selectedWeekday = computed(() => {
   return new Date(`${selectedDate.value}T00:00:00`).toLocaleDateString(undefined, { weekday: 'long' })
 })
 
+// Map every date a scheduled assessment's window touches (scheduled_date
+// through assessment_ends, inclusive) to that assessment's color, so a
+// multi-day window gets a consistent tint across its full range — not just
+// on the day it was created.
+const dateRangeTints = computed(() => {
+  const map = {}
+  for (const assessment of assessmentStore.scheduledAssessments) {
+    const color = scheduleColor(assessment)
+    const keys = getDateRangeKeys(assessment.scheduled_date, assessment.assessment_ends)
+    for (const key of keys) {
+      if (!map[key]) map[key] = hexToRgb(color)
+    }
+  }
+  return map
+})
+
 const calendarCells = computed(() => {
   const monthStart = new Date(currentMonthDate.value.getFullYear(), currentMonthDate.value.getMonth(), 1)
   const startDay = (monthStart.getDay() + 6) % 7
@@ -265,6 +306,7 @@ const calendarCells = computed(() => {
       assessments,
       previewAssessments: assessments.slice(0, 2),
       moreCount: Math.max(0, assessments.length - 2),
+      tintColor: dateRangeTints.value[dateKey] || '',
     })
   }
   return cells

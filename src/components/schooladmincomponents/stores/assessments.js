@@ -334,7 +334,16 @@ export const useAssessmentsStore = defineStore('assessments', {
       this.error = null
       try {
         const data = await getTeacherAssessments(params)
-        this.assessments = (Array.isArray(data) ? data : (data?.data ?? [])).map(normalizeAssessment)
+        const apiRecords = Array.isArray(data) ? data : (data?.data ?? [])
+        // Merge in locally-scheduled assessments (see the Assessment Schedule
+        // workflow — no backend endpoint exists for these yet, §_persistLocalWorkflow)
+        // so the calendar the school admin builds is also visible to teachers.
+        const localRecords = readWorkflowState().schedules
+        const byId = new Map()
+        ;[...apiRecords, ...localRecords].map(normalizeAssessment).forEach((item) => {
+          if (item?.id != null) byId.set(String(item.id), item)
+        })
+        this.assessments = Array.from(byId.values())
       } catch (error) {
         this.error = error?.message || 'Failed to load assessments.'
         this.assessments = []

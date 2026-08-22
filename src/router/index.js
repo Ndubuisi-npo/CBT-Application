@@ -35,6 +35,7 @@ import TeachersDashboard from '../components/teacherscomponent/pages/TeachersDas
 import TeachersQuestionBank from '../components/teacherscomponent/pages/QuestionBank.vue'
 import TeachersQuestionCreatePage from '../components/teacherscomponent/pages/QuestionCreatePage.vue'
 import TeacherAssessmentsPage from '../components/teacherscomponent/pages/TeacherAssessmentsPage.vue'
+import TeachersCalendarPage from '../components/teacherscomponent/pages/CalendarPage.vue'
 import TeacherAssessmentPage from '../components/teacherscomponent/pages/TeacherAssessmentPage.vue'
 import TeachersTopicsPage from '../components/teacherscomponent/pages/TopicsPage.vue'
 import TeachersResultsPage from '../components/teacherscomponent/pages/ResultsPage.vue'
@@ -131,6 +132,7 @@ const routes = [
 
           { path: 'topics', name: 'TeachersTopicsPage', component: TeachersTopicsPage },
 
+          { path: 'calendar', name: 'TeachersCalendarPage', component: TeachersCalendarPage },
           { path: 'assessments', name: 'TeachersAssessments', component: TeacherAssessmentsPage },
           { path: 'assessments/:id', name: 'TeachersAssessmentDetail', component: TeacherAssessmentPage, props: true },
 

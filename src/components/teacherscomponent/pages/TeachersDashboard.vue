@@ -87,6 +87,9 @@
       </div>
     </div>
 
+    <!-- Assessment schedule (set by school admin, read-only here) -->
+    <ScheduleCalendarPreview />
+
     <!-- Main content grid -->
     <div class="grid gap-6 xl:grid-cols-3">
 
@@ -248,6 +251,7 @@ import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   CheckCircle2,
+  CalendarDays,
   ChevronRight,
   ClipboardList,
   FilePen,
@@ -257,6 +261,7 @@ import {
   Zap,
 } from 'lucide-vue-next'
 import AppButton from '../../shared/AppButton.vue'
+import ScheduleCalendarPreview from '../components/ScheduleCalendarPreview.vue'
 import { useTeacherExamsStore } from '../stores/exams'
 import { useSchoolAdminUiStore } from '../../schooladmincomponents/stores/ui'
 import { getAuthUser, getDisplayName } from '../../../js/lib/auth'
@@ -312,13 +317,15 @@ const statusBadgeClass = (status) => {
 }
 
 const quickActions = [
-  { label: 'Assessments', to: '/teachers/assessments', icon: ClipboardList },
+  { label: 'Submissions', to: '/teachers/assessments', icon: ClipboardList },
+  { label: 'Calendar', to: '/teachers/calendar', icon: CalendarDays },
   { label: 'Question Bank', to: '/teachers/questions', icon: FileQuestion },
   { label: 'Students', to: '/teachers/students', icon: Users },
 ]
 
 const shortcutLinks = [
-  { label: 'All Assessments', to: '/teachers/assessments', icon: ClipboardList },
+  { label: 'All Submissions', to: '/teachers/assessments', icon: ClipboardList },
+  { label: 'Calendar', to: '/teachers/calendar', icon: CalendarDays },
   { label: 'Question Bank', to: '/teachers/questions', icon: FileQuestion },
   { label: 'My Students', to: '/teachers/students', icon: Users },
   { label: 'Settings', to: '/teachers/settings', icon: FilePen },

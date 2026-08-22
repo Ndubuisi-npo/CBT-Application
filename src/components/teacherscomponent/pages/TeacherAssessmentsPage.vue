@@ -1,9 +1,9 @@
 <template>
   <div class="space-y-6">
     <AppPageHeader
-      title="Assessments"
+      title="Submissions"
       subtitle="Open active assessments and build your submission for each one."
-      eyebrow="Assessments"
+      eyebrow="Submissions"
     />
 
     <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -47,7 +47,8 @@
                 <AppBadge :label="getAssessmentStatusLabel(assessment)" :variant="getStatusVariant(assessment.status)" />
               </td>
               <td class="px-5 py-4">
-                <div class="flex justify-end">
+                <div class="flex justify-end gap-2">
+                  <AppButton text="Add Submission" variant="ghost" size="sm" @click="openSubmissionModal(assessment)" />
                   <AppButton text="Open" variant="outline" size="sm" @click="openAssessment(assessment.id)" />
                 </div>
               </td>
@@ -73,11 +74,20 @@
             <AppBadge :label="getAssessmentStatusLabel(assessment)" :variant="getStatusVariant(assessment.status)" />
           </template>
           <template #actions>
-            <AppButton text="Open" variant="outline" size="sm" @click="openAssessment(assessment.id)" />
+            <div class="flex flex-wrap gap-2">
+              <AppButton text="Add Submission" variant="ghost" size="sm" @click="openSubmissionModal(assessment)" />
+              <AppButton text="Open" variant="outline" size="sm" @click="openAssessment(assessment.id)" />
+            </div>
           </template>
         </ResponsiveDataCard>
       </div>
     </section>
+
+    <QuestionSubmissionModal
+      :show="showSubmissionModal"
+      :assessment="submissionTarget"
+      @close="closeSubmissionModal"
+    />
   </div>
 </template>
 
@@ -91,12 +101,15 @@ import AppPageHeader from '../../shared/AppPageHeader.vue'
 import AppSelect from '../../shared/AppSelect.vue'
 import ResponsiveDataCard from '../../shared/ResponsiveDataCard.vue'
 import SkeletonRows from '../../schooladmincomponents/components/SkeletonRows.vue'
+import QuestionSubmissionModal from '../components/QuestionSubmissionModal.vue'
 import { useAssessmentsStore, getStatusVariant, getAssessmentStatusLabel } from '../../schooladmincomponents/stores/assessments'
 
 const router = useRouter()
 const store = useAssessmentsStore()
 const searchQuery = ref('')
 const filterClassLevel = ref('')
+const showSubmissionModal = ref(false)
+const submissionTarget = ref(null)
 
 const classLevelOptions = computed(() => store.classLevelOptions)
 
@@ -125,6 +138,10 @@ const visibleAssessments = computed(() => {
     // Drafts aren't visible/actionable for teachers yet — nothing to build
     // against until an admin opens the assessment (§4/§9).
     .filter((assessment) => (assessment.status || '').toLowerCase() !== 'draft')
+    // Assessment Schedule stubs (calendar-only, not yet opened for teacher
+    // submissions) don't have a real lifecycle `status` — keep them on the
+    // schedule calendar only, not in this actionable list.
+    .filter((assessment) => !assessment.__workflowLocal || assessment.status)
     .filter((assessment) => {
       const matchesSearch = query ? `${assessment.title || ''}`.toLowerCase().includes(query) : true
       const levelId = assessment.class_level_id ?? assessment.classLevelId
@@ -134,4 +151,13 @@ const visibleAssessments = computed(() => {
 })
 
 const openAssessment = (id) => router.push(`/teachers/assessments/${id}`)
+
+const openSubmissionModal = (assessment) => {
+  submissionTarget.value = assessment
+  showSubmissionModal.value = true
+}
+const closeSubmissionModal = () => {
+  showSubmissionModal.value = false
+  submissionTarget.value = null
+}
 </script>
