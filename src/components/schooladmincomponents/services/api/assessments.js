@@ -67,56 +67,151 @@ export async function deleteAssessment(id) {
   }
 }
 
-/* Transitions. All are body-less except reopen (see §4/§7). The timing windows
- * they gate on (submission_closes_at, student_starts_at/ends_at) are captured
- * at create/edit time because PATCH is draft-only — there is no way to set them
- * once the assessment leaves draft. */
+/* Transitions. Body-less except reopen. These now target the SCHEDULE
+ * (the occurrence), not the assessment definition — the definition has no
+ * lifecycle of its own (§5.2 of the refactor spec). "Open" no longer exists
+ * as an action: creating a schedule opens its question window immediately. */
 
-export async function openAssessment(id) {
+export async function closeSubmissions(scheduleId) {
   try {
-    return await apiFetch(`/api/assessments/${id}/open`, { method: 'POST' })
-  } catch (error) {
-    throw new Error(extractErrorMessage(error, 'Unable to open assessment.'))
-  }
-}
-
-export async function closeSubmissions(id) {
-  try {
-    return await apiFetch(`/api/assessments/${id}/close-submissions`, { method: 'POST' })
+    return await apiFetch(`/api/assessment-schedules/${scheduleId}/close-submissions`, { method: 'POST' })
   } catch (error) {
     throw new Error(extractErrorMessage(error, 'Unable to close submissions.'))
   }
 }
 
-export async function reopenAssessment(id, payload) {
+/** payload: { question_submission_ends: future ISO } */
+export async function reopenSubmissions(scheduleId, payload) {
   try {
-    return await apiFetch(`/api/assessments/${id}/reopen`, {
+    return await apiFetch(`/api/assessment-schedules/${scheduleId}/reopen`, {
       method: 'POST',
       body: JSON.stringify(payload),
     })
   } catch (error) {
-    throw new Error(extractErrorMessage(error, 'Unable to reopen assessment.'))
+    throw new Error(extractErrorMessage(error, 'Unable to reopen submissions.'))
   }
 }
 
-export async function activateAssessment(id) {
+export async function activateSchedule(scheduleId) {
   try {
-    return await apiFetch(`/api/assessments/${id}/activate`, { method: 'POST' })
+    return await apiFetch(`/api/assessment-schedules/${scheduleId}/activate`, { method: 'POST' })
   } catch (error) {
-    throw new Error(extractErrorMessage(error, 'Unable to activate assessment.'))
+    throw new Error(extractErrorMessage(error, 'Unable to activate schedule.'))
   }
 }
 
-export async function completeAssessment(id) {
+export async function completeSchedule(scheduleId) {
   try {
-    return await apiFetch(`/api/assessments/${id}/complete`, { method: 'POST' })
+    return await apiFetch(`/api/assessment-schedules/${scheduleId}/complete`, { method: 'POST' })
   } catch (error) {
-    throw new Error(extractErrorMessage(error, 'Unable to complete assessment.'))
+    throw new Error(extractErrorMessage(error, 'Unable to complete schedule.'))
   }
 }
 
 /* --------------------------------------------------------------------------
- * Teacher submissions
+ * Schedules — the dated, lifecycle-bearing occurrence of an assessment
+ * (§5.2). One per assessment per term. Creating one opens the question
+ * window immediately; only question_submission_ends is required.
+ * ------------------------------------------------------------------------ */
+
+export async function getSchedules(assessmentId) {
+  try {
+    return await apiFetch(`/api/assessments/${assessmentId}/schedules`)
+  } catch (error) {
+    throw new Error(extractErrorMessage(error, 'Unable to fetch schedules.'))
+  }
+}
+
+/** payload: { question_submission_ends, assessment_starts?, assessment_ends? } */
+export async function createSchedule(assessmentId, payload) {
+  try {
+    return await apiFetch(`/api/assessments/${assessmentId}/schedules`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
+  } catch (error) {
+    throw new Error(extractErrorMessage(error, 'Unable to create schedule.'))
+  }
+}
+
+export async function getSchedule(scheduleId) {
+  try {
+    return await apiFetch(`/api/assessment-schedules/${scheduleId}`)
+  } catch (error) {
+    throw new Error(extractErrorMessage(error, 'Unable to fetch schedule.'))
+  }
+}
+
+/** payload: any subset of { question_submission_ends, assessment_starts, assessment_ends } — draft-only, 409 otherwise. */
+export async function updateSchedule(scheduleId, payload) {
+  try {
+    return await apiFetch(`/api/assessment-schedules/${scheduleId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    })
+  } catch (error) {
+    throw new Error(extractErrorMessage(error, 'Unable to update schedule.'))
+  }
+}
+
+export async function deleteSchedule(scheduleId) {
+  try {
+    return await apiFetch(`/api/assessment-schedules/${scheduleId}`, { method: 'DELETE' })
+  } catch (error) {
+    throw new Error(extractErrorMessage(error, 'Unable to delete schedule.'))
+  }
+}
+
+/* --------------------------------------------------------------------------
+ * Schedule subjects — the exam calendar (§5.3): per-subject slots inside a
+ * schedule's master window. Every approved subject needs one before the
+ * schedule can be activated. Not surfaced in the UI yet — wired here so it's
+ * ready to hook up.
+ * ------------------------------------------------------------------------ */
+
+export async function getScheduleSubjects(scheduleId) {
+  try {
+    return await apiFetch(`/api/assessment-schedules/${scheduleId}/schedule-subjects`)
+  } catch (error) {
+    throw new Error(extractErrorMessage(error, 'Unable to fetch the exam calendar.'))
+  }
+}
+
+/** payload: { subject_id, starts_at, ends_at, duration_minutes? } */
+export async function createScheduleSubject(scheduleId, payload) {
+  try {
+    return await apiFetch(`/api/assessment-schedules/${scheduleId}/schedule-subjects`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
+  } catch (error) {
+    throw new Error(extractErrorMessage(error, 'Unable to add subject slot.'))
+  }
+}
+
+export async function updateScheduleSubject(scheduleId, slotId, payload) {
+  try {
+    return await apiFetch(`/api/assessment-schedules/${scheduleId}/schedule-subjects/${slotId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    })
+  } catch (error) {
+    throw new Error(extractErrorMessage(error, 'Unable to update subject slot.'))
+  }
+}
+
+export async function deleteScheduleSubject(scheduleId, slotId) {
+  try {
+    return await apiFetch(`/api/assessment-schedules/${scheduleId}/schedule-subjects/${slotId}`, { method: 'DELETE' })
+  } catch (error) {
+    throw new Error(extractErrorMessage(error, 'Unable to remove subject slot.'))
+  }
+}
+
+/* --------------------------------------------------------------------------
+ * Teacher submissions — now scoped to a SCHEDULE, not the assessment
+ * definition (§5.4: table is teacher_submissions, FK is
+ * assessment_schedule_id).
  * ------------------------------------------------------------------------ */
 
 export async function getTeacherAssessments(params = {}) {
@@ -128,19 +223,18 @@ export async function getTeacherAssessments(params = {}) {
 }
 
 /**
- * There is no `/my-submission` endpoint. The teacher UI models one submission
- * per assessment, so we list the assessment's submissions and pick the one
- * owned by the authenticated teacher. When we can identify the user but find no
- * match, the teacher simply has no submission yet (return null → show the
- * create form). Only when we cannot identify the user at all do we fall back to
- * the first item, trusting the teacher-scoped visibility rule (§7).
+ * There is no `/my-submission` endpoint. The teacher UI models one
+ * submission per schedule, so we list the schedule's submissions and pick
+ * the one owned by the authenticated teacher. When we can identify the user
+ * but find no match, the teacher simply has no submission yet (return null
+ * → show the create form).
  *
  * NOTE: confirm the user↔teacher id mapping with the backend — teacher_id may
  * live in a different id space than the auth user id.
  */
-export async function getMySubmission(assessmentId) {
+export async function getMySubmission(scheduleId) {
   try {
-    const list = await getSubmissions(assessmentId)
+    const list = await getSubmissions(scheduleId)
     const submissions = Array.isArray(list) ? list : (list?.data ?? [])
     if (!submissions.length) return null
 
@@ -177,9 +271,10 @@ export async function getMySubmission(assessmentId) {
   }
 }
 
-export async function createSubmission(assessmentId, payload) {
+/** payload: { subject_id, title, description? } */
+export async function createSubmission(scheduleId, payload) {
   try {
-    return await apiFetch(`/api/assessments/${assessmentId}/submissions`, {
+    return await apiFetch(`/api/assessment-schedules/${scheduleId}/submissions`, {
       method: 'POST',
       body: JSON.stringify(payload),
     })
@@ -232,9 +327,9 @@ export async function submitForReview(submissionId) {
  * Admin review
  * ------------------------------------------------------------------------ */
 
-export async function getSubmissions(assessmentId, params = {}) {
+export async function getSubmissions(scheduleId, params = {}) {
   try {
-    return await apiFetch(`/api/assessments/${assessmentId}/submissions`, { params })
+    return await apiFetch(`/api/assessment-schedules/${scheduleId}/submissions`, { params })
   } catch (error) {
     throw new Error(extractErrorMessage(error, 'Unable to fetch submissions.'))
   }

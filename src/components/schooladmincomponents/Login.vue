@@ -10,8 +10,8 @@
 
       <div class="relative z-10 flex w-full flex-col justify-between p-16 xl:p-20">
         <div class="flex items-center gap-4">
-          <div class="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/20 bg-white/10 backdrop-blur-sm">
-            <Shield class="h-7 w-7 text-[#D4AF37]" />
+          <div class="flex h-20 w-20 items-center justify-center rounded-xl text-base font-semibold text-slate-900">
+            <img src="/public/educbt.png" alt="EduCBT Logo" class="h-full w-full object-contain rounded-xl">
           </div>
           <div>
             <p class="text-sm font-semibold uppercase tracking-[0.26em] text-[#D4AF37]">Admin Portal</p>
@@ -52,8 +52,8 @@
           :class="showForgotPassword ? '-translate-x-full opacity-0 absolute' : 'translate-x-0 opacity-100 relative'"
         >
           <div class="mb-10 text-center">
-            <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-[#0B1F3A] text-white shadow-lg shadow-[#0B1F3A]/20">
-              <School class="h-8 w-8 text-[#D4AF37]" />
+            <div class="mx-auto flex h-20 w-20 items-center justify-center rounded-xl text-base font-semibold text-slate-900">
+              <img src="/public/educbt.png" alt="EduCBT Logo" class="h-full w-full object-contain rounded-xl">
             </div>
 
             <h2 class="mt-6 text-4xl font-semibold tracking-tight text-slate-900">Welcome back</h2>

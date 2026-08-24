@@ -249,7 +249,7 @@ const classLevelOptions = computed(() => assessmentStore.classLevelOptions)
 const sessionOptions = computed(() => assessmentStore.sessionOptions)
 const classArmOptions = computed(() => classArmsStore.classArms.map((arm) => ({ label: arm.name || arm.title || arm.label || `Arm ${arm.id}`, value: arm.id })))
 const activeTermLabel = computed(() => assessmentStore.activeTermLabel)
-const hasSubmissionConfig = computed(() => !!assessmentStore.selectedAssessment?.submission_configuration)
+const hasSubmissionConfig = computed(() => !!assessmentStore.selectedAssessment?.schedule_id)
 const submissionConfigStatus = computed(() => hasSubmissionConfig.value ? 'Configured' : 'Not configured')
 
 const formatLocalDateKey = (value) => {

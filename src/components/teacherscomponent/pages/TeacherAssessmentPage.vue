@@ -224,13 +224,15 @@ const questionCount = computed(() => questions.value.length || submission.value?
 const subjectOptions = computed(() => store.subjectOptions)
 
 const submissionStatus = computed(() => (submission.value?.status || 'draft').toLowerCase())
-const deadline = computed(() => assessment.value?.submission_closes_at ?? assessment.value?.submissionClosesAt ?? null)
+const deadline = computed(() => assessment.value?.question_submission_ends || null)
 
-// Editing is allowed while the window is open and the submission is either a
-// fresh draft or has been sent back for changes. `changes_requested` naturally
-// re-enables the builder; `submitted`/`approved` lock it (§4).
+// Editing is allowed while the question window is open and the submission is
+// either a fresh draft or has been sent back for changes. `changes_requested`
+// naturally re-enables the builder; `submitted`/`approved` lock it (§4).
 const editable = computed(() =>
-  !deadlinePassed.value && ['draft', 'changes_requested'].includes(submissionStatus.value)
+  !deadlinePassed.value &&
+  (assessment.value?.question_submission_status ?? 'open') === 'open' &&
+  ['draft', 'changes_requested'].includes(submissionStatus.value)
 )
 const assessmentCap = computed(() => assessment.value?.total_marks ?? assessment.value?.totalMarks ?? 0)
 const canAddQuestion = computed(() => editable.value && marksUsed.value < assessmentCap.value)

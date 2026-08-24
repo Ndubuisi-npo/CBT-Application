@@ -7,11 +7,13 @@ import {
   createAssessment as apiCreateAssessment,
   updateAssessment as apiUpdateAssessment,
   deleteAssessment as apiDeleteAssessment,
-  openAssessment as apiOpenAssessment,
+  getSchedules,
+  createSchedule as apiCreateSchedule,
+  updateSchedule as apiUpdateSchedule,
   closeSubmissions as apiCloseSubmissions,
-  reopenAssessment as apiReopenAssessment,
-  activateAssessment as apiActivateAssessment,
-  completeAssessment as apiCompleteAssessment,
+  reopenSubmissions as apiReopenSubmissions,
+  activateSchedule as apiActivateSchedule,
+  completeSchedule as apiCompleteSchedule,
   getMySubmission,
   createSubmission as apiCreateSubmission,
   updateSubmission as apiUpdateSubmission,
@@ -79,8 +81,6 @@ export const getSubmissionStatusVariant = (status) => {
   }
 }
 
-const STORAGE_KEY = 'sa_assessment_workflow_v1'
-
 const toOptions = (list, labelKey = 'name', valueKey = 'id') =>
   (Array.isArray(list) ? list : []).map((item) => ({
     label: item[labelKey] ?? item.title ?? item.label ?? String(item[valueKey]),
@@ -102,61 +102,71 @@ const toInputDateTime = (value) => {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
 }
 
-const normalizeAssessment = (assessment) => {
-  const submission = assessment?.submission_configuration || assessment?.submissionConfiguration || null
-  const scheduledDate =
-    assessment?.scheduled_date ||
-    assessment?.scheduledDate ||
-    assessment?.assessment_date ||
-    assessment?.assessmentDate ||
-    assessment?.created_at ||
-    assessment?.createdAt ||
-    ''
-
+/**
+ * The UI works with one flat "assessment" object that carries both the
+ * Assessment DEFINITION (title/description/marks/class) and its current
+ * SCHEDULE's dates/statuses (§1/§5.2 of the refactor spec split these into
+ * two real resources). This flattens a schedule onto its parent definition
+ * so the calendar/forms don't need to change shape — `schedule_id` is kept
+ * so store actions know which schedule to call.
+ */
+const flattenScheduleOntoAssessment = (assessment, schedule) => {
+  if (!schedule) {
+    return {
+      ...assessment,
+      schedule_id: assessment?.schedule_id ?? null,
+      scheduled_date: assessment?.scheduled_date ?? '',
+      question_submission_ends: assessment?.question_submission_ends ?? '',
+      assessment_starts: assessment?.assessment_starts ?? '',
+      assessment_ends: assessment?.assessment_ends ?? '',
+      question_submission_status: assessment?.question_submission_status ?? 'open',
+      assessment_status: assessment?.assessment_status ?? 'draft',
+      academic_session_id: assessment?.academic_session_id ?? '',
+      term_id: assessment?.term_id ?? '',
+    }
+  }
+  const scheduledDate = schedule.assessment_starts || schedule.question_submission_ends || ''
   return {
     ...assessment,
+    schedule_id: schedule.id,
     scheduled_date: scheduledDate,
-    scheduledDate: scheduledDate,
-    created_at: assessment?.created_at ?? assessment?.createdAt ?? scheduledDate,
-    createdAt: assessment?.createdAt ?? assessment?.created_at ?? scheduledDate,
-    session_id: assessment?.session_id ?? assessment?.sessionId ?? '',
-    class_level_id: assessment?.class_level_id ?? assessment?.classLevelId ?? '',
-    class_arm_id: assessment?.class_arm_id ?? assessment?.classArmId ?? '',
-    term_id: assessment?.term_id ?? assessment?.termId ?? submission?.term_id ?? submission?.termId ?? '',
-    question_submission_ends: assessment?.question_submission_ends ?? assessment?.questionSubmissionEnds ?? submission?.question_submission_ends ?? submission?.questionSubmissionEnds ?? '',
-    assessment_starts: assessment?.assessment_starts ?? assessment?.assessmentStarts ?? submission?.assessment_starts ?? submission?.assessmentStarts ?? '',
-    assessment_ends: assessment?.assessment_ends ?? assessment?.assessmentEnds ?? submission?.assessment_ends ?? submission?.assessmentEnds ?? '',
-    question_submission_status: assessment?.question_submission_status ?? assessment?.questionSubmissionStatus ?? submission?.question_submission_status ?? submission?.questionSubmissionStatus ?? 'open',
-    assessment_status: assessment?.assessment_status ?? assessment?.assessmentStatus ?? submission?.assessment_status ?? submission?.assessmentStatus ?? 'pending',
-    submission_configuration: submission
-      ? {
-          ...submission,
-          question_submission_ends: submission.question_submission_ends ?? submission.questionSubmissionEnds ?? '',
-          assessment_starts: submission.assessment_starts ?? submission.assessmentStarts ?? '',
-          assessment_ends: submission.assessment_ends ?? submission.assessmentEnds ?? '',
-          question_submission_status: submission.question_submission_status ?? submission.questionSubmissionStatus ?? 'open',
-          assessment_status: submission.assessment_status ?? submission.assessmentStatus ?? 'pending',
-        }
-      : null,
-    __workflowLocal: assessment?.__workflowLocal ?? false,
+    scheduledDate,
+    academic_session_id: schedule.academic_session_id ?? schedule.academicSessionId ?? schedule.academicSession?.id ?? '',
+    term_id: schedule.term_id ?? schedule.termId ?? schedule.term?.id ?? '',
+    question_submission_ends: schedule.question_submission_ends ?? schedule.questionSubmissionEnds ?? '',
+    assessment_starts: schedule.assessment_starts ?? schedule.assessmentStarts ?? '',
+    assessment_ends: schedule.assessment_ends ?? schedule.assessmentEnds ?? '',
+    question_submission_status: (schedule.question_submission_status ?? schedule.questionSubmissionStatus ?? 'open').toLowerCase(),
+    assessment_status: (schedule.assessment_status ?? schedule.assessmentStatus ?? 'draft').toLowerCase(),
   }
 }
 
-const readWorkflowState = () => {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return { schedules: [] }
-    const parsed = JSON.parse(raw)
-    return { schedules: Array.isArray(parsed?.schedules) ? parsed.schedules : [] }
-  } catch {
-    return { schedules: [] }
-  }
-}
+const normalizeAssessment = (assessment) => ({
+  ...assessment,
+  class_level_id: assessment?.class_level_id ?? assessment?.classLevelId ?? '',
+  class_arm_id: assessment?.class_arm_id ?? assessment?.classArmId ?? '',
+  total_marks: assessment?.total_marks ?? assessment?.totalMarks ?? 0,
+  duration_minutes: assessment?.duration_minutes ?? assessment?.durationMinutes ?? null,
+  description: assessment?.description ?? assessment?.instructions ?? '',
+  schedule_id: assessment?.schedule_id ?? null,
+  scheduled_date: assessment?.scheduled_date ?? '',
+  question_submission_ends: assessment?.question_submission_ends ?? '',
+  assessment_starts: assessment?.assessment_starts ?? '',
+  assessment_ends: assessment?.assessment_ends ?? '',
+  question_submission_status: assessment?.question_submission_status ?? 'open',
+  assessment_status: assessment?.assessment_status ?? 'draft',
+})
 
-const writeWorkflowState = (schedules) => {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ schedules }))
-  } catch {}
+/** Pick the schedule to surface on the flat object when an assessment has more than one: prefer the one still in play. */
+const pickRelevantSchedule = (schedules) => {
+  if (!schedules?.length) return null
+  const byPriority = (s) => {
+    const status = (s.assessment_status ?? s.assessmentStatus ?? '').toLowerCase()
+    if (status === 'draft') return 0
+    if (status === 'active') return 1
+    return 2 // completed
+  }
+  return [...schedules].sort((a, b) => byPriority(a) - byPriority(b))[0]
 }
 
 export const useAssessmentsStore = defineStore('assessments', {
@@ -215,19 +225,6 @@ export const useAssessmentsStore = defineStore('assessments', {
       } catch {}
     },
 
-    _persistLocalWorkflow() {
-      const localRecords = this.assessments.filter((item) => item.__workflowLocal)
-      writeWorkflowState(localRecords)
-    },
-
-    _mergeLocalWorkflow() {
-      const local = readWorkflowState().schedules.map(normalizeAssessment)
-      if (!local.length) return
-      const byId = new Map(this.assessments.map((item) => [String(item.id), item]))
-      local.forEach((item) => byId.set(String(item.id), item))
-      this.assessments = Array.from(byId.values())
-    },
-
     getAssessmentById(id) {
       return this.assessments.find((item) => String(item.id) === String(id)) || null
     },
@@ -261,7 +258,6 @@ export const useAssessmentsStore = defineStore('assessments', {
       this.refData.subjects = Array.isArray(subjects) ? subjects : []
       this.refData.classLevels = Array.isArray(classLevels) ? classLevels : []
       this.refData.sessions = Array.isArray(sessions) ? sessions : []
-      this._mergeLocalWorkflow()
     },
 
     async fetchClassArms(classLevelId) {
@@ -292,18 +288,35 @@ export const useAssessmentsStore = defineStore('assessments', {
       return this.refData.terms
     },
 
+    /**
+     * Assessment definitions don't carry dates — the calendar needs each
+     * one's current schedule merged on. `/api/assessments` doesn't
+     * guarantee `schedules[]` is eager-loaded, so this fetches schedules
+     * per assessment (bounded by however many assessments exist) and
+     * flattens the most relevant one onto the display object (§5.1/§5.2).
+     */
+    async _hydrateWithSchedules(definitions) {
+      const withSchedules = await Promise.all(
+        definitions.map(async (assessment) => {
+          try {
+            const data = await getSchedules(assessment.id)
+            const schedules = Array.isArray(data) ? data : (data?.data ?? [])
+            return flattenScheduleOntoAssessment(normalizeAssessment(assessment), pickRelevantSchedule(schedules))
+          } catch {
+            return normalizeAssessment(assessment)
+          }
+        })
+      )
+      return withSchedules
+    },
+
     async fetchAssessments(params = {}) {
       this.loading = true
       this.error = null
       try {
         const data = await getAssessments(params)
         const apiRecords = Array.isArray(data) ? data : (data?.data ?? [])
-        const localRecords = readWorkflowState().schedules
-        const byId = new Map()
-        ;[...apiRecords, ...localRecords].map(normalizeAssessment).forEach((item) => {
-          if (item?.id != null) byId.set(String(item.id), item)
-        })
-        this.assessments = Array.from(byId.values())
+        this.assessments = await this._hydrateWithSchedules(apiRecords)
       } catch (error) {
         this.error = error?.message || 'Failed to load assessments.'
         this.assessments = []
@@ -317,7 +330,16 @@ export const useAssessmentsStore = defineStore('assessments', {
       this.loading = true
       this.error = null
       try {
-        this.current = normalizeAssessment(await getAssessment(id))
+        const definition = normalizeAssessment(await getAssessment(id))
+        let schedule = null
+        try {
+          const data = await getSchedules(id)
+          schedule = pickRelevantSchedule(Array.isArray(data) ? data : (data?.data ?? []))
+        } catch {
+          // No schedules yet, or the endpoint failed — definition still loads.
+        }
+        this.current = flattenScheduleOntoAssessment(definition, schedule)
+        this.assessments = this.assessments.map((item) => (String(item.id) === String(id) ? { ...item, ...this.current } : item))
         return this.current
       } catch (error) {
         this.error = error?.message || 'Failed to load assessment.'
@@ -335,15 +357,7 @@ export const useAssessmentsStore = defineStore('assessments', {
       try {
         const data = await getTeacherAssessments(params)
         const apiRecords = Array.isArray(data) ? data : (data?.data ?? [])
-        // Merge in locally-scheduled assessments (see the Assessment Schedule
-        // workflow — no backend endpoint exists for these yet, §_persistLocalWorkflow)
-        // so the calendar the school admin builds is also visible to teachers.
-        const localRecords = readWorkflowState().schedules
-        const byId = new Map()
-        ;[...apiRecords, ...localRecords].map(normalizeAssessment).forEach((item) => {
-          if (item?.id != null) byId.set(String(item.id), item)
-        })
-        this.assessments = Array.from(byId.values())
+        this.assessments = await this._hydrateWithSchedules(apiRecords)
       } catch (error) {
         this.error = error?.message || 'Failed to load assessments.'
         this.assessments = []
@@ -374,6 +388,7 @@ export const useAssessmentsStore = defineStore('assessments', {
         this._toast('Assessment updated', 'The assessment was updated successfully.', 'success')
         return record
       } catch (error) {
+        // 409: definitions freeze while any schedule is active/completed.
         this.error = error?.message || 'Failed to update assessment.'
         this._toast('Unable to update assessment', this.error)
         throw error
@@ -384,7 +399,6 @@ export const useAssessmentsStore = defineStore('assessments', {
       try {
         await apiDeleteAssessment(id)
         this.assessments = this.assessments.filter((item) => String(item.id) !== String(id))
-        this._persistLocalWorkflow()
         this._toast('Assessment deleted', 'The assessment was removed.', 'success')
       } catch (error) {
         this.error = error?.message || 'Failed to delete assessment.'
@@ -393,23 +407,17 @@ export const useAssessmentsStore = defineStore('assessments', {
       }
     },
 
-    async openAssessment(id) {
+    /* ------------------------------------------------------------------ *
+     * Lifecycle — real actions all target the SCHEDULE now, not the
+     * definition. "Open" no longer exists: creating a schedule opens its
+     * question window immediately (§2 Locked Decision #6).
+     * ------------------------------------------------------------------ */
+    async closeSubmissions(assessmentId) {
+      const scheduleId = this.getAssessmentById(assessmentId)?.schedule_id
+      if (!scheduleId) throw new Error('This assessment has not been scheduled yet.')
       try {
-        const record = await apiOpenAssessment(id)
-        this._applyAssessment(id, record, { status: 'open' })
-        this._toast('Assessment opened', 'Teachers can now build submissions.', 'success')
-        return record
-      } catch (error) {
-        this.error = error?.message || 'Failed to open assessment.'
-        this._toast('Unable to open assessment', this.error)
-        throw error
-      }
-    },
-
-    async closeSubmissions(id) {
-      try {
-        const record = await apiCloseSubmissions(id)
-        this._applyAssessment(id, record, { status: 'submissions_closed' })
+        const record = await apiCloseSubmissions(scheduleId)
+        this._applySchedule(assessmentId, record, { question_submission_status: 'closed' })
         this._toast('Submissions closed', 'The teacher submission window is closed.', 'success')
         return record
       } catch (error) {
@@ -419,36 +427,45 @@ export const useAssessmentsStore = defineStore('assessments', {
       }
     },
 
-    async reopenAssessment(id, payload) {
+    /** payload: { question_submission_ends: future ISO } */
+    async reopenSubmissions(assessmentId, payload) {
+      const scheduleId = this.getAssessmentById(assessmentId)?.schedule_id
+      if (!scheduleId) throw new Error('This assessment has not been scheduled yet.')
       try {
-        const record = await apiReopenAssessment(id, payload)
-        this._applyAssessment(id, record, { status: 'open' })
-        this._toast('Assessment reopened', 'Teachers can submit again before the new deadline.', 'success')
+        const record = await apiReopenSubmissions(scheduleId, payload)
+        this._applySchedule(assessmentId, record, { question_submission_status: 'open', ...payload })
+        this._toast('Submissions reopened', 'Teachers can submit again before the new deadline.', 'success')
         return record
       } catch (error) {
-        this.error = error?.message || 'Failed to reopen assessment.'
-        this._toast('Unable to reopen assessment', this.error)
+        this.error = error?.message || 'Failed to reopen submissions.'
+        this._toast('Unable to reopen submissions', this.error)
         throw error
       }
     },
 
-    async activateAssessment(id) {
+    async activateAssessment(assessmentId) {
+      const scheduleId = this.getAssessmentById(assessmentId)?.schedule_id
+      if (!scheduleId) throw new Error('This assessment has not been scheduled yet.')
       try {
-        const record = await apiActivateAssessment(id)
-        this._applyAssessment(id, record, { status: 'active' })
-        this._toast('Assessment activated', 'Approved submissions are now live exams for students.', 'success')
+        const record = await apiActivateSchedule(scheduleId)
+        this._applySchedule(assessmentId, record, { assessment_status: 'active' })
+        this._toast('Schedule activated', 'Approved submissions are now live exams for students.', 'success')
         return record
       } catch (error) {
+        // 409: question window still open / master window not set / no approved
+        // submission / a subject is missing its slot (§6.2).
         this.error = error?.message || 'Failed to activate assessment.'
         this._toast('Unable to activate assessment', this.error)
         throw error
       }
     },
 
-    async completeAssessment(id) {
+    async completeAssessment(assessmentId) {
+      const scheduleId = this.getAssessmentById(assessmentId)?.schedule_id
+      if (!scheduleId) throw new Error('This assessment has not been scheduled yet.')
       try {
-        const record = await apiCompleteAssessment(id)
-        this._applyAssessment(id, record, { status: 'completed' })
+        const record = await apiCompleteSchedule(scheduleId)
+        this._applySchedule(assessmentId, record, { assessment_status: 'completed' })
         this._toast('Assessment completed', 'The assessment is now marked complete.', 'success')
         return record
       } catch (error) {
@@ -458,67 +475,118 @@ export const useAssessmentsStore = defineStore('assessments', {
       }
     },
 
-    _applyAssessment(id, record, fallbackPatch = {}) {
-      const patch = record && record.id ? normalizeAssessment(record) : fallbackPatch
-      this.assessments = this.assessments.map((item) => (String(item.id) === String(id) ? normalizeAssessment({ ...item, ...patch }) : item))
-      if (this.current?.id === id) this.current = normalizeAssessment({ ...this.current, ...patch })
-      this._persistLocalWorkflow()
+    _applySchedule(assessmentId, record, fallbackPatch = {}) {
+      const existing = this.getAssessmentById(assessmentId) || (this.current?.id === assessmentId ? this.current : null)
+      const patch = record && record.id
+        ? flattenScheduleOntoAssessment(existing || {}, record)
+        : { ...existing, ...fallbackPatch }
+      this.assessments = this.assessments.map((item) => (String(item.id) === String(assessmentId) ? { ...item, ...patch } : item))
+      if (this.current?.id === assessmentId) this.current = { ...this.current, ...patch }
     },
 
+    /**
+     * "Save Assessment" on the calendar page. Creates the DEFINITION only
+     * (§5.1 body: title/class_level_id/class_arm_id/total_marks/
+     * duration_minutes/description) — session/term/dates don't belong here,
+     * they live on the schedule (§2 Locked Decision #4). The assessment
+     * won't appear dated on the calendar until a schedule is added via
+     * saveSubmissionConfiguration below.
+     */
     async createScheduledAssessment(payload) {
-      const record = normalizeAssessment({
-        ...payload,
-        id: payload.id || `local-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        __workflowLocal: true,
-      })
-      this.assessments = [record, ...this.assessments.filter((item) => String(item.id) !== String(record.id))]
-      this.selectAssessment(record.id)
-      this._persistLocalWorkflow()
-      this._toast('Assessment scheduled', 'The assessment was added to your calendar.', 'success')
-      return record
+      try {
+        const record = normalizeAssessment(
+          await apiCreateAssessment({
+            title: payload.title,
+            class_level_id: payload.class_level_id,
+            class_arm_id: payload.class_arm_id || null,
+            total_marks: payload.total_marks,
+            duration_minutes: payload.duration_minutes || null,
+            description: payload.description || null,
+          })
+        )
+        this.assessments = [record, ...this.assessments.filter((item) => String(item.id) !== String(record.id))]
+        this.selectAssessment(record.id)
+        this._toast('Assessment created', 'Set its question window below to put it on the calendar.', 'success')
+        return record
+      } catch (error) {
+        this.error = error?.message || 'Failed to create assessment.'
+        this._toast('Unable to create assessment', this.error)
+        throw error
+      }
     },
 
+    /** Editing an existing assessment — definition fields only; PATCH /api/assessments/{id}. */
     async saveScheduledAssessment(id, payload) {
-      const existing = this.getAssessmentById(id)
-      const record = normalizeAssessment({ ...(existing || {}), ...payload, id, __workflowLocal: true })
-      this.assessments = this.assessments.map((item) => (String(item.id) === String(id) ? record : item))
-      this.selectAssessment(record.id)
-      this._persistLocalWorkflow()
-      this._toast('Assessment updated', 'The schedule changes were saved.', 'success')
-      return record
+      try {
+        const record = normalizeAssessment(
+          await apiUpdateAssessment(id, {
+            title: payload.title,
+            class_level_id: payload.class_level_id,
+            class_arm_id: payload.class_arm_id || null,
+            total_marks: payload.total_marks,
+            duration_minutes: payload.duration_minutes || null,
+            description: payload.description || null,
+          })
+        )
+        const existing = this.getAssessmentById(id)
+        const merged = { ...existing, ...record }
+        this.assessments = this.assessments.map((item) => (String(item.id) === String(id) ? merged : item))
+        if (this.current?.id === id) this.current = merged
+        this.selectAssessment(id)
+        this._toast('Assessment updated', 'The assessment was updated successfully.', 'success')
+        return merged
+      } catch (error) {
+        // 409: definition frozen while a schedule is active/completed.
+        this.error = error?.message || 'Failed to update assessment.'
+        this._toast('Unable to update assessment', this.error)
+        throw error
+      }
     },
 
+    /**
+     * The "Continue to Submission Setup" panel — this is the real Schedule
+     * resource (§5.2). Creates the schedule (opens the question window
+     * immediately) the first time, PATCHes it thereafter. session_id/term_id
+     * are never sent — the backend resolves them from the current term.
+     */
     async saveSubmissionConfiguration(assessmentId, payload) {
       const existing = this.getAssessmentById(assessmentId)
       if (!existing) throw new Error('Assessment not found.')
-      const submission = {
-        id: existing.submission_configuration?.id || `submission-${assessmentId}`,
-        assessment_id: assessmentId,
+
+      const body = {
         question_submission_ends: payload.question_submission_ends,
-        assessment_starts: payload.assessment_starts,
-        assessment_ends: payload.assessment_ends,
-        question_submission_status: payload.question_submission_status || 'open',
-        assessment_status: payload.assessment_status || 'pending',
+        ...(payload.assessment_starts ? { assessment_starts: payload.assessment_starts } : {}),
+        ...(payload.assessment_ends ? { assessment_ends: payload.assessment_ends } : {}),
       }
-      const record = normalizeAssessment({
-        ...existing,
-        submission_configuration: submission,
-        question_submission_ends: submission.question_submission_ends,
-        assessment_starts: submission.assessment_starts,
-        assessment_ends: submission.assessment_ends,
-        question_submission_status: submission.question_submission_status,
-        assessment_status: submission.assessment_status,
-        __workflowLocal: true,
-      })
-      this.assessments = this.assessments.map((item) => (String(item.id) === String(assessmentId) ? record : item))
-      this._persistLocalWorkflow()
-      this._toast('Submission configuration saved', 'The submission workflow is now attached to the assessment.', 'success')
-      return record.submission_configuration
+
+      try {
+        const record = existing.schedule_id
+          ? await apiUpdateSchedule(existing.schedule_id, body)
+          : await apiCreateSchedule(assessmentId, body)
+
+        const merged = flattenScheduleOntoAssessment(existing, record)
+        this.assessments = this.assessments.map((item) => (String(item.id) === String(assessmentId) ? merged : item))
+        if (this.current?.id === assessmentId) this.current = merged
+        this.selectAssessment(assessmentId)
+        this._toast('Submission configuration saved', 'The question window is now open for teachers.', 'success')
+        return merged
+      } catch (error) {
+        // 422: past deadline / bad window. 409: already scheduled this term /
+        // no current term configured / schedule no longer in draft.
+        this.error = error?.message || 'Failed to save submission configuration.'
+        this._toast('Unable to save submission configuration', this.error)
+        throw error
+      }
     },
 
     async fetchMySubmission(assessmentId) {
+      const scheduleId = this.getAssessmentById(assessmentId)?.schedule_id || (this.current?.id === assessmentId ? this.current.schedule_id : null)
+      if (!scheduleId) {
+        this.currentSubmission = null
+        return null
+      }
       try {
-        this.currentSubmission = await getMySubmission(assessmentId)
+        this.currentSubmission = await getMySubmission(scheduleId)
         return this.currentSubmission
       } catch {
         this.currentSubmission = null
@@ -527,8 +595,14 @@ export const useAssessmentsStore = defineStore('assessments', {
     },
 
     async createSubmission(assessmentId, payload) {
+      const scheduleId = this.getAssessmentById(assessmentId)?.schedule_id || (this.current?.id === assessmentId ? this.current.schedule_id : null)
+      if (!scheduleId) {
+        this.error = 'This assessment has not been scheduled yet.'
+        this._toast('Unable to create submission', this.error)
+        throw new Error(this.error)
+      }
       try {
-        this.currentSubmission = await apiCreateSubmission(assessmentId, payload)
+        this.currentSubmission = await apiCreateSubmission(scheduleId, payload)
         this._toast('Submission created', 'You can now add questions.', 'success')
         return this.currentSubmission
       } catch (error) {
@@ -625,8 +699,14 @@ export const useAssessmentsStore = defineStore('assessments', {
     async fetchSubmissions(assessmentId) {
       this.loading = true
       this.error = null
+      const scheduleId = this.getAssessmentById(assessmentId)?.schedule_id
+      if (!scheduleId) {
+        this.submissions = []
+        this.loading = false
+        return
+      }
       try {
-        const data = await getSubmissions(assessmentId)
+        const data = await getSubmissions(scheduleId)
         this.submissions = Array.isArray(data) ? data : (data?.data ?? [])
       } catch (error) {
         this.error = error?.message || 'Failed to load submissions.'

@@ -37,7 +37,7 @@
               <td class="px-5 py-4"><AppBadge :label="assessmentStatusLabel(assessment)" :variant="assessmentVariant(assessment)" /></td>
               <td class="px-5 py-4">
                 <div class="flex flex-wrap justify-end gap-2">
-                  <AppButton :text="assessment.submission_configuration ? 'Edit Submission' : 'Add Submission'" variant="primary" size="sm" @click="editAssessment(assessment)" />
+                  <AppButton :text="assessment.schedule_id ? 'Edit Submission' : 'Add Submission'" variant="primary" size="sm" @click="editAssessment(assessment)" />
                 </div>
               </td>
             </tr>
@@ -64,7 +64,7 @@
       </div>
 
       <form class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm" @submit.prevent="saveSubmission">
-        <h3 class="text-lg font-semibold text-slate-900">{{ selectedAssessment.submission_configuration ? 'Edit Submission' : 'Add Submission' }}</h3>
+        <h3 class="text-lg font-semibold text-slate-900">{{ selectedAssessment.schedule_id ? 'Edit Submission' : 'Add Submission' }}</h3>
         <div class="mt-4 space-y-4">
           <AppInput v-model="form.question_submission_ends" label="question_submission_ends" type="datetime-local" required :error="errors.question_submission_ends" />
           <AppInput v-model="form.assessment_starts" label="assessment_starts" type="datetime-local" required :error="errors.assessment_starts" />
@@ -77,7 +77,7 @@
         </div>
         <p v-if="saveError" class="mt-4 rounded-2xl border border-rose-100 bg-rose-50 px-3 py-2 text-sm text-rose-700">{{ saveError }}</p>
         <div class="mt-4 flex flex-wrap gap-2">
-          <AppButton :text="selectedAssessment.submission_configuration ? 'Update Submission' : 'Create Submission'" variant="primary" :processing="saving" type="submit" />
+          <AppButton :text="selectedAssessment.schedule_id ? 'Update Submission' : 'Create Submission'" variant="primary" :processing="saving" type="submit" />
           <AppButton text="Continue to Submission Setup" variant="outline" @click="router.push(`/school-admin/assessment-submissions/${selectedAssessment.id}`)" />
         </div>
       </form>
