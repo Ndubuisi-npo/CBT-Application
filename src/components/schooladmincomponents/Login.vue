@@ -11,7 +11,7 @@
       <div class="relative z-10 flex w-full flex-col justify-between p-16 xl:p-20">
         <div class="flex items-center gap-4">
           <div class="flex h-20 w-20 items-center justify-center rounded-xl text-base font-semibold text-slate-900">
-            <img src="/public/educbt.png" alt="EduCBT Logo" class="h-full w-full object-contain rounded-xl">
+            <img src="/educbt.png" alt="EduCBT Logo" class="h-full w-full object-contain rounded-xl">
           </div>
           <div>
             <p class="text-sm font-semibold uppercase tracking-[0.26em] text-[#D4AF37]">Admin Portal</p>
