@@ -53,7 +53,7 @@
         >
           <div class="mb-10 text-center">
             <div class="mx-auto flex h-20 w-20 items-center justify-center rounded-xl text-base font-semibold text-slate-900">
-              <img src="/public/educbt.png" alt="EduCBT Logo" class="h-full w-full object-contain rounded-xl">
+              <img src="/educbt.png" alt="EduCBT Logo" class="h-full w-full object-contain rounded-xl">
             </div>
 
             <h2 class="mt-6 text-4xl font-semibold tracking-tight text-slate-900">Welcome back</h2>

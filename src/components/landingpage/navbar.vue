@@ -3,7 +3,7 @@
     <div class="mx-auto flex h-16 items-center justify-between px-4 shadow-sm sm:h-20 sm:px-6 lg:px-20">
       <div class="flex items-center gap-3">
         <div class="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-base font-semibold text-slate-900">
-          <img src="/public/educbt.png" alt="EduCBT Logo" class="h-full w-full object-contain rounded-xl">
+          <img src="/educbt.png" alt="EduCBT Logo" class="h-full w-full object-contain rounded-xl">
         </div>
         <span class="text-base font-semibold text-slate-900">EduCBT</span>
       </div>
