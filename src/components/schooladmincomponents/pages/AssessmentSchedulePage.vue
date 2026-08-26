@@ -1,22 +1,28 @@
 <template>
   <div class="space-y-6">
     <AppPageHeader
-      title="Assessment Schedule"
-      subtitle="Plan assessments on a calendar, then continue straight into submission setup."
+      title="Assessment schedule"
+      subtitle="Plan assessments on the calendar, then move straight into submission windows and exam slots."
       eyebrow="Assessment Management"
     >
       <template #actions>
-        <AppButton text="New Assessment" variant="primary" size="sm" :icon="Plus" @click="openNewAssessment" />
+        <AppButton text="New assessment" variant="primary" size="sm" :icon="Plus" @click="openNewAssessment" />
       </template>
     </AppPageHeader>
 
-    <section class="grid overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm lg:grid-cols-[minmax(0,1fr)_280px]">
+    <div class="-mt-2 mb-2 flex flex-wrap items-center gap-2">
+      <AppBadge v-if="assessmentStore.activeTermLabel" :label="`Active Term (${assessmentStore.activeTermLabel})`" variant="success" />
+      <AppBadge :label="`${scheduledAssessments.length} assessments this session`" variant="primary" />
+    </div>
+
+    <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px] 2xl:grid-cols-[minmax(0,1fr)_420px]">
+    <section class="rounded-3xl border border-slate-200 bg-white shadow-sm">
       <div class="min-w-0 p-4 sm:p-6">
         <div class="mb-5 flex flex-wrap items-end justify-between gap-4">
           <div>
             <p class="text-[11px] font-semibold uppercase tracking-[0.28em] text-[#D4AF37]">Academic Session</p>
             <h2 class="mt-1 text-4xl font-light tracking-tight text-[#0B1F3A] sm:text-5xl">{{ monthLabel }}</h2>
-            <p class="mt-2 text-sm text-slate-500">{{ scheduledAssessments.length }} assessments scheduled · click a date to work on it</p>
+            <p class="mt-2 text-sm text-slate-500">{{ assessmentsThisMonth.length }} assessments this month · select a date to plan it</p>
           </div>
           <div class="flex items-center gap-2">
             <AppButton text="Today" variant="outline" size="sm" @click="goToday" />
@@ -92,59 +98,76 @@
           </button>
         </div>
       </div>
+    </section>
 
-      <aside class="border-t border-slate-200 bg-[#FBFAF7] lg:border-l lg:border-t-0">
-        <div class="border-b border-slate-200 p-5">
-          <p class="text-[10px] font-semibold uppercase tracking-[0.25em] text-[#D4AF37]">{{ selectedDateLabel.weekday }}</p>
-          <h2 class="mt-1 text-2xl font-light tracking-tight text-[#0B1F3A]">{{ selectedDateLabel.date }}</h2>
-          <p class="mt-1 text-xs text-slate-500">
-            {{ selectedDayAssessments.length ? `${selectedDayAssessments.length} scheduled assessment${selectedDayAssessments.length === 1 ? '' : 's'}` : 'No scheduled assessments' }}
-          </p>
-        </div>
+    <!-- Sticky day panel -->
+    <section class="rounded-3xl border border-slate-200 bg-white shadow-sm xl:sticky xl:top-24 xl:self-start">
+      <div class="border-b border-slate-100 px-5 py-4">
+        <p class="text-[11px] font-semibold uppercase tracking-[0.28em] text-[#D4AF37]">{{ selectedWeekday }}</p>
+        <h2 class="mt-1 text-3xl font-light tracking-tight text-[#0B1F3A]">{{ selectedDateLabel }}</h2>
+        <p class="mt-1 text-sm text-slate-500">
+          {{ selectedDateAssessments.length }} scheduled {{ selectedDateAssessments.length === 1 ? 'assessment' : 'assessments' }}
+        </p>
+      </div>
 
-        <div class="border-b border-slate-200 p-4">
-          <div v-if="selectedDayAssessments.length" class="space-y-3">
-            <article v-for="assessment in selectedDayAssessments" :key="assessment.id" class="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
-              <div class="flex items-start gap-2">
-                <span class="mt-1.5 h-2 w-2 shrink-0 rounded-full" :style="{ backgroundColor: scheduleColor(assessment) }" />
-                <div class="min-w-0">
-                  <h3 class="text-sm font-semibold leading-5 text-[#0B1F3A]">{{ assessment.title || 'Assessment' }}</h3>
-                  <p class="mt-1 text-xs text-slate-500">{{ assessment.class_level?.name || assessment.class_level_name || assessment.classLevelName || 'Class level' }}</p>
-                </div>
+      <AppEmptyState
+        v-if="!selectedDateAssessments.length"
+        :icon="CalendarDaysIcon"
+        title="This day is clear"
+        description="Create an assessment for this date and configure its submission window."
+      >
+        <template #actions>
+          <AppButton text="New assessment" variant="primary" size="sm" :icon="Plus" @click="openNewAssessment" />
+        </template>
+      </AppEmptyState>
+
+      <ul v-else class="divide-y divide-slate-100">
+        <li v-for="assessment in selectedDateAssessments" :key="assessment.id" class="px-5 py-4">
+          <div class="flex items-start gap-3">
+            <span class="mt-1.5 h-2 w-2 shrink-0 rounded-full" :style="{ backgroundColor: scheduleColor(assessment) }" />
+            <div class="min-w-0 flex-1">
+              <h3 class="text-sm font-semibold leading-snug text-slate-900">{{ assessment.title }}</h3>
+              <p class="mt-1 text-xs text-slate-500">
+                {{ classText(assessment) }} · {{ assessment.total_marks ?? assessment.totalMarks ?? '—' }} marks · {{ papersCountLabel(assessment) }}
+              </p>
+              <div class="mt-3 flex flex-wrap items-center gap-2">
+                <AppBadge :label="getAssessmentStatusLabel(assessment.assessment_status)" :variant="getStatusVariant(assessment.assessment_status)" dot />
+                <AppBadge :label="assessment.question_submission_status === 'open' ? 'Questions open' : 'Questions closed'" :variant="assessment.question_submission_status === 'open' ? 'success' : 'default'" />
               </div>
-              <div class="mt-3 flex flex-wrap items-center gap-1.5">
-                <AppBadge label="Pending setup" variant="warning" />
-                <AppBadge label="Questions open" variant="success" />
+              <div class="mt-3 flex flex-wrap items-center gap-3">
+                <AppButton text="Configure" variant="outline" size="xs" @click="openAssessment(assessment)" />
+                <button type="button" class="text-xs font-medium text-slate-500 hover:text-[#0B1F3A]" @click="goToSubmissions(assessment)">Submissions</button>
               </div>
-              <button type="button" class="mt-3 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-semibold text-[#0B1F3A] transition hover:border-[#0B1F3A]" @click="openAssessment(assessment)">
-                Configure
-              </button>
-            </article>
+            </div>
           </div>
-          <button v-else type="button" class="w-full rounded-xl border border-dashed border-slate-300 px-3 py-5 text-center text-xs font-semibold text-slate-500 transition hover:border-[#0B1F3A] hover:text-[#0B1F3A]" @click="openNewAssessment">
-            + Schedule an assessment
-          </button>
-        </div>
+        </li>
+      </ul>
 
-        <div class="p-4">
-          <h3 class="mb-3 text-xs font-semibold text-[#0B1F3A]">Next up</h3>
-          <div v-if="nextAssessments.length" class="divide-y divide-slate-200 rounded-xl border border-slate-200 bg-white">
-            <button v-for="assessment in nextAssessments" :key="assessment.id" type="button" class="flex w-full items-center gap-3 p-3 text-left transition first:rounded-t-xl last:rounded-b-xl hover:bg-slate-50" @click="openAssessment(assessment)">
-              <span class="flex h-9 w-9 shrink-0 flex-col items-center justify-center rounded-lg bg-slate-50 text-[9px] font-semibold uppercase leading-3 text-slate-500">
-                <span>{{ formatShortMonth(assessment.scheduled_date) }}</span>
-                <span class="text-xs text-[#0B1F3A]">{{ formatDay(assessment.scheduled_date) }}</span>
+      <div class="border-t border-slate-100 px-5 py-4">
+        <p class="mb-3 text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Next up</p>
+        <p v-if="!nextUpAssessments.length" class="text-sm text-slate-400">Nothing else scheduled.</p>
+        <ul v-else class="space-y-1">
+          <li v-for="assessment in nextUpAssessments" :key="assessment.id">
+            <button
+              type="button"
+              class="flex w-full items-center gap-3 rounded-xl px-2 py-2.5 text-left transition hover:bg-slate-50"
+              @click="jumpToDate(assessment)"
+            >
+              <span class="flex w-11 shrink-0 flex-col items-center rounded-lg bg-slate-50 py-1.5">
+                <span class="text-[10px] font-semibold uppercase text-slate-400">{{ monthAbbr(assessment.scheduled_date) }}</span>
+                <span class="text-sm font-bold text-slate-900">{{ dayNum(assessment.scheduled_date) }}</span>
               </span>
               <span class="min-w-0 flex-1">
-                <span class="block truncate text-xs font-semibold text-[#0B1F3A]">{{ assessment.title || 'Assessment' }}</span>
-                <span class="mt-0.5 block truncate text-[11px] text-slate-500">{{ assessment.class_level?.name || assessment.class_level_name || assessment.classLevelName || 'Class level' }}</span>
+                <span class="block truncate text-sm font-medium text-slate-900">{{ assessment.title }}</span>
+                <span class="block truncate text-xs text-slate-400">{{ classText(assessment) }}</span>
               </span>
               <ChevronRight class="h-4 w-4 shrink-0 text-slate-300" />
             </button>
-          </div>
-          <p v-else class="text-xs text-slate-400">No upcoming assessments.</p>
-        </div>
-      </aside>
+          </li>
+        </ul>
+      </div>
     </section>
+    </div>
 
     <AssessmentScheduleDrawer
       :show="drawerOpen"
@@ -157,15 +180,20 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
-import { ChevronRight, Pencil, Plus } from 'lucide-vue-next'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
+import { CalendarDays as CalendarDaysIcon, ChevronRight, Pencil, Plus } from 'lucide-vue-next'
+import AppBadge from '../../shared/AppBadge.vue'
 import AppButton from '../../shared/AppButton.vue'
+import AppEmptyState from '../../shared/AppEmptyState.vue'
 import AppPageHeader from '../../shared/AppPageHeader.vue'
 import AssessmentScheduleDrawer from '../components/AssessmentScheduleDrawer.vue'
 import { useSchoolAdminSessionsStore } from '../stores/sessions'
-import { useAssessmentsStore } from '../stores/assessments'
+import { useAssessmentsStore, getAssessmentStatusLabel, getStatusVariant } from '../stores/assessments'
+import { getSubmissions } from '../services/api/assessments'
 import { getScheduleColor, hexToRgb, getDateRangeKeys } from '../../../js/lib/scheduleColors'
 
+const router = useRouter()
 const assessmentStore = useAssessmentsStore()
 const sessionsStore = useSchoolAdminSessionsStore()
 
@@ -182,18 +210,6 @@ const currentMonthDate = computed(() => new Date(assessmentStore.currentMonth))
 const monthLabel = computed(() => currentMonthDate.value.toLocaleDateString(undefined, { month: 'long', year: 'numeric' }))
 const selectedDate = computed(() => assessmentStore.selectedDate)
 const scheduledAssessments = computed(() => assessmentStore.scheduledAssessments)
-const selectedDayAssessments = computed(() => scheduledAssessments.value.filter((assessment) => formatLocalDateKey(assessment.scheduled_date || assessment.scheduledDate) === selectedDate.value))
-const selectedDateLabel = computed(() => {
-  const date = selectedDate.value ? new Date(`${selectedDate.value}T00:00:00`) : today
-  return {
-    weekday: date.toLocaleDateString(undefined, { weekday: 'long' }).toUpperCase(),
-    date: date.toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' }),
-  }
-})
-const nextAssessments = computed(() => scheduledAssessments.value
-  .filter((assessment) => formatLocalDateKey(assessment.scheduled_date || assessment.scheduledDate) > selectedDate.value)
-  .sort((left, right) => String(left.scheduled_date || left.scheduledDate).localeCompare(String(right.scheduled_date || right.scheduledDate)))
-  .slice(0, 3))
 
 const formatLocalDateKey = (value) => {
   const date = value instanceof Date ? value : new Date(value)
@@ -201,9 +217,6 @@ const formatLocalDateKey = (value) => {
   const pad = (n) => String(n).padStart(2, '0')
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
 }
-
-const formatShortMonth = (value) => new Date(value).toLocaleDateString(undefined, { month: 'short' }).toUpperCase()
-const formatDay = (value) => new Date(value).getDate()
 
 // Map every date a scheduled assessment's window touches (scheduled_date
 // through assessment_ends, inclusive) to that assessment's color, so a
@@ -251,6 +264,72 @@ const calendarCells = computed(() => {
 
 const isSelected = (dateKey) => selectedDate.value === dateKey
 
+const assessmentsThisMonth = computed(() => {
+  const monthKey = `${currentMonthDate.value.getFullYear()}-${String(currentMonthDate.value.getMonth() + 1).padStart(2, '0')}`
+  return scheduledAssessments.value.filter((a) => (a.scheduled_date || '').startsWith(monthKey))
+})
+
+const selectedDateObj = computed(() => {
+  if (!selectedDate.value) return today
+  const date = new Date(`${selectedDate.value}T00:00:00`)
+  return Number.isNaN(date.getTime()) ? today : date
+})
+const selectedWeekday = computed(() => selectedDateObj.value.toLocaleDateString(undefined, { weekday: 'long' }))
+const selectedDateLabel = computed(() => selectedDateObj.value.toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' }))
+const selectedDateAssessments = computed(() => assessmentStore.selectedDateAssessments)
+
+// Next four scheduled assessments strictly after the selected date.
+const nextUpAssessments = computed(() => {
+  const afterKey = selectedDate.value || formatLocalDateKey(today)
+  return scheduledAssessments.value
+    .filter((a) => a.scheduled_date && a.scheduled_date > afterKey)
+    .sort((a, b) => (a.scheduled_date > b.scheduled_date ? 1 : -1))
+    .slice(0, 4)
+})
+
+const classLevelName = (id, assessment) => assessmentStore.classLevelOptions.find((o) => String(o.value) === String(id))?.label || assessment?.classLevel?.name || assessment?.class_level?.name || ''
+const classArmName = (id, assessment) => assessmentStore.classArmOptions.find((o) => String(o.value) === String(id))?.label || assessment?.classArm?.name || assessment?.class_arm?.name || ''
+const classText = (a) => {
+  const levelId = a.class_level_id ?? a.classLevelId ?? a.classLevel?.id ?? a.class_level?.id
+  const armId = a.class_arm_id ?? a.classArmId
+  const level = classLevelName(levelId, a)
+  const arm = armId ? ` ${classArmName(armId, a)}` : ' (whole level)'
+  return `${level}${arm}`.trim() || '—'
+}
+
+// Papers-submitted count for the currently-selected assessment(s) only —
+// fetched on demand per selection rather than for every assessment on the
+// calendar, since there's no batch "submissions count per assessment"
+// endpoint and the selected-day list is always small (usually one item).
+const papersCounts = ref({})
+const papersCountLabel = (assessment) => {
+  const count = papersCounts.value[assessment.id]
+  return count === undefined ? 'loading papers…' : `${count} teacher ${count === 1 ? 'paper' : 'papers'}`
+}
+const loadPapersCounts = async (assessments) => {
+  await Promise.all(assessments.map(async (assessment) => {
+    if (papersCounts.value[assessment.id] !== undefined) return
+    if (!assessment.schedule_id) {
+      papersCounts.value = { ...papersCounts.value, [assessment.id]: 0 }
+      return
+    }
+    try {
+      const data = await getSubmissions(assessment.schedule_id)
+      const list = Array.isArray(data) ? data : (data?.data ?? [])
+      papersCounts.value = { ...papersCounts.value, [assessment.id]: list.length }
+    } catch {
+      papersCounts.value = { ...papersCounts.value, [assessment.id]: 0 }
+    }
+  }))
+}
+watch(selectedDateAssessments, (list) => { if (list.length) loadPapersCounts(list) }, { immediate: true })
+
+const monthAbbr = (value) => value ? new Date(`${value}T00:00:00`).toLocaleDateString(undefined, { month: 'short' }).toUpperCase() : ''
+const dayNum = (value) => value ? new Date(`${value}T00:00:00`).getDate() : ''
+
+const goToSubmissions = (assessment) => router.push(`/school-admin/assessments/${assessment.id}/submissions`)
+const jumpToDate = (assessment) => assessmentStore.selectDate(assessment.scheduled_date)
+
 const goToday = () => {
   const now = new Date()
   assessmentStore.setCurrentMonth(now)
@@ -265,9 +344,6 @@ const shiftMonth = (delta) => {
 
 const selectCell = (cell) => {
   assessmentStore.selectDate(cell.dateKey)
-  drawerDate.value = cell.date
-  drawerAssessment.value = cell.assessments[0] || null
-  drawerOpen.value = true
 }
 
 const openAssessment = (assessment) => {
@@ -301,5 +377,6 @@ onMounted(async () => {
     assessmentStore.fetchAssessments(),
   ])
   assessmentStore.setCurrentMonth(new Date())
+  if (!assessmentStore.selectedDate) assessmentStore.selectDate(today)
 })
 </script>

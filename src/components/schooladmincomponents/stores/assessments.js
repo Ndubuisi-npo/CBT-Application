@@ -130,7 +130,7 @@ const flattenScheduleOntoAssessment = (assessment, schedule) => {
       term_id: assessment?.term_id ?? '',
     }
   }
-  const scheduledDate = schedule.assessment_starts || schedule.question_submission_ends || ''
+  const scheduledDate = toDateKey(schedule.assessment_starts || schedule.question_submission_ends || '')
   return {
     ...assessment,
     schedule_id: schedule.id,
@@ -139,8 +139,8 @@ const flattenScheduleOntoAssessment = (assessment, schedule) => {
     __calendarOnly: false,
     class_level_id: schedule.class_level_id ?? schedule.classLevelId ?? schedule.classLevel?.id ?? assessment.class_level_id ?? '',
     class_arm_id: schedule.class_arm_id ?? schedule.classArmId ?? schedule.classArm?.id ?? assessment.class_arm_id ?? '',
-    classLevel: schedule.classLevel ?? assessment.classLevel,
-    classArm: schedule.classArm ?? assessment.classArm,
+    classLevel: schedule.classLevel ?? schedule.class_level ?? assessment.classLevel ?? assessment.class_level,
+    classArm: schedule.classArm ?? schedule.class_arm ?? assessment.classArm ?? assessment.class_arm,
     term: schedule.term ?? assessment.term,
     academicSession: schedule.academicSession ?? assessment.academicSession,
     academic_session_id: schedule.academic_session_id ?? schedule.academicSessionId ?? schedule.academicSession?.id ?? '',
@@ -226,7 +226,14 @@ export const useAssessmentsStore = defineStore('assessments', {
       return state.assessments.map(normalizeAssessment).filter((item) => toDateKey(item.scheduled_date) === key)
     },
     activeTermLabel: (state) => {
-      const currentTerm = state.refData.terms.find((term) => term.current || term.is_current || term.status === 'Current' || term.status === 'Active')
+      const sessionTerms = state.refData.sessions
+        .filter((session) => session.current || session.is_current)
+        .flatMap((session) => Array.isArray(session.terms) ? session.terms : [])
+      const assessmentTerms = state.assessments
+        .map((assessment) => assessment.term)
+        .filter(Boolean)
+      const currentTerm = [...state.refData.terms, ...sessionTerms, ...assessmentTerms]
+        .find((term) => term.current || term.is_current || term.status === 'Current' || term.status === 'Active')
       return currentTerm?.name || currentTerm?.title || currentTerm?.label || 'Active term'
     },
   },
