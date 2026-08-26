@@ -7,9 +7,13 @@ import {
   createAssessment as apiCreateAssessment,
   updateAssessment as apiUpdateAssessment,
   deleteAssessment as apiDeleteAssessment,
-  getSchedules,
   createSchedule as apiCreateSchedule,
   updateSchedule as apiUpdateSchedule,
+  deleteSchedule as apiDeleteSchedule,
+  getScheduleSubjects,
+  createScheduleSubject as apiCreateScheduleSubject,
+  updateScheduleSubject as apiUpdateScheduleSubject,
+  deleteScheduleSubject as apiDeleteScheduleSubject,
   closeSubmissions as apiCloseSubmissions,
   reopenSubmissions as apiReopenSubmissions,
   activateSchedule as apiActivateSchedule,
@@ -39,6 +43,7 @@ export const QUESTION_TYPES = [
 ]
 
 export const getStatusVariant = (status) => {
+  if (status && typeof status === 'object') status = status.assessment_status || status.assessmentStatus || status.status
   switch ((status || '').toLowerCase()) {
     case 'draft': return 'warning'
     case 'open':
@@ -50,7 +55,7 @@ export const getStatusVariant = (status) => {
 }
 
 export const getAssessmentStatusLabel = (assessment) => {
-  const status = (typeof assessment === 'string' ? assessment : assessment?.status || '').toLowerCase()
+  const status = (typeof assessment === 'string' ? assessment : assessment?.assessment_status || assessment?.assessmentStatus || assessment?.status || '').toLowerCase()
   switch (status) {
     case 'draft': return 'Draft'
     case 'open': return 'Open for Teachers'
@@ -131,6 +136,13 @@ const flattenScheduleOntoAssessment = (assessment, schedule) => {
     schedule_id: schedule.id,
     scheduled_date: scheduledDate,
     scheduledDate,
+    __calendarOnly: false,
+    class_level_id: schedule.class_level_id ?? schedule.classLevelId ?? schedule.classLevel?.id ?? assessment.class_level_id ?? '',
+    class_arm_id: schedule.class_arm_id ?? schedule.classArmId ?? schedule.classArm?.id ?? assessment.class_arm_id ?? '',
+    classLevel: schedule.classLevel ?? assessment.classLevel,
+    classArm: schedule.classArm ?? assessment.classArm,
+    term: schedule.term ?? assessment.term,
+    academicSession: schedule.academicSession ?? assessment.academicSession,
     academic_session_id: schedule.academic_session_id ?? schedule.academicSessionId ?? schedule.academicSession?.id ?? '',
     term_id: schedule.term_id ?? schedule.termId ?? schedule.term?.id ?? '',
     question_submission_ends: schedule.question_submission_ends ?? schedule.questionSubmissionEnds ?? '',
@@ -175,6 +187,7 @@ export const useAssessmentsStore = defineStore('assessments', {
     submissions: [],
     current: null,
     currentSubmission: null,
+    scheduleSubjects: [],
     refData: {
       subjects: [],
       classLevels: [],
@@ -290,24 +303,16 @@ export const useAssessmentsStore = defineStore('assessments', {
 
     /**
      * Assessment definitions don't carry dates — the calendar needs each
-     * one's current schedule merged on. `/api/assessments` doesn't
-     * guarantee `schedules[]` is eager-loaded, so this fetches schedules
-     * per assessment (bounded by however many assessments exist) and
-     * flattens the most relevant one onto the display object (§5.1/§5.2).
+     * one's current schedule merged on. The assessments endpoint includes
+     * `schedules[]`, so no per-assessment schedule request is needed.
      */
     async _hydrateWithSchedules(definitions) {
-      const withSchedules = await Promise.all(
-        definitions.map(async (assessment) => {
-          try {
-            const data = await getSchedules(assessment.id)
-            const schedules = Array.isArray(data) ? data : (data?.data ?? [])
-            return flattenScheduleOntoAssessment(normalizeAssessment(assessment), pickRelevantSchedule(schedules))
-          } catch {
-            return normalizeAssessment(assessment)
-          }
-        })
-      )
-      return withSchedules
+      return definitions.map((assessment) => {
+        const schedules = Array.isArray(assessment.schedules)
+          ? assessment.schedules
+          : (assessment.schedules?.data ?? [])
+        return flattenScheduleOntoAssessment(normalizeAssessment(assessment), pickRelevantSchedule(schedules))
+      })
     },
 
     async fetchAssessments(params = {}) {
@@ -331,13 +336,10 @@ export const useAssessmentsStore = defineStore('assessments', {
       this.error = null
       try {
         const definition = normalizeAssessment(await getAssessment(id))
-        let schedule = null
-        try {
-          const data = await getSchedules(id)
-          schedule = pickRelevantSchedule(Array.isArray(data) ? data : (data?.data ?? []))
-        } catch {
-          // No schedules yet, or the endpoint failed — definition still loads.
-        }
+        const schedules = Array.isArray(definition.schedules)
+          ? definition.schedules
+          : (definition.schedules?.data ?? [])
+        const schedule = pickRelevantSchedule(schedules)
         this.current = flattenScheduleOntoAssessment(definition, schedule)
         this.assessments = this.assessments.map((item) => (String(item.id) === String(id) ? { ...item, ...this.current } : item))
         return this.current
@@ -494,16 +496,20 @@ export const useAssessmentsStore = defineStore('assessments', {
      */
     async createScheduledAssessment(payload) {
       try {
-        const record = normalizeAssessment(
+        const createdRecord = normalizeAssessment(
           await apiCreateAssessment({
             title: payload.title,
-            class_level_id: payload.class_level_id,
-            class_arm_id: payload.class_arm_id || null,
             total_marks: payload.total_marks,
             duration_minutes: payload.duration_minutes || null,
             description: payload.description || null,
           })
         )
+        const record = {
+          ...createdRecord,
+          scheduled_date: payload.scheduled_date || '',
+          scheduledDate: payload.scheduled_date || '',
+          __calendarOnly: true,
+        }
         this.assessments = [record, ...this.assessments.filter((item) => String(item.id) !== String(record.id))]
         this.selectAssessment(record.id)
         this._toast('Assessment created', 'Set its question window below to put it on the calendar.', 'success')
@@ -521,8 +527,6 @@ export const useAssessmentsStore = defineStore('assessments', {
         const record = normalizeAssessment(
           await apiUpdateAssessment(id, {
             title: payload.title,
-            class_level_id: payload.class_level_id,
-            class_arm_id: payload.class_arm_id || null,
             total_marks: payload.total_marks,
             duration_minutes: payload.duration_minutes || null,
             description: payload.description || null,
@@ -552,8 +556,12 @@ export const useAssessmentsStore = defineStore('assessments', {
     async saveSubmissionConfiguration(assessmentId, payload) {
       const existing = this.getAssessmentById(assessmentId)
       if (!existing) throw new Error('Assessment not found.')
+      const classLevelId = payload.class_level_id ?? payload.classLevelId ?? existing.class_level_id ?? existing.classLevelId
+      if (!classLevelId) throw new Error('Class level is required to save the schedule.')
 
       const body = {
+        class_level_id: classLevelId,
+        ...(payload.class_arm_id ? { class_arm_id: payload.class_arm_id } : { class_arm_id: null }),
         question_submission_ends: payload.question_submission_ends,
         ...(payload.assessment_starts ? { assessment_starts: payload.assessment_starts } : {}),
         ...(payload.assessment_ends ? { assessment_ends: payload.assessment_ends } : {}),
@@ -577,6 +585,76 @@ export const useAssessmentsStore = defineStore('assessments', {
         this._toast('Unable to save submission configuration', this.error)
         throw error
       }
+    },
+
+    async deleteSchedule(assessmentId) {
+      const existing = this.getAssessmentById(assessmentId)
+      if (!existing?.schedule_id) throw new Error('This assessment has not been scheduled yet.')
+
+      try {
+        await apiDeleteSchedule(existing.schedule_id)
+        const cleared = {
+          ...existing,
+          schedule_id: null,
+          scheduled_date: '',
+          scheduledDate: '',
+          question_submission_ends: '',
+          assessment_starts: '',
+          assessment_ends: '',
+          question_submission_status: 'open',
+          assessment_status: 'draft',
+          academic_session_id: '',
+          term_id: '',
+        }
+        this.assessments = this.assessments.map((item) => (String(item.id) === String(assessmentId) ? cleared : item))
+        if (this.current?.id === assessmentId) this.current = cleared
+        this.selectedAssessmentId = null
+        this._toast('Schedule deleted', 'The assessment schedule was deleted.', 'success')
+        return cleared
+      } catch (error) {
+        this.error = error?.message || 'Failed to delete schedule.'
+        this._toast('Unable to delete schedule', this.error)
+        throw error
+      }
+    },
+
+    async fetchScheduleSubjects(assessmentId) {
+      const scheduleId = this.getAssessmentById(assessmentId)?.schedule_id
+      if (!scheduleId) {
+        this.scheduleSubjects = []
+        return []
+      }
+      try {
+        const data = await getScheduleSubjects(scheduleId)
+        this.scheduleSubjects = Array.isArray(data) ? data : (data?.data ?? [])
+      } catch (error) {
+        this.scheduleSubjects = []
+        throw error
+      }
+      return this.scheduleSubjects
+    },
+
+    async createScheduleSubject(assessmentId, payload) {
+      const scheduleId = this.getAssessmentById(assessmentId)?.schedule_id
+      if (!scheduleId) throw new Error('This assessment has not been scheduled yet.')
+      const record = await apiCreateScheduleSubject(scheduleId, payload)
+      this.scheduleSubjects = [...this.scheduleSubjects, record]
+      return record
+    },
+
+    async updateScheduleSubject(assessmentId, slotId, payload) {
+      const scheduleId = this.getAssessmentById(assessmentId)?.schedule_id
+      if (!scheduleId) throw new Error('This assessment has not been scheduled yet.')
+      const record = await apiUpdateScheduleSubject(scheduleId, slotId, payload)
+      this.scheduleSubjects = this.scheduleSubjects.map((slot) => (String(slot.id) === String(slotId) ? record : slot))
+      return record
+    },
+
+    async deleteScheduleSubject(assessmentId, slotId) {
+      const scheduleId = this.getAssessmentById(assessmentId)?.schedule_id
+      if (!scheduleId) throw new Error('This assessment has not been scheduled yet.')
+      await apiDeleteScheduleSubject(scheduleId, slotId)
+      this.scheduleSubjects = this.scheduleSubjects.filter((slot) => String(slot.id) !== String(slotId))
     },
 
     async fetchMySubmission(assessmentId) {

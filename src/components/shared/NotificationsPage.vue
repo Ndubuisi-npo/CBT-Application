@@ -15,7 +15,7 @@
 -->
 <template>
   <div class="min-h-screen bg-slate-50 px-4 py-6 sm:px-6 lg:px-8">
-    <div class="mx-auto max-w-5xl space-y-6">
+    <div class="space-y-6">
       <!-- Header -->
       <div class="flex flex-wrap items-center justify-between gap-4">
         <div>

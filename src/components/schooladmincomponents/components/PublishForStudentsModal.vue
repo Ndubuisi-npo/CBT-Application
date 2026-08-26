@@ -1,23 +1,32 @@
 <template>
-  <div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center">
-    <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" @click="$emit('close')"></div>
-    <div class="relative w-full max-w-md transform overflow-hidden rounded-lg bg-white shadow-xl transition-all">
-      <div class="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-6">
-        <div class="mb-4 flex items-center justify-between">
-          <h3 class="text-lg font-semibold text-slate-900">Publish for Students</h3>
-          <AppButton @click="$emit('close')" :icon="X" variant="ghost" class="text-slate-400 hover:text-slate-600" />
+  <div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div class="fixed inset-0 bg-slate-950/40 backdrop-blur-sm" @click="$emit('close')"></div>
+    <div class="relative w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl transition-all">
+      <div class="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5">
+        <div class="min-w-0">
+          <p class="text-xs font-semibold uppercase tracking-[0.28em] text-[#D4AF37]">Assessment lifecycle</p>
+          <h3 class="mt-0.5 text-xl font-semibold tracking-tight text-slate-900">Publish for students</h3>
+          <p class="mt-1 text-sm text-slate-500">
+            Choose the window during which students can take
+            <span class="font-medium text-slate-700">{{ assessment?.title }}</span>.
+          </p>
         </div>
+        <button
+          type="button"
+          class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+          aria-label="Close"
+          @click="$emit('close')"
+        >
+          <X class="h-4 w-4" />
+        </button>
+      </div>
 
-        <p class="mb-4 text-sm text-slate-500">
-          Choose the window during which students can take
-          <span class="font-medium text-slate-700">{{ assessment?.title }}</span>.
-        </p>
-
-        <form class="space-y-4" @submit.prevent="submit">
+      <form class="space-y-4 px-6 py-6" @submit.prevent="submit">
+        <div class="grid gap-4 sm:grid-cols-2">
           <AppInput
             v-model="startsAt"
             type="datetime-local"
-            label="Opens At"
+            label="Opens at"
             required
             :error="errors.startsAt"
             @blur="validate"
@@ -25,18 +34,18 @@
           <AppInput
             v-model="endsAt"
             type="datetime-local"
-            label="Closes At"
+            label="Closes at"
             required
             :error="errors.endsAt"
             @blur="validate"
           />
+        </div>
 
-          <div class="flex gap-2 pt-2">
-            <AppButton type="submit" text="Publish for Students" full-width variant="primary" />
-            <AppButton type="button" text="Cancel" variant="outline" @click="$emit('close')" />
-          </div>
-        </form>
-      </div>
+        <div class="flex gap-2 border-t border-slate-100 pt-5">
+          <AppButton type="button" text="Cancel" variant="outline" class="flex-1" @click="$emit('close')" />
+          <AppButton type="submit" text="Publish for students" variant="primary" class="flex-1" />
+        </div>
+      </form>
     </div>
   </div>
 </template>

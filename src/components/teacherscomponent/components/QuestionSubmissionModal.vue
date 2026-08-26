@@ -18,103 +18,60 @@
           </button>
         </div>
 
-        <!-- Existing submissions -->
-        <div v-if="loading" class="space-y-2">
-          <div v-for="i in 2" :key="i" class="h-20 animate-pulse rounded-2xl bg-slate-100" />
-        </div>
-        <div v-else-if="submissions.length" class="space-y-3">
-          <div
-            v-for="item in submissions"
-            :key="item.id"
-            class="rounded-2xl border border-slate-200 bg-white p-4"
-          >
-            <div class="flex flex-wrap items-start justify-between gap-2">
-              <div class="min-w-0">
-                <p class="text-sm font-semibold text-slate-900">{{ item.subject?.label || item.subject?.name || 'Subject' }}</p>
-                <p class="mt-0.5 text-xs text-slate-500">
-                  {{ item.session?.label || item.session?.name || '—' }} · {{ item.term?.label || item.term?.name || '—' }}
-                </p>
-              </div>
-              <AppBadge :label="getQuestionSubmissionStatusLabel(item.status)" :variant="getQuestionSubmissionStatusVariant(item.status)" />
-            </div>
-            <p class="mt-3 whitespace-pre-line text-sm text-slate-700">{{ item.question }}</p>
-            <p class="mt-2 text-xs text-slate-400">
-              Submitted {{ fmtDateTime(item.submitted_at) }}{{ item.teacher?.name ? ` by ${item.teacher.name}` : '' }}
-            </p>
-
-            <div v-if="item.reviews?.length" class="mt-3 space-y-2 border-t border-slate-100 pt-3">
-              <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Review history</p>
-              <div v-for="(review, index) in item.reviews" :key="index" class="rounded-xl bg-slate-50 px-3 py-2 text-xs text-slate-600">
-                <p class="font-medium text-slate-700">{{ review.reviewed_by || 'Reviewer' }} · {{ fmtDateTime(review.date) }}</p>
-                <p class="mt-1">{{ review.review }}</p>
+        <form class="space-y-4" @submit.prevent="submit">
+          <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Submission details</p>
+          <AppInput v-model="form.title" label="Title" placeholder="e.g. Mathematics Paper" required :error="errors.title" />
+          <AppSelect v-model="form.subjectId" label="Subject" placeholder="Select subject" required :options="subjectOptions" :error="errors.subjectId" />
+          <AppTextarea v-model="form.description" label="Description" placeholder="Describe this paper" :rows="3" />
+          <div class="rounded-2xl border border-slate-100 bg-slate-50 p-4 text-sm text-slate-600">
+            <p>Assessment total marks: <strong class="text-slate-900">{{ assessmentTotalMarks }}</strong></p>
+            <p class="mt-1">Questions currently selected: <strong class="text-slate-900">{{ totalMarks }}</strong></p>
+            <p class="mt-1 text-xs text-slate-500">The total marks of all questions cannot exceed the assessment total marks.</p>
+          </div>
+          <div v-if="submission" class="space-y-2">
+            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Submission questions</p>
+            <div v-for="question in questions" :key="question.id" class="flex items-start justify-between gap-3 rounded-xl border border-slate-200 p-3">
+              <p class="min-w-0 flex-1 text-sm text-slate-700">{{ question.content }}</p>
+              <div class="flex shrink-0 items-center gap-2">
+                <input v-model.number="question.marks" type="number" min="1" class="w-20 rounded-lg border border-slate-300 px-2 py-1 text-sm" :disabled="!editable" @change="updateQuestionMarks(question)" />
+                <AppButton text="Delete" variant="danger" size="xs" :disabled="!editable" @click="deleteSubmissionQuestion(question)" />
               </div>
             </div>
+            <p v-if="!questions.length" class="text-sm text-slate-500">No questions added yet.</p>
           </div>
-        </div>
-        <AppEmptyState v-else :icon="MessageSquareText" title="No submissions yet" description="Submit a question below to get started." />
-
-        <!-- New submission -->
-        <form class="mt-5 space-y-4 border-t border-slate-100 pt-5" @submit.prevent="submit">
-          <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">New submission</p>
-
-          <div class="grid gap-4 sm:grid-cols-2">
-            <AppSelect
-              v-model="form.sessionId"
-              label="Session"
-              placeholder="Select session"
-              required
-              :options="sessionOptions"
-              :error="errors.sessionId"
-              @update:modelValue="onSessionChange"
-            />
-            <AppSelect
-              v-model="form.termId"
-              label="Term"
-              placeholder="Select term"
-              required
-              :options="termOptions"
-              :disabled="!form.sessionId"
-              :error="errors.termId"
-            />
-          </div>
-
-          <AppSelect
-            v-model="form.subjectId"
-            label="Subject"
-            placeholder="Select subject"
-            required
-            :options="subjectOptions"
-            :error="errors.subjectId"
-          />
-
-          <AppTextarea v-model="form.question" label="Question" placeholder="Type the question you're submitting…" :rows="4" />
-          <p v-if="errors.question" class="text-xs text-red-600">{{ errors.question }}</p>
-
-          <div class="flex gap-2 pt-1">
-            <AppButton type="submit" text="Submit Question" full-width variant="primary" :processing="saving" />
+          <p v-if="errors.questions" class="text-xs text-red-600">{{ errors.questions }}</p>
+          <div class="flex flex-wrap gap-2">
+            <AppButton v-if="submission && editable" type="button" text="Select Questions" variant="outline" @click="showQuestionBank = true" />
+            <AppButton v-if="submission && editable" type="button" text="Submit for Review" variant="success" :disabled="!questions.length" :processing="submitting" @click="submitForReview" />
+            <AppButton v-else type="submit" text="Create Submission" variant="primary" :processing="saving" />
             <AppButton type="button" text="Close" variant="outline" @click="$emit('close')" />
           </div>
         </form>
+
+        <QuestionBankModal
+          :show="showQuestionBank"
+          :subject-id="form.subjectId"
+          :subject-label="subjectName"
+          :class-level-id="assessment?.class_level_id ?? assessment?.classLevelId"
+          :remaining-marks="Math.max(0, assessmentTotalMarks - totalMarks)"
+          :saving="addingQuestions"
+          @close="showQuestionBank = false"
+          @submit="addQuestions"
+        />
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed, reactive, watch } from 'vue'
-import { MessageSquareText, X } from 'lucide-vue-next'
-import AppBadge from '../../shared/AppBadge.vue'
+import { computed, reactive, ref, watch } from 'vue'
+import { X } from 'lucide-vue-next'
 import AppButton from '../../shared/AppButton.vue'
-import AppEmptyState from '../../shared/AppEmptyState.vue'
+import AppInput from '../../shared/AppInput.vue'
 import AppSelect from '../../shared/AppSelect.vue'
 import AppTextarea from '../../shared/AppTextarea.vue'
-import { fmtDateTime } from '../../../js/lib/helpers'
 import { useAssessmentsStore } from '../../schooladmincomponents/stores/assessments'
-import {
-  useQuestionSubmissionsStore,
-  getQuestionSubmissionStatusLabel,
-  getQuestionSubmissionStatusVariant,
-} from '../stores/questionSubmissions'
+import QuestionBankModal from './QuestionBankModal.vue'
 
 const props = defineProps({
   show: { type: Boolean, default: false },
@@ -123,58 +80,93 @@ const props = defineProps({
 const emit = defineEmits(['close'])
 
 const refStore = useAssessmentsStore()
-const store = useQuestionSubmissionsStore()
-
-const loading = computed(() => store.loading)
-const saving = computed(() => store.saving)
-const submissions = computed(() => store.submissionsFor(props.assessment?.id))
-
-const sessionOptions = computed(() => refStore.sessionOptions)
-const termOptions = computed(() => refStore.termOptions)
+const saving = ref(false)
+const submitting = ref(false)
+const addingQuestions = ref(false)
+const showQuestionBank = ref(false)
+const submission = computed(() => refStore.currentSubmission)
+const questions = computed(() => submission.value?.questions ?? submission.value?.submissionQuestions ?? [])
 const subjectOptions = computed(() => refStore.subjectOptions)
+const assessmentTotalMarks = computed(() => Number(props.assessment?.total_marks ?? props.assessment?.totalMarks ?? 0))
+const totalMarks = computed(() => questions.value.reduce((sum, question) => sum + Number(question.marks || 0), 0))
+const editable = computed(() => ['draft', 'changes_requested'].includes((submission.value?.status || 'draft').toLowerCase()))
+const subjectName = computed(() => subjectOptions.value.find((option) => String(option.value) === String(form.subjectId))?.label || 'this subject')
 
-const defaultForm = () => ({ sessionId: '', termId: '', subjectId: '', question: '' })
+const defaultForm = () => ({ title: '', subjectId: '', description: '' })
 const form = reactive(defaultForm())
-const errors = reactive({ sessionId: '', termId: '', subjectId: '', question: '' })
-const resetErrors = () => Object.assign(errors, { sessionId: '', termId: '', subjectId: '', question: '' })
-
-const onSessionChange = async (sessionId) => {
-  form.termId = ''
-  if (sessionId) await refStore.fetchTerms(sessionId)
-}
+const errors = reactive({ title: '', subjectId: '', questions: '' })
+const resetErrors = () => Object.assign(errors, { title: '', subjectId: '', questions: '' })
 
 watch(
   () => [props.show, props.assessment?.id],
   async ([show, assessmentId]) => {
     if (!show || !assessmentId) return
-    Object.assign(form, defaultForm())
+    Object.assign(form, { ...defaultForm(), subjectId: props.assessment?.subject_id ?? '' })
     resetErrors()
-    await store.fetchSubmissions(assessmentId)
+    refStore.currentSubmission = null
   },
   { immediate: true }
 )
 
 const validate = () => {
   resetErrors()
-  if (!form.sessionId) errors.sessionId = 'Session is required.'
-  if (!form.termId) errors.termId = 'Term is required.'
+  if (!form.title.trim()) errors.title = 'Title is required.'
   if (!form.subjectId) errors.subjectId = 'Subject is required.'
-  if (!form.question.trim()) errors.question = 'Question is required.'
   return !Object.values(errors).some(Boolean)
 }
 
 const submit = async () => {
   if (!validate() || !props.assessment?.id) return
   try {
-    await store.createSubmission(props.assessment.id, {
-      session_id: form.sessionId,
-      term_id: form.termId,
+    await refStore.createSubmission(props.assessment.id, {
       subject_id: form.subjectId,
-      question: form.question.trim(),
+      title: form.title.trim(),
+      description: form.description.trim() || null,
     })
-    Object.assign(form, defaultForm())
+    await refStore.fetchSubmission(refStore.currentSubmission.id)
   } catch {
     // Store already surfaced the error toast; keep the modal open to retry.
   }
+}
+
+const addQuestions = async (chosen) => {
+  const addedMarks = chosen.reduce((sum, item) => sum + Number(item.marks || 0), 0)
+  if (totalMarks.value + addedMarks > assessmentTotalMarks.value) {
+    errors.questions = 'Question marks cannot exceed the assessment total marks.'
+    return
+  }
+  addingQuestions.value = true
+  try {
+    await refStore.addQuestions(submission.value.id, chosen.map(({ question, marks }) => ({
+      type: question.type,
+      content: question.content || '',
+      marks,
+      explanation: question.explanation || null,
+      image_url: question.image_url || null,
+      ...(question.type !== 'fill_in_blank' ? { options: question.options || [] } : {}),
+    })))
+    showQuestionBank.value = false
+  } finally {
+    addingQuestions.value = false
+  }
+}
+
+const updateQuestionMarks = async (question) => {
+  if (totalMarks.value > assessmentTotalMarks.value) {
+    errors.questions = 'Question marks cannot exceed the assessment total marks.'
+    return
+  }
+  errors.questions = ''
+  await refStore.deleteQuestion(submission.value.id, question.id)
+  await refStore.addQuestion(submission.value.id, { type: question.type, content: question.content, marks: Number(question.marks), explanation: question.explanation, image_url: question.image_url, ...(question.type !== 'fill_in_blank' ? { options: question.options || [] } : {}) })
+}
+
+const deleteSubmissionQuestion = async (question) => {
+  await refStore.deleteQuestion(submission.value.id, question.id)
+}
+
+const submitForReview = async () => {
+  submitting.value = true
+  try { await refStore.submitForReview(submission.value.id) } finally { submitting.value = false }
 }
 </script>

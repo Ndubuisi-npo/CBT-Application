@@ -28,6 +28,7 @@ import StudentImportPage from '../components/schooladmincomponents/pages/Student
 import TeacherImportPage from '../components/schooladmincomponents/pages/TeacherImportPage.vue'
 import AssessmentSchedulePage from '../components/schooladmincomponents/pages/AssessmentSchedulePage.vue'
 import AssessmentSubmissionsPage from '../components/schooladmincomponents/pages/AssessmentSubmissionsPage.vue'
+import AssessmentSubmissionsViewPage from '../components/schooladmincomponents/pages/AssessmentSubmissionsViewPage.vue'
 import AssessmentSubmissionDetailPage from '../components/schooladmincomponents/pages/AssessmentSubmissionDetailPage.vue'
 
 // ─── Teacher ──────────────────────────────────────────────────────────────────
@@ -101,7 +102,7 @@ const routes = [
           },
           { path: 'assessment-schedule', name: 'SchoolAdminAssessmentSchedule', component: AssessmentSchedulePage },
           { path: 'assessment-submissions', name: 'SchoolAdminAssessmentSubmissionsIndex', component: AssessmentSubmissionsPage },
-          { path: 'assessments/:id/submissions', name: 'SchoolAdminAssessmentSubmissions', component: AssessmentSubmissionsPage, props: true },
+          { path: 'assessments/:id/submissions', name: 'SchoolAdminAssessmentSubmissions', component: AssessmentSubmissionsViewPage, props: true },
           { path: 'assessment-submissions/:assessmentId', name: 'SchoolAdminAssessmentSubmissionSetup', component: AssessmentSubmissionsPage, props: true },
           { path: 'assessments/:assessmentId/submissions/:submissionId', name: 'SchoolAdminAssessmentSubmissionDetail', component: AssessmentSubmissionDetailPage, props: true },
           { path: 'settings', name: 'SchoolAdminSettings', component: SchoolAdminSettings },

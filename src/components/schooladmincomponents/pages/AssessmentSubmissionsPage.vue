@@ -1,43 +1,78 @@
 <template>
   <div class="space-y-6">
     <AppPageHeader
-      title="Assessment Submissions"
-      subtitle="Review scheduled assessments and add or edit their submission configuration."
+      title="Assessment submissions"
+      subtitle="Review scheduled assessments, set their submission windows, and open the teacher papers waiting on you."
       eyebrow="Assessment Management"
     />
 
-    <section class="rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
-          <thead class="bg-slate-50 text-[10px] uppercase tracking-[0.22em] text-slate-500">
+    <div class="grid gap-4 sm:grid-cols-3">
+      <div class="rounded-2xl bg-[#0B1F3A] p-5 text-white shadow-sm sm:col-span-1">
+        <p class="text-xs font-semibold uppercase tracking-[0.24em] text-[#D4AF37]">Scheduled assessments</p>
+        <p class="mt-2 text-5xl font-light leading-none">{{ assessmentRows.length }}</p>
+        <p class="mt-2 text-sm text-white/60">Across every class level this session.</p>
+      </div>
+      <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <p class="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">Open for questions</p>
+        <p class="mt-2 text-3xl font-light leading-none text-[#0B1F3A]">{{ openForQuestionsCount }}</p>
+        <p class="mt-2 text-sm text-slate-500">Teachers can still submit or revise papers.</p>
+      </div>
+      <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <p class="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">Missing a window</p>
+        <p class="mt-2 text-3xl font-light leading-none text-[#0B1F3A]">{{ missingWindowCount }}</p>
+        <p class="mt-2 text-sm text-slate-500">Scheduled assessments with no submission window set yet.</p>
+      </div>
+    </div>
+
+    <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div class="flex flex-wrap items-end gap-3 border-b border-slate-100 px-5 py-4 sm:px-6">
+        <AppInput v-model="search" label="Search" placeholder="Search assessments…" class="min-w-[220px] flex-1" />
+        <AppSelect v-model="filterLevel" label="Class level" :options="classLevelOptions" placeholder="All levels" class="w-full sm:w-40" />
+        <AppSelect v-model="filterStatus" label="Status" :options="statusOptions" placeholder="All statuses" class="w-full sm:w-44" />
+      </div>
+
+      <AppEmptyState
+        v-if="!filteredRows.length"
+        :icon="ClipboardList"
+        title="No assessments match these filters"
+        description="Try clearing the search or choosing a different class level."
+      />
+
+      <div v-else class="overflow-x-auto">
+        <table class="w-full min-w-[900px] text-left text-sm">
+          <thead class="border-b border-slate-100 bg-slate-50/50 text-[10px] uppercase tracking-[0.18em] text-slate-400">
             <tr>
-              <th class="px-5 py-3">Assessment</th>
-              <th class="px-5 py-3">Class</th>
-              <th class="px-5 py-3">Session</th>
-              <th class="px-5 py-3">Term</th>
-              <th class="px-5 py-3">Submission Status</th>
-              <th class="px-5 py-3">Assessment Status</th>
-              <th class="px-5 py-3"></th>
+              <th scope="col" class="px-5 py-3 font-semibold sm:px-6">Assessment</th>
+              <th scope="col" class="px-4 py-3 font-semibold">Class</th>
+              <th scope="col" class="px-4 py-3 font-semibold">Session · term</th>
+              <th scope="col" class="px-4 py-3 font-semibold">Questions close</th>
+              <th scope="col" class="px-4 py-3 font-semibold">Status</th>
+              <th scope="col" class="px-5 py-3 text-right font-semibold sm:px-6"><span class="sr-only">Actions</span></th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-slate-100 bg-white">
-            <tr v-if="!assessmentRows.length">
-              <td colspan="7" class="px-5 py-12 text-center text-slate-500">No scheduled assessments yet.</td>
-            </tr>
-            <tr v-for="assessment in assessmentRows" :key="assessment.id" class="hover:bg-slate-50">
-              <td class="px-5 py-4">
+          <tbody class="divide-y divide-slate-100">
+            <tr v-for="assessment in filteredRows" :key="assessment.id" class="transition hover:bg-slate-50/60">
+              <td class="px-5 py-4 align-top sm:px-6">
                 <p class="font-semibold text-slate-900">{{ assessment.title }}</p>
-                <p class="mt-1 text-xs text-slate-500">{{ assessment.description || 'No description provided.' }}</p>
-                <p class="mt-1 text-xs text-slate-500">Marks: {{ assessment.total_marks ?? '—' }}</p>
+                <p class="mt-0.5 max-w-md truncate text-xs text-slate-400">{{ assessment.description || 'No description provided.' }}</p>
+                <p class="mt-1.5 text-xs text-slate-400">{{ assessment.total_marks ?? '—' }} marks</p>
               </td>
-              <td class="px-5 py-4 text-slate-600">{{ classText(assessment) }}</td>
-              <td class="px-5 py-4 text-slate-600">{{ sessionName(assessment) }}</td>
-              <td class="px-5 py-4 text-slate-600">{{ termName(assessment) }}</td>
-              <td class="px-5 py-4"><AppBadge :label="questionSubmissionStatusLabel(assessment)" :variant="questionSubmissionVariant(assessment)" /></td>
-              <td class="px-5 py-4"><AppBadge :label="assessmentStatusLabel(assessment)" :variant="assessmentVariant(assessment)" /></td>
-              <td class="px-5 py-4">
-                <div class="flex flex-wrap justify-end gap-2">
-                  <AppButton :text="assessment.schedule_id ? 'Edit Submission' : 'Add Submission'" variant="primary" size="sm" @click="editAssessment(assessment)" />
+              <td class="px-4 py-4 align-top text-slate-600">{{ classText(assessment) }}</td>
+              <td class="px-4 py-4 align-top text-slate-600">
+                {{ sessionName(assessment) }}
+                <span class="block text-xs text-slate-400">{{ termName(assessment) }}</span>
+              </td>
+              <td class="px-4 py-4 align-top text-slate-600">{{ assessment.question_submission_ends ? formatDate(assessment.question_submission_ends) : 'Not set' }}</td>
+              <td class="px-4 py-4 align-top">
+                <div class="flex flex-col items-start gap-1.5">
+                  <AppBadge :label="assessmentStatusLabel(assessment)" :variant="assessmentVariant(assessment)" dot />
+                  <AppBadge :label="questionSubmissionStatusLabel(assessment)" :variant="questionSubmissionVariant(assessment)" />
+                </div>
+              </td>
+              <td class="px-5 py-4 align-top sm:px-6">
+                <div class="flex justify-end gap-2">
+                  <AppButton :text="assessment.schedule_id ? 'Edit window' : 'Add window'" variant="ghost" size="xs" @click="editAssessment(assessment)" />
+                  <AppButton text="View papers" variant="outline" size="xs" @click="viewSubmissions(assessment)" />
                 </div>
               </td>
             </tr>
@@ -46,52 +81,29 @@
       </div>
     </section>
 
-    <section v-if="selectedAssessment" class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
-      <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <div class="flex items-start justify-between gap-3">
-          <div>
-            <p class="text-xs font-semibold uppercase tracking-[0.24em] text-[#D4AF37]">Selected assessment</p>
-            <h2 class="mt-1 text-2xl font-semibold text-slate-900">{{ selectedAssessment.title }}</h2>
-          </div>
-          <AppButton text="Back to schedule" variant="outline" size="sm" @click="router.push('/school-admin/assessment-schedule')" />
-        </div>
-        <p class="mt-2 text-sm text-slate-500">{{ selectedAssessment.description || 'No description provided.' }}</p>
-        <div class="mt-4 flex flex-wrap gap-2">
-          <AppBadge :label="questionSubmissionStatusLabel(selectedAssessment)" :variant="questionSubmissionVariant(selectedAssessment)" />
-          <AppBadge :label="assessmentStatusLabel(selectedAssessment)" :variant="assessmentVariant(selectedAssessment)" />
-          <AppBadge :label="selectedTermLabel" variant="primary" />
-        </div>
-      </div>
-
-      <form class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm" @submit.prevent="saveSubmission">
-        <h3 class="text-lg font-semibold text-slate-900">{{ selectedAssessment.schedule_id ? 'Edit Submission' : 'Add Submission' }}</h3>
-        <div class="mt-4 space-y-4">
-          <AppInput v-model="form.question_submission_ends" label="question_submission_ends" type="datetime-local" required :error="errors.question_submission_ends" />
-          <AppInput v-model="form.assessment_starts" label="assessment_starts" type="datetime-local" required :error="errors.assessment_starts" />
-          <AppInput v-model="form.assessment_ends" label="assessment_ends" type="datetime-local" required :error="errors.assessment_ends" />
-        </div>
-        <div class="mt-4 rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
-          <p><span class="font-semibold text-slate-900">question_submission_status:</span> {{ questionSubmissionStatusLabel(selectedAssessment) }}</p>
-          <p class="mt-1"><span class="font-semibold text-slate-900">assessment_status:</span> {{ assessmentStatusLabel(selectedAssessment) }}</p>
-          <p class="mt-1"><span class="font-semibold text-slate-900">term:</span> {{ selectedTermLabel }}</p>
-        </div>
-        <p v-if="saveError" class="mt-4 rounded-2xl border border-rose-100 bg-rose-50 px-3 py-2 text-sm text-rose-700">{{ saveError }}</p>
-        <div class="mt-4 flex flex-wrap gap-2">
-          <AppButton :text="selectedAssessment.schedule_id ? 'Update Submission' : 'Create Submission'" variant="primary" :processing="saving" type="submit" />
-          <AppButton text="Continue to Submission Setup" variant="outline" @click="router.push(`/school-admin/assessment-submissions/${selectedAssessment.id}`)" />
-        </div>
-      </form>
-    </section>
+    <SubmissionConfigurationModal
+      :show="showSubmissionModal"
+      :assessment="selectedAssessment"
+      :saving="saving"
+      :error="saveError"
+      @close="closeSubmissionModal"
+      @submit="saveSubmission"
+    />
   </div>
 </template>
 
 <script setup>
-import { computed, reactive, ref, watch, onMounted } from 'vue'
+import { computed, ref, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { ClipboardList } from 'lucide-vue-next'
 import AppBadge from '../../shared/AppBadge.vue'
 import AppButton from '../../shared/AppButton.vue'
+import AppEmptyState from '../../shared/AppEmptyState.vue'
 import AppInput from '../../shared/AppInput.vue'
 import AppPageHeader from '../../shared/AppPageHeader.vue'
+import AppSelect from '../../shared/AppSelect.vue'
+import SubmissionConfigurationModal from '../components/SubmissionConfigurationModal.vue'
+import { fmtDateTime } from '../../../js/lib/helpers'
 import { useAssessmentsStore, getAssessmentStatusLabel, getStatusVariant } from '../stores/assessments'
 
 const route = useRoute()
@@ -99,13 +111,37 @@ const router = useRouter()
 const store = useAssessmentsStore()
 const saving = ref(false)
 const saveError = ref('')
-const errors = reactive({})
+const showSubmissionModal = ref(false)
+const search = ref('')
+const filterLevel = ref('')
+const filterStatus = ref('')
 
-const form = reactive({ question_submission_ends: '', assessment_starts: '', assessment_ends: '' })
+const statusOptions = [
+  { value: 'draft', label: 'Draft' },
+  { value: 'pending', label: 'Pending setup' },
+  { value: 'active', label: 'Active' },
+  { value: 'complete', label: 'Complete' },
+]
 
 const assessmentRows = computed(() => store.scheduledAssessments)
+const classLevelOptions = computed(() => store.classLevelOptions)
 const selectedAssessment = computed(() => store.selectedAssessment || store.getAssessmentById(route.params.assessmentId || route.params.id))
-const selectedTermLabel = computed(() => store.activeTermLabel)
+
+const filteredRows = computed(() => {
+  const query = search.value.trim().toLowerCase()
+  return assessmentRows.value.filter((assessment) => {
+    const matchesSearch = query ? String(assessment.title || '').toLowerCase().includes(query) : true
+    const levelId = assessment.class_level_id ?? assessment.classLevelId
+    const matchesLevel = filterLevel.value ? String(levelId) === String(filterLevel.value) : true
+    const matchesStatus = filterStatus.value
+      ? (assessment.assessment_status || assessment.status || '').toLowerCase() === filterStatus.value
+      : true
+    return matchesSearch && matchesLevel && matchesStatus
+  })
+})
+
+const openForQuestionsCount = computed(() => assessmentRows.value.filter((a) => (a.question_submission_status || 'open').toLowerCase() === 'open').length)
+const missingWindowCount = computed(() => assessmentRows.value.filter((a) => !a.schedule_id).length)
 
 const classText = (assessment) => {
   const level = store.classLevelOptions.find((option) => String(option.value) === String(assessment.class_level_id ?? assessment.classLevelId))?.label || '—'
@@ -114,44 +150,34 @@ const classText = (assessment) => {
     : 'Whole level'
   return `${level} · ${arm}`
 }
-const sessionName = (assessment) => store.sessionOptions.find((option) => String(option.value) === String(assessment.session_id ?? assessment.sessionId))?.label || '—'
+const sessionName = (assessment) => store.sessionOptions.find((option) => String(option.value) === String(assessment.session_id ?? assessment.sessionId ?? assessment.academic_session_id ?? assessment.academicSessionId))?.label || '—'
 const termName = (assessment) => store.activeTermLabel || assessment.term?.name || '—'
+const formatDate = (value) => value ? fmtDateTime(value) : 'Not set'
 
 const questionSubmissionStatusLabel = (assessment) => ((assessment?.question_submission_status || 'open') === 'open' ? 'Question submission open' : 'Question submission closed')
 const questionSubmissionVariant = (assessment) => ((assessment?.question_submission_status || 'open') === 'open' ? 'success' : 'default')
 const assessmentVariant = (assessment) => getStatusVariant(assessment?.assessment_status || assessment?.status)
 const assessmentStatusLabel = (assessment) => getAssessmentStatusLabel(assessment?.assessment_status || assessment?.status)
 
-const clearErrors = () => {
-  Object.keys(errors).forEach((key) => delete errors[key])
+const editAssessment = (assessment) => {
+  store.selectAssessment(assessment.id)
+  saveError.value = ''
+  showSubmissionModal.value = true
+}
+
+const closeSubmissionModal = () => {
+  showSubmissionModal.value = false
   saveError.value = ''
 }
 
-const validate = () => {
-  clearErrors()
-  if (!form.question_submission_ends) errors.question_submission_ends = 'Required.'
-  if (!form.assessment_starts) errors.assessment_starts = 'Required.'
-  if (!form.assessment_ends) errors.assessment_ends = 'Required.'
-  const q = new Date(form.question_submission_ends)
-  const s = new Date(form.assessment_starts)
-  const e = new Date(form.assessment_ends)
-  if (form.question_submission_ends && form.assessment_starts && s < q) errors.assessment_starts = 'Must be after question submission ends.'
-  if (form.assessment_starts && form.assessment_ends && e <= s) errors.assessment_ends = 'Must be after assessment starts.'
-  return !Object.keys(errors).length
-}
+const viewSubmissions = (assessment) => router.push(`/school-admin/assessments/${assessment.id}/submissions`)
 
-const editAssessment = (assessment) => {
-  store.selectAssessment(assessment.id)
-  form.question_submission_ends = assessment.question_submission_ends || ''
-  form.assessment_starts = assessment.assessment_starts || ''
-  form.assessment_ends = assessment.assessment_ends || ''
-}
-
-const saveSubmission = async () => {
-  if (!selectedAssessment.value || !validate()) return
+const saveSubmission = async (form) => {
+  if (!selectedAssessment.value) return
   saving.value = true
   try {
     await store.saveSubmissionConfiguration(selectedAssessment.value.id, { ...form, question_submission_status: 'open', assessment_status: 'pending' })
+    closeSubmissionModal()
   } catch (error) {
     saveError.value = error?.message || 'Unable to save submission configuration.'
   } finally {
@@ -162,9 +188,6 @@ const saveSubmission = async () => {
 watch(selectedAssessment, (assessment) => {
   if (!assessment) return
   store.selectAssessment(assessment.id)
-  form.question_submission_ends = assessment.question_submission_ends || ''
-  form.assessment_starts = assessment.assessment_starts || ''
-  form.assessment_ends = assessment.assessment_ends || ''
 }, { immediate: true })
 
 onMounted(async () => {

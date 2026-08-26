@@ -56,7 +56,7 @@
       </div>
 
       <!-- Read-only day detail, expands under the grid instead of a side panel -->
-      <div v-if="openDate" class="mt-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+      <div v-if="showDayDetail && openDate" class="mt-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
         <div class="mb-3 flex items-center justify-between">
           <div>
             <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#D4AF37]">{{ openWeekday }}</p>
@@ -88,16 +88,27 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import AppBadge from '../../shared/AppBadge.vue'
 import AppButton from '../../shared/AppButton.vue'
 import { useAssessmentsStore, getAssessmentStatusLabel, getStatusVariant } from '../../schooladmincomponents/stores/assessments'
 import { getScheduleColor, hexToRgb, getDateRangeKeys } from '../../../js/lib/scheduleColors'
 
+const props = defineProps({
+  // When false, the inline "day detail" panel below the grid is suppressed —
+  // used by CalendarPage.vue which renders its own sticky side panel instead.
+  showDayDetail: { type: Boolean, default: true },
+})
+const emit = defineEmits(['select-date'])
+
 const store = useAssessmentsStore()
 const today = new Date()
 const weekdays = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']
 const openDate = ref('')
+
+watch(openDate, (value) => {
+  if (value) emit('select-date', value)
+})
 
 const scheduleColor = (assessment) => getScheduleColor(assessment?.id)
 
@@ -156,11 +167,14 @@ const openDateLabel = computed(() => (openDate.value ? new Date(`${openDate.valu
 const openWeekday = computed(() => (openDate.value ? new Date(`${openDate.value}T00:00:00`).toLocaleDateString(undefined, { weekday: 'long' }) : ''))
 
 const toggleDay = (cell) => {
-  openDate.value = openDate.value === cell.dateKey ? '' : cell.dateKey
+  openDate.value = props.showDayDetail && openDate.value === cell.dateKey ? '' : cell.dateKey
+  store.selectDate(cell.dateKey)
 }
 const goToday = () => {
   store.setCurrentMonth(new Date())
-  openDate.value = formatLocalDateKey(new Date())
+  const key = formatLocalDateKey(new Date())
+  openDate.value = key
+  store.selectDate(key)
 }
 const shiftMonth = (delta) => {
   const next = new Date(currentMonthDate.value)
@@ -169,6 +183,9 @@ const shiftMonth = (delta) => {
 }
 
 onMounted(async () => {
+  const key = formatLocalDateKey(today)
+  openDate.value = key
+  store.selectDate(key)
   if (!store.refData.classLevels.length) await store.fetchRefData().catch(() => {})
   if (!store.assessments.length) await store.fetchTeacherAssessments().catch(() => {})
 })

@@ -1,157 +1,160 @@
 <template>
-  <div class="space-y-6">
+  <div class="space-y-4">
     <AppPageHeader
       title="Submission Detail"
-      subtitle="Review the teacher assessment submission and the questions created for it."
-      eyebrow="Assessment Management"
+      :subtitle="submission?.description || (submission?.id ? 'No description provided by the teacher.' : 'Review the teacher submission and the questions created for it.')"
+      eyebrow="Submission Review"
     >
       <template #actions>
-        <AppButton text="Back to submissions" variant="outline" size="sm" @click="router.push(`/school-admin/assessments/${assessmentId}/submissions`)" />
+        <AppButton text="All papers" variant="outline" size="sm" :icon="ArrowLeft" @click="router.push(`/school-admin/assessments/${assessmentId}/submissions`)" />
       </template>
     </AppPageHeader>
 
-    <div v-if="store.loading && !submission?.id" class="grid gap-6 xl:grid-cols-3">
-      <div v-for="i in 3" :key="i" class="h-52 animate-pulse rounded-2xl bg-slate-100" />
+    <div v-if="submission?.id" class="-mt-2 mb-1 flex flex-wrap items-center gap-2">
+      <AppBadge :label="getSubmissionStatusLabel(submission.status)" :variant="getSubmissionStatusVariant(submission.status)" dot />
+      <AppBadge :label="assessment?.title || '—'" variant="default" />
     </div>
 
-    <div v-else class="grid gap-6 xl:grid-cols-3">
-      <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm xl:col-span-1">
-        <h2 class="text-sm font-semibold text-slate-900">Teacher Information</h2>
-        <div class="mt-4 space-y-3 text-sm text-slate-600">
-          <div><span class="font-semibold text-slate-900">Name:</span> {{ teacherName }}</div>
-          <div><span class="font-semibold text-slate-900">Subject:</span> {{ subjectName }}</div>
-          <div><span class="font-semibold text-slate-900">Submission:</span> {{ formatDate(submission.submitted_at) }}</div>
-          <div><span class="font-semibold text-slate-900">Status:</span> <AppBadge :label="getSubmissionStatusLabel(submission.status)" :variant="getSubmissionStatusVariant(submission.status)" /></div>
-        </div>
-      </section>
-
-      <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm xl:col-span-1">
-        <h2 class="text-sm font-semibold text-slate-900">Assessment Information</h2>
-        <div class="mt-4 space-y-3 text-sm text-slate-600">
-          <div><span class="font-semibold text-slate-900">Title:</span> {{ assessment?.title }}</div>
-          <div><span class="font-semibold text-slate-900">Class:</span> {{ classText }}</div>
-          <div><span class="font-semibold text-slate-900">Total Marks:</span> {{ assessmentTotalMarks }}</div>
-        </div>
-      </section>
-
-      <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm xl:col-span-1">
-        <h2 class="text-sm font-semibold text-slate-900">Question Summary</h2>
-        <div class="mt-4 space-y-3 text-sm text-slate-600">
-          <div><span class="font-semibold text-slate-900">Total Questions:</span> {{ questionCount }}</div>
-          <div><span class="font-semibold text-slate-900">Marks Used:</span> {{ marksUsed }}</div>
-          <div><span class="font-semibold text-slate-900">Remaining:</span> {{ remainingMarks }}</div>
-          <div><span class="font-semibold text-slate-900">Completion:</span> {{ completionPercent }}%</div>
-          <p class="rounded-2xl bg-slate-50 px-3 py-2 text-sm text-slate-700">{{ completionText }}</p>
-        </div>
-      </section>
+    <div v-if="store.loading && !submission?.id" class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
+      <div class="h-64 animate-pulse rounded-2xl bg-slate-100" />
+      <div class="space-y-6">
+        <div class="h-48 animate-pulse rounded-2xl bg-slate-100" />
+        <div class="h-64 animate-pulse rounded-2xl bg-slate-100" />
+      </div>
     </div>
 
-    <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-      <div class="flex flex-wrap items-center justify-between gap-3">
-        <h2 class="text-lg font-semibold text-slate-900">Review</h2>
-        <p class="text-sm text-slate-500">Send the submission back for changes, or approve it.</p>
-      </div>
+    <div v-else class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
+      <!-- Questions -->
+      <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4 sm:px-6">
+          <h2 class="text-sm font-semibold text-slate-900">
+            Questions
+            <span class="ml-2 font-normal text-slate-400">{{ questionCount }} total</span>
+          </h2>
+          <span class="text-xs text-slate-400">{{ marksUsed }} of {{ assessmentTotalMarks }} marks used</span>
+        </div>
 
-      <div v-if="isApproved" class="mt-4 rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-        This submission has been approved. Once the parent assessment is activated, it will automatically become a
-        live exam for students — no further action is needed here.
-      </div>
-
-      <div v-else class="mt-4 rounded-2xl border border-slate-100 bg-slate-50 p-4">
-        <label class="text-sm font-semibold text-slate-700" for="review-comment">Comment</label>
-        <textarea
-          id="review-comment"
-          v-model="commentText"
-          rows="4"
-          class="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none ring-0 focus:border-[#0B1F3A]"
-          placeholder="Explain what needs to change before requesting changes…"
+        <AppEmptyState
+          v-if="!questions.length"
+          :icon="FileQuestion"
+          title="No questions in this paper"
+          description="The teacher has not added any questions yet."
         />
-        <p v-if="commentError" class="mt-1 text-xs text-rose-600">{{ commentError }}</p>
-        <div class="mt-3 flex flex-wrap justify-end gap-2">
-          <AppButton
-            text="Request Changes & Send Back"
-            variant="danger"
-            size="sm"
-            :processing="requesting"
-            @click="onRequestChanges"
-          />
-          <AppButton
-            text="Approve"
-            variant="success"
-            size="sm"
-            :processing="approving"
-            @click="onApprove"
-          />
-        </div>
-      </div>
 
-      <div v-if="comments.length" class="mt-4 space-y-3">
-        <div v-for="comment in comments" :key="comment.id" class="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
-          <p class="text-sm text-slate-700">{{ comment.text ?? comment.body ?? comment.comment }}</p>
-          <p class="mt-2 text-xs text-slate-500">{{ formatDate(comment.createdAt ?? comment.created_at) }}</p>
-        </div>
-      </div>
-      <p v-else class="mt-4 text-sm text-slate-500">No comments yet.</p>
-    </section>
-
-    <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-      <h2 class="text-lg font-semibold text-slate-900">Questions</h2>
-      <div v-if="store.loading && !questions.length" class="mt-4 space-y-4">
-        <div v-for="i in 3" :key="i" class="h-32 animate-pulse rounded-2xl bg-slate-100" />
-      </div>
-      <div v-else-if="!questions.length" class="mt-4 text-sm text-slate-500">No questions have been added to this submission.</div>
-      <div v-else class="mt-4 space-y-4">
-        <div
-          v-for="(question, index) in questions"
-          :key="question.id ?? index"
-          class="rounded-2xl border border-slate-100 bg-slate-50 p-5"
-        >
-          <div class="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <p class="font-semibold text-slate-900">Question {{ question.order ?? index + 1 }} • {{ questionTypeLabel(question.type) }}</p>
-              <p class="mt-2 text-sm text-slate-700">{{ question.content }}</p>
-              <img
-                v-if="question.image_url"
-                :src="question.image_url"
-                alt="Question image"
-                class="mt-3 max-h-40 rounded-xl border border-slate-200 object-contain"
-              />
+        <div v-else class="space-y-4 p-5 sm:p-6">
+          <div
+            v-for="(question, index) in questions"
+            :key="question.id ?? index"
+            class="rounded-2xl border border-slate-100 bg-slate-50 p-5"
+          >
+            <div class="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <p class="font-semibold text-slate-900">Question {{ question.order ?? index + 1 }} · {{ questionTypeLabel(question.type) }}</p>
+                <p class="mt-2 text-sm text-slate-700">{{ question.content }}</p>
+                <img v-if="question.image_url" :src="question.image_url" alt="Question image" class="mt-3 max-h-40 rounded-xl border border-slate-200 object-contain" />
+              </div>
+              <div class="shrink-0 text-right text-sm text-slate-600">
+                <span class="font-semibold text-slate-900">Marks:</span> {{ question.marks }}
+              </div>
             </div>
-            <div class="text-right text-sm text-slate-600">
-              <span class="font-semibold text-slate-900">Marks:</span> {{ question.marks }}
+
+            <div v-if="question.options?.length" class="mt-4 grid gap-2 sm:grid-cols-2">
+              <div
+                v-for="(option, optIndex) in question.options"
+                :key="option.id ?? optIndex"
+                class="flex items-center gap-2 rounded-2xl px-4 py-3 text-sm shadow-sm"
+                :class="option.is_correct ? 'border border-emerald-200 bg-emerald-50 text-emerald-800' : 'bg-white text-slate-700'"
+              >
+                <span v-if="option.label" class="font-semibold">{{ option.label }}.</span>
+                <span>{{ option.content }}</span>
+                <span v-if="option.is_correct" class="ml-auto text-xs font-semibold uppercase tracking-wide text-emerald-600">Correct</span>
+              </div>
+            </div>
+            <p v-else-if="question.type !== 'fill_in_blank'" class="mt-4 text-xs text-slate-400">No options recorded.</p>
+
+            <div v-if="question.explanation" class="mt-4">
+              <p class="text-xs uppercase tracking-[0.24em] text-slate-500">Explanation</p>
+              <p class="mt-1 text-sm text-slate-700">{{ question.explanation }}</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Sidebar -->
+      <div class="space-y-6 lg:sticky lg:top-24 lg:self-start">
+        <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p class="mb-4 text-xs font-semibold uppercase tracking-[0.24em] text-[#D4AF37]">Paper summary</p>
+          <dl class="space-y-3">
+            <div v-for="fact in facts" :key="fact.label" class="flex items-baseline justify-between gap-4">
+              <dt class="text-xs text-slate-400">{{ fact.label }}</dt>
+              <dd class="text-right text-sm font-medium text-slate-900">{{ fact.value }}</dd>
+            </div>
+          </dl>
+          <div class="mt-5 border-t border-slate-100 pt-4">
+            <div class="flex items-baseline justify-between">
+              <p class="text-xs text-slate-400">Marks coverage</p>
+              <p class="text-3xl font-light leading-none text-slate-900">{{ completionPercent }}%</p>
+            </div>
+            <div class="mt-2.5 h-1.5 overflow-hidden rounded-full bg-slate-100">
+              <div class="h-full rounded-full bg-[#0B1F3A] transition-[width] duration-300" :style="{ width: `${completionPercent}%` }" />
+            </div>
+            <p class="mt-2 text-xs text-slate-400">{{ completionText }}</p>
+          </div>
+        </section>
+
+        <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p class="mb-4 text-xs font-semibold uppercase tracking-[0.24em] text-[#D4AF37]">Review</p>
+
+          <div v-if="isApproved" class="rounded-xl bg-emerald-50 p-4">
+            <p class="flex items-center gap-2 text-sm font-semibold text-emerald-800">
+              <CheckCircle2 class="h-4 w-4" /> Approved
+            </p>
+            <p class="mt-1.5 text-xs leading-relaxed text-emerald-700">
+              Once the parent assessment is activated this paper becomes a live exam for students automatically.
+            </p>
+          </div>
+
+          <div v-else class="space-y-3">
+            <AppTextarea
+              v-model="commentText"
+              label="Comment"
+              :rows="4"
+              :error="commentError"
+              hint="Required when requesting changes."
+              placeholder="Explain what needs to change, or leave a note for the record."
+            />
+            <div class="flex flex-col gap-2">
+              <AppButton text="Approve paper" variant="success" full-width :processing="approving" @click="onApprove" />
+              <AppButton text="Request changes" variant="danger" full-width :processing="requesting" @click="onRequestChanges" />
             </div>
           </div>
 
-          <div v-if="question.options?.length" class="mt-4 grid gap-2 sm:grid-cols-2">
-            <div
-              v-for="(option, optIndex) in question.options"
-              :key="option.id ?? optIndex"
-              class="flex items-center gap-2 rounded-2xl px-4 py-3 text-sm shadow-sm"
-              :class="option.is_correct ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : 'bg-white text-slate-700'"
-            >
-              <span v-if="option.label" class="font-semibold">{{ option.label }}.</span>
-              <span>{{ option.content }}</span>
-              <span v-if="option.is_correct" class="ml-auto text-xs font-semibold uppercase tracking-wide text-emerald-600">Correct</span>
-            </div>
+          <div class="mt-5 border-t border-slate-100 pt-4">
+            <p class="mb-3 text-xs font-semibold text-slate-600">Review history</p>
+            <p v-if="!comments.length" class="text-xs text-slate-400">No comments yet.</p>
+            <ul v-else class="space-y-3">
+              <li v-for="comment in comments" :key="comment.id" class="rounded-xl bg-slate-50/70 p-3">
+                <p class="text-xs font-semibold text-slate-900">{{ comment.author || 'School admin' }}</p>
+                <p class="mt-1 text-xs leading-relaxed text-slate-600">{{ comment.text ?? comment.body ?? comment.comment }}</p>
+                <p class="mt-1.5 text-[11px] text-slate-400">{{ formatDate(comment.createdAt ?? comment.created_at) }}</p>
+              </li>
+            </ul>
           </div>
-          <p v-else-if="question.type !== 'fill_in_blank'" class="mt-4 text-xs text-slate-400">No options recorded.</p>
-
-          <div v-if="question.explanation" class="mt-4">
-            <p class="text-xs uppercase tracking-[0.24em] text-slate-500">Explanation</p>
-            <p class="mt-1 text-sm text-slate-700">{{ question.explanation }}</p>
-          </div>
-        </div>
+        </section>
       </div>
-    </section>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { ArrowLeft, CheckCircle2, FileQuestion } from 'lucide-vue-next'
 import AppBadge from '../../shared/AppBadge.vue'
 import AppButton from '../../shared/AppButton.vue'
+import AppEmptyState from '../../shared/AppEmptyState.vue'
 import AppPageHeader from '../../shared/AppPageHeader.vue'
+import AppTextarea from '../../shared/AppTextarea.vue'
 import { fmtDateTime } from '../../../js/lib/helpers'
 import { useAssessmentsStore, getSubmissionStatusLabel, getSubmissionStatusVariant } from '../stores/assessments'
 
@@ -171,9 +174,9 @@ const submission = computed(() => store.currentSubmission || { questions: [] })
 const questions = computed(() => submission.value?.questions ?? submission.value?.submissionQuestions ?? [])
 const questionCount = computed(() => questions.value.length || submission.value?.question_count || 0)
 // The backend doesn't document a `comments` relation on Submission — the
-// request-changes `comment` is delivered to the teacher via notification
-// (§6), not stored as a thread. Render defensively in case the backend adds
-// one later, but don't assume the shape.
+// request-changes `comment` is delivered to the teacher via notification,
+// not stored as a thread. Render defensively in case the backend adds one
+// later, but don't assume the shape.
 const comments = computed(() => (Array.isArray(submission.value.comments) ? submission.value.comments : []))
 const isApproved = computed(() => (submission.value.status || '').toLowerCase() === 'approved')
 
@@ -206,10 +209,16 @@ const classText = computed(() => {
   return `${level}${arm}`.trim() || '—'
 })
 
+const facts = computed(() => [
+  { label: 'Teacher', value: teacherName.value },
+  { label: 'Subject', value: subjectName.value },
+  { label: 'Submitted', value: submission.value.submitted_at ? fmtDateTime(submission.value.submitted_at) : 'Not submitted' },
+  { label: 'Class', value: classText.value },
+])
+
 const assessmentTotalMarks = computed(() => assessment.value?.total_marks ?? assessment.value?.totalMarks ?? 0)
-// Submission total_marks is server-derived from the sum of question marks
-// (§3) — prefer it when present, and only fall back to a client-side sum
-// when the field hasn't been returned on this response.
+// Submission total_marks is server-derived from the sum of question marks —
+// prefer it when present, only fall back to a client-side sum otherwise.
 const marksUsed = computed(() => {
   const serverTotal = submission.value.total_marks ?? submission.value.totalMarks
   if (typeof serverTotal === 'number') return serverTotal
@@ -221,9 +230,9 @@ const completionPercent = computed(() => {
   return Math.min(100, Math.round((marksUsed.value / assessmentTotalMarks.value) * 100))
 })
 const completionText = computed(() =>
-  marksUsed.value >= assessmentTotalMarks.value && assessmentTotalMarks.value > 0
-    ? 'Assessment Complete'
-    : `Remaining Marks: ${remainingMarks.value}`
+  remainingMarks.value === 0 && assessmentTotalMarks.value > 0
+    ? 'Full marks allocation used.'
+    : `${remainingMarks.value} marks still unallocated.`
 )
 
 const questionTypeLabel = (type) => {

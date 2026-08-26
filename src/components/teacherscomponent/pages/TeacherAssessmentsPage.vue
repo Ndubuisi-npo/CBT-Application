@@ -1,124 +1,101 @@
 <template>
   <div class="space-y-6">
     <AppPageHeader
-      title="Submissions"
-      subtitle="Open active assessments and build your submission for each one."
+      title="Your submissions"
+      subtitle="Open an assessment to build your paper. Each window closes at the time set by your school admin."
       eyebrow="Submissions"
     />
 
-    <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div class="grid gap-4 lg:grid-cols-4">
-        <AppInput v-model="searchQuery" label="Search" placeholder="Search assessments…" />
-        <AppSelect v-model="filterClassLevel" label="Class" :options="classLevelOptions" placeholder="All classes" />
-      </div>
-    </section>
-
-    <section class="rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div v-if="store.loading && !visibleAssessments.length" class="p-5">
-        <SkeletonRows :rows="6" :columns="6" class="hidden lg:block" />
-        <div class="grid gap-3 sm:grid-cols-2 lg:hidden">
-          <div v-for="i in 6" :key="i" class="h-40 animate-pulse rounded-2xl bg-slate-100" />
-        </div>
-      </div>
-      <div v-else class="hidden overflow-x-auto lg:block">
-        <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
-          <thead class="bg-slate-50 text-[10px] uppercase tracking-[0.22em] text-slate-500">
-            <tr>
-              <th class="px-5 py-3">Assessment</th>
-              <th class="px-5 py-3 text-right">Marks Cap</th>
-              <th class="px-5 py-3">Class</th>
-              <th class="px-5 py-3">Term</th>
-              <th class="px-5 py-3">Status</th>
-              <th class="px-5 py-3"></th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-slate-100 bg-white">
-            <tr v-if="!visibleAssessments.length">
-              <td colspan="6" class="px-5 py-10 text-center text-sm text-slate-500">No assessments are open for you right now.</td>
-            </tr>
-            <tr v-for="assessment in visibleAssessments" :key="assessment.id" class="group align-top hover:bg-slate-50">
-              <td class="w-[320px] max-w-[360px] px-5 py-4">
-                <p class="text-[15px] font-semibold leading-5 text-slate-900">{{ assessment.title }}</p>
-              </td>
-              <td class="px-5 py-4 text-right font-medium text-slate-700">{{ assessment.total_marks ?? assessment.totalMarks }}</td>
-              <td class="px-5 py-4 text-slate-600">{{ classText(assessment) }}</td>
-              <td class="px-5 py-4 text-slate-600">{{ termText(assessment) }}</td>
-              <td class="px-5 py-4">
-                <AppBadge :label="getAssessmentStatusLabel(assessment)" :variant="getStatusVariant(assessment.status)" />
-              </td>
-              <td class="px-5 py-4">
-                <div class="flex justify-end gap-2">
-                  <AppButton text="Add Submission" variant="ghost" size="sm" @click="openSubmissionModal(assessment)" />
-                  <AppButton text="Open" variant="outline" size="sm" @click="openAssessment(assessment.id)" />
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+    <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div class="flex flex-wrap items-end gap-3 border-b border-slate-100 px-5 py-4 sm:px-6">
+        <AppInput v-model="searchQuery" label="Search" placeholder="Search assessments…" class="min-w-[220px] flex-1" />
+        <AppSelect v-model="filterClassLevel" label="Class level" :options="classLevelOptions" placeholder="All classes" class="w-full sm:w-44" />
       </div>
 
-      <div v-if="visibleAssessments.length" class="grid gap-3 p-4 sm:grid-cols-2 lg:hidden">
-        <ResponsiveDataCard
+      <div v-if="store.loading && !visibleAssessments.length" class="space-y-3 p-5">
+        <div v-for="i in 5" :key="i" class="h-20 animate-pulse rounded-2xl bg-slate-100" />
+      </div>
+
+      <AppEmptyState
+        v-else-if="!visibleAssessments.length"
+        :icon="ClipboardList"
+        title="No assessments are open for you right now"
+        description="When your school admin opens a submission window it will appear here."
+      />
+
+      <ul v-else class="divide-y divide-slate-100">
+        <li
           v-for="assessment in visibleAssessments"
           :key="assessment.id"
-          avatar-color="bg-[#0B1F3A]/10 text-[#0B1F3A]"
-          :avatar-text="(assessment.title || '?').slice(0, 2).toUpperCase()"
-          :title="assessment.title"
-          :fields="[
-            { label: 'Marks Cap', value: assessment.total_marks ?? assessment.totalMarks ?? '—' },
-            { label: 'Class', value: classText(assessment) },
-            { label: 'Term', value: termText(assessment) },
-          ]"
+          class="flex flex-wrap items-center gap-x-5 gap-y-3 px-5 py-5 transition-colors hover:bg-slate-50/60 sm:px-6"
         >
-          <template #badge>
-            <AppBadge :label="getAssessmentStatusLabel(assessment)" :variant="getStatusVariant(assessment.status)" />
-          </template>
-          <template #actions>
-            <div class="flex flex-wrap gap-2">
-              <AppButton text="Add Submission" variant="ghost" size="sm" @click="openSubmissionModal(assessment)" />
-              <AppButton text="Open" variant="outline" size="sm" @click="openAssessment(assessment.id)" />
-            </div>
-          </template>
-        </ResponsiveDataCard>
-      </div>
-    </section>
+          <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#0B1F3A]/5 text-xs font-bold text-[#0B1F3A]">
+            {{ initials(assessment.title) }}
+          </span>
 
-    <QuestionSubmissionModal
-      :show="showSubmissionModal"
-      :assessment="submissionTarget"
-      @close="closeSubmissionModal"
-    />
+          <div class="min-w-[220px] flex-1">
+            <h2 class="text-sm font-semibold text-slate-900">{{ assessment.title }}</h2>
+            <p class="mt-0.5 text-xs text-slate-400">
+              {{ classText(assessment) }} · {{ termText(assessment) }} · {{ assessment.total_marks ?? assessment.totalMarks ?? '—' }} marks cap
+            </p>
+            <div class="mt-2.5 flex flex-wrap items-center gap-2">
+              <SubmissionCountdown :deadline="assessment.question_submission_ends" />
+              <AppBadge
+                v-if="mySubmissions[assessment.id]"
+                :label="getSubmissionStatusLabel(mySubmissions[assessment.id].status)"
+                :variant="getSubmissionStatusVariant(mySubmissions[assessment.id].status)"
+                dot
+              />
+              <AppBadge v-else-if="!loadingSubmissions" label="Not started" variant="warning" />
+            </div>
+          </div>
+
+          <div class="hidden w-36 shrink-0 md:block">
+            <p class="text-2xl font-light leading-none text-slate-900">
+              {{ marksUsed(assessment) }}<span class="text-base text-slate-400">/{{ assessment.total_marks ?? assessment.totalMarks ?? '—' }}</span>
+            </p>
+            <p class="mt-1 text-xs text-slate-400">marks allocated</p>
+          </div>
+
+          <AppButton
+            :text="mySubmissions[assessment.id] ? 'Open paper' : 'Start paper'"
+            :variant="mySubmissions[assessment.id] ? 'outline' : 'primary'"
+            @click="openAssessment(assessment.id)"
+          />
+        </li>
+      </ul>
+    </section>
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { ClipboardList } from 'lucide-vue-next'
 import AppBadge from '../../shared/AppBadge.vue'
 import AppButton from '../../shared/AppButton.vue'
+import AppEmptyState from '../../shared/AppEmptyState.vue'
 import AppInput from '../../shared/AppInput.vue'
 import AppPageHeader from '../../shared/AppPageHeader.vue'
 import AppSelect from '../../shared/AppSelect.vue'
-import ResponsiveDataCard from '../../shared/ResponsiveDataCard.vue'
-import SkeletonRows from '../../schooladmincomponents/components/SkeletonRows.vue'
-import QuestionSubmissionModal from '../components/QuestionSubmissionModal.vue'
-import { useAssessmentsStore, getStatusVariant, getAssessmentStatusLabel } from '../../schooladmincomponents/stores/assessments'
+import SubmissionCountdown from '../components/SubmissionCountdown.vue'
+import { getMySubmission } from '../../schooladmincomponents/services/api/assessments'
+import { useAssessmentsStore, getSubmissionStatusLabel, getSubmissionStatusVariant } from '../../schooladmincomponents/stores/assessments'
 
 const router = useRouter()
 const store = useAssessmentsStore()
 const searchQuery = ref('')
 const filterClassLevel = ref('')
-const showSubmissionModal = ref(false)
-const submissionTarget = ref(null)
+
+// Keyed by assessment id -> the teacher's own submission for it, or absent
+// if they haven't started one. The backend has no batch endpoint for this
+// (only a per-schedule `getMySubmission`), so we fetch each open
+// assessment's submission in parallel — the list is already scoped to
+// "open for me right now", which keeps this bounded to a handful of calls.
+const mySubmissions = ref({})
+const loadingSubmissions = ref(false)
 
 const classLevelOptions = computed(() => store.classLevelOptions)
-
-onMounted(async () => {
-  await Promise.all([
-    store.fetchRefData(),
-    store.fetchTeacherAssessments(),
-  ])
-})
 
 const classLevelName = (id) => store.classLevelOptions.find((o) => String(o.value) === String(id))?.label || ''
 const classArmName = (id) => store.classArmOptions.find((o) => String(o.value) === String(id))?.label || ''
@@ -131,17 +108,18 @@ const classText = (a) => {
   return `${level}${arm}`.trim() || '—'
 }
 const termText = (a) => a.term?.name || a.term_name || a.term?.title || '—'
+const initials = (title) => (title || '')
+  .split(' ')
+  .filter(Boolean)
+  .slice(0, 2)
+  .map((word) => word[0]?.toUpperCase())
+  .join('') || '—'
 
 const visibleAssessments = computed(() => {
   const query = searchQuery.value.trim().toLowerCase()
   return store.assessments
-    // Drafts aren't visible/actionable for teachers yet — nothing to build
-    // against until an admin opens the assessment (§4/§9).
-    .filter((assessment) => (assessment.status || '').toLowerCase() !== 'draft')
-    // Assessment Schedule stubs (calendar-only, not yet opened for teacher
-    // submissions) don't have a real lifecycle `status` — keep them on the
-    // schedule calendar only, not in this actionable list.
-    .filter((assessment) => !assessment.__workflowLocal || assessment.status)
+    .filter((assessment) => !!assessment.schedule_id)
+    .filter((assessment) => (assessment.question_submission_status || 'open').toLowerCase() === 'open')
     .filter((assessment) => {
       const matchesSearch = query ? `${assessment.title || ''}`.toLowerCase().includes(query) : true
       const levelId = assessment.class_level_id ?? assessment.classLevelId
@@ -150,14 +128,44 @@ const visibleAssessments = computed(() => {
     })
 })
 
-const openAssessment = (id) => router.push(`/teachers/assessments/${id}`)
+const marksUsed = (assessment) => {
+  const submission = mySubmissions.value[assessment.id]
+  if (!submission) return 0
+  const serverTotal = submission.total_marks ?? submission.totalMarks
+  if (typeof serverTotal === 'number') return serverTotal
+  const questions = submission.questions ?? submission.submissionQuestions ?? []
+  return questions.reduce((sum, q) => sum + Number(q.marks || 0), 0)
+}
 
-const openSubmissionModal = (assessment) => {
-  submissionTarget.value = assessment
-  showSubmissionModal.value = true
+const loadMySubmissions = async (assessments) => {
+  loadingSubmissions.value = true
+  const results = await Promise.all(
+    assessments.map(async (assessment) => {
+      try {
+        const submission = await getMySubmission(assessment.schedule_id)
+        return [assessment.id, submission]
+      } catch {
+        return [assessment.id, null]
+      }
+    })
+  )
+  const next = {}
+  for (const [id, submission] of results) if (submission) next[id] = submission
+  mySubmissions.value = next
+  loadingSubmissions.value = false
 }
-const closeSubmissionModal = () => {
-  showSubmissionModal.value = false
-  submissionTarget.value = null
-}
+
+watch(() => store.assessments.length, () => {
+  if (visibleAssessments.value.length) loadMySubmissions(visibleAssessments.value)
+})
+
+onMounted(async () => {
+  await Promise.all([
+    store.fetchRefData(),
+    store.fetchTeacherAssessments(),
+  ])
+  if (visibleAssessments.value.length) await loadMySubmissions(visibleAssessments.value)
+})
+
+const openAssessment = (id) => router.push(`/teachers/assessments/${id}`)
 </script>

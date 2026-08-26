@@ -43,3 +43,4 @@ vendor/
 .claude/
 
 *.zip
+*.md
