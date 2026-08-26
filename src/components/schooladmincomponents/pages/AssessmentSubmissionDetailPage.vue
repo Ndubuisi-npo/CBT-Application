@@ -120,7 +120,7 @@
               label="Comment"
               :rows="4"
               :error="commentError"
-              hint="Required when requesting changes."
+              hint="Comment required when requesting changes."
               placeholder="Explain what needs to change, or leave a note for the record."
             />
             <div class="flex flex-col gap-2">

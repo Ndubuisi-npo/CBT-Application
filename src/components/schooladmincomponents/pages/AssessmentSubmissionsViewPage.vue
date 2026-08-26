@@ -1,5 +1,5 @@
 <template>
-  <div class="mx-auto w-full max-w-[1300px] space-y-6">
+  <div class="space-y-6">
     <AppPageHeader
       :title="assessment ? assessment.title : 'View Submissions'"
       subtitle="Review the papers each teacher has built for this assessment, then activate it for students."
