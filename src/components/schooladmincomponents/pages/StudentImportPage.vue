@@ -80,6 +80,9 @@ import FileDropzone from '../components/StudentImport/FileDropzone.vue'
 import ImportPreviewModal from '../components/StudentImport/ImportPreviewModal.vue'
 import ImportResultBanner from '../components/StudentImport/ImportResultBanner.vue'
 import { getImportTemplate, importStudents } from '../services/api/students'
+import { useSchoolAdminStudentsStore } from '../stores/students'
+
+const studentsStore = useSchoolAdminStudentsStore()
 
 const studentDuplicateColumns = [
   { key: 'email', label: 'Email' },
@@ -148,6 +151,7 @@ async function handleConfirmImport(policy) {
 
     if (response.ok) {
       state.importResult = response.body.data ?? response.body
+      await studentsStore.fetchStudents()
       state.page = 'done'
     } else {
       state.errorMessage = response.body?.message ?? 'Import failed'
