@@ -111,10 +111,12 @@
                 <AppBadge :label="getSubmissionStatusLabel(submission.status)" :variant="getSubmissionStatusVariant(submission.status)" dot />
               </button>
               <AppButton
-                v-if="assessmentStatus === 'active'"
+                v-if="isSubmissionApproved(submission)"
                 text="Force complete"
                 variant="outline"
                 size="sm"
+                :disabled="assessmentStatus !== 'active'"
+                :title="assessmentStatus !== 'active' ? 'The assessment must be active to force completion.' : 'Force complete the assessment'"
                 :processing="completingAssessment"
                 @click.stop="forceCompleteAssessment"
               />
@@ -186,6 +188,7 @@ const initials = (name) => (name || '')
   .map((part) => part[0]?.toUpperCase())
   .join('') || '—'
 const subjectName = (submission) => submission.subject?.name || store.subjectOptions.find((option) => String(option.value) === String(submission.subject_id ?? submission.subjectId))?.label || 'Unknown subject'
+const isSubmissionApproved = (submission) => (submission?.status || '').trim().toLowerCase() === 'approved'
 const formatDate = (value) => value ? fmtDateTime(value) : 'Not submitted'
 const viewSubmission = (submission) => router.push(`/school-admin/assessments/${assessmentId}/submissions/${submission.id}`)
 
