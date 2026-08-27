@@ -99,3 +99,11 @@ export async function completeSchedule(scheduleId) {
     throw new Error(extractErrorMessage(error, 'Unable to complete the schedule.'))
   }
 }
+
+export async function publishScheduleResults(scheduleId) {
+  try {
+    return await apiFetch(`/api/assessment-schedules/${scheduleId}/publish-results`, { method: 'POST' })
+  } catch (error) {
+    throw new Error(extractErrorMessage(error, 'Unable to publish assessment results.'))
+  }
+}

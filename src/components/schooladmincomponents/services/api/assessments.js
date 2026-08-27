@@ -108,6 +108,14 @@ export async function completeSchedule(scheduleId) {
   }
 }
 
+export async function publishScheduleResults(scheduleId) {
+  try {
+    return await apiFetch(`/api/assessment-schedules/${scheduleId}/publish-results`, { method: 'POST' })
+  } catch (error) {
+    throw new Error(extractErrorMessage(error, 'Unable to publish assessment results.'))
+  }
+}
+
 /* --------------------------------------------------------------------------
  * Schedules — the dated, lifecycle-bearing occurrence of an assessment
  * (§5.2). One per assessment per term. Creating one opens the question

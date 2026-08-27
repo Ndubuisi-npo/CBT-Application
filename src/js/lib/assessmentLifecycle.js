@@ -1,5 +1,5 @@
 // Maps the REAL backend's assessment/schedule status fields
-// (`assessment_status`: draft | active | completed,
+// (`assessment_status`: draft | active | completed | published,
 //  `question_submission_status`: open | closed)
 // onto the presentation model used by the updated UI/UX reference
 // (`src/utils/status.ts`, `src/components/assessment/LifecycleTrail.tsx`).
@@ -10,7 +10,7 @@
 // assessment. Real status values are the source of truth; nothing here
 // renames or replaces them — it only maps them to display metadata.
 
-export const LIFECYCLE_STEPS = ['Scheduled', 'Questions', 'Review', 'Live', 'Complete']
+export const LIFECYCLE_STEPS = ['Scheduled', 'Questions', 'Review', 'Live', 'Completed', 'Published']
 
 const normalize = (value) => String(value ?? '').toLowerCase()
 
@@ -20,7 +20,9 @@ export function assessmentStatusMeta(status) {
     case 'active':
       return { label: 'Active', variant: 'success' }
     case 'completed':
-      return { label: 'Complete', variant: 'info' }
+      return { label: 'Completed', variant: 'info' }
+    case 'published':
+      return { label: 'Published', variant: 'success' }
     case 'draft':
     default:
       return { label: 'Draft', variant: 'default' }
@@ -50,14 +52,15 @@ export function questionSubmissionMeta(status) {
 }
 
 /**
- * Which of the 5 lifecycle steps (Scheduled/Questions/Review/Live/Complete)
+ * Which of the 6 lifecycle steps (Scheduled/Questions/Review/Live/Complete/Published)
  * an assessment currently sits at, 0-indexed. Real backend has 3
  * assessment_status values (draft/active/completed) plus an orthogonal
  * question_submission_status (open/closed) — this folds both into the same
- * 5-step trail the reference UI uses.
+ * 6-step trail the reference UI uses.
  */
 export function lifecycleStep(assessmentStatus, questionSubmissionStatus) {
   const status = normalize(assessmentStatus)
+  if (status === 'published') return 5
   if (status === 'completed') return 4
   if (status === 'active') return 3
   if (normalize(questionSubmissionStatus) === 'closed') return 2

@@ -1,6 +1,6 @@
 <template>
   <div class="min-h-screen bg-slate-50 px-4 py-8">
-    <div class="mx-auto max-w-5xl space-y-6">
+    <div class="space-y-6">
 
       <!-- Page header -->
       <div class="flex flex-wrap items-start justify-between gap-4">

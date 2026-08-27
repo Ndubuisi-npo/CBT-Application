@@ -18,6 +18,7 @@ import {
   reopenSubmissions as apiReopenSubmissions,
   activateSchedule as apiActivateSchedule,
   completeSchedule as apiCompleteSchedule,
+  publishScheduleResults as apiPublishScheduleResults,
   getMySubmission,
   createSubmission as apiCreateSubmission,
   updateSubmission as apiUpdateSubmission,
@@ -49,6 +50,7 @@ export const getStatusVariant = (status) => {
     case 'open':
     case 'active': return 'success'
     case 'submissions_closed': return 'info'
+    case 'published': return 'success'
     case 'completed': return 'default'
     default: return 'default'
   }
@@ -62,6 +64,7 @@ export const getAssessmentStatusLabel = (assessment) => {
     case 'submissions_closed': return 'Submissions Closed'
     case 'active': return 'Active for Students'
     case 'completed': return 'Completed'
+    case 'published': return 'Results Published'
     case 'pending': return 'Pending'
     default: return 'Unknown'
   }
@@ -480,6 +483,20 @@ export const useAssessmentsStore = defineStore('assessments', {
       } catch (error) {
         this.error = error?.message || 'Failed to complete assessment.'
         this._toast('Unable to complete assessment', this.error)
+        throw error
+      }
+    },
+
+    async publishAssessmentResults(assessmentId) {
+      const scheduleId = this.getAssessmentById(assessmentId)?.schedule_id
+      if (!scheduleId) throw new Error('This assessment has not been scheduled yet.')
+      try {
+        const response = await apiPublishScheduleResults(scheduleId)
+        this._toast('Results published', response?.message || 'Students can now view their assessment results.', 'success')
+        return response
+      } catch (error) {
+        this.error = error?.message || 'Failed to publish assessment results.'
+        this._toast('Unable to publish results', this.error)
         throw error
       }
     },

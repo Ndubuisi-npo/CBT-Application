@@ -56,11 +56,14 @@
               @click="activateAssessment"
             />
             <AppButton
-              v-if="assessmentStatus === 'active'"
-              :text="assessment.student_starts_at ? 'Edit student window' : 'Publish for students'"
-              variant="primary"
+              v-if="canPublishResults"
+              text="Publish results for students"
+              variant="success"
               size="sm"
-              @click="showPublishModal = true"
+              :disabled="!assessmentCompleted"
+              :title="!assessmentCompleted ? 'Complete the assessment before publishing results.' : 'Publish results for students'"
+              :processing="publishingResults"
+              @click="publishResults"
             />
           </div>
         </div>
@@ -88,35 +91,39 @@
         />
         <ul v-else class="divide-y divide-slate-100">
           <li v-for="submission in submissions" :key="submission.id">
-            <button
-              type="button"
-              class="flex w-full flex-wrap items-center gap-4 px-5 py-4 text-left transition hover:bg-slate-50 sm:px-6"
-              @click="viewSubmission(submission)"
-            >
-              <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#0B1F3A]/5 text-xs font-bold text-[#0B1F3A]">
-                {{ initials(teacherName(submission)) }}
-              </span>
-              <span class="min-w-0 flex-1">
-                <span class="block truncate text-sm font-semibold text-slate-900">{{ teacherName(submission) }}</span>
-                <span class="block truncate text-xs text-slate-500">{{ subjectName(submission) }} · {{ submission.title || 'Untitled paper' }}</span>
-              </span>
-              <span class="hidden text-sm text-slate-600 sm:block">
-                {{ submission.question_count ?? submission.questions_count ?? 0 }} {{ (submission.question_count ?? submission.questions_count) === 1 ? 'question' : 'questions' }}
-              </span>
-              <span class="hidden w-40 text-xs text-slate-400 lg:block">{{ formatDate(submission.submitted_at) }}</span>
-              <AppBadge :label="getSubmissionStatusLabel(submission.status)" :variant="getSubmissionStatusVariant(submission.status)" dot />
-            </button>
+            <div class="flex flex-wrap items-center gap-3 px-5 py-4 sm:px-6">
+              <button
+                type="button"
+                class="flex min-w-0 flex-1 flex-wrap items-center gap-4 text-left transition hover:bg-slate-50"
+                @click="viewSubmission(submission)"
+              >
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#0B1F3A]/5 text-xs font-bold text-[#0B1F3A]">
+                  {{ initials(teacherName(submission)) }}
+                </span>
+                <span class="min-w-0 flex-1">
+                  <span class="block truncate text-sm font-semibold text-slate-900">{{ teacherName(submission) }}</span>
+                  <span class="block truncate text-xs text-slate-500">{{ subjectName(submission) }} · {{ submission.title || 'Untitled paper' }}</span>
+                </span>
+                <span class="hidden text-sm text-slate-600 sm:block">
+                  {{ submission.question_count ?? submission.questions_count ?? 0 }} {{ (submission.question_count ?? submission.questions_count) === 1 ? 'question' : 'questions' }}
+                </span>
+                <span class="hidden w-40 text-xs text-slate-400 lg:block">{{ formatDate(submission.submitted_at) }}</span>
+                <AppBadge :label="getSubmissionStatusLabel(submission.status)" :variant="getSubmissionStatusVariant(submission.status)" dot />
+              </button>
+              <AppButton
+                v-if="assessmentStatus === 'active'"
+                text="Force complete"
+                variant="outline"
+                size="sm"
+                :processing="completingAssessment"
+                @click.stop="forceCompleteAssessment"
+              />
+            </div>
           </li>
         </ul>
       </section>
     </template>
 
-    <PublishForStudentsModal
-      :show="showPublishModal"
-      :assessment="assessment"
-      @close="showPublishModal = false"
-      @submit="submitPublish"
-    />
   </div>
 </template>
 
@@ -129,7 +136,6 @@ import AppButton from '../../shared/AppButton.vue'
 import AppEmptyState from '../../shared/AppEmptyState.vue'
 import AppLifecycleTrail from '../../shared/AppLifecycleTrail.vue'
 import AppPageHeader from '../../shared/AppPageHeader.vue'
-import PublishForStudentsModal from '../components/PublishForStudentsModal.vue'
 import { fmtDateTime } from '../../../js/lib/helpers'
 import { useAssessmentsStore, getAssessmentStatusLabel, getStatusVariant, getSubmissionStatusLabel, getSubmissionStatusVariant } from '../stores/assessments'
 
@@ -141,11 +147,13 @@ const assessment = computed(() => store.current || store.getAssessmentById(asses
 const submissions = computed(() => store.submissions)
 const activating = ref(false)
 const closingSubmissions = ref(false)
+const publishingResults = ref(false)
+const completingAssessment = ref(false)
 const activationError = ref('')
-const showPublishModal = ref(false)
 
 const questionSubmissionStatus = computed(() => (assessment.value?.question_submission_status || 'open').toLowerCase())
-const assessmentStatus = computed(() => (assessment.value?.assessment_status || assessment.value?.status || 'draft').toLowerCase())
+const assessmentStatus = computed(() => (assessment.value?.assessment_status || assessment.value?.status || 'draft').trim().toLowerCase())
+const assessmentCompleted = computed(() => assessmentStatus.value === 'completed')
 const approvedCount = computed(() => submissions.value.filter((s) => (s.status || '').toLowerCase() === 'approved').length)
 
 const canShowActivate = computed(() => {
@@ -157,6 +165,7 @@ const canActivate = computed(() => {
   const item = assessment.value
   return item?.schedule_id && assessmentStatus.value === 'draft' && questionSubmissionStatus.value === 'closed'
 })
+const canPublishResults = computed(() => ['active', 'completed'].includes(assessmentStatus.value))
 
 const classText = computed(() => {
   const levelId = assessment.value?.class_level_id ?? assessment.value?.classLevelId
@@ -208,13 +217,33 @@ const closeSubmissions = async () => {
   }
 }
 
-const submitPublish = async (payload) => {
+const publishResults = async () => {
+  if (!assessmentCompleted.value || publishingResults.value) return
+  if (!window.confirm('Publish assessment results for students?')) return
+
+  publishingResults.value = true
+  activationError.value = ''
   try {
-    await store.updateAssessment(assessmentId, payload)
-    showPublishModal.value = false
-    await store.fetchAssessment(assessmentId)
+    await store.publishAssessmentResults(assessmentId)
   } catch (error) {
-    activationError.value = error?.message || 'Unable to publish this assessment for students.'
+    activationError.value = error?.message || 'Unable to publish assessment results for students.'
+  } finally {
+    publishingResults.value = false
+  }
+}
+
+const forceCompleteAssessment = async () => {
+  if (assessmentStatus.value !== 'active' || completingAssessment.value) return
+  if (!window.confirm('Force complete this assessment? Students will no longer be able to take it.')) return
+
+  completingAssessment.value = true
+  activationError.value = ''
+  try {
+    await store.completeAssessment(assessmentId)
+  } catch (error) {
+    activationError.value = error?.message || 'Unable to force complete this assessment.'
+  } finally {
+    completingAssessment.value = false
   }
 }
 

@@ -4,7 +4,7 @@ import { apiFetch } from '../../../../js/lib/api'
  * Fetch all exam results for a specific student (teacher view).
  */
 export async function getStudentResultsForTeacher(studentId) {
-  const response = await apiFetch(`/api/reports/students/${studentId}/results`)
+  const response = await apiFetch(`/api/students/${studentId}/results`)
   return Array.isArray(response) ? response : (response?.data || [])
 }
 
