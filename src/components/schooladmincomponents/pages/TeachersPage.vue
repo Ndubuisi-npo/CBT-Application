@@ -402,7 +402,16 @@ const closeModal = () => { showModal.value = false; selectedTeacher.value = null
 const submitTeacher = async (data) => {
   savingTeacher.value = true
   try {
-    const payload = { first_name: data.first_name, last_name: data.last_name, email: data.email, phone: data.phone, qualification: data.qualification, staff_id: data.staff_id }
+    const payload = {
+      first_name: data.first_name,
+      last_name: data.last_name,
+      email: data.email,
+      phone: data.phone,
+      gender: data.gender,
+      qualification: data.qualification,
+      staff_id: data.staff_id,
+      date_joined: data.date_joined,
+    }
     if (data.id) {
       await teachersStore.updateTeacher(data.id, payload)
     } else {

@@ -129,6 +129,7 @@ export const useSchoolAdminStudentsStore = defineStore(
                 this.students = this.students.map((item) =>
                     item.id === record.id ? record : item,
                 );
+                await this.fetchStudents();
                 return record;
             },
 
