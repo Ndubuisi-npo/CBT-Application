@@ -287,7 +287,7 @@ const isSelected = (dateKey) => selectedDate.value === dateKey
 
 const assessmentsThisMonth = computed(() => {
   const monthKey = `${currentMonthDate.value.getFullYear()}-${String(currentMonthDate.value.getMonth() + 1).padStart(2, '0')}`
-  return scheduledAssessments.value.filter((a) => (a.scheduled_date || '').startsWith(monthKey))
+  return scheduledAssessments.value.filter((a) => toDateKey(a.scheduled_date).startsWith(monthKey))
 })
 
 const selectedDateObj = computed(() => {
