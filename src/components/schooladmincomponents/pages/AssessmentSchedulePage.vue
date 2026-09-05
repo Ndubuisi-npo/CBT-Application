@@ -15,6 +15,26 @@
       <AppBadge :label="`${scheduledAssessments.length} assessments this session`" variant="primary" />
     </div>
 
+    <section v-if="unscheduledAssessments.length" class="rounded-2xl border border-amber-200 bg-amber-50/60 p-4 sm:p-5">
+      <div class="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-[0.24em] text-amber-700">Needs scheduling</p>
+          <h2 class="mt-1 text-lg font-semibold text-slate-900">{{ unscheduledAssessments.length }} assessment{{ unscheduledAssessments.length === 1 ? '' : 's' }} without a date</h2>
+          <p class="mt-1 text-sm text-slate-600">These assessments were created successfully but do not have a submission window yet.</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <AppButton
+            v-for="assessment in unscheduledAssessments"
+            :key="assessment.id"
+            :text="assessment.title"
+            variant="outline"
+            size="xs"
+            @click="openAssessmentForScheduling(assessment)"
+          />
+        </div>
+      </div>
+    </section>
+
     <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px] 2xl:grid-cols-[minmax(0,1fr)_420px]">
     <section class="rounded-3xl border border-slate-200 bg-white shadow-sm">
       <div class="min-w-0 p-4 sm:p-6">
@@ -210,6 +230,7 @@ const currentMonthDate = computed(() => new Date(assessmentStore.currentMonth))
 const monthLabel = computed(() => currentMonthDate.value.toLocaleDateString(undefined, { month: 'long', year: 'numeric' }))
 const selectedDate = computed(() => assessmentStore.selectedDate)
 const scheduledAssessments = computed(() => assessmentStore.scheduledAssessments)
+const unscheduledAssessments = computed(() => assessmentStore.assessments.filter((assessment) => !assessment.schedule_id))
 
 const formatLocalDateKey = (value) => {
   const date = value instanceof Date ? value : new Date(value)
@@ -349,6 +370,13 @@ const selectCell = (cell) => {
 const openAssessment = (assessment) => {
   assessmentStore.selectDate(assessment.scheduled_date || assessment.scheduledDate || today)
   drawerDate.value = new Date(assessment.scheduled_date || assessment.scheduledDate || today)
+  drawerAssessment.value = assessment
+  drawerOpen.value = true
+}
+
+const openAssessmentForScheduling = (assessment) => {
+  const date = selectedDate.value ? new Date(`${selectedDate.value}T00:00:00`) : today
+  drawerDate.value = date
   drawerAssessment.value = assessment
   drawerOpen.value = true
 }

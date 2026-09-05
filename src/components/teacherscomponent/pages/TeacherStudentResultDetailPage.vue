@@ -13,6 +13,7 @@
         </div>
         <div class="flex shrink-0 flex-wrap items-center gap-2 pb-1">
           <AppButton text="Back to History" variant="outline" size="sm" @click="router.push({ name: historyRouteName, params: { studentId } })" />
+          <AppButton :text="downloading ? 'Downloading...' : 'Download PDF'" variant="outline" size="sm" :disabled="downloading" @click="downloadPdf" />
         </div>
       </div>
       <div class="px-5 pb-5 sm:px-6">
@@ -167,6 +168,7 @@ import { getAttemptResultDetailForTeacher } from '../services/api/teacherStudent
 import { getStudents } from '../../schooladmincomponents/services/api/students'
 import { fmtDate } from '../../../js/lib/helpers'
 import { scoreColorClass, fmtDuration } from '../../../types/question'
+import { downloadAttemptResultPdf, saveBlobAsPdf } from '../../shared/services/resultPdf'
 
 const route = useRoute()
 const router = useRouter()
@@ -181,6 +183,7 @@ const result = ref(null)
 const student = ref(null)
 const loading = ref(false)
 const loadError = ref('')
+const downloading = ref(false)
 
 // ── Student info ──────────────────────────────────────────────────────────────
 const studentName = computed(() => {
@@ -247,6 +250,18 @@ const loadDetail = async () => {
     loadError.value = err?.message || 'Failed to load result details.'
   } finally {
     loading.value = false
+  }
+}
+
+const downloadPdf = async () => {
+  downloading.value = true
+  try {
+    const blob = await downloadAttemptResultPdf(attemptId)
+    saveBlobAsPdf(blob, `student-result-${attemptId}.pdf`)
+  } catch (err) {
+    loadError.value = err?.message || 'Failed to download the result PDF.'
+  } finally {
+    downloading.value = false
   }
 }
 

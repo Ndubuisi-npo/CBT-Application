@@ -116,12 +116,22 @@
                 </span>
               </td>
               <td class="px-5 py-4">
-                <button
-                  class="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-100"
-                  @click="viewResult(result)"
-                >
-                  View Result
-                </button>
+                <div class="flex items-center gap-2">
+                  <button
+                    class="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-100"
+                    @click="viewResult(result)"
+                  >
+                    View Result
+                  </button>
+                  <button
+                    class="rounded-lg border border-slate-200 p-1.5 text-slate-600 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+                    :disabled="downloadingId === getAttemptId(result)"
+                    title="Download PDF"
+                    @click="downloadPdf(result)"
+                  >
+                    <Download class="h-4 w-4" />
+                  </button>
+                </div>
               </td>
             </tr>
           </tbody>
@@ -175,6 +185,14 @@
           >
             View Result
           </button>
+          <button
+            class="mt-2 flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+            :disabled="downloadingId === getAttemptId(result)"
+            @click="downloadPdf(result)"
+          >
+            <Download class="h-4 w-4" />
+            {{ downloadingId === getAttemptId(result) ? 'Downloading...' : 'Download PDF' }}
+          </button>
         </div>
       </div>
 
@@ -206,13 +224,14 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ChevronLeft, ChevronRight, FileText } from 'lucide-vue-next'
+import { ChevronLeft, ChevronRight, Download, FileText } from 'lucide-vue-next'
 import AppBadge from '../../shared/AppBadge.vue'
 import AppButton from '../../shared/AppButton.vue'
 import { getStudentResultsForTeacher } from '../services/api/teacherStudentResults'
 import { getStudents } from '../../schooladmincomponents/services/api/students'
 import { fmtDate } from '../../../js/lib/helpers'
 import { scoreColorClass } from '../../../types/question'
+import { downloadAttemptResultPdf, saveBlobAsPdf } from '../../shared/services/resultPdf'
 
 const route = useRoute()
 const router = useRouter()
@@ -225,6 +244,7 @@ const student = ref(null)
 const results = ref([])
 const loading = ref(false)
 const loadError = ref('')
+const downloadingId = ref(null)
 const page = ref(1)
 const itemsPerPage = 10
 
@@ -276,9 +296,24 @@ const statusClass = (status) => {
 
 // ── Navigation ────────────────────────────────────────────────────────────────
 const viewResult = (result) => {
-  const attemptId = result.attempt_id || result.id
+  const attemptId = getAttemptId(result)
   const examId = result.exam_id || result.exam?.id
   router.push({ name: resultDetailRouteName.value, params: { studentId, examId, attemptId } })
+}
+
+const getAttemptId = (result) => result?.attempt_id || result?.attemptId || result?.id
+
+const downloadPdf = async (result) => {
+  const attemptId = getAttemptId(result)
+  downloadingId.value = attemptId
+  try {
+    const blob = await downloadAttemptResultPdf(attemptId)
+    saveBlobAsPdf(blob, `student-result-${attemptId}.pdf`)
+  } catch (err) {
+    loadError.value = err?.message || 'Failed to download the result PDF.'
+  } finally {
+    downloadingId.value = null
+  }
 }
 
 // ── Load ──────────────────────────────────────────────────────────────────────

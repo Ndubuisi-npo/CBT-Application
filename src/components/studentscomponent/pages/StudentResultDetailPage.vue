@@ -40,12 +40,21 @@
               <h1 class="mt-1 text-2xl font-semibold text-slate-900">{{ examTitle }}</h1>
               <p class="mt-1 text-sm text-slate-500">{{ examSubject }}</p>
             </div>
-            <div class="text-right">
+            <div class="flex flex-wrap items-end justify-end gap-4 text-right">
+              <button
+                class="rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+                :disabled="downloading"
+                @click="downloadPdf"
+              >
+                {{ downloading ? 'Downloading...' : 'Download PDF' }}
+              </button>
+              <div>
               <p class="text-3xl font-bold" :class="scoreColorClass(percentage)">
                 {{ percentage != null ? `${percentage}%` : 'N/A' }}
               </p>
               <p class="text-sm text-slate-500">{{ totalScore }} / {{ totalMarks }} marks</p>
               <p class="mt-1 text-lg font-semibold text-slate-700">{{ grade }}</p>
+              </div>
             </div>
           </div>
         </div>
@@ -130,6 +139,7 @@ import QuestionReviewCard from '../../shared/QuestionReviewCard.vue'
 import { getAttemptResultDetail } from '../services/api/studentResults'
 import { fmtDate } from '../../../js/lib/helpers'
 import { scoreColorClass, fmtDuration } from '../../../types/question'
+import { downloadAttemptResultPdf, saveBlobAsPdf } from '../../shared/services/resultPdf'
 
 const route = useRoute()
 const router = useRouter()
@@ -138,6 +148,7 @@ const attemptId = route.params.attemptId
 const result = ref(null)
 const loading = ref(false)
 const loadError = ref('')
+const downloading = ref(false)
 
 // ── Derived ───────────────────────────────────────────────────────────────────
 const examTitle = computed(() => result.value?.exam?.title || result.value?.exam_title || 'Exam Result')
@@ -189,6 +200,18 @@ const loadDetail = async () => {
     loadError.value = err?.message || 'Failed to load result details.'
   } finally {
     loading.value = false
+  }
+}
+
+const downloadPdf = async () => {
+  downloading.value = true
+  try {
+    const blob = await downloadAttemptResultPdf(attemptId)
+    saveBlobAsPdf(blob, `student-result-${attemptId}.pdf`)
+  } catch (err) {
+    loadError.value = err?.message || 'Failed to download the result PDF.'
+  } finally {
+    downloading.value = false
   }
 }
 

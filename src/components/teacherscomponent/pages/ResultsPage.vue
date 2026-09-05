@@ -52,6 +52,7 @@
               <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">%</th>
               <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Grade</th>
               <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Result</th>
+              <th class="px-5 py-3"></th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100">
@@ -67,6 +68,16 @@
                   {{ r.passed ? 'PASS' : 'FAIL' }}
                 </span>
               </td>
+              <td class="px-5 py-4">
+                <button
+                  class="rounded-lg border border-slate-200 p-1.5 text-slate-600 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+                  :disabled="downloadingId === getAttemptId(r)"
+                  title="Download PDF"
+                  @click="downloadPdf(r)"
+                >
+                  <Download class="h-4 w-4" />
+                </button>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -77,10 +88,12 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
+import { Download } from 'lucide-vue-next'
 import SectionCard from '../components/SectionCard.vue'
 import { useTeacherExamsStore } from '../stores/exams'
 import { useSchoolAdminUiStore } from '../../schooladmincomponents/stores/ui'
 import { apiFetch } from '../../../js/lib/api'
+import { downloadAttemptResultPdf, saveBlobAsPdf } from '../../shared/services/resultPdf'
 
 const store = useTeacherExamsStore()
 const ui    = useSchoolAdminUiStore()
@@ -89,6 +102,22 @@ const selectedExamId = ref('')
 const results        = ref([])
 const loading        = ref(false)
 const loadError      = ref('')
+const downloadingId  = ref(null)
+
+const getAttemptId = (result) => result?.attempt_id || result?.attemptId || result?.id
+
+const downloadPdf = async (result) => {
+  const attemptId = getAttemptId(result)
+  downloadingId.value = attemptId
+  try {
+    const blob = await downloadAttemptResultPdf(attemptId)
+    saveBlobAsPdf(blob, `student-result-${attemptId}.pdf`)
+  } catch (err) {
+    loadError.value = err?.message || 'Failed to download the result PDF.'
+  } finally {
+    downloadingId.value = null
+  }
+}
 
 const completedExams = computed(() => store.exams.filter((e) => (e.status || '').toLowerCase() === 'completed'))
 

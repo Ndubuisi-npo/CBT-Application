@@ -118,7 +118,7 @@ export async function apiFetch(path, options = {}) {
     headers['X-Tenant'] = tenantHandle
   }
 
-  const { params: _params, timeoutMs = DEFAULT_TIMEOUT_MS, ...fetchOptions } = options
+  const { params: _params, timeoutMs = DEFAULT_TIMEOUT_MS, responseType, ...fetchOptions } = options
   const controller = new AbortController()
   const timeoutId = timeoutMs
     ? setTimeout(() => controller.abort(), timeoutMs)
@@ -153,6 +153,18 @@ export async function apiFetch(path, options = {}) {
       window.location.href = '/login'
     }
     throw new Error('Session expired. Please log in again.')
+  }
+
+  if (responseType === 'blob') {
+    if (!response.ok) {
+      const contentType = response.headers.get('content-type') || ''
+      const data = contentType.includes('application/json') ? await response.json() : await response.text()
+      const error = new Error(extractErrorMessage(data))
+      error.status = response.status
+      error.data = data
+      throw error
+    }
+    return await response.blob()
   }
 
   const contentType = response.headers.get('content-type') || ''
