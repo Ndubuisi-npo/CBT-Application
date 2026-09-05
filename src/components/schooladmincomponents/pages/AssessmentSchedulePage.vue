@@ -364,10 +364,10 @@ const handleSaved = (record) => {
   // The store already mutates its own `assessments` array on every
   // create/update/lifecycle call, so the calendar grid (which reads
   // straight from `assessmentStore.scheduledAssessments`) updates itself
-  // reactively — nothing to refetch here. Just keep the drawer's own
-  // assessment reference current so re-opening the same cell shows the
-  // latest record instead of a stale one.
-  drawerAssessment.value = record
+  // reactively — nothing to refetch here. Do not replace the drawer prop
+  // while it is open: that would retrigger its initialization watcher,
+  // reset the active tab, and reload the form after every save.
+  if (!drawerOpen.value && record) drawerAssessment.value = record
 }
 
 onMounted(async () => {

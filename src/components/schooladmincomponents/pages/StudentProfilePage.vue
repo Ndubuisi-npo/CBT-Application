@@ -75,16 +75,6 @@
         </div>
       </div>
 
-      <!-- ── Attendance & Exam statistics ────────────────────────────────── -->
-      <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-        <AppStatCard label="Attendance Rate" value="—" sub="Not tracked yet" :icon="CalendarCheck" icon-bg="bg-blue-50" icon-color="text-blue-600" />
-        <AppStatCard label="Days Present" value="—" sub="Not tracked yet" :icon="CalendarCheck" icon-bg="bg-blue-50" icon-color="text-blue-600" />
-        <AppStatCard label="Exams Taken" value="—" sub="Not tracked yet" :icon="FileText" icon-bg="bg-amber-50" icon-color="text-amber-600" />
-        <AppStatCard label="Average Score" value="—" sub="Not tracked yet" :icon="Percent" icon-bg="bg-purple-50" icon-color="text-purple-600" />
-        <AppStatCard label="Highest Score" value="—" sub="Not tracked yet" :icon="TrendingUp" icon-bg="bg-emerald-50" icon-color="text-emerald-600" />
-        <AppStatCard label="Pass Rate" value="—" sub="Not tracked yet" :icon="ClipboardCheck" icon-bg="bg-slate-100" icon-color="text-slate-600" />
-      </div>
-
       <!-- ── Main grid ───────────────────────────────────────────────────── -->
       <div class="grid gap-6 lg:grid-cols-3">
         <!-- Left column -->
@@ -144,16 +134,6 @@
             </dl>
           </section>
 
-          <!-- Action bar -->
-          <section class="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
-            <h2 class="text-sm font-semibold text-slate-900">Actions</h2>
-            <div class="mt-4 space-y-2">
-              <AppButton :icon="Pencil" text="Edit" variant="outline" full-width class="justify-start" @click="showEditDrawer = true" />
-              <AppButton :icon="ArrowUpCircle" text="Promote" variant="outline" full-width class="justify-start" @click="showPromoteDrawer = true" />
-              <AppButton :icon="KeyRound" text="Reset Password" variant="outline" full-width class="justify-start" :processing="resettingPassword" @click="handleResetPassword" />
-              <AppButton :icon="Trash2" text="Delete" variant="danger" full-width class="justify-start" :processing="deleting" @click="handleDelete" />
-            </div>
-          </section>
         </div>
       </div>
     </template>
@@ -167,13 +147,11 @@
 import { computed, h, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
-  ArrowUpCircle, CalendarCheck, ClipboardCheck, FileText,
-  KeyRound, Pencil, Percent, TrendingUp, Trash2, UserX,
+  ArrowUpCircle, Pencil, Trash2, UserX,
 } from 'lucide-vue-next'
 import AppBadge from '../../shared/AppBadge.vue'
 import AppButton from '../../shared/AppButton.vue'
 import AppEmptyState from '../../shared/AppEmptyState.vue'
-import AppStatCard from '../../shared/AppStatCard.vue'
 import StudentFormDrawer from '../components/StudentFormDrawer.vue'
 import PromoteStudentDrawer from '../components/PromoteStudentDrawer.vue'
 import { useSchoolAdminStudentsStore } from '../stores/students'
@@ -201,7 +179,6 @@ const showPromoteDrawer = ref(false)
 const savingStudent = ref(false)
 const promoting = ref(false)
 const deleting = ref(false)
-const resettingPassword = ref(false)
 
 const studentIdParam = computed(() => route.params.id)
 
@@ -215,7 +192,6 @@ const initials = computed(() => fullName.value.split(' ').map((p) => p[0] || '')
 const statusLabel = computed(() => (student.value?.is_active !== false ? 'Active' : 'Inactive'))
 const email = computed(() => displayValue(student.value?.email || student.value?.user?.email))
 const phone = computed(() => displayValue(student.value?.phone || student.value?.user?.phone))
-const studentId = computed(() => displayValue(student.value?.id))
 const gender = computed(() => displayValue(sp.value?.gender || student.value?.gender))
 const dob = computed(() => displayValue(sp.value?.date_of_birth || sp.value?.dateOfBirth || student.value?.date_of_birth))
 const bloodGroup = computed(() => displayValue(sp.value?.blood_group || sp.value?.bloodGroup))
@@ -290,16 +266,6 @@ const handleDelete = async () => {
     uiStore.addToast({ title: 'Error', message: error?.message || 'Failed to delete student.', variant: 'error' })
   } finally {
     deleting.value = false
-  }
-}
-
-const handleResetPassword = async () => {
-  if (!window.confirm("Reset this student's password to the default?")) return
-  resettingPassword.value = true
-  try {
-    await studentsStore.resetPassword(student.value.id)
-  } finally {
-    resettingPassword.value = false
   }
 }
 

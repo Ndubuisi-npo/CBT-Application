@@ -75,14 +75,10 @@
         </div>
       </div>
 
-      <!-- ── Teaching statistics ─────────────────────────────────────────── -->
       <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <AppStatCard label="Total Classes" :value="stats.totalClasses" :icon="School" icon-bg="bg-blue-50" icon-color="text-blue-600" />
         <AppStatCard label="Subjects" :value="stats.totalSubjects" :icon="BookOpen" icon-bg="bg-purple-50" icon-color="text-purple-600" />
         <AppStatCard label="Students" :value="stats.totalStudents" :icon="Users" icon-bg="bg-emerald-50" icon-color="text-emerald-600" />
-        <AppStatCard label="Exams Created" value="—" sub="Not tracked yet" :icon="FileText" icon-bg="bg-amber-50" icon-color="text-amber-600" />
-        <AppStatCard label="Questions Created" value="—" sub="Not tracked yet" :icon="HelpCircle" icon-bg="bg-rose-50" icon-color="text-rose-600" />
-        <AppStatCard label="Results Published" value="—" sub="Not tracked yet" :icon="ClipboardCheck" icon-bg="bg-slate-100" icon-color="text-slate-600" />
       </div>
 
       <!-- ── Main grid ───────────────────────────────────────────────────── -->
@@ -187,25 +183,6 @@
             </p>
           </section>
 
-          <!-- Action bar -->
-          <section class="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
-            <h2 class="text-sm font-semibold text-slate-900">Actions</h2>
-            <div class="mt-4 space-y-2">
-              <AppButton :icon="Pencil" text="Edit Teacher" variant="outline" full-width class="justify-start" @click="showEditDrawer = true" />
-              <AppButton :icon="KeyRound" text="Reset Password" variant="outline" full-width class="justify-start" :processing="resettingPassword" @click="handleResetPassword" />
-              <AppButton
-                v-if="teacher.is_active !== false"
-                :icon="Ban"
-                text="Suspend Teacher"
-                variant="warning"
-                full-width
-                class="justify-start"
-                :processing="revoking"
-                @click="handleSuspend"
-              />
-              <AppButton :icon="Trash2" text="Delete Teacher" variant="danger" full-width class="justify-start" :processing="deleting" @click="handleDelete" />
-            </div>
-          </section>
         </div>
       </div>
     </template>
@@ -218,8 +195,7 @@
 import { computed, h, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
-  Ban, BookOpen, ClipboardCheck, FileText, HelpCircle,
-  KeyRound, Pencil, School, Trash2, UserX, Users,
+  Ban, BookOpen, Pencil, School, Trash2, UserX, Users,
 } from 'lucide-vue-next'
 import AppBadge from '../../shared/AppBadge.vue'
 import AppButton from '../../shared/AppButton.vue'
@@ -252,7 +228,6 @@ const showEditDrawer = ref(false)
 const savingTeacher = ref(false)
 const revoking = ref(false)
 const deleting = ref(false)
-const resettingPassword = ref(false)
 const activitiesLoading = ref(false)
 const teacherActivities = ref([])
 
@@ -430,16 +405,6 @@ const handleDelete = async () => {
     uiStore.addToast({ title: 'Error', message: error?.message || 'Failed to delete teacher.', variant: 'error' })
   } finally {
     deleting.value = false
-  }
-}
-
-const handleResetPassword = async () => {
-  if (!window.confirm("Reset this teacher's password to the default?")) return
-  resettingPassword.value = true
-  try {
-    await teachersStore.resetPassword(teacher.value.id)
-  } finally {
-    resettingPassword.value = false
   }
 }
 
