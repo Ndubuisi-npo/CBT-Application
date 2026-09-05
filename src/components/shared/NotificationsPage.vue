@@ -202,6 +202,7 @@ import { useRouter } from 'vue-router'
 import {
   BellOff, CalendarClock, CheckCheck, FileText, GraduationCap, MailWarning,
   Megaphone, MessageSquare, Search, SearchX, ShieldAlert, UserCog, Bell,
+  ClipboardList, Award, UserRound,
 } from 'lucide-vue-next'
 import AppButton from './AppButton.vue'
 import AppSelect from './AppSelect.vue'
@@ -225,6 +226,11 @@ onMounted(() => {
 
 // ── Category presentation ───────────────────────────────────────────────
 const CATEGORY_META = {
+  assessment: { icon: ClipboardList, bg: 'bg-blue-50', color: 'text-blue-600', label: 'Assessment' },
+  submission: { icon: FileText, bg: 'bg-emerald-50', color: 'text-emerald-600', label: 'Submission' },
+  exam: { icon: FileText, bg: 'bg-rose-50', color: 'text-rose-600', label: 'Exam' },
+  result: { icon: Award, bg: 'bg-amber-50', color: 'text-amber-600', label: 'Result' },
+  account: { icon: UserRound, bg: 'bg-slate-100', color: 'text-slate-600', label: 'Account' },
   announcements: { icon: Megaphone, bg: 'bg-purple-50', color: 'text-purple-600', label: 'Announcements' },
   system: { icon: ShieldAlert, bg: 'bg-amber-50', color: 'text-amber-600', label: 'System' },
   messages: { icon: MessageSquare, bg: 'bg-emerald-50', color: 'text-emerald-600', label: 'Messages' },

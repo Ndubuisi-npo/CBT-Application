@@ -12,7 +12,7 @@
           </div>
         </div>
         <div class="flex shrink-0 flex-wrap items-center gap-2 pb-1">
-          <AppButton text="Back to History" variant="outline" size="sm" @click="router.push({ name: 'TeacherStudentHistory', params: { studentId } })" />
+          <AppButton text="Back to History" variant="outline" size="sm" @click="router.push({ name: historyRouteName, params: { studentId } })" />
         </div>
       </div>
       <div class="px-5 pb-5 sm:px-6">
@@ -171,6 +171,9 @@ import { scoreColorClass, fmtDuration } from '../../../types/question'
 const route = useRoute()
 const router = useRouter()
 const studentId = route.params.studentId
+const historyRouteName = route.name === 'SchoolAdminStudentResultDetail'
+  ? 'SchoolAdminStudentHistory'
+  : 'TeacherStudentHistory'
 const examId = route.params.examId
 const attemptId = route.params.attemptId
 

@@ -1,7 +1,7 @@
 <template>
-  <button type="button" class="relative inline-flex items-center justify-center rounded-full bg-slate-100 p-2 text-slate-700 transition hover:bg-slate-200" @click="openNotifications">
-    <Bell class="h-5 w-5" />
-    <span v-if="count > 0" class="absolute -right-1 -top-1 inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-[#D4AF37]/90 px-1.5 text-[10px] font-bold text-white ring-2 ring-white">
+  <button type="button" class="relative inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/50" aria-label="Notifications" @click="openNotifications">
+    <Bell class="h-[18px] w-[18px]" />
+    <span v-if="count > 0" class="absolute -right-1.5 -top-1.5 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#D4AF37] px-1 text-[10px] font-bold leading-none text-[#0B1F3A] ring-2 ring-white">
       {{ count }}
     </span>
   </button>

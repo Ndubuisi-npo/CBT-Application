@@ -94,6 +94,18 @@ const routes = [
           { path: 'students', name: 'SchoolAdminStudents', component: SchoolAdminStudents },
           { path: 'students/import', name: 'SchoolAdminStudentImport', component: StudentImportPage },
           { path: 'students/:id', name: 'SchoolAdminStudentProfile', component: SchoolAdminStudentProfile, props: true },
+          {
+            path: 'students/:studentId/results',
+            name: 'SchoolAdminStudentHistory',
+            component: TeacherStudentHistoryPage,
+            props: true,
+          },
+          {
+            path: 'students/:studentId/results/:examId/:attemptId',
+            name: 'SchoolAdminStudentResultDetail',
+            component: TeacherStudentResultDetailPage,
+            props: true,
+          },
           { path: 'subjects', name: 'SchoolAdminSubjects', component: SchoolAdminSubjects },
           {
             path: 'subjects/:id/assign-teacher',

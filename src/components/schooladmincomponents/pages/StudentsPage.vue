@@ -369,7 +369,7 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { Archive, Ban, CheckSquare, ChevronLeft, ChevronRight, Eye, GraduationCap, Pencil, Plus, RotateCcw, Search, Trash2, UploadCloud } from 'lucide-vue-next'
+import { Archive, Ban, BarChart2, CheckSquare, ChevronLeft, ChevronRight, Eye, GraduationCap, Pencil, Plus, RotateCcw, Search, Trash2, UploadCloud } from 'lucide-vue-next'
 import AppButton from '../../shared/AppButton.vue'
 import AppBadge from '../../shared/AppBadge.vue'
 import AppEmptyState from '../../shared/AppEmptyState.vue'
@@ -421,6 +421,7 @@ const studentFullName = (s) => `${s.first_name || ''} ${s.last_name || ''}`.trim
 
 const studentActions = (student) => [
   { key: 'view', label: 'Preview', icon: Eye, onClick: () => viewStudent(student) },
+  { key: 'results', label: 'Results', icon: BarChart2, onClick: () => viewResults(student) },
   { key: 'edit', label: 'Edit', icon: Pencil, onClick: () => editStudent(student) },
   {
     key: 'revoke',
@@ -529,6 +530,7 @@ const toggleView = () => {
 // ── Modal ──────────────────────────────────────────────────────────────────
 const openModal = (student) => { selectedStudent.value = student || null; showModal.value = true }
 const viewStudent = (student) => router.push({ name: 'SchoolAdminStudentProfile', params: { id: student.id } })
+const viewResults = (student) => router.push({ name: 'SchoolAdminStudentHistory', params: { studentId: student.id } })
 const editStudent = (student) => { selectedStudent.value = student; showModal.value = true }
 const closeModal = () => { showModal.value = false; selectedStudent.value = null }
 

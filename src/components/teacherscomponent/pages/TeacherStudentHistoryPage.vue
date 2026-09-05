@@ -13,7 +13,7 @@
           </div>
         </div>
         <div class="flex shrink-0 flex-wrap items-center gap-2 pb-1">
-          <AppButton text="Back to Student" variant="outline" size="sm" @click="router.push({ name: 'TeacherStudentProfile', params: { id: studentId } })" />
+          <AppButton text="Back to Student" variant="outline" size="sm" @click="router.push({ name: profileRouteName, params: { id: studentId } })" />
         </div>
       </div>
       <div class="px-5 pb-5 sm:px-6">
@@ -217,6 +217,9 @@ import { scoreColorClass } from '../../../types/question'
 const route = useRoute()
 const router = useRouter()
 const studentId = route.params.studentId
+const isSchoolAdmin = computed(() => route.name === 'SchoolAdminStudentHistory')
+const profileRouteName = computed(() => isSchoolAdmin.value ? 'SchoolAdminStudentProfile' : 'TeacherStudentProfile')
+const resultDetailRouteName = computed(() => isSchoolAdmin.value ? 'SchoolAdminStudentResultDetail' : 'TeacherStudentResultDetail')
 
 const student = ref(null)
 const results = ref([])
@@ -275,7 +278,7 @@ const statusClass = (status) => {
 const viewResult = (result) => {
   const attemptId = result.attempt_id || result.id
   const examId = result.exam_id || result.exam?.id
-  router.push({ name: 'TeacherStudentResultDetail', params: { studentId, examId, attemptId } })
+  router.push({ name: resultDetailRouteName.value, params: { studentId, examId, attemptId } })
 }
 
 // ── Load ──────────────────────────────────────────────────────────────────────

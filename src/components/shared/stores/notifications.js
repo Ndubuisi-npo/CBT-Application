@@ -13,7 +13,7 @@ import { extractErrorMessage } from '../../../js/lib/api'
 
 // Categories recognised by the redesigned Notifications UI. Anything else
 // falls back to 'general' so unexpected backend categories don't break cards.
-export const NOTIFICATION_CATEGORIES = ['announcements', 'system', 'messages', 'students', 'teachers', 'exams', 'general']
+export const NOTIFICATION_CATEGORIES = ['assessment', 'submission', 'exam', 'result', 'account', 'announcements', 'system', 'messages', 'students', 'teachers', 'exams', 'general']
 
 // Backend severity (`data.type`: success | danger | warning | info) doesn't
 // map onto our category system (that's about *what* the notification is
@@ -87,9 +87,9 @@ function mapNotificationUrl(rawUrl) {
 function normalizeNotification(raw) {
   if (!raw || typeof raw !== 'object') return null
   const data = raw.data && typeof raw.data === 'object' ? raw.data : {}
-  const severity = raw.priority || data.priority || data.type || null
+  const severity = raw.priority || data.priority || raw.type || data.type || null
 
-  const rawLink = raw.link || data.link || data.action || null
+  const rawLink = raw.link || raw.action || data.link || data.action || null
   const link = rawLink
     ? {
         to: mapNotificationUrl(rawLink.to || rawLink.url || (typeof rawLink === 'string' ? rawLink : null)),
@@ -101,7 +101,7 @@ function normalizeNotification(raw) {
     id: raw.id,
     title: raw.title || data.title || 'Notification',
     description: raw.message || data.message || data.body || raw.description || '',
-    category: raw.category || data.category || 'general',
+    category: raw.label || raw.category || data.label || data.category || 'general',
     roles: raw.roles || (data.role ? [data.role] : []),
     unread: raw.unread !== undefined ? !!raw.unread : raw.read_at == null,
     time: raw.time || (raw.created_at ? new Date(raw.created_at).toLocaleTimeString() : ''),
@@ -192,6 +192,14 @@ export const useNotificationStore = defineStore('notifications', () => {
       const matchesCategory = n.category === category
       return n.unread && !n.archived && matchesCategory && matchesRole(n, role)
     }).length
+
+  const unreadByCategories = (categories, role = null) =>
+    notifications.value.filter((n) => (
+      n.unread
+      && !n.archived
+      && categories.includes(n.category)
+      && matchesRole(n, role)
+    )).length
 
   const notificationsForRole = (role) =>
     notifications.value.filter((n) => matchesRole(n, role) && !n.archived)
@@ -452,6 +460,7 @@ export const useNotificationStore = defineStore('notifications', () => {
     totalUnread,
     unreadByRole,
     unreadByCategory,
+    unreadByCategories,
     notificationsForRole,
     fetchNotificationsList,
     fetchUnreadCount,

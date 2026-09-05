@@ -2,11 +2,18 @@
   <div class="relative" ref="dropdownRef">
     <button
       data-tour="profile-menu-button"
+      type="button"
+      aria-label="Open profile menu"
+      class="flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-2 pr-3 text-left shadow-sm transition hover:border-slate-300 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/50"
       @click="toggleDropdown"
       :class="{ 'ring-2 ring-[#D4AF37] ring-offset-2': isOpen }"
     >
-      <div class="h-10 w-10 flex items-center justify-center rounded-full bg-[#0B1F3A] text-sm font-semibold text-white">
+      <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#0B1F3A] text-[11px] font-semibold text-white">
         {{ userInitials }}
+      </div>
+      <div class="hidden min-w-0 sm:block">
+        <p class="max-w-[120px] truncate text-xs font-semibold leading-tight text-[#0B1F3A]">{{ userName }}</p>
+        <p class="mt-0.5 text-[11px] leading-tight text-slate-500">{{ roleLabel }}</p>
       </div>
     </button>
 
@@ -69,6 +76,8 @@ const dropdownRef = ref(null)
 const user = computed(() => getAuthUser())
 // Students (and any other non-tour role) never see this option.
 const showTakeTour = computed(() => isTourEligibleRole(getAuthRole()))
+const userName = computed(() => `${user.value?.first_name || ''} ${user.value?.last_name || ''}`.trim() || 'School Admin')
+const roleLabel = computed(() => getAuthRole() === 'teacher' ? 'Teacher' : 'School admin')
 
 const handleTakeTour = () => {
   closeDropdown()

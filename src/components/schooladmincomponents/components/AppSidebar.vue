@@ -138,9 +138,12 @@ const isTeacherSection = computed(() => route.path.startsWith('/teachers'))
 const notificationStore = useNotificationStore()
 
 const teacherStudentNotifications = computed(() => notificationStore.unreadByCategory('students', 'teacher'))
+const teacherSubmissionNotifications = computed(() => notificationStore.unreadByCategories(['assessment', 'submission'], 'teacher'))
 const adminStudentNotifications = computed(() => notificationStore.unreadByCategory('students', 'school_admin'))
 const adminTeacherNotifications = computed(() => notificationStore.unreadByCategory('teachers', 'school_admin'))
 const adminSessionNotifications = computed(() => notificationStore.unreadByCategory('academic_sessions', 'school_admin'))
+const adminAssessmentNotifications = computed(() => notificationStore.unreadByCategory('assessment', 'school_admin'))
+const adminSubmissionNotifications = computed(() => notificationStore.unreadByCategory('submission', 'school_admin'))
 
 const navGroups = computed(() => {
   if (isTeacherSection.value) {
@@ -155,7 +158,7 @@ const navGroups = computed(() => {
       {
         label: 'Submissions',
         items: [
-          { label: 'Submissions', to: '/teachers/assessments', icon: ClipboardList, tour: 'nav-assessments' },
+          { label: 'Submissions', to: '/teachers/assessments', icon: ClipboardList, count: teacherSubmissionNotifications.value, tour: 'nav-assessments' },
           { label: 'Question Bank', to: '/teachers/questions', icon: FileQuestion, tour: 'nav-question-bank' },
         ],
       },
@@ -192,8 +195,8 @@ const navGroups = computed(() => {
     {
       label: 'Assessment Management',
       items: [
-        { label: 'Assessment Schedule', to: '/school-admin/assessment-schedule', icon: CalendarDays, tour: 'nav-assessment-schedule' },
-        { label: 'Assessment Submissions', to: '/school-admin/assessment-submissions', icon: ClipboardList, tour: 'nav-assessment-submissions' },
+        { label: 'Assessment Schedule', to: '/school-admin/assessment-schedule', icon: CalendarDays, count: adminAssessmentNotifications.value, tour: 'nav-assessment-schedule' },
+        { label: 'Assessment Submissions', to: '/school-admin/assessment-submissions', icon: ClipboardList, count: adminSubmissionNotifications.value, tour: 'nav-assessment-submissions' },
       ],
     },
     {
