@@ -140,6 +140,7 @@ import AppEmptyState from '../../shared/AppEmptyState.vue'
 import StudentFormDrawer from '../components/StudentFormDrawer.vue'
 import PromoteStudentDrawer from '../components/PromoteStudentDrawer.vue'
 import { useSchoolAdminStudentsStore } from '../stores/students'
+import { useSchoolAdminSessionsStore } from '../stores/sessions'
 import { useSchoolAdminUiStore } from '../stores/ui'
 
 // Tiny local component for a label/value pair in the info sections.
@@ -152,10 +153,16 @@ InfoField.props = ['label', 'value']
 const route = useRoute()
 const router = useRouter()
 const studentsStore = useSchoolAdminStudentsStore()
+const sessionsStore = useSchoolAdminSessionsStore()
 const uiStore = useSchoolAdminUiStore()
 
 const NOT_PROVIDED = 'Not provided'
 const displayValue = (v) => (v === null || v === undefined || v === '' ? NOT_PROVIDED : v)
+const formatDate = (value) => {
+  if (!value) return NOT_PROVIDED
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? displayValue(value) : date.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })
+}
 
 const student = ref(null)
 const loading = ref(true)
@@ -182,19 +189,11 @@ const dob = computed(() => displayValue(sp.value?.date_of_birth || sp.value?.dat
 const bloodGroup = computed(() => displayValue(sp.value?.blood_group || sp.value?.bloodGroup))
 const stateOfOrigin = computed(() => displayValue(sp.value?.state_of_origin || sp.value?.stateOfOrigin))
 const admissionNumber = computed(() => displayValue(sp.value?.admission_number || sp.value?.admissionNumber || student.value?.admission_number))
-const admissionDate = computed(() => displayValue(sp.value?.admission_date || sp.value?.admissionDate || student.value?.created_at?.slice?.(0, 10)))
+const admissionDate = computed(() => formatDate(sp.value?.date_joined || sp.value?.dateJoined || student.value?.date_joined || student.value?.dateJoined))
 const guardianName = computed(() => displayValue(sp.value?.guardian_name || sp.value?.guardianName))
 const guardianPhone = computed(() => displayValue(sp.value?.guardian_phone || sp.value?.guardianPhone))
 const guardianEmail = computed(() => displayValue(sp.value?.guardian_email || sp.value?.guardianEmail))
-const session = computed(() => displayValue(
-  sp.value?.academic_session?.name || sp.value?.academicSession?.name
-  || student.value?.academic_session?.name || student.value?.academicSession?.name
-  || sp.value?.session?.name || student.value?.session?.name
-  || sp.value?.academic_session_name || sp.value?.academicSessionName
-  || student.value?.academic_session_name || student.value?.academicSessionName
-  || sp.value?.session_name || sp.value?.sessionName
-  || student.value?.session_name || student.value?.sessionName,
-))
+const session = computed(() => displayValue(sessionsStore.sessions.find((item) => item.current || item.is_current)?.name))
 
 const classArm = computed(() => sp.value?.class_arm || sp.value?.classArm || {})
 const classLevel = computed(() => sp.value?.class_level || sp.value?.classLevel || classArm.value?.class_level || classArm.value?.classLevel || {})
@@ -207,7 +206,8 @@ const armOnly = computed(() => displayValue(classArm.value?.name))
 const loadStudent = async () => {
   loading.value = true
   try {
-    student.value = await studentsStore.fetchStudent(studentIdParam.value)
+    await Promise.all([studentsStore.fetchStudent(studentIdParam.value), sessionsStore.fetchSessions()])
+    student.value = studentsStore.students.find((item) => String(item.id) === String(studentIdParam.value)) || null
   } catch (error) {
     student.value = null
     uiStore.addToast({ title: 'Error', message: error?.message || 'Failed to load student.', variant: 'error' })
