@@ -70,15 +70,6 @@
         </div>
       </div>
 
-      <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-        <AppStatCard label="Attendance Rate" value="—" sub="Not tracked yet" :icon="CalendarCheck" icon-bg="bg-blue-50" icon-color="text-blue-600" />
-        <AppStatCard label="Days Present" value="—" sub="Not tracked yet" :icon="CalendarCheck" icon-bg="bg-blue-50" icon-color="text-blue-600" />
-        <AppStatCard label="Exams Taken" value="—" sub="Not tracked yet" :icon="FileText" icon-bg="bg-amber-50" icon-color="text-amber-600" />
-        <AppStatCard label="Average Score" value="—" sub="Not tracked yet" :icon="Percent" icon-bg="bg-purple-50" icon-color="text-purple-600" />
-        <AppStatCard label="Highest Score" value="—" sub="Not tracked yet" :icon="TrendingUp" icon-bg="bg-emerald-50" icon-color="text-emerald-600" />
-        <AppStatCard label="Pass Rate" value="—" sub="Not tracked yet" :icon="ClipboardCheck" icon-bg="bg-slate-100" icon-color="text-slate-600" />
-      </div>
-
       <div class="grid gap-6 lg:grid-cols-3">
         <div class="space-y-6 lg:col-span-2">
           <section class="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
@@ -105,19 +96,6 @@
             </dl>
           </section>
 
-          <section class="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
-            <h2 class="text-sm font-semibold text-slate-900">Results</h2>
-            <p class="mt-4 rounded-xl border border-dashed border-slate-200 py-8 text-center text-sm text-slate-400">
-              Result history is available from the Exam Results view. Use the action above to inspect this student’s full score history.
-            </p>
-          </section>
-
-          <section class="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
-            <h2 class="text-sm font-semibold text-slate-900">Recent Exams</h2>
-            <p class="mt-4 rounded-xl border border-dashed border-slate-200 py-8 text-center text-sm text-slate-400">
-              No recent exam history available yet.
-            </p>
-          </section>
         </div>
 
         <div class="space-y-6">
@@ -146,11 +124,10 @@
 <script setup>
 import { computed, h, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { BarChart2, CalendarCheck, ClipboardCheck, FileText, Percent, TrendingUp, UserX } from 'lucide-vue-next'
+import { BarChart2, UserX } from 'lucide-vue-next'
 import AppBadge from '../../shared/AppBadge.vue'
 import AppButton from '../../shared/AppButton.vue'
 import AppEmptyState from '../../shared/AppEmptyState.vue'
-import AppStatCard from '../../shared/AppStatCard.vue'
 import { useSchoolAdminUiStore } from '../../schooladmincomponents/stores/ui'
 import { getStudents } from '../../schooladmincomponents/services/api/students'
 import { getAuthUser } from '../../../js/lib/auth'
@@ -192,16 +169,22 @@ const admissionDate = computed(() => displayValue(sp.value?.admission_date || sp
 const guardianName = computed(() => displayValue(sp.value?.guardian_name || sp.value?.guardianName))
 const guardianPhone = computed(() => displayValue(sp.value?.guardian_phone || sp.value?.guardianPhone))
 const guardianEmail = computed(() => displayValue(sp.value?.guardian_email || sp.value?.guardianEmail))
-const session = computed(() => displayValue(sp.value?.academic_session?.name || sp.value?.session?.name || sp.value?.session_name))
+const session = computed(() => displayValue(
+  sp.value?.academic_session?.name || sp.value?.academicSession?.name
+  || student.value?.academic_session?.name || student.value?.academicSession?.name
+  || sp.value?.session?.name || student.value?.session?.name
+  || sp.value?.academic_session_name || sp.value?.academicSessionName
+  || student.value?.academic_session_name || student.value?.academicSessionName
+  || sp.value?.session_name || sp.value?.sessionName
+  || student.value?.session_name || student.value?.sessionName,
+))
 
 const classArm = computed(() => sp.value?.class_arm || sp.value?.classArm || {})
 const classLevel = computed(() => sp.value?.class_level || sp.value?.classLevel || classArm.value?.class_level || classArm.value?.classLevel || {})
-const classArmName = computed(() => {
-  const level = classLevel.value?.name
-  const arm = classArm.value?.name
-  if (level && arm) return `${level} ${arm}`
-  return displayValue(level || arm)
-})
+const classArmName = computed(() => displayValue(
+  classLevel.value?.name || sp.value?.class_level_name || sp.value?.classLevelName
+  || student.value?.class_level_name || student.value?.classLevelName,
+))
 const armOnly = computed(() => displayValue(classArm.value?.name))
 
 const loadStudent = async () => {

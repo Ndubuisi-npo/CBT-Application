@@ -105,21 +105,6 @@
             </dl>
           </section>
 
-          <!-- Results -->
-          <section class="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
-            <h2 class="text-sm font-semibold text-slate-900">Results</h2>
-            <p class="mt-4 rounded-xl border border-dashed border-slate-200 py-8 text-center text-sm text-slate-400">
-              Result history isn't available from this admin view yet — this requires a per-student results endpoint that doesn't currently exist outside the teacher portal.
-            </p>
-          </section>
-
-          <!-- Recent Exams -->
-          <section class="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
-            <h2 class="text-sm font-semibold text-slate-900">Recent Exams</h2>
-            <p class="mt-4 rounded-xl border border-dashed border-slate-200 py-8 text-center text-sm text-slate-400">
-              No exam history available yet.
-            </p>
-          </section>
         </div>
 
         <!-- Right column -->
@@ -201,16 +186,22 @@ const admissionDate = computed(() => displayValue(sp.value?.admission_date || sp
 const guardianName = computed(() => displayValue(sp.value?.guardian_name || sp.value?.guardianName))
 const guardianPhone = computed(() => displayValue(sp.value?.guardian_phone || sp.value?.guardianPhone))
 const guardianEmail = computed(() => displayValue(sp.value?.guardian_email || sp.value?.guardianEmail))
-const session = computed(() => displayValue(sp.value?.academic_session?.name || sp.value?.session?.name || sp.value?.session_name))
+const session = computed(() => displayValue(
+  sp.value?.academic_session?.name || sp.value?.academicSession?.name
+  || student.value?.academic_session?.name || student.value?.academicSession?.name
+  || sp.value?.session?.name || student.value?.session?.name
+  || sp.value?.academic_session_name || sp.value?.academicSessionName
+  || student.value?.academic_session_name || student.value?.academicSessionName
+  || sp.value?.session_name || sp.value?.sessionName
+  || student.value?.session_name || student.value?.sessionName,
+))
 
 const classArm = computed(() => sp.value?.class_arm || sp.value?.classArm || {})
 const classLevel = computed(() => sp.value?.class_level || sp.value?.classLevel || classArm.value?.class_level || classArm.value?.classLevel || {})
-const classArmName = computed(() => {
-  const level = classLevel.value?.name
-  const arm = classArm.value?.name
-  if (level && arm) return `${level} ${arm}`
-  return displayValue(level || arm)
-})
+const classArmName = computed(() => displayValue(
+  classLevel.value?.name || sp.value?.class_level_name || sp.value?.classLevelName
+  || student.value?.class_level_name || student.value?.classLevelName,
+))
 const armOnly = computed(() => displayValue(classArm.value?.name))
 
 const loadStudent = async () => {
