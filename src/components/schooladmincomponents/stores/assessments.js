@@ -613,10 +613,10 @@ export const useAssessmentsStore = defineStore('assessments', {
 
     async deleteSchedule(assessmentId) {
       const existing = this.getAssessmentById(assessmentId)
-      if (!existing?.schedule_id) throw new Error('This assessment has not been scheduled yet.')
+      if (!existing) throw new Error('Assessment not found.')
 
       try {
-        await apiDeleteSchedule(existing.schedule_id)
+        if (existing.schedule_id) await apiDeleteSchedule(existing.schedule_id)
         const cleared = {
           ...existing,
           schedule_id: null,

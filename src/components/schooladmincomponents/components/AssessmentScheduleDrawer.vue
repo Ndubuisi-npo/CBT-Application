@@ -67,7 +67,7 @@
 
       <div class="flex flex-wrap gap-2 pt-1">
         <AppButton type="submit" :text="form.id ? 'Update assessment' : 'Save assessment'" variant="primary" :processing="savingAssessment" />
-        <AppButton v-if="form.id && hasSchedule" type="button" text="Delete schedule" variant="danger" :icon="Trash2" :processing="deletingSchedule" @click="deleteSelectedSchedule" />
+        <AppButton v-if="form.id" type="button" text="Delete schedule" variant="danger" :icon="Trash2" :processing="deletingSchedule" @click="deleteSelectedSchedule" />
       </div>
     </form>
 
@@ -189,7 +189,6 @@ const sessionOptions = computed(() => assessmentStore.sessionOptions)
 const classArmOptions = computed(() => classArmsStore.classArms.map((arm) => ({ label: arm.name || arm.title || arm.label || `Arm ${arm.id}`, value: arm.id })))
 const activeTermLabel = computed(() => assessmentStore.activeTermLabel)
 const hasSubmissionConfig = computed(() => !!assessmentStore.selectedAssessment?.schedule_id)
-const hasSchedule = computed(() => hasSubmissionConfig.value)
 const scheduleSubjects = computed(() => assessmentStore.scheduleSubjects)
 const subjectOptions = computed(() => assessmentStore.subjectOptions)
 const questionSubmissionStatus = computed(() => (assessmentStore.selectedAssessment?.question_submission_status || 'open').toLowerCase())
@@ -391,7 +390,7 @@ const runLifecycle = async (action) => {
 }
 
 const deleteSelectedSchedule = async () => {
-  if (!form.id || !assessmentStore.selectedAssessment?.schedule_id) return
+  if (!form.id) return
   if (!window.confirm('Delete this assessment schedule? The assessment itself will be kept.')) return
   deletingSchedule.value = true
   try {
