@@ -19,8 +19,8 @@
       <AppEmptyState
         v-else-if="!visibleAssessments.length"
         :icon="ClipboardList"
-        title="No assessments are open for you right now"
-        description="When your school admin opens a submission window it will appear here."
+        title="No scheduled assessments yet"
+        description="Scheduled assessments will appear here, including ones whose question submissions are closed."
       />
 
       <ul v-else class="divide-y divide-slate-100">
@@ -46,7 +46,12 @@
                 :variant="getSubmissionStatusVariant(mySubmissions[assessment.id].status)"
                 dot
               />
-              <AppBadge v-else-if="!loadingSubmissions" label="Not started" variant="warning" />
+              <AppBadge
+                v-if="isQuestionSubmissionClosed(assessment)"
+                label="Questions closed"
+                variant="default"
+              />
+              <AppBadge v-else-if="!mySubmissions[assessment.id] && !loadingSubmissions" label="Not started" variant="warning" />
             </div>
           </div>
 
@@ -58,9 +63,19 @@
           </div>
 
           <AppButton
-            :text="mySubmissions[assessment.id] ? 'Open paper' : 'Start paper'"
+            :text="mySubmissions[assessment.id] ? 'Open paper' : (isQuestionSubmissionClosed(assessment) ? 'Submission closed' : 'Start paper')"
             :variant="mySubmissions[assessment.id] ? 'outline' : 'primary'"
+            :disabled="isQuestionSubmissionClosed(assessment) && !mySubmissions[assessment.id]"
             @click="openAssessment(assessment.id)"
+          />
+          <AppButton
+            v-if="classArmId(assessment)"
+            text="Cumulative report"
+            variant="outline"
+            size="sm"
+            :icon="Download"
+            :processing="downloadingCumulativeId === assessment.id"
+            @click="downloadCumulative(assessment)"
           />
         </li>
       </ul>
@@ -71,7 +86,7 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { ClipboardList } from 'lucide-vue-next'
+import { ClipboardList, Download } from 'lucide-vue-next'
 import AppBadge from '../../shared/AppBadge.vue'
 import AppButton from '../../shared/AppButton.vue'
 import AppEmptyState from '../../shared/AppEmptyState.vue'
@@ -82,6 +97,7 @@ import SubmissionCountdown from '../components/SubmissionCountdown.vue'
 import { useNotificationStore } from '../../shared/stores/notifications'
 import { getMySubmission } from '../../schooladmincomponents/services/api/assessments'
 import { useAssessmentsStore, getSubmissionStatusLabel, getSubmissionStatusVariant } from '../../schooladmincomponents/stores/assessments'
+import { downloadCumulativeReportPdf, saveBlobAsPdf } from '../../shared/services/resultPdf'
 
 const router = useRouter()
 const store = useAssessmentsStore()
@@ -96,6 +112,7 @@ const filterClassLevel = ref('')
 // "open for me right now", which keeps this bounded to a handful of calls.
 const mySubmissions = ref({})
 const loadingSubmissions = ref(false)
+const downloadingCumulativeId = ref(null)
 
 const classLevelOptions = computed(() => store.classLevelOptions)
 
@@ -121,7 +138,6 @@ const visibleAssessments = computed(() => {
   const query = searchQuery.value.trim().toLowerCase()
   return store.assessments
     .filter((assessment) => !!assessment.schedule_id)
-    .filter((assessment) => (assessment.question_submission_status || 'open').toLowerCase() === 'open')
     .filter((assessment) => {
       const matchesSearch = query ? `${assessment.title || ''}`.toLowerCase().includes(query) : true
       const levelId = assessment.class_level_id ?? assessment.classLevelId
@@ -129,6 +145,10 @@ const visibleAssessments = computed(() => {
       return matchesSearch && matchesClass
     })
 })
+
+const isQuestionSubmissionClosed = (assessment) => (assessment?.question_submission_status || 'open').toLowerCase() === 'closed'
+const classArmId = (assessment) => assessment?.class_arm_id || assessment?.classArmId || assessment?.class_arm?.id || assessment?.classArm?.id || ''
+const examId = (assessment) => assessment?.exam_id || assessment?.examId || assessment?.exam?.id || assessment?.id || ''
 
 const marksUsed = (assessment) => {
   const submission = mySubmissions.value[assessment.id]
@@ -173,5 +193,20 @@ const openAssessment = (id) => {
   const path = `/teachers/assessments/${id}`
   void notificationStore.markReadForAction(path, ['assessment', 'submission'])
   router.push(path)
+}
+
+const downloadCumulative = async (assessment) => {
+  const armId = classArmId(assessment)
+  const id = examId(assessment)
+  if (!armId || !id) return
+  downloadingCumulativeId.value = assessment.id
+  try {
+    const blob = await downloadCumulativeReportPdf(armId, id)
+    saveBlobAsPdf(blob, `cumulative-report-${id}.pdf`)
+  } catch (error) {
+    store.error = error?.message || 'Failed to download the cumulative report PDF.'
+  } finally {
+    downloadingCumulativeId.value = null
+  }
 }
 </script>

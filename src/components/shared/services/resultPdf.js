@@ -9,6 +9,16 @@ export async function downloadAttemptResultPdf(attemptId) {
   })
 }
 
+export async function downloadCumulativeReportPdf(classArmId, examId) {
+  if (!classArmId) throw new Error('This exam does not have a valid class arm.')
+  if (!examId) throw new Error('This exam does not have a valid exam ID.')
+
+  return await apiFetch(`/api/class-arms/${classArmId}/exams/${examId}/report/pdf`, {
+    responseType: 'blob',
+    headers: { Accept: 'application/pdf' },
+  })
+}
+
 export function saveBlobAsPdf(blob, filename = 'student-result.pdf') {
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')

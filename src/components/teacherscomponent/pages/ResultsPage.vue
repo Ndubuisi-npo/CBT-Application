@@ -2,6 +2,7 @@
   <div class="space-y-6">
     <SectionCard title="Completed Exams" subtitle="Exam outcomes that have been finalized and released to students.">
       <template #header>
+        <div class="flex flex-wrap items-center gap-2">
         <select
           v-model="selectedExamId"
           class="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:border-[#0B1F3A]"
@@ -10,6 +11,8 @@
           <option value="">All completed exams</option>
           <option v-for="e in completedExams" :key="e.id" :value="e.id">{{ e.title }}</option>
         </select>
+        <AppButton v-if="selectedExam" text="Cumulative report" variant="outline" size="sm" :icon="Download" :disabled="!selectedClassArmId" :processing="downloadingCumulative" title="Download the cumulative class-arm report" @click="downloadCumulative" />
+        </div>
       </template>
 
       <!-- Summary cards -->
@@ -89,11 +92,12 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { Download } from 'lucide-vue-next'
+import AppButton from '../../shared/AppButton.vue'
 import SectionCard from '../components/SectionCard.vue'
 import { useTeacherExamsStore } from '../stores/exams'
 import { useSchoolAdminUiStore } from '../../schooladmincomponents/stores/ui'
 import { apiFetch } from '../../../js/lib/api'
-import { downloadAttemptResultPdf, saveBlobAsPdf } from '../../shared/services/resultPdf'
+import { downloadAttemptResultPdf, downloadCumulativeReportPdf, saveBlobAsPdf } from '../../shared/services/resultPdf'
 
 const store = useTeacherExamsStore()
 const ui    = useSchoolAdminUiStore()
@@ -103,6 +107,7 @@ const results        = ref([])
 const loading        = ref(false)
 const loadError      = ref('')
 const downloadingId  = ref(null)
+const downloadingCumulative = ref(false)
 
 const getAttemptId = (result) => result?.attempt_id || result?.attemptId || result?.id
 
@@ -119,7 +124,22 @@ const downloadPdf = async (result) => {
   }
 }
 
+const downloadCumulative = async () => {
+  if (!selectedExam.value || !selectedClassArmId.value) return
+  downloadingCumulative.value = true
+  try {
+    const blob = await downloadCumulativeReportPdf(selectedClassArmId.value, selectedExam.value.id)
+    saveBlobAsPdf(blob, `cumulative-report-${selectedExam.value.id}.pdf`)
+  } catch (err) {
+    loadError.value = err?.message || 'Failed to download the cumulative report PDF.'
+  } finally {
+    downloadingCumulative.value = false
+  }
+}
+
 const completedExams = computed(() => store.exams.filter((e) => (e.status || '').toLowerCase() === 'completed'))
+const selectedExam = computed(() => completedExams.value.find((exam) => String(exam.id) === String(selectedExamId.value)) || null)
+const selectedClassArmId = computed(() => selectedExam.value?.class_arm_id || selectedExam.value?.classArmId || selectedExam.value?.class_arm?.id || selectedExam.value?.classArm?.id || '')
 
 const avgScore = computed(() => {
   const pcts = results.value.map((r) => r.percentage).filter((p) => p != null)
