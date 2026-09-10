@@ -79,11 +79,13 @@ import AppInput from '../../shared/AppInput.vue'
 import AppPageHeader from '../../shared/AppPageHeader.vue'
 import AppSelect from '../../shared/AppSelect.vue'
 import SubmissionCountdown from '../components/SubmissionCountdown.vue'
+import { useNotificationStore } from '../../shared/stores/notifications'
 import { getMySubmission } from '../../schooladmincomponents/services/api/assessments'
 import { useAssessmentsStore, getSubmissionStatusLabel, getSubmissionStatusVariant } from '../../schooladmincomponents/stores/assessments'
 
 const router = useRouter()
 const store = useAssessmentsStore()
+const notificationStore = useNotificationStore()
 const searchQuery = ref('')
 const filterClassLevel = ref('')
 
@@ -167,5 +169,9 @@ onMounted(async () => {
   if (visibleAssessments.value.length) await loadMySubmissions(visibleAssessments.value)
 })
 
-const openAssessment = (id) => router.push(`/teachers/assessments/${id}`)
+const openAssessment = (id) => {
+  const path = `/teachers/assessments/${id}`
+  void notificationStore.markReadForAction(path, ['assessment', 'submission'])
+  router.push(path)
+}
 </script>

@@ -36,23 +36,6 @@
           </button>
         </div>
 
-        <div class="mt-8 flex flex-wrap items-center gap-3 text-sm text-slate-500">
-          <div class="flex -space-x-2">
-            <div class="lp-icon-chip flex h-8 w-8 items-center justify-center rounded-full border border-white bg-amber-100 text-xs">
-              <Building2 class="h-4 w-4" />
-            </div>
-            <div class="lp-icon-chip flex h-8 w-8 items-center justify-center rounded-full border border-white bg-rose-100 text-xs">
-              <Landmark class="h-4 w-4" />
-            </div>
-            <div class="lp-icon-chip flex h-8 w-8 items-center justify-center rounded-full border border-white bg-emerald-100 text-xs">
-              <UserRound class="h-4 w-4" />
-            </div>
-            <div class="lp-icon-chip flex h-8 w-8 items-center justify-center rounded-full border border-white bg-blue-100 text-xs">
-              <GraduationCap class="h-4 w-4" />
-            </div>
-          </div>
-          <span>Trusted by 500+ schools worldwide</span>
-        </div>
       </div>
 
       <div class="relative mx-auto flex w-full max-w-[560px] items-center justify-center lg:w-full">
@@ -132,7 +115,7 @@
 
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
-import { ArrowRight, Building2, GraduationCap, Landmark, Star, UserRound } from 'lucide-vue-next'
+import { ArrowRight, Building2, Star, UserRound } from 'lucide-vue-next'
 
 const props = withDefaults(defineProps<{ teacherCardRotation?: string }>(), {
   teacherCardRotation: '10deg',

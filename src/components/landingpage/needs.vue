@@ -28,14 +28,6 @@
           <p class="mt-5 text-base leading-relaxed text-slate-600">
             {{ feature.description }}
           </p>
-
-          <RouterLink
-            :to="`/features/${feature.slug}`"
-            class="lp-link mt-auto inline-flex items-center gap-2 pt-5 text-sm font-semibold text-amber-300 hover:text-amber-500"
-            >
-            Learn more
-            <ArrowRight class="h-4 w-4" />
-          </RouterLink>
         </article>
       </div>
     </div>
@@ -43,36 +35,31 @@
 </template>
 
 <script setup lang="ts">
-import { ArrowRight, BarChart3, BookOpen, Building2, Users } from 'lucide-vue-next'
-import { RouterLink } from 'vue-router'
+import { BarChart3, BookOpen, Building2, Users } from 'lucide-vue-next'
 
 const features = [
   {
     title: 'Exam Management',
     description: 'Create exams, submit them for admin approval, and activate them for students.',
     icon: BookOpen,
-    slug: 'exam-management',
     cardClass: 'bg-rose-50/60',
   },
   {
     title: 'Results Tracking',
     description: 'Monitor completed exams and publish results for students with confidence.',
     icon: BarChart3,
-    slug: 'results-tracking',
     cardClass: 'bg-indigo-50/70',
   },
   {
     title: 'Academic Management',
     description: 'Organize sessions, classes, and subjects across your school in one place.',
     icon: Building2,
-    slug: 'academic-management',
     cardClass: 'bg-emerald-50/60',
   },
   {
     title: 'Staff & Student Management',
     description: 'Manage teachers, students, and class assignments easily from the dashboard.',
     icon: Users,
-    slug: 'staff-student-management',
     cardClass: 'bg-amber-50/50',
   },
 ]

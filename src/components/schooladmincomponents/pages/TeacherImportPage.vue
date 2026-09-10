@@ -1,5 +1,9 @@
 <template>
   <div class="space-y-6">
+    <div class="flex items-center justify-between gap-4">
+      <AppButton :icon="ArrowLeft" text="Back to Teachers" variant="outline" size="sm" @click="router.push('/school-admin/teachers')" />
+    </div>
+
     <FileDropzone
       v-if="state.page === 'idle'"
       title="Bulk upload Teachers"
@@ -72,13 +76,16 @@
 
 <script setup>
 import { reactive } from 'vue'
-import { AlertCircle } from 'lucide-vue-next'
+import { useRouter } from 'vue-router'
+import { AlertCircle, ArrowLeft } from 'lucide-vue-next'
+import AppButton from '../../shared/AppButton.vue'
 import FileDropzone from '../components/StudentImport/FileDropzone.vue'
 import ImportPreviewModal from '../components/StudentImport/ImportPreviewModal.vue'
 import ImportResultBanner from '../components/StudentImport/ImportResultBanner.vue'
 import { getTeacherImportTemplate, importTeachers } from '../services/api/teachers'
 import { useSchoolAdminTeachersStore } from '../stores/teachers'
 
+const router = useRouter()
 const teachersStore = useSchoolAdminTeachersStore()
 
 const teacherDuplicateColumns = [

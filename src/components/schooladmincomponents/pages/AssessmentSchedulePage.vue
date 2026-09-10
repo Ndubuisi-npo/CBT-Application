@@ -51,15 +51,16 @@
           </div>
         </div>
 
-        <div class="grid grid-cols-7 overflow-hidden rounded-2xl border border-slate-200">
-          <div v-for="day in weekdays" :key="day" class="border-b border-r border-slate-200 bg-slate-50 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-500 last:border-r-0">
+        <div class="overflow-hidden rounded-2xl border border-slate-200">
+        <div class="grid min-w-0 grid-cols-7 overflow-hidden">
+          <div v-for="day in weekdays" :key="day" class="border-b border-r border-slate-200 bg-slate-50 px-1 py-2 text-center text-[9px] font-semibold uppercase tracking-normal text-slate-500 sm:px-3 sm:text-[11px] sm:tracking-[0.28em] last:border-r-0">
             {{ day }}
           </div>
           <button
             v-for="cell in calendarCells"
             :key="cell.key"
             type="button"
-            class="group relative min-h-[116px] border-r border-b border-slate-200 p-2 text-left transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/30"
+            class="group relative min-h-[76px] border-r border-b border-slate-200 p-1 text-left transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/30 sm:min-h-[116px] sm:p-2"
             :class="[cell.isCurrentMonth ? 'bg-white' : 'bg-[#FBFAF7] text-slate-400', isSelected(cell.dateKey) ? 'bg-[#0B1F3A]/5 ring-1 ring-inset ring-[#0B1F3A]/20' : '']"
             :style="cell.tintColor ? { backgroundColor: `rgba(${cell.tintColor}, 0.07)` } : {}"
             :aria-label="`Select ${cell.label}`"
@@ -69,7 +70,7 @@
           >
             <div class="flex items-start justify-between gap-2">
               <span
-                class="inline-flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium"
+                class="inline-flex h-7 w-7 items-center justify-center rounded-full text-xs font-medium sm:h-8 sm:w-8 sm:text-sm"
                 :class="[
                   cell.isToday ? 'bg-[#D4AF37] text-[#0B1F3A]' : '',
                   isSelected(cell.dateKey) ? 'bg-[#0B1F3A] text-white' : '',
@@ -78,14 +79,14 @@
               >
                 {{ cell.day }}
               </span>
-              <span v-if="cell.assessments.length" class="text-[10px] font-semibold uppercase tracking-[0.25em] text-[#0B1F3A]/60">{{ cell.assessments.length }}</span>
+              <span v-if="cell.assessments.length" class="text-[9px] font-semibold text-[#0B1F3A]/60 sm:text-[10px] sm:uppercase sm:tracking-[0.25em]">{{ cell.assessments.length }}</span>
             </div>
             <div class="mt-2 space-y-1.5">
               <button
                 v-for="assessment in cell.previewAssessments"
                 :key="assessment.id"
                 type="button"
-                class="flex w-full items-center gap-2 rounded-lg border px-2 py-1 text-left text-[11px] text-slate-700 transition hover:border-[#D4AF37]/40"
+                class="flex w-full items-center justify-center gap-1 rounded-lg border px-1 py-1 text-left text-[11px] text-slate-700 transition hover:border-[#D4AF37]/40 sm:justify-start sm:gap-2 sm:px-2"
                 :style="{
                   borderColor: `rgba(${hexToRgb(scheduleColor(assessment))}, 0.35)`,
                   backgroundColor: `rgba(${hexToRgb(scheduleColor(assessment))}, 0.08)`,
@@ -93,7 +94,7 @@
                 @click.stop="openAssessment(assessment)"
               >
                 <span class="h-2 w-2 shrink-0 rounded-full" :style="{ backgroundColor: scheduleColor(assessment) }" />
-                <span class="min-w-0 flex-1 truncate">
+                <span class="min-w-0 flex-1 truncate max-sm:hidden">
                   <span class="font-semibold text-[#0B1F3A]">{{ assessment.startTime }}</span>
                   {{ assessment.title || 'Assessment' }}
                 </span>
@@ -104,7 +105,7 @@
             <!-- Hover overlay: quick add/edit affordance, mirrors the reference screenshots -->
             <div
               v-if="hoveredCell === cell.dateKey && !isSelected(cell.dateKey)"
-              class="pointer-events-none absolute inset-x-2 bottom-2 flex justify-start opacity-0 transition-opacity duration-150 group-hover:opacity-100"
+              class="pointer-events-none absolute inset-x-1 bottom-1 hidden justify-start opacity-0 transition-opacity duration-150 group-hover:opacity-100 sm:flex sm:inset-x-2 sm:bottom-2"
             >
               <span
                 class="pointer-events-none inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-semibold text-white shadow-sm"
@@ -116,6 +117,7 @@
               </span>
             </div>
           </button>
+        </div>
         </div>
       </div>
     </section>
@@ -212,10 +214,12 @@ import { useSchoolAdminSessionsStore } from '../stores/sessions'
 import { useAssessmentsStore, getAssessmentStatusLabel, getStatusVariant } from '../stores/assessments'
 import { getSubmissions } from '../services/api/assessments'
 import { getScheduleColor, hexToRgb, getDateRangeKeys } from '../../../js/lib/scheduleColors'
+import { useNotificationStore } from '../../shared/stores/notifications'
 
 const router = useRouter()
 const assessmentStore = useAssessmentsStore()
 const sessionsStore = useSchoolAdminSessionsStore()
+const notificationStore = useNotificationStore()
 
 const today = new Date()
 const weekdays = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']
@@ -348,7 +352,11 @@ watch(selectedDateAssessments, (list) => { if (list.length) loadPapersCounts(lis
 const monthAbbr = (value) => value ? new Date(`${value}T00:00:00`).toLocaleDateString(undefined, { month: 'short' }).toUpperCase() : ''
 const dayNum = (value) => value ? new Date(`${value}T00:00:00`).getDate() : ''
 
-const goToSubmissions = (assessment) => router.push(`/school-admin/assessments/${assessment.id}/submissions`)
+const goToSubmissions = (assessment) => {
+  const path = `/school-admin/assessments/${assessment.id}/submissions`
+  void notificationStore.markReadForAction(path, ['assessment', 'submission'])
+  router.push(path)
+}
 const jumpToDate = (assessment) => assessmentStore.selectDate(assessment.scheduled_date)
 
 const goToday = () => {
@@ -368,6 +376,7 @@ const selectCell = (cell) => {
 }
 
 const openAssessment = (assessment) => {
+  void notificationStore.markReadForAction('/school-admin/assessment-schedule', 'assessment')
   assessmentStore.selectDate(assessment.scheduled_date || assessment.scheduledDate || today)
   drawerDate.value = new Date(assessment.scheduled_date || assessment.scheduledDate || today)
   drawerAssessment.value = assessment
@@ -375,6 +384,7 @@ const openAssessment = (assessment) => {
 }
 
 const openAssessmentForScheduling = (assessment) => {
+  void notificationStore.markReadForAction('/school-admin/assessment-schedule', 'assessment')
   const date = selectedDate.value ? new Date(`${selectedDate.value}T00:00:00`) : today
   drawerDate.value = date
   drawerAssessment.value = assessment

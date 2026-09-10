@@ -4,6 +4,7 @@
       <!-- Left: mobile back, hamburger + breadcrumb/title -->
       <div class="flex min-w-0 items-center gap-3">
         <button
+          v-if="showMobileBack"
           type="button"
           class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#D4AF37] lg:hidden"
           aria-label="Go back"
@@ -83,6 +84,27 @@ const isTeacher = computed(() => route.path.startsWith('/teachers'))
 const rootLabel = computed(() => isTeacher.value ? 'Teacher Portal' : 'School Admin')
 const rootPath = computed(() => isTeacher.value ? '/teachers/dashboard' : '/school-admin/dashboard')
 
+const mobileRootPaths = [
+  '/school-admin/dashboard',
+  '/school-admin/sessions',
+  '/school-admin/class-levels',
+  '/school-admin/teachers',
+  '/school-admin/students',
+  '/school-admin/subjects',
+  '/school-admin/settings',
+  '/school-admin/assessment-schedule',
+  '/school-admin/assessment-submissions',
+  '/school-admin/notifications',
+  '/teachers/dashboard',
+  '/teachers/questions',
+  '/teachers/calendar',
+  '/teachers/assessments',
+  '/teachers/students',
+  '/teachers/settings',
+  '/teachers/notifications',
+]
+const showMobileBack = computed(() => !mobileRootPaths.includes(route.path))
+
 const titles = {
   '/school-admin/dashboard': 'Dashboard',
   '/school-admin/sessions': 'Academic Sessions',
@@ -95,22 +117,16 @@ const titles = {
   '/school-admin/students/import': 'Import Students',
   '/school-admin/subjects': 'Subjects',
   '/school-admin/settings': 'Settings',
-  '/school-admin/profile': 'Profile',
   '/school-admin/assessment-schedule': 'Assessment Schedule',
   '/school-admin/assessment-submissions': 'Assessment Submissions',
   '/school-admin/notifications': 'Notifications',
   '/teachers/dashboard': 'Dashboard',
-  '/teachers/my-classes': 'My Classes',
   '/teachers/questions': 'Question Bank',
   '/teachers/calendar': 'Calendar',
   '/teachers/assessments': 'Submissions',
   '/teachers/notifications': 'Notifications',
   '/teachers/students': 'Students',
-  '/teachers/attendance': 'Attendance',
-  '/teachers/grading': 'Grading',
-  '/teachers/results': 'Results',
   '/teachers/settings': 'Settings',
-  '/teachers/profile': 'Profile',
 }
 
 const currentTeacher = computed(() => {

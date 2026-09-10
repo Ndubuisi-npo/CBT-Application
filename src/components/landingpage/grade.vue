@@ -4,28 +4,28 @@
       <div class="lp-card rounded-3xl border border-slate-200 bg-slate-50 p-8 shadow-sm">
         <div class="flex items-center justify-between gap-4">
           <h3 class="text-lg font-bold tracking-tight text-slate-800">
-            Gradebook
+            Grading System
           </h3>
           <span class="rounded-lg bg-white px-4 py-2 text-base font-bold text-slate-700 shadow-sm">
-            Term 2
+            Settings
           </span>
         </div>
 
         <div class="mt-8 overflow-hidden rounded-2xl border border-slate-200 bg-white">
           <div class="grid grid-cols-3 border-b border-slate-200 px-6 py-5 text-sm font-bold text-slate-500">
-            <p>Student</p>
-            <p>Math</p>
-            <p>Science</p>
+            <p>Grade</p>
+            <p>Range</p>
+            <p>Result</p>
           </div>
 
           <div
-            v-for="student in students"
-            :key="student.name"
+            v-for="grade in grades"
+            :key="grade.name"
             class="grid grid-cols-3 items-center border-b border-slate-100 px-6 py-5 text-sm text-slate-800 last:border-b-0"
           >
-            <p>{{ student.name }}</p>
-            <p class="font-semibold text-emerald-600">{{ student.math }}</p>
-            <p :class="student.scienceClass" class="font-semibold">{{ student.science }}</p>
+            <p class="font-semibold">{{ grade.name }}</p>
+            <p class="text-slate-500">{{ grade.range }}</p>
+            <p :class="grade.resultClass" class="font-semibold">{{ grade.result }}</p>
           </div>
         </div>
       </div>
@@ -36,12 +36,12 @@
         </div>
 
         <h2 class="mt-8 text-3xl font-black tracking-tight text-slate-800 sm:text-4xl">
-          Beautiful Grade Management
+          Grading, your way
         </h2>
 
         <p class="mt-7 max-w-2xl text-lg leading-relaxed text-slate-600">
-          A flexible gradebook that adapts to your grading system. Generate report cards with one
-          click.
+          Define your own grade names and score ranges once, and every exam result is graded
+          against them automatically.
         </p>
 
         <ul class="mt-12 space-y-6">
@@ -64,24 +64,15 @@
 <script setup lang="ts">
 import { Check, FileText } from 'lucide-vue-next'
 
-const students = [
-  {
-    name: 'Alex J.',
-    math: 'A (92%)',
-    science: 'B+ (88%)',
-    scienceClass: 'text-slate-700',
-  },
-  {
-    name: 'Maria G.',
-    math: 'A+ (98%)',
-    science: 'A (95%)',
-    scienceClass: 'text-emerald-600',
-  },
+const grades = [
+  { name: 'A', range: '90 - 100%', result: 'Pass', resultClass: 'text-emerald-600' },
+  { name: 'B', range: '80 - 89%', result: 'Pass', resultClass: 'text-emerald-600' },
+  { name: 'F', range: '0 - 39%', result: 'Fail', resultClass: 'text-rose-600' },
 ]
 
 const checklist = [
-  'Custom grading scales',
-  'Automated GPA calculation',
-  'One-click report card generation',
+  'Custom grade names and score ranges',
+  'Automatic grading on every submitted exam',
+  'Downloadable result breakdowns for students',
 ]
 </script>

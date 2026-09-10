@@ -71,7 +71,7 @@
       </div>
 
       <div v-else class="overflow-hidden rounded-[24px] border border-slate-200">
-        <div class="overflow-x-auto">
+        <div class="hidden overflow-x-auto lg:block">
           <table class="min-w-full divide-y divide-slate-200 bg-white">
             <thead class="bg-slate-50">
               <tr>
@@ -146,6 +146,51 @@
           </table>
         </div>
 
+        <div class="grid gap-3 p-4 lg:hidden">
+          <ResponsiveDataCard
+            v-for="tenant in paginatedTenants"
+            :key="tenant.id"
+            avatar-color="bg-[#0B1F3A]/10 text-[#0B1F3A]"
+            :avatar-text="(tenant.name || '?').slice(0, 2).toUpperCase()"
+            :title="tenant.name"
+            :subtitle="tenant.handle"
+            :fields="[
+              { label: 'Email', value: tenant.contact?.email || tenant.email || 'No email' },
+              { label: 'Phone', value: tenant.contact?.phone || tenant.phone || 'No phone' },
+              { label: 'Location', value: `${tenant.contact?.city || tenant.city || 'No city'}, ${tenant.contact?.state || tenant.state || 'No state'}`, span: 2 },
+            ]"
+          >
+            <template #badge>
+              <div class="flex flex-col items-end gap-1.5">
+                <StatusBadge :status="tenant.subscription?.status || tenant.subscription_status || 'Not Active'" />
+                <StatusBadge :status="tenant.is_active ? 'Active' : 'Suspended'" />
+              </div>
+            </template>
+            <div class="flex flex-wrap gap-2">
+              <AppButton text="View" @click="viewTenant(tenant)" variant="outline" size="xs" />
+              <AppButton text="Edit" @click="editTenant(tenant)" variant="outline" size="xs" />
+              <AppButton
+                :text="tenant.is_active ? 'Suspend' : 'Activate'"
+                @click="toggleStatus(tenant)"
+                :variant="tenant.is_active ? 'warning' : 'success'"
+                size="xs"
+                :loadingText="tenant.is_active ? 'Suspending...' : 'Activating...'"
+                :processing="statusLoading.has(tenant.id)"
+                :disabled="statusLoading.has(tenant.id)"
+              />
+              <AppButton
+                text="Delete"
+                @click="deleteTenant(tenant.id)"
+                variant="danger"
+                size="xs"
+                loadingText="Deleting..."
+                :processing="deleteLoading.has(tenant.id)"
+                :disabled="deleteLoading.has(tenant.id) || isSelectMode"
+              />
+            </div>
+          </ResponsiveDataCard>
+        </div>
+
         <PaginationControls
           :page="page"
           :start="paginationMeta.start"
@@ -183,6 +228,7 @@ import StatusBadge from '../components/StatusBadge.vue'
 import ViewTenantModal from '../components/ViewTenantModal.vue'
 import EditTenantModal from '../components/EditTenantModal.vue'
 import AppButton from '../../shared/AppButton.vue'
+import ResponsiveDataCard from '../../shared/ResponsiveDataCard.vue'
 import ActionButton from '../../shared/ActionButton.vue'
 import { useSuperAdminTenants } from '../composables/useSuperAdminTenants'
 import { useSuperAdminUiStore } from '../stores/ui'

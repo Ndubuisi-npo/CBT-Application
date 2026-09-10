@@ -140,10 +140,12 @@ import AppLifecycleTrail from '../../shared/AppLifecycleTrail.vue'
 import AppPageHeader from '../../shared/AppPageHeader.vue'
 import { fmtDateTime } from '../../../js/lib/helpers'
 import { useAssessmentsStore, getAssessmentStatusLabel, getStatusVariant, getSubmissionStatusLabel, getSubmissionStatusVariant } from '../stores/assessments'
+import { useNotificationStore } from '../../shared/stores/notifications'
 
 const route = useRoute()
 const router = useRouter()
 const store = useAssessmentsStore()
+const notificationStore = useNotificationStore()
 const assessmentId = route.params.id
 const assessment = computed(() => store.current || store.getAssessmentById(assessmentId))
 const submissions = computed(() => store.submissions)
@@ -189,7 +191,11 @@ const initials = (name) => (name || '')
   .join('') || '—'
 const subjectName = (submission) => submission.subject?.name || store.subjectOptions.find((option) => String(option.value) === String(submission.subject_id ?? submission.subjectId))?.label || 'Unknown subject'
 const formatDate = (value) => value ? fmtDateTime(value) : 'Not submitted'
-const viewSubmission = (submission) => router.push(`/school-admin/assessments/${assessmentId}/submissions/${submission.id}`)
+const viewSubmission = (submission) => {
+  const path = `/school-admin/assessments/${assessmentId}/submissions/${submission.id}`
+  void notificationStore.markReadForAction(path, ['submission', 'assessment'])
+  router.push(path)
+}
 
 const activateAssessment = async () => {
   if (!canActivate.value || activating.value) return

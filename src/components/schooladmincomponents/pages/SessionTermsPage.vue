@@ -2,7 +2,10 @@
   <div class="space-y-6">
     <SectionCard :title="`Terms for ${session?.name || '...'}`" subtitle="Manage academic terms for this session.">
       <template #header>
-        <AppButton @click="openModal()" :icon="Plus" text="Create" variant="primary" size="sm" />
+        <div class="flex flex-wrap items-center gap-2">
+          <AppButton :icon="ArrowLeft" text="Back to Sessions" variant="outline" size="sm" @click="router.push('/school-admin/sessions')" />
+          <AppButton @click="openModal()" :icon="Plus" text="Create" variant="primary" size="sm" />
+        </div>
       </template>
       <SkeletonRows v-if="sessionsStore.loading" :columns="4" class="hidden lg:block" />
       <div v-if="sessionsStore.loading" class="grid gap-3 sm:grid-cols-2 lg:hidden">
@@ -84,8 +87,8 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
-import { CalendarRange, Pencil, Plus, Power, Trash2 } from 'lucide-vue-next'
+import { useRoute, useRouter } from 'vue-router'
+import { ArrowLeft, CalendarRange, Pencil, Plus, Power, Trash2 } from 'lucide-vue-next'
 import SectionCard from '../components/SectionCard.vue'
 import SkeletonRows from '../components/SkeletonRows.vue'
 import AppButton from '../../shared/AppButton.vue'
@@ -100,6 +103,7 @@ import { fmtDate } from '@/lib/helpers'
 import { isNameTakenError } from '../../../js/lib/api'
 
 const route = useRoute()
+const router = useRouter()
 const headings = ['Term Name', 'Start Date', 'End Date', 'Actions']
 const sessionsStore = useSchoolAdminSessionsStore()
 const uiStore = useSchoolAdminUiStore()

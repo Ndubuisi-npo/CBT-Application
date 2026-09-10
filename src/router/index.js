@@ -5,7 +5,6 @@ import { getTenantHandle } from '../js/lib/api'
 // ─── Landing & Onboarding ─────────────────────────────────────────────────────
 import LandingPage from '../components/landingpage/landingPage.vue'
 import Onboarding from '../components/onboardingpage/onboarding.vue'
-import FeatureDetailPage from '../components/landingpage/FeatureDetailPage.vue'
 
 // ─── School Admin ─────────────────────────────────────────────────────────────
 import SchoolAdminRoot from '../components/schooladmincomponents/SchoolAdminRoot.vue'
@@ -23,7 +22,6 @@ import SchoolAdminStudentProfile from '../components/schooladmincomponents/pages
 import SchoolAdminSubjects from '../components/schooladmincomponents/pages/SubjectsPage.vue'
 import SchoolAdminSubjectAssignTeacher from '../components/schooladmincomponents/pages/SubjectAssignTeacherPage.vue'
 import SchoolAdminSettings from '../components/schooladmincomponents/pages/SettingsPage.vue'
-import SchoolAdminProfile from '../components/schooladmincomponents/pages/ProfilePage.vue'
 import StudentImportPage from '../components/schooladmincomponents/pages/StudentImportPage.vue'
 import TeacherImportPage from '../components/schooladmincomponents/pages/TeacherImportPage.vue'
 import AssessmentSchedulePage from '../components/schooladmincomponents/pages/AssessmentSchedulePage.vue'
@@ -38,15 +36,9 @@ import TeachersQuestionCreatePage from '../components/teacherscomponent/pages/Qu
 import TeacherAssessmentsPage from '../components/teacherscomponent/pages/TeacherAssessmentsPage.vue'
 import TeachersCalendarPage from '../components/teacherscomponent/pages/CalendarPage.vue'
 import TeacherAssessmentPage from '../components/teacherscomponent/pages/TeacherAssessmentPage.vue'
-import TeachersTopicsPage from '../components/teacherscomponent/pages/TopicsPage.vue'
-import TeachersResultsPage from '../components/teacherscomponent/pages/ResultsPage.vue'
 import TeachersSettingsPage from '../components/teacherscomponent/pages/TeachersSettingsPage.vue'
-import TeachersMyClasses from '../components/teacherscomponent/pages/MyClasses.vue'
 import TeachersStudentsPage from '../components/teacherscomponent/pages/StudentsPage.vue'
 import TeacherStudentProfilePage from '../components/teacherscomponent/pages/TeacherStudentProfilePage.vue'
-import TeachersAttendancePage from '../components/teacherscomponent/pages/AttendancePage.vue'
-import TeachersGradingPage from '../components/teacherscomponent/pages/GradingPage.vue'
-import TeachersTimetablePage from '../components/teacherscomponent/pages/TimetablePage.vue'
 import TeacherStudentHistoryPage from '../components/teacherscomponent/pages/TeacherStudentHistoryPage.vue'
 import TeacherStudentResultDetailPage from '../components/teacherscomponent/pages/TeacherStudentResultDetailPage.vue'
 
@@ -65,7 +57,6 @@ import NotificationsPage from '../components/shared/NotificationsPage.vue'
 const routes = [
   // ── Public ──────────────────────────────────────────────────────────────
   { path: '/', name: 'LandingPage', component: LandingPage },
-  { path: '/features/:slug', name: 'FeatureDetailPage', component: FeatureDetailPage, props: true },
   { path: '/onboarding', name: 'Onboarding', component: Onboarding },
   { path: '/login', name: 'Login', component: SchoolAdminLogin },
   { path: '/signin', redirect: '/login' },
@@ -118,7 +109,6 @@ const routes = [
           { path: 'assessment-submissions/:assessmentId', name: 'SchoolAdminAssessmentSubmissionSetup', component: AssessmentSubmissionsPage, props: true },
           { path: 'assessments/:assessmentId/submissions/:submissionId', name: 'SchoolAdminAssessmentSubmissionDetail', component: AssessmentSubmissionDetailPage, props: true },
           { path: 'settings', name: 'SchoolAdminSettings', component: SchoolAdminSettings },
-          { path: 'profile', name: 'SchoolAdminProfile', component: SchoolAdminProfile },
           { path: 'notifications', name: 'SchoolAdminNotifications', component: NotificationsPage },
         ],
       },
@@ -137,13 +127,10 @@ const routes = [
         component: SchoolAdminLayout,
         children: [
           { path: 'dashboard', name: 'TeachersDashboard', component: TeachersDashboard },
-          { path: 'my-classes', name: 'TeachersMyClasses', component: TeachersMyClasses },
 
           // Question Bank + Create Question page
           { path: 'questions', name: 'TeachersQuestionBank', component: TeachersQuestionBank },
           { path: 'questions/create', name: 'TeachersQuestionCreate', component: TeachersQuestionCreatePage },
-
-          { path: 'topics', name: 'TeachersTopicsPage', component: TeachersTopicsPage },
 
           { path: 'calendar', name: 'TeachersCalendarPage', component: TeachersCalendarPage },
           { path: 'assessments', name: 'TeachersAssessments', component: TeacherAssessmentsPage },
@@ -165,12 +152,7 @@ const routes = [
             props: true,
           },
 
-          { path: 'attendance', name: 'TeachersAttendancePage', component: TeachersAttendancePage },
-          { path: 'grading', name: 'TeachersGradingPage', component: TeachersGradingPage },
-          { path: 'results', name: 'TeachersResultsPage', component: TeachersResultsPage },
-          { path: 'timetable', name: 'TeachersTimetablePage', component: TeachersTimetablePage },
           { path: 'settings', name: 'TeachersSettings', component: TeachersSettingsPage },
-          { path: 'profile', name: 'TeachersProfile', component: SchoolAdminProfile },
           { path: 'notifications', name: 'TeachersNotifications', component: NotificationsPage },
         ],
       },

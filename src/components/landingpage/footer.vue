@@ -1,30 +1,18 @@
 <template>
   <footer class="lp-reveal-section w-full bg-white">
     <div class="w-full px-5 pb-8 pt-4 sm:px-8 lg:px-20">
-      
-        <div class="grid grid-cols-1 gap-10 md:grid-cols-2 xl:grid-cols-4">
+
+        <div class="grid grid-cols-1 gap-10 sm:grid-cols-2">
           <div v-for="group in footerGroups" :key="group.title">
             <h3 class="text-base font-bold tracking-tight text-slate-800">
               {{ group.title }}
             </h3>
 
             <ul class="mt-8 space-y-6">
-              <li v-for="item in group.links" :key="item">
-                <template v-if="item === 'Features'">
-                  <a href="#features" class="lp-link text-base text-slate-500 hover:text-amber-800">
-                    {{ item }}
-                  </a>
-                </template>
-                <template v-else-if="item === 'Pricing'">
-                  <a href="#pricing" class="lp-link text-base text-slate-500 hover:text-amber-800" @click.prevent="scrollTo('pricing')">
-                    {{ item }}
-                  </a>
-                </template>
-                <template v-else>
-                  <a href="#" class="lp-link text-base text-slate-500 hover:text-amber-800">
-                    {{ item }}
-                  </a>
-                </template>
+              <li v-for="item in group.links" :key="item.label">
+                <a :href="item.href" class="lp-link text-base text-slate-500 hover:text-amber-800" @click.prevent="item.action && item.action()">
+                  {{ item.label }}
+                </a>
               </li>
             </ul>
           </div>
@@ -39,27 +27,13 @@
               (c) 2026 EduCBT. All rights reserved.
             </p>
           </div>
-
-          <div class="flex items-center gap-4">
-            <a
-              v-for="social in socialLinks"
-              :key="social.label"
-              href="#"
-              class="lp-icon-chip flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:text-slate-800"
-              :aria-label="social.label"
-            >
-              <component :is="social.icon" class="h-4 w-4" />
-            </a>
-          </div>
         </div>
-      
+
     </div>
   </footer>
 </template>
 
 <script setup lang="ts">
-import { Facebook, Instagram, Linkedin, Twitter } from 'lucide-vue-next'
-
 const scrollTo = (id: string) => {
   document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
@@ -67,26 +41,17 @@ const scrollTo = (id: string) => {
 const footerGroups = [
   {
     title: 'Product',
-    links: ['Features', 'Pricing'],
+    links: [
+      { label: 'Features', href: '#features' },
+      { label: 'Pricing', href: '#pricing', action: () => scrollTo('pricing') },
+    ],
   },
   {
-    title: 'Resources',
-    links: ['Help Center'],
+    title: 'Get Started',
+    links: [
+      { label: 'Onboard Your School', href: '/onboarding' },
+      { label: 'Login', href: '/login' },
+    ],
   },
-  {
-    title: 'Company',
-    links: ['About Us', 'Careers', 'Contact'],
-  },
-  {
-    title: 'Legal',
-    links: ['Privacy Policy', 'Terms of Service', 'Cookie Policy', 'Security'],
-  },
-]
-
-const socialLinks = [
-  { label: 'Twitter', icon: Twitter },
-  { label: 'LinkedIn', icon: Linkedin },
-  { label: 'Facebook', icon: Facebook },
-  { label: 'Instagram', icon: Instagram },
 ]
 </script>

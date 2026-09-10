@@ -38,7 +38,7 @@
         description="Try clearing the search or choosing a different class level."
       />
 
-      <div v-else class="overflow-x-auto">
+      <div v-else class="hidden overflow-x-auto lg:block">
         <table class="w-full min-w-[900px] text-left text-sm">
           <thead class="border-b border-slate-100 bg-slate-50/50 text-[10px] uppercase tracking-[0.18em] text-slate-400">
             <tr>
@@ -79,6 +79,33 @@
           </tbody>
         </table>
       </div>
+
+      <div v-if="filteredRows.length" class="grid gap-3 p-4 lg:hidden">
+        <ResponsiveDataCard
+          v-for="assessment in filteredRows"
+          :key="assessment.id"
+          avatar-color="bg-[#0B1F3A]/10 text-[#0B1F3A]"
+          :avatar-text="(assessment.title || '?').slice(0, 2).toUpperCase()"
+          :title="assessment.title"
+          :subtitle="classText(assessment)"
+          :fields="[
+            { label: 'Session · term', value: `${sessionName(assessment)} · ${termName(assessment)}` },
+            { label: 'Questions close', value: assessment.question_submission_ends ? formatDate(assessment.question_submission_ends) : 'Not set' },
+            { label: 'Marks', value: assessment.total_marks ?? '—' },
+          ]"
+        >
+          <template #badge>
+            <div class="flex flex-col items-end gap-1.5">
+              <AppBadge :label="assessmentStatusLabel(assessment)" :variant="assessmentVariant(assessment)" dot />
+              <AppBadge :label="questionSubmissionStatusLabel(assessment)" :variant="questionSubmissionVariant(assessment)" />
+            </div>
+          </template>
+          <div class="flex flex-wrap gap-2">
+            <AppButton :text="assessment.schedule_id ? 'Edit window' : 'Add window'" variant="ghost" size="xs" @click="editAssessment(assessment)" />
+            <AppButton text="View papers" variant="outline" size="xs" @click="viewSubmissions(assessment)" />
+          </div>
+        </ResponsiveDataCard>
+      </div>
     </section>
 
     <SubmissionConfigurationModal
@@ -102,13 +129,16 @@ import AppEmptyState from '../../shared/AppEmptyState.vue'
 import AppInput from '../../shared/AppInput.vue'
 import AppPageHeader from '../../shared/AppPageHeader.vue'
 import AppSelect from '../../shared/AppSelect.vue'
+import ResponsiveDataCard from '../../shared/ResponsiveDataCard.vue'
 import SubmissionConfigurationModal from '../components/SubmissionConfigurationModal.vue'
 import { fmtDateTime } from '../../../js/lib/helpers'
 import { useAssessmentsStore, getAssessmentStatusLabel, getStatusVariant } from '../stores/assessments'
+import { useNotificationStore } from '../../shared/stores/notifications'
 
 const route = useRoute()
 const router = useRouter()
 const store = useAssessmentsStore()
+const notificationStore = useNotificationStore()
 const saving = ref(false)
 const saveError = ref('')
 const showSubmissionModal = ref(false)
@@ -170,7 +200,11 @@ const closeSubmissionModal = () => {
   saveError.value = ''
 }
 
-const viewSubmissions = (assessment) => router.push(`/school-admin/assessments/${assessment.id}/submissions`)
+const viewSubmissions = (assessment) => {
+  const path = `/school-admin/assessments/${assessment.id}/submissions`
+  void notificationStore.markReadForAction(path, ['submission', 'assessment'])
+  router.push(path)
+}
 
 const saveSubmission = async (form) => {
   if (!selectedAssessment.value) return

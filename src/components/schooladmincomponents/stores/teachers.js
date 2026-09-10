@@ -46,7 +46,7 @@ export const useSchoolAdminTeachersStore = defineStore(
             async fetchTeachers(params = {}) {
                 this.loading = true;
                 try {
-                    const response = await getTeachers({ status: 'active', include: 'teacherProfile,assignedClasses,assignedClasses.class_level,teacherAssignments,teacherAssignments.subject,teacherAssignments.class_level', ...params });
+                    const response = await getTeachers({ status: 'active', include: 'teacherProfile,assignedClasses,assignedClasses.class_arm,teacherAssignments,teacherAssignments.subject,teacherAssignments.class_arm', ...params });
 
                     // Support either an array response (legacy/simple) or an object with `data` and `total`
                     if (Array.isArray(response)) {
@@ -72,7 +72,7 @@ export const useSchoolAdminTeachersStore = defineStore(
 
             async fetchTeacher(id) {
                 const record = await getTeacher(id, {
-                    include: 'teacherProfile,assignedClasses,assignedClasses.class_level,teacherAssignments,teacherAssignments.subject,teacherAssignments.class_level',
+                    include: 'teacherProfile,assignedClasses,assignedClasses.class_arm,teacherAssignments,teacherAssignments.subject,teacherAssignments.class_arm',
                 });
                 if (record?.id) {
                     this.teachers = this.teachers.map((item) =>
@@ -93,7 +93,7 @@ export const useSchoolAdminTeachersStore = defineStore(
                 if (record && record.id) {
                     try {
                         const full = await getTeacher(record.id, {
-                            include: 'teacherProfile,assignedClasses,assignedClasses.class_level,teacherAssignments,teacherAssignments.subject,teacherAssignments.class_level',
+                            include: 'teacherProfile,assignedClasses,assignedClasses.class_arm,teacherAssignments,teacherAssignments.subject,teacherAssignments.class_arm',
                         })
                         record = full || record
                     } catch (err) {
@@ -145,7 +145,7 @@ export const useSchoolAdminTeachersStore = defineStore(
                 if (record && record.id) {
                     try {
                         const full = await getTeacher(record.id, {
-                            include: 'teacherProfile,assignedClasses,assignedClasses.class_level,teacherAssignments,teacherAssignments.subject,teacherAssignments.class_level',
+                                    include: 'teacherProfile,assignedClasses,assignedClasses.class_arm,teacherAssignments,teacherAssignments.subject,teacherAssignments.class_arm',
                         });
                         record = full || record;
                     } catch (err) {

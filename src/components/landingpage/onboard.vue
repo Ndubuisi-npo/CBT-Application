@@ -7,8 +7,7 @@
         </h2>
 
         <p class="mx-auto mt-8 max-w-4xl text-lg leading-relaxed text-slate-600">
-          Join hundreds of innovative schools already using EduCBT to simplify their daily
-          operations.
+          Set up your school in minutes and start managing exams, results, and staff in one place.
         </p>
 
         <RouterLink 

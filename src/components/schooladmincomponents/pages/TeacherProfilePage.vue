@@ -35,6 +35,7 @@
             </div>
           </div>
           <div class="flex shrink-0 flex-wrap items-center gap-2 pb-1">
+            <AppButton :icon="ArrowLeft" text="Back to Teachers" variant="outline" size="sm" @click="router.push('/school-admin/teachers')" />
             <AppButton :icon="Pencil" text="Edit" variant="outline" size="sm" @click="showEditDrawer = true" />
             <AppButton :icon="Ban" text="Suspend" variant="warning" size="sm" :processing="revoking" @click="handleSuspend" v-if="teacher.is_active !== false" />
             <AppButton :icon="Trash2" text="Delete" variant="danger" size="sm" :processing="deleting" @click="handleDelete" />
@@ -54,10 +55,6 @@
             <div>
               <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Class(es)</p>
               <p class="mt-0.5 truncate text-sm font-medium text-slate-700">{{ classSummary }}</p>
-            </div>
-            <div>
-              <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Department</p>
-              <p class="mt-0.5 truncate text-sm font-medium text-slate-700">{{ department }}</p>
             </div>
             <div>
               <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Email</p>
@@ -90,15 +87,9 @@
             <h2 class="text-sm font-semibold text-slate-900">Personal Information</h2>
             <dl class="mt-4 grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
               <InfoField label="Full Name" :value="fullName" />
-              <InfoField label="Username" :value="username" />
               <InfoField label="Email" :value="email" />
               <InfoField label="Phone" :value="phone" />
               <InfoField label="Gender" :value="gender" />
-              <InfoField label="Date of Birth" :value="dob" />
-              <InfoField label="Address" :value="address" class="sm:col-span-2" />
-              <InfoField label="Emergency Contact" :value="emergencyContact" />
-              <InfoField label="State" :value="state" />
-              <InfoField label="Country" :value="country" />
             </dl>
           </section>
 
@@ -107,11 +98,9 @@
             <h2 class="text-sm font-semibold text-slate-900">Professional Information</h2>
             <dl class="mt-4 grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
               <InfoField label="Employee ID" :value="staffId" />
-              <InfoField label="Department" :value="department" />
               <InfoField label="Subjects" :value="subjectSummary" />
               <InfoField label="Classes" :value="classSummary" />
               <InfoField label="Qualification" :value="qualification" />
-              <InfoField label="Years of Experience" :value="yearsOfExperience" />
               <InfoField label="Employment Status" :value="statusLabel" />
               <InfoField label="Date Hired" :value="dateJoined" />
             </dl>
@@ -128,7 +117,7 @@
               >
                 <p class="text-sm font-semibold text-slate-900">{{ asgn.subjectName }}</p>
                 <span class="inline-flex items-center rounded-full bg-[#0B1F3A]/8 px-2.5 py-0.5 text-xs font-semibold text-[#0B1F3A]">
-                  {{ asgn.levelName }}
+                  {{ asgn.armName }}
                 </span>
               </div>
             </div>
@@ -143,11 +132,6 @@
             <div v-if="classes.length" class="mt-4 grid gap-3 sm:grid-cols-2">
               <div v-for="cls in classes" :key="cls.id || cls.name" class="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
                 <p class="text-sm font-semibold text-slate-900">{{ cls.name }}</p>
-                <div class="mt-1.5 flex items-center gap-3 text-xs text-slate-500">
-                  <span v-if="cls.levelName && cls.levelName !== 'Not provided'">{{ cls.levelName }}</span>
-                  <span v-if="cls.studentCount !== 'Not provided'">{{ cls.studentCount }} students</span>
-                  <span>{{ cls.subjectCount }} subject{{ cls.subjectCount === 1 ? '' : 's' }}</span>
-                </div>
               </div>
             </div>
             <p v-else class="mt-4 rounded-xl border border-dashed border-slate-200 py-8 text-center text-sm text-slate-400">
@@ -195,7 +179,7 @@
 import { computed, h, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
-  Ban, BookOpen, Pencil, School, Trash2, UserX, Users,
+  ArrowLeft, Ban, BookOpen, Pencil, School, Trash2, UserX, Users,
 } from 'lucide-vue-next'
 import AppBadge from '../../shared/AppBadge.vue'
 import AppButton from '../../shared/AppButton.vue'
@@ -250,34 +234,24 @@ const email = computed(() => displayValue(teacher.value?.email || teacher.value?
 const phone = computed(() => displayValue(teacher.value?.phone || teacher.value?.user?.phone))
 const staffId = computed(() => displayValue(tp.value?.staff_id || tp.value?.staffId || teacher.value?.staff_id))
 const qualification = computed(() => displayValue(tp.value?.qualification || teacher.value?.qualification))
-const department = computed(() => displayValue(tp.value?.department || teacher.value?.department))
 const dateJoined = computed(() => displayValue(tp.value?.date_joined || tp.value?.dateJoined || teacher.value?.created_at?.slice?.(0, 10)))
-const username = computed(() => displayValue(teacher.value?.user?.username || teacher.value?.username))
 const gender = computed(() => displayValue(tp.value?.gender || teacher.value?.gender))
-const dob = computed(() => displayValue(tp.value?.date_of_birth || tp.value?.dob || teacher.value?.date_of_birth))
-const address = computed(() => displayValue(tp.value?.address || teacher.value?.address))
-const emergencyContact = computed(() => displayValue(tp.value?.emergency_contact || tp.value?.emergencyContact))
-const state = computed(() => displayValue(tp.value?.state || teacher.value?.state))
-const country = computed(() => displayValue(tp.value?.country || teacher.value?.country))
-const yearsOfExperience = computed(() => displayValue(tp.value?.years_of_experience ?? tp.value?.yearsOfExperience))
 
 // Assigned classes — merge assignedClasses with anything implied by teacherAssignments, de-duped.
 const classes = computed(() => {
   const t = teacher.value
   if (!t) return []
   const direct = t.assignedClasses || t.assigned_classes || []
-  const fromAsgn = (t.teacherAssignments || t.assignments || []).map((a) => a.class_level || a.class || null).filter(Boolean)
+  const fromAsgn = (t.teacherAssignments || t.assignments || []).map((a) => a.class_arm || a.classArm || null).filter(Boolean)
   const combined = [...direct, ...fromAsgn]
   const seen = new Map()
   combined.forEach((c) => {
-    const key = c?.id || c?.name
+    const classArm = c?.class_arm || c?.classArm || (c?.class_level_id ? c : null)
+    const key = classArm?.id || classArm?.name
     if (key && !seen.has(key)) {
       seen.set(key, {
-        id: c.id,
-        name: c.name || c.class_name || 'Untitled class',
-        levelName: c.class_level?.name || c.class_level_name || NOT_PROVIDED,
-        studentCount: c.student_count ?? c.studentCount ?? NOT_PROVIDED,
-        subjectCount: (t.teacherAssignments || []).filter((a) => (a.class_level?.id || a.class_level_id) === c.id).length,
+        id: classArm.id,
+        name: classArm.name || c.class_arm_name || 'Untitled class arm',
       })
     }
   })
@@ -291,7 +265,7 @@ const assignments = computed(() => {
   return src.map((a, i) => ({
     id: a.id || i,
     subjectName: a.subject?.name || a.subject_name || 'Unknown subject',
-    levelName: a.class_level?.name || a.class_level_name || NOT_PROVIDED,
+    armName: a.class_arm?.name || a.classArm?.name || a.class_arm_name || NOT_PROVIDED,
   }))
 })
 

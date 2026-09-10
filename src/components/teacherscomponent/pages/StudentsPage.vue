@@ -165,12 +165,14 @@ import AppButton from '../../shared/AppButton.vue'
 import AppEmptyState from '../../shared/AppEmptyState.vue'
 import ResponsiveTableActions from '../../shared/ResponsiveTableActions.vue'
 import ResponsiveDataCard from '../../shared/ResponsiveDataCard.vue'
+import { useNotificationStore } from '../../shared/stores/notifications'
 import { useSchoolAdminUiStore } from '../../schooladmincomponents/stores/ui'
 import { getStudents } from '../../schooladmincomponents/services/api/students'
 import { getAuthUser } from '../../../js/lib/auth'
 
 const uiStore = useSchoolAdminUiStore()
 const router = useRouter()
+const notificationStore = useNotificationStore()
 
 const searchQuery = ref('')
 const allStudents = ref([])
@@ -228,10 +230,12 @@ watch(searchQuery, () => { page.value = 1 })
 watch(totalPages, (t) => { if (page.value > t) page.value = t })
 
 const viewStudent = (student) => {
+  void notificationStore.markReadForAction('/teachers/students', 'students')
   router.push({ name: 'TeacherStudentProfile', params: { id: student.id } })
 }
 
 const viewResults = (student) => {
+  void notificationStore.markReadForAction('/teachers/students', 'students')
   router.push({ name: 'TeacherStudentHistory', params: { studentId: student.id } })
 }
 

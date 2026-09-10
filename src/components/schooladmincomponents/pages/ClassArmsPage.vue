@@ -2,7 +2,10 @@
   <div class="space-y-6">
     <SectionCard title="Arms" subtitle="Manage class arms (e.g., JSS 1A, JSS 1B).">
       <template #header>
-        <AppButton @click="openModal()" :icon="Plus" text="Create" variant="primary" size="sm" />
+        <div class="flex flex-wrap items-center gap-2">
+          <AppButton :icon="ArrowLeft" text="Back to Class Levels" variant="outline" size="sm" @click="router.push('/school-admin/class-levels')" />
+          <AppButton @click="openModal()" :icon="Plus" text="Create" variant="primary" size="sm" />
+        </div>
       </template>
       <SkeletonRows v-if="classArmsStore.loading" :columns="3" class="hidden lg:block" />
       <div v-if="classArmsStore.loading" class="grid gap-3 sm:grid-cols-2 lg:hidden">
@@ -77,8 +80,8 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
-import { LayoutGrid, Pencil, Trash2, UserCog } from 'lucide-vue-next'
+import { useRoute, useRouter } from 'vue-router'
+import { ArrowLeft, LayoutGrid, Pencil, Trash2, UserCog } from 'lucide-vue-next'
 import SectionCard from '../components/SectionCard.vue'
 import SkeletonRows from '../components/SkeletonRows.vue'
 import AppButton from '../../shared/AppButton.vue'
@@ -94,6 +97,7 @@ import { useSchoolAdminUiStore } from '../stores/ui'
 import { isNameTakenError } from '../../../js/lib/api'
 
 const route = useRoute()
+const router = useRouter()
 const headings = ['Class Arm Name', 'Teacher', 'Actions']
 const classArmsStore = useSchoolAdminClassArmsStore()
 const classLevelsStore = useSchoolAdminClassLevelsStore()

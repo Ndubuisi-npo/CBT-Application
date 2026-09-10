@@ -37,7 +37,7 @@
           />
         </div>
         <!-- Bulk / select actions -->
-        <div class="flex items-center gap-2">
+        <div class="flex flex-wrap items-center gap-2">
           <span v-if="selectedStudents.size" class="text-xs text-slate-500">{{ selectedStudents.size }} selected</span>
           <AppButton
             v-if="selectedStudents.size"
@@ -207,7 +207,7 @@
     <!-- ── Archived Students table ─────────────────────────────────────────── -->
     <section v-if="showArchived" class="rounded-2xl border border-slate-200 bg-white">
       <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
-        <div class="flex items-center gap-2">
+        <div class="flex flex-wrap items-center gap-2">
           <span v-if="selectedArchivedStudents.size" class="text-xs text-slate-500">{{ selectedArchivedStudents.size }} selected</span>
           <AppButton
             v-if="selectedArchivedStudents.size"
@@ -379,10 +379,12 @@ import SkeletonRows from '../components/SkeletonRows.vue'
 import StudentFormDrawer from '../components/StudentFormDrawer.vue'
 import { useSchoolAdminStudentsStore } from '../stores/students'
 import { useSchoolAdminUiStore } from '../stores/ui'
+import { useNotificationStore } from '../../shared/stores/notifications'
 
 const router = useRouter()
 const studentsStore = useSchoolAdminStudentsStore()
 const uiStore = useSchoolAdminUiStore()
+const notificationStore = useNotificationStore()
 
 // ── Column definitions ─────────────────────────────────────────────────────
 const columns = [
@@ -529,8 +531,14 @@ const toggleView = () => {
 
 // ── Modal ──────────────────────────────────────────────────────────────────
 const openModal = (student) => { selectedStudent.value = student || null; showModal.value = true }
-const viewStudent = (student) => router.push({ name: 'SchoolAdminStudentProfile', params: { id: student.id } })
-const viewResults = (student) => router.push({ name: 'SchoolAdminStudentHistory', params: { studentId: student.id } })
+const viewStudent = (student) => {
+  void notificationStore.markReadForAction('/school-admin/students', 'students')
+  router.push({ name: 'SchoolAdminStudentProfile', params: { id: student.id } })
+}
+const viewResults = (student) => {
+  void notificationStore.markReadForAction('/school-admin/students', 'students')
+  router.push({ name: 'SchoolAdminStudentHistory', params: { studentId: student.id } })
+}
 const editStudent = (student) => { selectedStudent.value = student; showModal.value = true }
 const closeModal = () => { showModal.value = false; selectedStudent.value = null }
 

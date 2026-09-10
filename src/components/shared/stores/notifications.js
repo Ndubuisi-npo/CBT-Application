@@ -344,6 +344,22 @@ export const useNotificationStore = defineStore('notifications', () => {
     }
   }
 
+  const markReadForAction = async (path, categories = []) => {
+    const normalizedPath = String(path || '').split('?')[0].replace(/\/$/, '')
+    const categoryList = Array.isArray(categories) ? categories : [categories]
+    const unreadNotifications = notifications.value.filter((notification) => (
+      notification.unread
+      && !notification.archived
+      && (!categoryList.length || categoryList.includes(notification.category))
+    ))
+    const linked = unreadNotifications.filter((notification) => {
+      const target = String(notification.link?.to || '').split('?')[0].replace(/\/$/, '')
+      return target && (target === normalizedPath || target.startsWith(`${normalizedPath}/`))
+    })
+    const targets = linked.length ? linked : unreadNotifications
+    await Promise.all(targets.map((notification) => markRead(notification.id)))
+  }
+
   /**
    * Bulk "mark read/unread" for a selected subset (used by the Notifications page
    * bulk-action bar). No dedicated bulk-subset endpoint exists, so this
@@ -468,6 +484,7 @@ export const useNotificationStore = defineStore('notifications', () => {
     prependNotification,
     markAllRead,
     markRead,
+    markReadForAction,
     markManyRead,
     deleteNotification,
     deleteMany,

@@ -35,6 +35,7 @@
             </div>
           </div>
           <div class="flex shrink-0 flex-wrap items-center gap-2 pb-1">
+            <AppButton :icon="ArrowLeft" text="Back to Students" variant="outline" size="sm" @click="router.push('/school-admin/students')" />
             <AppButton :icon="Pencil" text="Edit" variant="outline" size="sm" @click="showEditDrawer = true" />
             <AppButton :icon="ArrowUpCircle" text="Promote" variant="outline" size="sm" @click="showPromoteDrawer = true" />
             <AppButton :icon="Trash2" text="Delete" variant="danger" size="sm" :processing="deleting" @click="handleDelete" />
@@ -132,7 +133,7 @@
 import { computed, h, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
-  ArrowUpCircle, Pencil, Trash2, UserX,
+  ArrowLeft, ArrowUpCircle, Pencil, Trash2, UserX,
 } from 'lucide-vue-next'
 import AppBadge from '../../shared/AppBadge.vue'
 import AppButton from '../../shared/AppButton.vue'

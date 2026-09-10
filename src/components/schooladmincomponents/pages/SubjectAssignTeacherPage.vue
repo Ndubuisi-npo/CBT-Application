@@ -2,7 +2,10 @@
   <div class="space-y-6">
     <SectionCard :title="`Assign Teachers to ${subject?.name || 'Subject'}`" subtitle="Manage teacher assignments for this subject.">
       <template #header>
-        <AppButton @click="openModal()" :icon="Plus" text="Create and Assign" variant="primary" size="sm" />
+        <div class="flex flex-wrap items-center gap-2">
+          <AppButton :icon="ArrowLeft" text="Back to Subjects" variant="outline" size="sm" @click="router.push('/school-admin/subjects')" />
+          <AppButton @click="openModal()" :icon="Plus" text="Create and Assign" variant="primary" size="sm" />
+        </div>
       </template>
       <SkeletonRows v-if="isLoading" :columns="5" class="hidden lg:block" />
       <div v-if="isLoading" class="grid gap-3 p-4 sm:grid-cols-2 lg:hidden">
@@ -15,7 +18,7 @@
       <div v-else-if="!subject" class="text-center py-8">
         <p class="text-slate-600">Loading subject information...</p>
       </div>
-      <div v-else class="overflow-hidden rounded-2xl border border-slate-200">
+      <div v-else class="hidden overflow-hidden rounded-2xl border border-slate-200 lg:block">
         <div class="overflow-x-auto">
           <table class="min-w-full divide-y divide-slate-200 bg-white">
             <thead class="bg-slate-50">
@@ -51,6 +54,40 @@
           </table>
         </div>
       </div>
+
+      <AppEmptyState
+        v-if="!isLoading && subject && assignments.length === 0"
+        class="lg:hidden"
+        :icon="UserCog"
+        title="No teacher assignments"
+        description="No teacher assignments found for this subject."
+      />
+
+      <div v-else-if="!isLoading && subject" class="grid gap-3 p-4 lg:hidden">
+        <ResponsiveDataCard
+          v-for="assignment in assignments"
+          :key="assignment.id"
+          avatar-color="bg-[#0B1F3A]/10 text-[#0B1F3A]"
+          :avatar-text="(getTeacherName(assignment.user_id) || '?').slice(0, 2).toUpperCase()"
+          :title="getTeacherName(assignment.user_id)"
+          :subtitle="getClassName(assignment.class_level_id)"
+          :fields="[
+            { label: 'Academic Session', value: getSessionName(assignment.academic_session_id) },
+            { label: 'Assigned Date', value: formatDate(assignment.created_at) },
+          ]"
+        >
+          <div class="flex flex-wrap gap-2">
+            <AppButton
+              text="Remove"
+              @click="deleteAssignment(assignment.id)"
+              variant="danger"
+              size="xs"
+              :processing="deleteLoading.has(assignment.id)"
+              :disabled="deleteLoading.has(assignment.id)"
+            />
+          </div>
+        </ResponsiveDataCard>
+      </div>
     </SectionCard>
 
     <TeacherAssignmentModal 
@@ -64,16 +101,19 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import SectionCard from '../components/SectionCard.vue'
 import SkeletonRows from '../components/SkeletonRows.vue'
 import AppButton from '../../shared/AppButton.vue'
+import AppEmptyState from '../../shared/AppEmptyState.vue'
+import ResponsiveDataCard from '../../shared/ResponsiveDataCard.vue'
 import TeacherAssignmentModal from '../components/TeacherAssignmentModal.vue'
-import { Plus } from 'lucide-vue-next'
+import { ArrowLeft, Plus, UserCog } from 'lucide-vue-next'
 import { useSchoolAdminSubjectsStore } from '../stores/subjects'
 import { useSchoolAdminUiStore } from '../stores/ui'
 
 const route = useRoute()
+const router = useRouter()
 const headings = ['Teacher', 'Class Level', 'Academic Session', 'Assigned Date', 'Actions']
 const subjectsStore = useSchoolAdminSubjectsStore()
 const uiStore = useSchoolAdminUiStore()

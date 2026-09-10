@@ -1,5 +1,9 @@
 <template>
   <div class="space-y-6">
+    <div class="flex items-center justify-between gap-4">
+      <AppButton :icon="ArrowLeft" text="Back to Students" variant="outline" size="sm" @click="router.push('/school-admin/students')" />
+    </div>
+
     <!-- Idle state: Dropzone + template download -->
     <FileDropzone
       v-if="state.page === 'idle'"
@@ -75,13 +79,16 @@
 
 <script setup>
 import { reactive } from 'vue'
-import { AlertCircle } from 'lucide-vue-next'
+import { useRouter } from 'vue-router'
+import { AlertCircle, ArrowLeft } from 'lucide-vue-next'
+import AppButton from '../../shared/AppButton.vue'
 import FileDropzone from '../components/StudentImport/FileDropzone.vue'
 import ImportPreviewModal from '../components/StudentImport/ImportPreviewModal.vue'
 import ImportResultBanner from '../components/StudentImport/ImportResultBanner.vue'
 import { getImportTemplate, importStudents } from '../services/api/students'
 import { useSchoolAdminStudentsStore } from '../stores/students'
 
+const router = useRouter()
 const studentsStore = useSchoolAdminStudentsStore()
 
 const studentDuplicateColumns = [

@@ -2,18 +2,14 @@
   <div ref="landingPageRef" class="landing-page min-h-screen bg-[#f6f7fb] text-slate-900">
     <Navbar />
     <Hero />
-    <Trusted />
     <div id="features" class="scroll-mt-28">
       <Needs />
     </div>
-    <Tracking />
     <Grade />
     <div id="how-it-works" class="scroll-mt-28">
       <GetStarted />
     </div>
-    <Feedback />
     <PricingSection />
-    <Loop />
     <Onboard />
     <Footer />
   </div>
@@ -21,17 +17,13 @@
 
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue'
-import Feedback from './feedback.vue'
 import Footer from './footer.vue'
 import GetStarted from './getstarted.vue'
 import Grade from './grade.vue'
 import Navbar from './navbar.vue'
 import Hero from './hero.vue'
-import Loop from './loop.vue'
 import Needs from './needs.vue'
 import Onboard from './onboard.vue'
-import Tracking from './tracking.vue'
-import Trusted from './trusted.vue'
 import PricingSection from './PricingSection.vue'
 
 const landingPageRef = ref<HTMLElement | null>(null)

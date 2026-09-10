@@ -118,11 +118,13 @@ import StatusBadge from '../components/StatusBadge.vue'
 import SessionFormDrawer from '../components/SessionFormDrawer.vue'
 import { useSchoolAdminSessionsStore } from '../stores/sessions'
 import { useSchoolAdminUiStore } from '../stores/ui'
+import { useNotificationStore } from '../../shared/stores/notifications'
 import { fmtDate } from '@/lib/helpers'
 
 const router = useRouter()
 const sessionsStore = useSchoolAdminSessionsStore()
 const uiStore = useSchoolAdminUiStore()
+const notificationStore = useNotificationStore()
 
 const isSelectMode = ref(false)
 const selectedSessions = ref(new Set())
@@ -149,8 +151,8 @@ const getTermsCount = (s) => {
 }
 
 const sessionActions = (session) => [
-  { key: 'edit', label: 'Edit', icon: Pencil, onClick: () => openModal(session) },
-  { key: 'terms', label: 'Terms', icon: Calendar, onClick: () => router.push(`/school-admin/terms/${session.id}`) },
+  { key: 'edit', label: 'Edit', icon: Pencil, onClick: () => { void notificationStore.markReadForAction('/school-admin/sessions', 'academic_sessions'); openModal(session) } },
+  { key: 'terms', label: 'Terms', icon: Calendar, onClick: () => { void notificationStore.markReadForAction('/school-admin/sessions', 'academic_sessions'); router.push(`/school-admin/terms/${session.id}`) } },
   {
     key: 'toggle',
     label: sessionStatus(session) === 'Current' ? 'Deactivate' : 'Activate',

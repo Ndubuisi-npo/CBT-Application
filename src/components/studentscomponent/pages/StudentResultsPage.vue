@@ -56,7 +56,7 @@
         <div class="border-b border-slate-100 px-5 py-4">
           <h2 class="text-sm font-semibold text-slate-900">{{ results.length }} Result{{ results.length !== 1 ? 's' : '' }}</h2>
         </div>
-        <div class="overflow-x-auto">
+        <div class="hidden overflow-x-auto lg:block">
           <table class="min-w-full divide-y divide-slate-100">
             <thead class="bg-slate-50">
               <tr>
@@ -125,6 +125,53 @@
           </table>
         </div>
 
+        <div class="grid gap-3 p-4 lg:hidden">
+          <ResponsiveDataCard
+            v-for="result in paginatedResults"
+            :key="result.attempt_id || result.id"
+            avatar-color="bg-[#0B1F3A]/10 text-[#0B1F3A]"
+            :avatar-text="(getExamTitle(result) || '?').slice(0, 2).toUpperCase()"
+            :title="getExamTitle(result)"
+            :subtitle="getExamSubject(result) || 'N/A'"
+            :fields="[
+              { label: 'Attempt', value: `#${result.attempt_number ?? result.attemptNumber ?? 1}` },
+              { label: 'Date', value: fmtDate(result.submitted_at || result.completed_at) || 'N/A' },
+              { label: 'Time Spent', value: fmtDuration(result.time_spent_seconds) },
+              { label: 'Score', value: `${getScore(result)} / ${getTotalMarks(result)}` },
+              { label: 'Grade', value: result.grade || 'N/A' },
+            ]"
+          >
+            <template #badge>
+              <div class="flex flex-col items-end gap-1.5">
+                <span class="text-sm font-semibold" :class="scoreColorClass(getPercentage(result))">
+                  {{ getPercentage(result) != null ? `${getPercentage(result)}%` : 'N/A' }}
+                </span>
+                <span
+                  class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize"
+                  :class="statusClass(result.status)"
+                >
+                  {{ result.status || 'Graded' }}
+                </span>
+              </div>
+            </template>
+            <div class="flex flex-wrap gap-2">
+              <button
+                class="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-100"
+                @click="viewDetail(result)"
+              >
+                View Details
+              </button>
+              <button
+                class="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+                :disabled="downloadingId === getAttemptId(result)"
+                @click="downloadPdf(result)"
+              >
+                <Download class="h-3.5 w-3.5" /> Download
+              </button>
+            </div>
+          </ResponsiveDataCard>
+        </div>
+
         <!-- Pagination -->
         <div v-if="results.length > itemsPerPage" class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-5 py-3.5">
           <p class="text-xs text-slate-500">Showing {{ startIndex }}–{{ endIndex }} of {{ results.length }}</p>
@@ -156,6 +203,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ArrowLeft, ChevronLeft, ChevronRight, Download, FileText } from 'lucide-vue-next'
 import NotificationBell from '../../shared/NotificationBell.vue'
+import ResponsiveDataCard from '../../shared/ResponsiveDataCard.vue'
 import { getStudentResults } from '../services/api/studentResults'
 import { downloadAttemptResultPdf, saveBlobAsPdf } from '../../shared/services/resultPdf'
 import { fmtDate } from '../../../js/lib/helpers'

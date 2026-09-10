@@ -28,7 +28,7 @@
       <AppLifecycleTrail :assessment-status="assessmentStatus" :question-submission-status="questionSubmissionStatus" />
     </div>
 
-    <div class="mb-6 flex gap-1 rounded-xl bg-slate-50 p-1" role="tablist">
+    <div class="mb-6 grid grid-cols-3 gap-1 rounded-xl bg-slate-50 p-1" role="tablist">
       <button
         v-for="item in tabs"
         :key="item.id"
@@ -36,7 +36,7 @@
         role="tab"
         :aria-selected="tab === item.id"
         :disabled="item.disabled"
-        class="flex-1 rounded-lg px-3 py-2 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-40"
+        class="min-w-0 rounded-lg px-1.5 py-2 text-[10px] font-semibold leading-tight transition disabled:cursor-not-allowed disabled:opacity-40 sm:px-3 sm:text-xs"
         :class="tab === item.id ? 'bg-white text-[#0B1F3A] shadow-sm' : 'text-slate-500 hover:text-slate-800'"
         @click="tab = item.id"
       >
@@ -124,8 +124,8 @@
     </div>
 
     <template #footer>
-      <div class="flex flex-wrap items-center gap-2">
-        <div v-if="form.id" class="mr-auto flex flex-wrap gap-2">
+      <div class="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">
+        <div v-if="form.id" class="flex flex-wrap gap-2 sm:mr-auto">
           <AppButton v-if="questionSubmissionStatus === 'open'" text="Close questions" variant="outline" size="sm" :processing="lifecycleBusy" @click="runLifecycle('close')" />
           <AppButton v-if="questionSubmissionStatus === 'closed' && assessmentStatus !== 'complete'" text="Reopen questions" variant="outline" size="sm" :processing="lifecycleBusy" @click="runLifecycle('reopen')" />
           <AppButton v-if="questionSubmissionStatus === 'closed' && assessmentStatus === 'draft'" text="Activate" variant="success" size="sm" :processing="lifecycleBusy" @click="runLifecycle('activate')" />

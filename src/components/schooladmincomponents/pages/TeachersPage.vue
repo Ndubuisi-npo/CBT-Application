@@ -34,7 +34,7 @@
             class="h-9 w-full rounded-lg border border-slate-200 bg-slate-50 pl-10 pr-4 text-sm text-slate-900 transition placeholder:text-slate-400 focus:border-[#0B1F3A] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#D4AF37]"
           />
         </div>
-        <div class="flex items-center gap-2">
+        <div class="flex flex-wrap items-center gap-2">
           <span v-if="selectedTeachers.size" class="text-xs text-slate-500">{{ selectedTeachers.size }} selected</span>
           <AppButton v-if="selectedTeachers.size" text="Revoke Selected" variant="warning" size="sm" :processing="isRevokingSelected" @click="revokeSelectedTeachers" />
           <AppButton v-if="isSelectMode" text="Cancel" variant="ghost" size="sm" @click="cancelSelectMode" />
@@ -277,11 +277,13 @@ import SkeletonRows from '../components/SkeletonRows.vue'
 import TeacherFormDrawer from '../components/TeacherFormDrawer.vue'
 import { useSchoolAdminTeachersStore } from '../stores/teachers'
 import { useSchoolAdminUiStore } from '../stores/ui'
+import { useNotificationStore } from '../../shared/stores/notifications'
 import { isNameTakenError } from '../../../js/lib/api'
 
 const router = useRouter()
 const teachersStore = useSchoolAdminTeachersStore()
 const uiStore = useSchoolAdminUiStore()
+const notificationStore = useNotificationStore()
 
 // ── State ──────────────────────────────────────────────────────────────────
 const showModal           = ref(false)
@@ -395,7 +397,10 @@ const toggleView = () => {
 
 // ── Modal ──────────────────────────────────────────────────────────────────
 const openModal = (t) => { selectedTeacher.value = t || null; showModal.value = true }
-const viewTeacher = (t) => router.push({ name: 'SchoolAdminTeacherProfile', params: { id: t.id } })
+const viewTeacher = (t) => {
+  void notificationStore.markReadForAction('/school-admin/teachers', 'teachers')
+  router.push({ name: 'SchoolAdminTeacherProfile', params: { id: t.id } })
+}
 const editTeacher = (t) => { selectedTeacher.value = t; showModal.value = true }
 const closeModal = () => { showModal.value = false; selectedTeacher.value = null }
 

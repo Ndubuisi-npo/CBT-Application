@@ -47,7 +47,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
-import { BookCopy, CalendarRange, Columns3, CreditCard, ClipboardList, LayoutDashboard, PanelLeftClose, Settings, Shapes, School, Users, Building2 } from 'lucide-vue-next'
+import { BookCopy, CalendarRange, Columns3, CreditCard, LayoutDashboard, PanelLeftClose, Settings, Shapes, School, Users, Building2 } from 'lucide-vue-next'
 import AppButton from '../../shared/AppButton.vue'
 import ActionButton from '../../shared/ActionButton.vue'
 
@@ -70,7 +70,6 @@ const navItems = computed(() => [
   { label: 'Dashboard', to: '/super-admin/dashboard', icon: LayoutDashboard },
   { label: 'Tenants', to: '/super-admin/tenants', icon: School },
   { label: 'Subscription Plans', to: '/super-admin/plans', icon: CreditCard },
-  // { label: 'Audit Logs', to: '/super-admin/audit-logs', icon: ClipboardList },
   { label: 'Settings', to: '/super-admin/settings', icon: Settings },
 ])
 
