@@ -68,15 +68,6 @@
             :disabled="isQuestionSubmissionClosed(assessment) && !mySubmissions[assessment.id]"
             @click="openAssessment(assessment.id)"
           />
-          <AppButton
-            v-if="classArmId(assessment)"
-            text="Cumulative report"
-            variant="outline"
-            size="sm"
-            :icon="Download"
-            :processing="downloadingCumulativeId === assessment.id"
-            @click="downloadCumulative(assessment)"
-          />
         </li>
       </ul>
     </section>
@@ -86,7 +77,7 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { ClipboardList, Download } from 'lucide-vue-next'
+import { ClipboardList } from 'lucide-vue-next'
 import AppBadge from '../../shared/AppBadge.vue'
 import AppButton from '../../shared/AppButton.vue'
 import AppEmptyState from '../../shared/AppEmptyState.vue'
@@ -97,7 +88,6 @@ import SubmissionCountdown from '../components/SubmissionCountdown.vue'
 import { useNotificationStore } from '../../shared/stores/notifications'
 import { getMySubmission } from '../../schooladmincomponents/services/api/assessments'
 import { useAssessmentsStore, getSubmissionStatusLabel, getSubmissionStatusVariant } from '../../schooladmincomponents/stores/assessments'
-import { downloadCumulativeReportPdf, saveBlobAsPdf } from '../../shared/services/resultPdf'
 
 const router = useRouter()
 const store = useAssessmentsStore()
@@ -112,7 +102,6 @@ const filterClassLevel = ref('')
 // "open for me right now", which keeps this bounded to a handful of calls.
 const mySubmissions = ref({})
 const loadingSubmissions = ref(false)
-const downloadingCumulativeId = ref(null)
 
 const classLevelOptions = computed(() => store.classLevelOptions)
 
@@ -147,8 +136,6 @@ const visibleAssessments = computed(() => {
 })
 
 const isQuestionSubmissionClosed = (assessment) => (assessment?.question_submission_status || 'open').toLowerCase() === 'closed'
-const classArmId = (assessment) => assessment?.class_arm_id || assessment?.classArmId || assessment?.class_arm?.id || assessment?.classArm?.id || ''
-const examId = (assessment) => assessment?.exam_id || assessment?.examId || assessment?.exam?.id || assessment?.id || ''
 
 const marksUsed = (assessment) => {
   const submission = mySubmissions.value[assessment.id]
@@ -195,18 +182,4 @@ const openAssessment = (id) => {
   router.push(path)
 }
 
-const downloadCumulative = async (assessment) => {
-  const armId = classArmId(assessment)
-  const id = examId(assessment)
-  if (!armId || !id) return
-  downloadingCumulativeId.value = assessment.id
-  try {
-    const blob = await downloadCumulativeReportPdf(armId, id)
-    saveBlobAsPdf(blob, `cumulative-report-${id}.pdf`)
-  } catch (error) {
-    store.error = error?.message || 'Failed to download the cumulative report PDF.'
-  } finally {
-    downloadingCumulativeId.value = null
-  }
-}
 </script>

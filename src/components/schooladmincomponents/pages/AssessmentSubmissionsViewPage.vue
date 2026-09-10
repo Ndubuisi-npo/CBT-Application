@@ -75,15 +75,6 @@
               :processing="completingAssessment"
               @click="forceCompleteAssessment"
             />
-            <AppButton
-              v-if="classArmId && examId"
-              text="Cumulative report"
-              variant="outline"
-              size="sm"
-              :icon="Download"
-              :processing="downloadingCumulative"
-              @click="downloadCumulative"
-            />
           </div>
         </div>
 
@@ -141,7 +132,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ArrowLeft, Download, Inbox } from 'lucide-vue-next'
+import { ArrowLeft, Inbox } from 'lucide-vue-next'
 import AppBadge from '../../shared/AppBadge.vue'
 import AppButton from '../../shared/AppButton.vue'
 import AppEmptyState from '../../shared/AppEmptyState.vue'
@@ -150,7 +141,6 @@ import AppPageHeader from '../../shared/AppPageHeader.vue'
 import { fmtDateTime } from '../../../js/lib/helpers'
 import { useAssessmentsStore, getAssessmentStatusLabel, getStatusVariant, getSubmissionStatusLabel, getSubmissionStatusVariant } from '../stores/assessments'
 import { useNotificationStore } from '../../shared/stores/notifications'
-import { downloadCumulativeReportPdf, saveBlobAsPdf } from '../../shared/services/resultPdf'
 
 const route = useRoute()
 const router = useRouter()
@@ -164,7 +154,6 @@ const closingSubmissions = ref(false)
 const publishingResults = ref(false)
 const completingAssessment = ref(false)
 const activationError = ref('')
-const downloadingCumulative = ref(false)
 
 const questionSubmissionStatus = computed(() => (assessment.value?.question_submission_status || 'open').toLowerCase())
 const assessmentStatus = computed(() => (assessment.value?.assessment_status || assessment.value?.status || 'draft').trim().toLowerCase())
@@ -190,8 +179,6 @@ const classText = computed(() => {
   return `${level} · ${arm}`
 })
 
-const classArmId = computed(() => assessment.value?.class_arm_id || assessment.value?.classArmId || assessment.value?.classArm?.id || assessment.value?.class_arm?.id || '')
-const examId = computed(() => assessment.value?.exam_id || assessment.value?.examId || assessment.value?.exam?.id || assessment.value?.id || '')
 
 const teacherName = (submission) => {
   const teacher = submission.teacher || {}
@@ -209,19 +196,6 @@ const viewSubmission = (submission) => {
   const path = `/school-admin/assessments/${assessmentId}/submissions/${submission.id}`
   void notificationStore.markReadForAction(path, ['submission', 'assessment'])
   router.push(path)
-}
-
-const downloadCumulative = async () => {
-  if (!classArmId.value || !examId.value) return
-  downloadingCumulative.value = true
-  try {
-    const blob = await downloadCumulativeReportPdf(classArmId.value, examId.value)
-    saveBlobAsPdf(blob, `cumulative-report-${examId.value}.pdf`)
-  } catch (error) {
-    activationError.value = error?.message || 'Unable to download the cumulative report.'
-  } finally {
-    downloadingCumulative.value = false
-  }
 }
 
 const activateAssessment = async () => {

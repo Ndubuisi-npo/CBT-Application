@@ -131,6 +131,14 @@
                   >
                     <Download class="h-4 w-4" />
                   </button>
+                  <button
+                    class="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+                    :disabled="!getExamId(result) || !getClassArmId(result) || cumulativeLoadingId === getExamId(result)"
+                    title="Download cumulative class-arm report"
+                    @click="downloadCumulativeReport(result)"
+                  >
+                    {{ cumulativeLoadingId === getExamId(result) ? 'Downloading...' : 'Cumulative report' }}
+                  </button>
                 </div>
               </td>
             </tr>
@@ -193,6 +201,13 @@
             <Download class="h-4 w-4" />
             {{ downloadingId === getAttemptId(result) ? 'Downloading...' : 'Download PDF' }}
           </button>
+          <button
+            class="mt-2 flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+            :disabled="!getExamId(result) || !getClassArmId(result) || cumulativeLoadingId === getExamId(result)"
+            @click="downloadCumulativeReport(result)"
+          >
+            {{ cumulativeLoadingId === getExamId(result) ? 'Downloading...' : 'Cumulative report' }}
+          </button>
         </div>
       </div>
 
@@ -231,7 +246,7 @@ import { getStudentResultsForTeacher } from '../services/api/teacherStudentResul
 import { getStudents } from '../../schooladmincomponents/services/api/students'
 import { fmtDate } from '../../../js/lib/helpers'
 import { scoreColorClass } from '../../../types/question'
-import { downloadAttemptResultPdf, saveBlobAsPdf } from '../../shared/services/resultPdf'
+import { downloadAttemptResultPdf, downloadCumulativeReportPdf, saveBlobAsPdf } from '../../shared/services/resultPdf'
 
 const route = useRoute()
 const router = useRouter()
@@ -245,6 +260,7 @@ const results = ref([])
 const loading = ref(false)
 const loadError = ref('')
 const downloadingId = ref(null)
+const cumulativeLoadingId = ref(null)
 const page = ref(1)
 const itemsPerPage = 10
 
@@ -271,6 +287,10 @@ const studentClass = computed(() => {
   const sp = student.value?.studentProfile || student.value?.student_profile
   return sp?.class_arm?.name || sp?.class_name || ''
 })
+const classArmId = computed(() => {
+  const profile = student.value?.studentProfile || student.value?.student_profile || {}
+  return profile.class_arm_id || profile.classArmId || profile.class_arm?.id || profile.classArm?.id || student.value?.class_arm_id || ''
+})
 
 // ── Pagination ────────────────────────────────────────────────────────────────
 const totalPages = computed(() => Math.max(1, Math.ceil(results.value.length / itemsPerPage)))
@@ -286,6 +306,8 @@ const getExamSubject = (r) => r?.exam_subject || r?.exam?.subject?.name || r?.su
 const getScore = (r) => r?.total_score ?? r?.score ?? 0
 const getTotalMarks = (r) => r?.total_marks ?? r?.exam?.total_marks ?? 'N/A'
 const getPercentage = (r) => r?.percentage_score ?? r?.percentage ?? null
+const getExamId = (r) => r?.exam_id || r?.examId || r?.exam?.id || ''
+const getClassArmId = (r) => r?.class_arm_id || r?.classArmId || r?.class_arm?.id || r?.classArm?.id || classArmId.value
 
 const statusClass = (status) => {
   const s = (status || '').toLowerCase()
@@ -313,6 +335,21 @@ const downloadPdf = async (result) => {
     loadError.value = err?.message || 'Failed to download the result PDF.'
   } finally {
     downloadingId.value = null
+  }
+}
+
+const downloadCumulativeReport = async (result) => {
+  const examId = getExamId(result)
+  const armId = getClassArmId(result)
+  if (!armId || !examId) return
+  cumulativeLoadingId.value = examId
+  try {
+    const blob = await downloadCumulativeReportPdf(armId, examId)
+    saveBlobAsPdf(blob, `cumulative-report-${examId}.pdf`)
+  } catch (err) {
+    loadError.value = err?.message || 'Failed to download the cumulative report PDF.'
+  } finally {
+    cumulativeLoadingId.value = null
   }
 }
 
