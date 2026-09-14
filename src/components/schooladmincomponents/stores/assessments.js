@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { useSchoolAdminUiStore } from './ui'
 import { useSchoolAdminSessionsStore } from './sessions'
+import { getEffectiveAssessmentStatus, toDatetimeLocalInputValue } from '../../../js/lib/helpers'
 import {
   getAssessments,
   getAssessment,
@@ -44,7 +45,7 @@ export const QUESTION_TYPES = [
 ]
 
 export const getStatusVariant = (status) => {
-  if (status && typeof status === 'object') status = status.assessment_status || status.assessmentStatus || status.status
+  if (status && typeof status === 'object') status = getEffectiveAssessmentStatus(status)
   switch ((status || '').toLowerCase()) {
     case 'draft': return 'warning'
     case 'open':
@@ -57,7 +58,7 @@ export const getStatusVariant = (status) => {
 }
 
 export const getAssessmentStatusLabel = (assessment) => {
-  const status = (typeof assessment === 'string' ? assessment : assessment?.assessment_status || assessment?.assessmentStatus || assessment?.status || '').toLowerCase()
+  const status = (typeof assessment === 'string' ? assessment : getEffectiveAssessmentStatus(assessment)).toLowerCase()
   switch (status) {
     case 'draft': return 'Draft'
     case 'open': return 'Open for Teachers'
@@ -89,6 +90,13 @@ export const getSubmissionStatusVariant = (status) => {
   }
 }
 
+export const isQuestionSubmissionClosed = (assessment) => {
+  if ((assessment?.question_submission_status || 'open').toLowerCase() === 'closed') return true
+  if (!assessment?.question_submission_ends) return false
+  const deadline = new Date(assessment.question_submission_ends)
+  return !Number.isNaN(deadline.getTime()) && deadline.getTime() <= Date.now()
+}
+
 const toOptions = (list, labelKey = 'name', valueKey = 'id') =>
   (Array.isArray(list) ? list : []).map((item) => ({
     label: item[labelKey] ?? item.title ?? item.label ?? String(item[valueKey]),
@@ -100,14 +108,6 @@ const toDateKey = (value) => {
   const date = value instanceof Date ? value : new Date(value)
   if (Number.isNaN(date.getTime())) return ''
   return date.toISOString().slice(0, 10)
-}
-
-const toInputDateTime = (value) => {
-  if (!value) return ''
-  const date = value instanceof Date ? value : new Date(value)
-  if (Number.isNaN(date.getTime())) return ''
-  const pad = (n) => String(n).padStart(2, '0')
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
 }
 
 /**
@@ -878,6 +878,6 @@ export const useAssessmentsStore = defineStore('assessments', {
       }
     },
 
-    formatDateTimeValue: toInputDateTime,
+    formatDateTimeValue: toDatetimeLocalInputValue,
   },
 })

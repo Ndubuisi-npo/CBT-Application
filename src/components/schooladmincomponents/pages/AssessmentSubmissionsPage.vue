@@ -132,7 +132,7 @@ import AppSelect from '../../shared/AppSelect.vue'
 import ResponsiveDataCard from '../../shared/ResponsiveDataCard.vue'
 import SubmissionConfigurationModal from '../components/SubmissionConfigurationModal.vue'
 import { fmtDateTime } from '../../../js/lib/helpers'
-import { useAssessmentsStore, getAssessmentStatusLabel, getStatusVariant } from '../stores/assessments'
+import { useAssessmentsStore, getAssessmentStatusLabel, getStatusVariant, isQuestionSubmissionClosed } from '../stores/assessments'
 import { useNotificationStore } from '../../shared/stores/notifications'
 
 const route = useRoute()
@@ -170,7 +170,7 @@ const filteredRows = computed(() => {
   })
 })
 
-const openForQuestionsCount = computed(() => assessmentRows.value.filter((a) => (a.question_submission_status || 'open').toLowerCase() === 'open').length)
+const openForQuestionsCount = computed(() => assessmentRows.value.filter((a) => !isQuestionSubmissionClosed(a)).length)
 const missingWindowCount = computed(() => assessmentRows.value.filter((a) => !a.schedule_id).length)
 
 const classText = (assessment) => {
@@ -184,10 +184,10 @@ const sessionName = (assessment) => store.sessionOptions.find((option) => String
 const termName = (assessment) => store.activeTermLabel || assessment.term?.name || '—'
 const formatDate = (value) => value ? fmtDateTime(value) : 'Not set'
 
-const questionSubmissionStatusLabel = (assessment) => ((assessment?.question_submission_status || 'open') === 'open' ? 'Question submission open' : 'Question submission closed')
-const questionSubmissionVariant = (assessment) => ((assessment?.question_submission_status || 'open') === 'open' ? 'success' : 'default')
-const assessmentVariant = (assessment) => getStatusVariant(assessment?.assessment_status || assessment?.status)
-const assessmentStatusLabel = (assessment) => getAssessmentStatusLabel(assessment?.assessment_status || assessment?.status)
+const questionSubmissionStatusLabel = (assessment) => (isQuestionSubmissionClosed(assessment) ? 'Question submission closed' : 'Question submission open')
+const questionSubmissionVariant = (assessment) => (isQuestionSubmissionClosed(assessment) ? 'default' : 'success')
+const assessmentVariant = (assessment) => getStatusVariant(assessment)
+const assessmentStatusLabel = (assessment) => getAssessmentStatusLabel(assessment)
 
 const editAssessment = (assessment) => {
   store.selectAssessment(assessment.id)

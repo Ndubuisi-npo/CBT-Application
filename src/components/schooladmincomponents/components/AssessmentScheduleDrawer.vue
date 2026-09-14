@@ -22,10 +22,11 @@
   >
     <div v-if="form.id" class="mb-5 rounded-2xl bg-slate-50 p-4">
       <div class="mb-3 flex flex-wrap items-center gap-2">
-        <AppBadge :label="getAssessmentStatusLabel(assessmentStatus)" :variant="getStatusVariant(assessmentStatus)" dot />
+        <AppBadge :label="getAssessmentStatusLabel(assessmentStore.selectedAssessment)" :variant="getStatusVariant(assessmentStore.selectedAssessment)" dot />
         <AppBadge :label="questionSubmissionStatus === 'open' ? 'Questions open' : 'Questions closed'" :variant="questionSubmissionStatus === 'open' ? 'success' : 'default'" />
+        <AppBadge :label="assessmentWindowLabel" :variant="assessmentWindowState === 'open' ? 'success' : 'default'" />
       </div>
-      <AppLifecycleTrail :assessment-status="assessmentStatus" :question-submission-status="questionSubmissionStatus" />
+      <AppLifecycleTrail :assessment-status="displayAssessmentStatus" :question-submission-status="questionSubmissionStatus" />
     </div>
 
     <div class="mb-6 grid grid-cols-3 gap-1 rounded-xl bg-slate-50 p-1" role="tablist">
@@ -150,7 +151,8 @@ import AppSelect from '../../shared/AppSelect.vue'
 import AppTextarea from '../../shared/AppTextarea.vue'
 import ResponsiveFormGrid from '../../shared/ResponsiveFormGrid.vue'
 import { useSchoolAdminClassArmsStore } from '../stores/classArms'
-import { useAssessmentsStore, getAssessmentStatusLabel, getStatusVariant } from '../stores/assessments'
+import { useAssessmentsStore, getAssessmentStatusLabel, getStatusVariant, isQuestionSubmissionClosed } from '../stores/assessments'
+import { getAssessmentWindowState, getEffectiveAssessmentStatus, toDatetimeLocalInputValue, toDatetimeLocalIsoWithOffset } from '../../../js/lib/helpers'
 
 const props = defineProps({
   show: { type: Boolean, default: false },
@@ -192,8 +194,11 @@ const hasSchedule = computed(() => !!assessmentStore.selectedAssessment?.schedul
 const hasSubmissionConfig = computed(() => !!assessmentStore.selectedAssessment?.schedule_id)
 const scheduleSubjects = computed(() => assessmentStore.scheduleSubjects)
 const subjectOptions = computed(() => assessmentStore.subjectOptions)
-const questionSubmissionStatus = computed(() => (assessmentStore.selectedAssessment?.question_submission_status || 'open').toLowerCase())
+const questionSubmissionStatus = computed(() => (isQuestionSubmissionClosed(assessmentStore.selectedAssessment) ? 'closed' : 'open'))
+const assessmentWindowState = computed(() => getAssessmentWindowState(assessmentStore.selectedAssessment))
+const assessmentWindowLabel = computed(() => ({ upcoming: 'Assessment upcoming', open: 'Assessment open', closed: 'Assessment ended' }[assessmentWindowState.value]))
 const assessmentStatus = computed(() => (assessmentStore.selectedAssessment?.assessment_status || 'draft').toLowerCase())
+const displayAssessmentStatus = computed(() => getEffectiveAssessmentStatus(assessmentStore.selectedAssessment))
 const lockedAfterDraft = computed(() => !!form.id && assessmentStatus.value !== 'draft')
 
 const tabs = computed(() => [
@@ -224,10 +229,10 @@ const loadAssessmentIntoForm = (assessment) => {
   form.session_id = sessionId === '' ? '' : String(sessionId)
   form.scheduled_date = assessment?.scheduled_date || assessment?.scheduledDate || ''
 
-  submission.question_submission_ends = assessment?.question_submission_ends || ''
+  submission.question_submission_ends = toDatetimeLocalInputValue(assessment?.question_submission_ends)
   submission.class_level_id = classLevelId === '' ? '' : String(classLevelId)
-  submission.assessment_starts = assessment?.assessment_starts || ''
-  submission.assessment_ends = assessment?.assessment_ends || ''
+  submission.assessment_starts = toDatetimeLocalInputValue(assessment?.assessment_starts)
+  submission.assessment_ends = toDatetimeLocalInputValue(assessment?.assessment_ends)
 }
 
 const resetSlotForm = () => { editingSlotId.value = ''; slotForm.subject_id = ''; slotForm.starts_at = ''; slotForm.ends_at = '' }
@@ -322,9 +327,9 @@ const saveSubmissionConfig = async () => {
     await assessmentStore.saveSubmissionConfiguration(form.id, {
       class_level_id: submission.class_level_id,
       class_arm_id: form.class_arm_id,
-      question_submission_ends: submission.question_submission_ends,
-      assessment_starts: submission.assessment_starts,
-      assessment_ends: submission.assessment_ends,
+      question_submission_ends: toDatetimeLocalIsoWithOffset(submission.question_submission_ends),
+      assessment_starts: toDatetimeLocalIsoWithOffset(submission.assessment_starts),
+      assessment_ends: toDatetimeLocalIsoWithOffset(submission.assessment_ends),
       question_submission_status: 'open',
       assessment_status: 'pending',
     })
@@ -346,9 +351,16 @@ const addScheduleSubject = async () => {
   savingSlot.value = true
   try {
     if (editingSlotId.value) {
-      await assessmentStore.updateScheduleSubject(form.id, editingSlotId.value, { starts_at: slotForm.starts_at, ends_at: slotForm.ends_at })
+      await assessmentStore.updateScheduleSubject(form.id, editingSlotId.value, {
+        starts_at: toDatetimeLocalIsoWithOffset(slotForm.starts_at),
+        ends_at: toDatetimeLocalIsoWithOffset(slotForm.ends_at),
+      })
     } else {
-      await assessmentStore.createScheduleSubject(form.id, { ...slotForm })
+      await assessmentStore.createScheduleSubject(form.id, {
+        subject_id: slotForm.subject_id,
+        starts_at: toDatetimeLocalIsoWithOffset(slotForm.starts_at),
+        ends_at: toDatetimeLocalIsoWithOffset(slotForm.ends_at),
+      })
     }
     resetSlotForm()
   } catch (error) {
@@ -379,7 +391,11 @@ const runLifecycle = async (action) => {
   lifecycleBusy.value = true
   try {
     if (action === 'close') await assessmentStore.closeSubmissions(form.id)
-    if (action === 'reopen') await assessmentStore.reopenSubmissions(form.id, { question_submission_ends: submission.question_submission_ends })
+    if (action === 'reopen') {
+      await assessmentStore.reopenSubmissions(form.id, {
+        question_submission_ends: toDatetimeLocalIsoWithOffset(submission.question_submission_ends),
+      })
+    }
     if (action === 'activate') await assessmentStore.activateAssessment(form.id)
     if (action === 'complete') await assessmentStore.completeAssessment(form.id)
     emit('saved', assessmentStore.selectedAssessment)

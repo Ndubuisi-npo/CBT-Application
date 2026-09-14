@@ -153,8 +153,9 @@
                 {{ classText(assessment) }} · {{ assessment.total_marks ?? assessment.totalMarks ?? '—' }} marks · {{ papersCountLabel(assessment) }}
               </p>
               <div class="mt-3 flex flex-wrap items-center gap-2">
-                <AppBadge :label="getAssessmentStatusLabel(assessment.assessment_status)" :variant="getStatusVariant(assessment.assessment_status)" dot />
-                <AppBadge :label="assessment.question_submission_status === 'open' ? 'Questions open' : 'Questions closed'" :variant="assessment.question_submission_status === 'open' ? 'success' : 'default'" />
+                <AppBadge :label="getAssessmentStatusLabel(assessment)" :variant="getStatusVariant(assessment)" dot />
+                <AppBadge :label="isQuestionSubmissionClosed(assessment) ? 'Questions closed' : 'Questions open'" :variant="isQuestionSubmissionClosed(assessment) ? 'default' : 'success'" />
+                <AppBadge :label="getAssessmentWindowState(assessment) === 'upcoming' ? 'Assessment upcoming' : getAssessmentWindowState(assessment) === 'closed' ? 'Assessment ended' : 'Assessment open'" :variant="getAssessmentWindowState(assessment) === 'open' ? 'success' : 'default'" />
               </div>
               <div class="mt-3 flex flex-wrap items-center gap-3">
                 <AppButton text="Configure" variant="outline" size="xs" @click="openAssessment(assessment)" />
@@ -211,9 +212,10 @@ import AppEmptyState from '../../shared/AppEmptyState.vue'
 import AppPageHeader from '../../shared/AppPageHeader.vue'
 import AssessmentScheduleDrawer from '../components/AssessmentScheduleDrawer.vue'
 import { useSchoolAdminSessionsStore } from '../stores/sessions'
-import { useAssessmentsStore, getAssessmentStatusLabel, getStatusVariant } from '../stores/assessments'
+import { useAssessmentsStore, getAssessmentStatusLabel, getStatusVariant, isQuestionSubmissionClosed } from '../stores/assessments'
 import { getSubmissions } from '../services/api/assessments'
 import { getScheduleColor, hexToRgb, getDateRangeKeys } from '../../../js/lib/scheduleColors'
+import { getAssessmentWindowState } from '../../../js/lib/helpers'
 import { useNotificationStore } from '../../shared/stores/notifications'
 
 const router = useRouter()

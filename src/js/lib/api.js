@@ -73,17 +73,27 @@ export function getApiToken() {
   return authToken || syncAuthTokenFromStorage()
 }
 
-export function getTenantHandle() {
-  if (typeof window === 'undefined') return null
+export function getTenantHandle(hostname) {
+  const currentHostname = (hostname || (typeof window !== 'undefined' ? window.location.hostname : ''))
+    .split(':')[0]
+    .trim()
+    .toLowerCase()
+    .replace(/\.$/, '')
 
-  const hostname = window.location.hostname.split(':')[0]
-  const parts = hostname.split('.')
-
-  if (hostname.includes('localhost') || hostname.includes('127.')) {
-    return parts.length > 1 && parts[0] !== 'www' ? parts[0] : null
+  if (!currentHostname || currentHostname === 'localhost' || currentHostname === '127.0.0.1') {
+    return null
   }
 
-  return parts.length > 2 && parts[0] !== 'www' ? parts[0] : null
+  if (currentHostname.endsWith('.localhost')) {
+    const handle = currentHostname.slice(0, -'.localhost'.length)
+    return handle && !handle.includes('.') && handle !== 'www' ? handle : null
+  }
+
+  const tenantSuffix = `.${TENANT_ROOT_DOMAIN}`
+  if (!currentHostname.endsWith(tenantSuffix)) return null
+
+  const handle = currentHostname.slice(0, -tenantSuffix.length)
+  return handle && !handle.includes('.') && handle !== 'www' ? handle : null
 }
 
 export async function apiFetch(path, options = {}) {

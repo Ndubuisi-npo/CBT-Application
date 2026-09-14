@@ -11,8 +11,9 @@
     </AppPageHeader>
 
     <div v-if="assessment" class="-mt-3 mb-1 flex flex-wrap items-center gap-2">
-      <AppBadge :label="getAssessmentStatusLabel(assessment.assessment_status || assessment.status)" :variant="getStatusVariant(assessment.assessment_status || assessment.status)" dot />
+      <AppBadge :label="getAssessmentStatusLabel(assessment)" :variant="getStatusVariant(assessment)" dot />
       <AppBadge :label="(assessment.question_submission_status || 'open').toLowerCase() === 'open' ? 'Questions open' : 'Questions closed'" :variant="(assessment.question_submission_status || 'open').toLowerCase() === 'open' ? 'success' : 'default'" />
+      <AppBadge :label="assessmentWindowLabel" :variant="assessmentWindowState === 'open' ? 'success' : 'default'" />
       <AppBadge :label="classText" variant="default" />
     </div>
 
@@ -31,7 +32,7 @@
       <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
         <div class="flex flex-wrap items-center justify-between gap-5">
           <div class="min-w-0">
-            <AppLifecycleTrail :assessment-status="assessmentStatus" :question-submission-status="questionSubmissionStatus" class="mb-4" />
+            <AppLifecycleTrail :assessment-status="displayAssessmentStatus" :question-submission-status="questionSubmissionStatus" class="mb-4" />
             <p class="text-sm text-slate-500">
               {{ approvedCount }} of {{ submissions.length }} papers approved · questions close {{ formatDate(assessment.submission_closes_at ?? assessment.submissionClosesAt) }}
             </p>
@@ -81,8 +82,8 @@
         <p v-if="canCloseSubmissions" class="mt-4 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800">
           Teachers can still edit their papers. Close question submissions to lock them before activating.
         </p>
-        <p v-if="assessment.student_starts_at" class="mt-4 rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-          Students can take this assessment from {{ formatDate(assessment.student_starts_at) }} until {{ formatDate(assessment.student_ends_at) }}.
+        <p v-if="assessment.assessment_starts || assessment.assessment_ends" class="mt-4 rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+          Students can take this assessment from {{ formatDate(assessment.assessment_starts) }} until {{ formatDate(assessment.assessment_ends) }}.
         </p>
         <p v-if="activationError" class="mt-4 rounded-2xl border border-rose-100 bg-rose-50 px-3 py-2 text-sm text-rose-700">{{ activationError }}</p>
       </section>
@@ -138,8 +139,8 @@ import AppButton from '../../shared/AppButton.vue'
 import AppEmptyState from '../../shared/AppEmptyState.vue'
 import AppLifecycleTrail from '../../shared/AppLifecycleTrail.vue'
 import AppPageHeader from '../../shared/AppPageHeader.vue'
-import { fmtDateTime } from '../../../js/lib/helpers'
-import { useAssessmentsStore, getAssessmentStatusLabel, getStatusVariant, getSubmissionStatusLabel, getSubmissionStatusVariant } from '../stores/assessments'
+import { fmtDateTime, getAssessmentWindowState, getEffectiveAssessmentStatus } from '../../../js/lib/helpers'
+import { useAssessmentsStore, getAssessmentStatusLabel, getStatusVariant, getSubmissionStatusLabel, getSubmissionStatusVariant, isQuestionSubmissionClosed } from '../stores/assessments'
 import { useNotificationStore } from '../../shared/stores/notifications'
 
 const route = useRoute()
@@ -155,9 +156,12 @@ const publishingResults = ref(false)
 const completingAssessment = ref(false)
 const activationError = ref('')
 
-const questionSubmissionStatus = computed(() => (assessment.value?.question_submission_status || 'open').toLowerCase())
+const questionSubmissionStatus = computed(() => (isQuestionSubmissionClosed(assessment.value) ? 'closed' : 'open'))
 const assessmentStatus = computed(() => (assessment.value?.assessment_status || assessment.value?.status || 'draft').trim().toLowerCase())
+const displayAssessmentStatus = computed(() => getEffectiveAssessmentStatus(assessment.value))
 const assessmentCompleted = computed(() => assessmentStatus.value === 'completed')
+const assessmentWindowState = computed(() => getAssessmentWindowState(assessment.value))
+const assessmentWindowLabel = computed(() => ({ upcoming: 'Assessment upcoming', open: 'Assessment open', closed: 'Assessment ended' }[assessmentWindowState.value]))
 const approvedCount = computed(() => submissions.value.filter((s) => (s.status || '').toLowerCase() === 'approved').length)
 
 const canShowActivate = computed(() => {

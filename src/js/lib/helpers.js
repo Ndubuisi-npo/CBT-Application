@@ -68,3 +68,31 @@ export const toDatetimeLocalIsoWithOffset = (localDateTime) => {
 
   return date.toISOString()
 }
+
+export const getAssessmentWindowState = (assessment, now = Date.now()) => {
+  const status = (assessment?.assessment_status ?? assessment?.assessmentStatus ?? assessment?.status ?? '').toLowerCase();
+  if (['completed', 'closed'].includes(status)) return 'closed';
+
+  const startsAt = assessment?.assessment_starts ?? assessment?.assessmentStarts;
+  const endsAt = assessment?.assessment_ends ?? assessment?.assessmentEnds;
+  const startsAtMs = startsAt ? new Date(startsAt).getTime() : NaN;
+  const endsAtMs = endsAt ? new Date(endsAt).getTime() : NaN;
+
+  if (!Number.isNaN(startsAtMs) && now < startsAtMs) return 'upcoming';
+  if (!Number.isNaN(endsAtMs) && now >= endsAtMs) return 'closed';
+  return 'open';
+}
+
+export const getEffectiveAssessmentStatus = (assessment, now = Date.now()) => {
+  const storedStatus = (assessment?.assessment_status ?? assessment?.assessmentStatus ?? assessment?.status ?? '').toLowerCase()
+  if (storedStatus === 'published') return 'published'
+
+  const windowState = getAssessmentWindowState(assessment, now)
+  if (windowState === 'closed') return 'completed'
+  if (windowState === 'open') return 'active'
+  return storedStatus || 'draft'
+}
+
+export const isAssessmentWindowOpen = (assessment, now = Date.now()) => (
+  getEffectiveAssessmentStatus(assessment, now) === 'active' && getAssessmentWindowState(assessment, now) === 'open'
+)

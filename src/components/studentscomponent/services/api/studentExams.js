@@ -1,5 +1,6 @@
 import { apiFetch } from '../../../../js/lib/api'
 import { buildAnswerPayload } from '../../../../types/question'
+import { isAssessmentWindowOpen } from '../../../../js/lib/helpers'
 
 const getQuestionCountValue = (exam = {}) => {
   const explicit = [
@@ -57,7 +58,7 @@ const getExamPayload = (payload = {}) => {
 export async function getAvailableExams(params = {}) {
   const response = await apiFetch('/api/student/exams/available', { params })
   const exams = Array.isArray(response) ? response : response?.data || []
-  return exams.map(normalizeExam)
+  return exams.map(normalizeExam).filter((exam) => isAssessmentWindowOpen(exam));
 }
 
 export async function getStudentExam(examId) {
@@ -65,7 +66,9 @@ export async function getStudentExam(examId) {
     const single = await apiFetch(`/api/student/exams/${examId}`)
     const examPayload = getExamPayload(single)
     if (examPayload) {
-      return normalizeExam(examPayload)
+      const exam = normalizeExam(examPayload)
+      if (!isAssessmentWindowOpen(exam)) throw new Error('Exam is not currently available.')
+      return exam
     }
   } catch {
     // Fall through to available list lookup
@@ -73,7 +76,7 @@ export async function getStudentExam(examId) {
 
   const response = await apiFetch('/api/student/exams/available')
   const exams = Array.isArray(response) ? response : response?.data || []
-  const found = exams.find((e) => String(e.id) === String(examId))
+  const found = exams.map(normalizeExam).find((e) => String(e.id) === String(examId) && isAssessmentWindowOpen(e));
   if (!found) throw new Error('Exam not found or not available.')
   return normalizeExam(found)
 }

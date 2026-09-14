@@ -39,6 +39,7 @@ import { reactive, watch } from 'vue'
 import { X } from 'lucide-vue-next'
 import AppButton from '../../shared/AppButton.vue'
 import AppInput from '../../shared/AppInput.vue'
+import { toDatetimeLocalInputValue, toDatetimeLocalIsoWithOffset } from '../../../js/lib/helpers'
 
 const props = defineProps({
   show: { type: Boolean, default: false },
@@ -52,9 +53,9 @@ const form = reactive({ question_submission_ends: '', assessment_starts: '', ass
 const errors = reactive({})
 
 const reset = () => {
-  form.question_submission_ends = props.assessment?.question_submission_ends || ''
-  form.assessment_starts = props.assessment?.assessment_starts || ''
-  form.assessment_ends = props.assessment?.assessment_ends || ''
+  form.question_submission_ends = toDatetimeLocalInputValue(props.assessment?.question_submission_ends)
+  form.assessment_starts = toDatetimeLocalInputValue(props.assessment?.assessment_starts)
+  form.assessment_ends = toDatetimeLocalInputValue(props.assessment?.assessment_ends)
   Object.keys(errors).forEach((key) => delete errors[key])
 }
 
@@ -74,6 +75,12 @@ const submit = () => {
   if (form.assessment_starts && form.assessment_ends && assessmentEnds <= assessmentStarts) {
     errors.assessment_ends = 'Must be after assessment starts.'
   }
-  if (!Object.keys(errors).length) emit('submit', { ...form })
+  if (!Object.keys(errors).length) {
+    emit('submit', {
+      question_submission_ends: toDatetimeLocalIsoWithOffset(form.question_submission_ends),
+      assessment_starts: toDatetimeLocalIsoWithOffset(form.assessment_starts),
+      assessment_ends: toDatetimeLocalIsoWithOffset(form.assessment_ends),
+    })
+  }
 }
 </script>

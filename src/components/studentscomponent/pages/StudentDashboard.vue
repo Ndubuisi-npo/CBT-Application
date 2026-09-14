@@ -178,9 +178,7 @@ const studentClass = computed(() => {
   return profile?.class_arm?.name || profile?.class_name || ''
 })
 
-const liveExams = computed(() =>
-  exams.value.filter((e) => ['live', 'active'].includes((e.status || '').toLowerCase())),
-)
+const liveExams = computed(() => exams.value);
 
 // Show only 3 most recent results on dashboard
 const recentResults = computed(() => allResults.value.slice(0, 3))
