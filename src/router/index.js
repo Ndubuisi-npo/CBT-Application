@@ -28,6 +28,7 @@ import AssessmentSchedulePage from '../components/schooladmincomponents/pages/As
 import AssessmentSubmissionsPage from '../components/schooladmincomponents/pages/AssessmentSubmissionsPage.vue'
 import AssessmentSubmissionsViewPage from '../components/schooladmincomponents/pages/AssessmentSubmissionsViewPage.vue'
 import AssessmentSubmissionDetailPage from '../components/schooladmincomponents/pages/AssessmentSubmissionDetailPage.vue'
+import SchoolAdminBroadsheet from '../components/schooladmincomponents/pages/BroadsheetPage.vue'
 
 // ─── Teacher ──────────────────────────────────────────────────────────────────
 import TeachersDashboard from '../components/teacherscomponent/pages/TeachersDashboard.vue'
@@ -105,6 +106,7 @@ const routes = [
           },
           { path: 'assessment-schedule', name: 'SchoolAdminAssessmentSchedule', component: AssessmentSchedulePage },
           { path: 'assessment-submissions', name: 'SchoolAdminAssessmentSubmissionsIndex', component: AssessmentSubmissionsPage },
+          { path: 'broadsheet', name: 'SchoolAdminBroadsheet', component: SchoolAdminBroadsheet },
           { path: 'assessments/:id/submissions', name: 'SchoolAdminAssessmentSubmissions', component: AssessmentSubmissionsViewPage, props: true },
           { path: 'assessment-submissions/:assessmentId', name: 'SchoolAdminAssessmentSubmissionSetup', component: AssessmentSubmissionsPage, props: true },
           { path: 'assessments/:assessmentId/submissions/:submissionId', name: 'SchoolAdminAssessmentSubmissionDetail', component: AssessmentSubmissionDetailPage, props: true },

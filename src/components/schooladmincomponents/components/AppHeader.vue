@@ -1,5 +1,5 @@
 <template>
-  <header class="sticky top-0 z-30 border-b border-slate-200/80 bg-white/95 backdrop-blur-xl">
+  <header class="app-main-header sticky top-0 z-30 border-b border-slate-200/80 bg-white/95 backdrop-blur-xl">
     <div class="flex h-16 items-center justify-between gap-4 px-4 sm:px-6">
       <!-- Left: mobile back, hamburger + breadcrumb/title -->
       <div class="flex min-w-0 items-center gap-3">
@@ -94,6 +94,7 @@ const mobileRootPaths = [
   '/school-admin/settings',
   '/school-admin/assessment-schedule',
   '/school-admin/assessment-submissions',
+  '/school-admin/broadsheet',
   '/school-admin/notifications',
   '/teachers/dashboard',
   '/teachers/questions',
@@ -119,6 +120,7 @@ const titles = {
   '/school-admin/settings': 'Settings',
   '/school-admin/assessment-schedule': 'Assessment Schedule',
   '/school-admin/assessment-submissions': 'Assessment Submissions',
+  '/school-admin/broadsheet': 'Broadsheet',
   '/school-admin/notifications': 'Notifications',
   '/teachers/dashboard': 'Dashboard',
   '/teachers/questions': 'Question Bank',
@@ -285,6 +287,14 @@ const breadcrumbs = computed(() => {
     ]
   }
 
+  if (route.path === '/school-admin/broadsheet') {
+    return [
+      ...base,
+      { label: 'Assessment Management', to: '/school-admin/assessment-submissions' },
+      { label: 'Broadsheet' },
+    ]
+  }
+
   if (route.path.startsWith('/school-admin/assessments/')) {
     return [
       ...base,
@@ -355,3 +365,11 @@ watch(() => route.fullPath, () => {
   void ensureRouteData()
 })
 </script>
+
+<style scoped>
+@media print {
+  .app-main-header {
+    display: none !important;
+  }
+}
+</style>

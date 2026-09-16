@@ -7,7 +7,7 @@
   />
 
   <aside
-    class="fixed left-0 top-0 z-50 flex h-screen shrink-0 flex-col bg-[#0B1F3A] text-white shadow-2xl transition-all duration-300 lg:relative lg:min-h-screen lg:translate-x-0 lg:shadow-none"
+    class="app-sidebar-root fixed left-0 top-0 z-50 flex h-screen shrink-0 flex-col bg-[#0B1F3A] text-white shadow-2xl transition-all duration-300 lg:relative lg:min-h-screen lg:translate-x-0 lg:shadow-none"
     :class="[
       collapsed ? 'w-[72px]' : 'w-64',
       mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
@@ -113,6 +113,7 @@ import {
   Columns3,
   CalendarDays,
   FileQuestion,
+  FileSpreadsheet,
   GraduationCap,
   LayoutDashboard,
   PanelLeftClose,
@@ -197,6 +198,7 @@ const navGroups = computed(() => {
       items: [
         { label: 'Assessment Schedule', to: '/school-admin/assessment-schedule', icon: CalendarDays, count: adminAssessmentNotifications.value, tour: 'nav-assessment-schedule' },
         { label: 'Assessment Submissions', to: '/school-admin/assessment-submissions', icon: ClipboardList, count: adminSubmissionNotifications.value, tour: 'nav-assessment-submissions' },
+          { label: 'Broadsheet', to: '/school-admin/broadsheet', icon: FileSpreadsheet },
       ],
     },
     {
