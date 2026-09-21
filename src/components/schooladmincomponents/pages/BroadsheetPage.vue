@@ -98,8 +98,8 @@ const filters = reactive({ classLevelId: '', classArmId: '', termId: '', academi
 const hasRequiredFilters = computed(() => Boolean(filters.classLevelId && filters.termId && filters.academicSessionId))
 const selected = (items, id) => items.value.find(item => String(item.id) === String(id))
 const classLabel = computed(() => [selected(classLevels, filters.classLevelId)?.name, selected(classArms, filters.classArmId)?.name].filter(Boolean).join(' ') || 'N/A')
-const termLabel = computed(() => selected(terms, filters.termId)?.name || '—')
-const sessionLabel = computed(() => selected(sessions, filters.academicSessionId)?.name || '—')
+const termLabel = computed(() => selected(terms, filters.termId)?.name || 'N/A')
+const sessionLabel = computed(() => selected(sessions, filters.academicSessionId)?.name || 'N/A')
 const filteredStudents = computed(() => {
   const query = search.value.trim().toLowerCase()
   return query ? students.value.filter(student => student.full_name.toLowerCase().includes(query)) : students.value
