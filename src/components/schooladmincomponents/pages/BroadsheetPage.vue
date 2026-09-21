@@ -72,7 +72,7 @@
           </tbody>
         </table>
       </div>
-      <p v-else class="state">{{ hasRequiredFilters ? 'No students match this broadsheet.' : 'Select a class, term, and session to view the broadsheet.' }}</p>
+      <p v-else class="state">{{ hasRequiredFilters ? 'No students match this broadsheet.' : 'No Exams have been created or taken yet.' }}</p>
     </template>
   </div>
 </template>
@@ -97,7 +97,7 @@ const filters = reactive({ classLevelId: '', classArmId: '', termId: '', academi
 
 const hasRequiredFilters = computed(() => Boolean(filters.classLevelId && filters.termId && filters.academicSessionId))
 const selected = (items, id) => items.value.find(item => String(item.id) === String(id))
-const classLabel = computed(() => [selected(classLevels, filters.classLevelId)?.name, selected(classArms, filters.classArmId)?.name].filter(Boolean).join(' ') || '—')
+const classLabel = computed(() => [selected(classLevels, filters.classLevelId)?.name, selected(classArms, filters.classArmId)?.name].filter(Boolean).join(' ') || 'N/A')
 const termLabel = computed(() => selected(terms, filters.termId)?.name || '—')
 const sessionLabel = computed(() => selected(sessions, filters.academicSessionId)?.name || '—')
 const filteredStudents = computed(() => {
