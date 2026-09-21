@@ -44,15 +44,9 @@
     </div>
 
     <div
-      class="relative flex min-h-screen items-center justify-center overflow-y-auto bg-[#f8fafc] bg-repeat px-6 py-6 sm:px-8"
-      :style="{
-        backgroundImage: `url(${loginBackground})`,
-        backgroundSize: '420px auto',
-      }"
+      class="flex min-h-screen items-center justify-center overflow-y-auto px-6 py-6 sm:px-8"
     >
-      <div class="absolute inset-0 bg-white/90"></div>
-
-      <div class="relative z-10 w-full max-w-xl overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-2xl shadow-slate-900/8">
+      <div class="w-full max-w-xl overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-2xl shadow-slate-900/8">
           <div class="relative overflow-hidden">
         <!-- Login Form -->
         <div 
