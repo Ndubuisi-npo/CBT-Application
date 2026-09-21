@@ -105,8 +105,8 @@
             <p class="text-sm font-semibold text-blue-900">Assessments are a shared workflow</p>
             <p class="mt-1 text-sm text-blue-700">
               You create assessments and open them for teachers, who build submissions you then review and
-              publish for students. As school admin, you also define the academic structure — classes, subjects,
-              and sessions — that everything builds on.
+              publish for students. As school admin, you also define the academic structure, classes, subjects,
+              and sessions that everything builds on.
             </p>
           </div>
         </div>

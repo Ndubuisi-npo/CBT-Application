@@ -4,7 +4,7 @@ import { createPinia } from 'pinia';
 import App from '../App.vue';
 import router from '../router/index';
 import { initializeApiState } from './lib/api';
-import { initializeAuthState, getAuthUser } from './lib/auth';
+import { initializeAuthState, getAuthRole, getAuthUser } from './lib/auth';
 import { initializeRealtimeNotifications } from './echoNotifications';
 import { useNotificationStore } from '../components/shared/stores/notifications';
 import '../css/app.css';
@@ -34,5 +34,7 @@ if (getAuthUser() && !isLoginPage) {
   // Prime the notification bell for whichever role is logged in (school
   // admin, teacher, or student — GET /notifications + GET
   // /notifications/unread-count). No-op on public/unauthenticated pages.
-  void useNotificationStore().initialize();
+  if (getAuthRole() !== 'super_admin') {
+    void useNotificationStore().initialize();
+  }
 }

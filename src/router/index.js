@@ -252,7 +252,7 @@ const roleRedirectMap = {
 
 const buildRedirectUrl = (path) => `${window.location.origin}${path}`
 
-router.beforeEach((to, from, next) => {
+router.beforeEach((to) => {
   const requiresAuth =
     to.path.startsWith('/school-admin') ||
     to.path.startsWith('/super-admin') ||
@@ -267,30 +267,29 @@ router.beforeEach((to, from, next) => {
   // to their dashboard instead, so no login-page-only code path can ever
   // run notification/broadcasting requests for a signed-in session.
   if (isLoginPage && isAuthenticated()) {
-    next(roleRedirectMap[getAuthRole()] || '/login')
-    return
+    return roleRedirectMap[getAuthRole()] || '/login'
   }
 
   if (requiresAuth && !isLoginPage) {
-    if (!isAuthenticated()) { next('/login'); return }
+    if (!isAuthenticated()) return '/login'
 
     const userRole = getAuthRole()
 
     if (to.path.startsWith('/super-admin') && userRole !== 'super_admin') {
-      next(buildRedirectUrl(roleRedirectMap[userRole] || '/login')); return
+      return buildRedirectUrl(roleRedirectMap[userRole] || '/login')
     }
     if (to.path.startsWith('/school-admin') && userRole !== 'school_admin') {
-      next(buildRedirectUrl(roleRedirectMap[userRole] || '/login')); return
+      return buildRedirectUrl(roleRedirectMap[userRole] || '/login')
     }
     if (to.path.startsWith('/teachers') && userRole !== 'teacher') {
-      next(buildRedirectUrl(roleRedirectMap[userRole] || '/login')); return
+      return buildRedirectUrl(roleRedirectMap[userRole] || '/login')
     }
     if (to.path.startsWith('/student') && userRole !== 'student') {
-      next(buildRedirectUrl(roleRedirectMap[userRole] || '/login')); return
+      return buildRedirectUrl(roleRedirectMap[userRole] || '/login')
     }
   }
 
-  next()
+  return true
 })
 
 export default router

@@ -70,6 +70,15 @@ function normalizeAuthUser(response, fallbackUser = null) {
   return response?.user ?? response?.admin ?? response ?? fallbackUser
 }
 
+function normalizeRole(role) {
+  if (typeof role !== 'string') return role
+
+  const normalizedRole = role.trim().toLowerCase().replace(/[\s-]+/g, '_')
+
+  if (normalizedRole === 'superadmin') return 'super_admin'
+  return normalizedRole
+}
+
 export function clearAuth() {
   authState = {
     user: null,
@@ -97,11 +106,11 @@ export async function login(credentials) {
 
   const user = response.user ?? response.admin ?? response.profile ?? null
   const token = response.token ?? response.access_token ?? response.auth_token ?? null
-  const role = response.role
-    ?? user?.role
-    ?? user?.role_name
+  const role = normalizeRole(response.role
     ?? user?.role?.name
-    ?? null
+    ?? user?.role_name
+    ?? user?.role
+    ?? null)
 
   if (!token) {
     throw new Error('Login response did not include an authentication token.')
