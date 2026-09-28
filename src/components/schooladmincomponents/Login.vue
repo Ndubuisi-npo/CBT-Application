@@ -43,10 +43,8 @@
       </div>
     </div>
 
-    <div
-      class="flex min-h-screen items-center justify-center overflow-y-auto px-6 py-6 sm:px-8"
-    >
-      <div class="w-full max-w-xl overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-2xl shadow-slate-900/8">
+    <div class="relative flex min-h-screen items-center justify-center overflow-y-auto bg-[#f8fafc] px-6 py-6 sm:px-8">
+      <div class="relative z-10 w-full max-w-xl overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-2xl shadow-slate-900/8">
           <div class="relative overflow-hidden">
         <!-- Login Form -->
         <div 
@@ -155,7 +153,6 @@ import ForgotPassword from '../shared/ForgotPassword.vue'
 import { useSchoolAdminUiStore } from './stores/ui'
 import { login as unifiedLogin } from '../../js/lib/auth'
 import { getTenantHandle } from '../../js/lib/api'
-import loginBackground from '../../assets/black-white-educational-school-doodle-seamless-pattern_976269-1793.avif'
 
 const router = useRouter()
 const uiStore = useSchoolAdminUiStore()

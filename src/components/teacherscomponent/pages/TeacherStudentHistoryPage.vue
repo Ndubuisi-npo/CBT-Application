@@ -14,6 +14,14 @@
         </div>
         <div class="flex shrink-0 flex-wrap items-center gap-2 pb-1">
           <AppButton text="Back to Student" variant="outline" size="sm" @click="router.push({ name: profileRouteName, params: { id: studentId } })" />
+          <AppButton
+            :icon="Download"
+            :text="cumulativeLoading ? 'Downloading...' : 'Cumulative report'"
+            variant="outline"
+            size="sm"
+            :processing="cumulativeLoading"
+            @click="downloadCumulativeReport"
+          />
         </div>
       </div>
       <div class="px-5 pb-5 sm:px-6">
@@ -131,14 +139,6 @@
                   >
                     <Download class="h-4 w-4" />
                   </button>
-                  <button
-                    class="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
-                    :disabled="!getExamId(result) || !getClassArmId(result) || cumulativeLoadingId === getExamId(result)"
-                    title="Download cumulative class-arm report"
-                    @click="downloadCumulativeReport(result)"
-                  >
-                    {{ cumulativeLoadingId === getExamId(result) ? 'Downloading...' : 'Cumulative report' }}
-                  </button>
                 </div>
               </td>
             </tr>
@@ -201,13 +201,6 @@
             <Download class="h-4 w-4" />
             {{ downloadingId === getAttemptId(result) ? 'Downloading...' : 'Download PDF' }}
           </button>
-          <button
-            class="mt-2 flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
-            :disabled="!getExamId(result) || !getClassArmId(result) || cumulativeLoadingId === getExamId(result)"
-            @click="downloadCumulativeReport(result)"
-          >
-            {{ cumulativeLoadingId === getExamId(result) ? 'Downloading...' : 'Cumulative report' }}
-          </button>
         </div>
       </div>
 
@@ -260,7 +253,7 @@ const results = ref([])
 const loading = ref(false)
 const loadError = ref('')
 const downloadingId = ref(null)
-const cumulativeLoadingId = ref(null)
+const cumulativeLoading = ref(false)
 const page = ref(1)
 const itemsPerPage = 10
 
@@ -287,11 +280,6 @@ const studentClass = computed(() => {
   const sp = student.value?.studentProfile || student.value?.student_profile
   return sp?.class_arm?.name || sp?.class_name || ''
 })
-const classArmId = computed(() => {
-  const profile = student.value?.studentProfile || student.value?.student_profile || {}
-  return profile.class_arm_id || profile.classArmId || profile.class_arm?.id || profile.classArm?.id || student.value?.class_arm_id || ''
-})
-
 // ── Pagination ────────────────────────────────────────────────────────────────
 const totalPages = computed(() => Math.max(1, Math.ceil(results.value.length / itemsPerPage)))
 const paginatedResults = computed(() =>
@@ -307,8 +295,6 @@ const getScore = (r) => r?.total_score ?? r?.score ?? 0
 const getTotalMarks = (r) => r?.total_marks ?? r?.exam?.total_marks ?? 'N/A'
 const getPercentage = (r) => r?.percentage_score ?? r?.percentage ?? null
 const getExamId = (r) => r?.exam_id || r?.examId || r?.exam?.id || ''
-const getClassArmId = (r) => r?.class_arm_id || r?.classArmId || r?.class_arm?.id || r?.classArm?.id || classArmId.value
-
 const statusClass = (status) => {
   const s = (status || '').toLowerCase()
   if (s === 'published' || s === 'graded') return 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200'
@@ -338,18 +324,16 @@ const downloadPdf = async (result) => {
   }
 }
 
-const downloadCumulativeReport = async (result) => {
-  const examId = getExamId(result)
-  const armId = getClassArmId(result)
-  if (!armId || !examId) return
-  cumulativeLoadingId.value = examId
+const downloadCumulativeReport = async () => {
+  if (!studentId) return
+  cumulativeLoading.value = true
   try {
-    const blob = await downloadCumulativeReportPdf(armId, examId)
-    saveBlobAsPdf(blob, `cumulative-report-${examId}.pdf`)
+    const blob = await downloadCumulativeReportPdf(studentId)
+    saveBlobAsPdf(blob, `cumulative-report-${studentId}.pdf`)
   } catch (err) {
     loadError.value = err?.message || 'Failed to download the cumulative report PDF.'
   } finally {
-    cumulativeLoadingId.value = null
+    cumulativeLoading.value = false
   }
 }
 

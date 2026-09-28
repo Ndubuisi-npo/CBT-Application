@@ -9,11 +9,10 @@ export async function downloadAttemptResultPdf(attemptId) {
   })
 }
 
-export async function downloadCumulativeReportPdf(classArmId, examId) {
-  if (!classArmId) throw new Error('This exam does not have a valid class arm.')
-  if (!examId) throw new Error('This exam does not have a valid exam ID.')
+export async function downloadCumulativeReportPdf(studentId) {
+  if (!studentId) throw new Error('This student does not have a valid ID.')
 
-  return await apiFetch(`/api/class-arms/${classArmId}/exams/${examId}/report/pdf`, {
+  return await apiFetch(`/api/students/${studentId}/cumulative-result/pdf`, {
     responseType: 'blob',
     headers: { Accept: 'application/pdf' },
   })
