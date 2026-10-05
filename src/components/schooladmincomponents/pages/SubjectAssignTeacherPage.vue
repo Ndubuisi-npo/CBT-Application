@@ -218,12 +218,21 @@ const submitAssignment = async (assignmentData) => {
       uiStore.addToast({ title: 'Assignment updated', message: 'Teacher assignment has been updated.', variant: 'success' })
     } else {
       // Create new assignment
-      await subjectsStore.assignTeacher(subjectId.value, {
-        user_id: assignmentData.user_id,
-        class_level_id: assignmentData.class_level_id,
-        academic_session_id: assignmentData.academic_session_id
-      })
-      uiStore.addToast({ title: 'Teacher assigned', message: 'Teacher has been successfully assigned to the subject.', variant: 'success' })
+      const classLevelIds = assignmentData.class_level_ids?.length
+        ? assignmentData.class_level_ids
+        : [assignmentData.class_level_id]
+      for (const classLevelId of classLevelIds) {
+        await subjectsStore.assignTeacher(subjectId.value, {
+          user_id: assignmentData.user_id,
+          class_level_id: classLevelId,
+          class_arm_id: assignmentData.class_level_ids?.length > 1 ? undefined : assignmentData.class_arm_id,
+          academic_session_id: assignmentData.academic_session_id
+        })
+      }
+      const message = classLevelIds.length > 1
+        ? `Teacher assigned to all ${classLevelIds.length} class levels for this subject.`
+        : 'Teacher has been successfully assigned to the subject.'
+      uiStore.addToast({ title: 'Teacher assigned', message, variant: 'success' })
     }
     
     // Close modal after a short delay to ensure toast is visible

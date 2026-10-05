@@ -42,6 +42,7 @@ export async function createQuestion(payload) {
     if (!body.class_level_id) throw new Error('class_level_id is required')
 
     if (payload.subject_id) body.subject_id = payload.subject_id
+    if (payload.class_arm_id) body.class_arm_id = payload.class_arm_id
 
     if (payload.is_active !== undefined) body.is_active = payload.is_active
     if (payload.status !== undefined) body.status = payload.status
@@ -77,6 +78,7 @@ export async function updateQuestion(id, payload) {
     if (payload.status !== undefined) body.status = payload.status
     if (payload.subject_id !== undefined) body.subject_id = payload.subject_id
     if (payload.class_level_id !== undefined) body.class_level_id = payload.class_level_id
+    if (payload.class_arm_id !== undefined) body.class_arm_id = payload.class_arm_id
 
     // Type-aware options payload
     if (payload.options !== undefined) {

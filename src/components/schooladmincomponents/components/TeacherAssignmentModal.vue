@@ -23,6 +23,7 @@
             <select
               v-model="form.class_level_id"
               class="w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#D4AF37]"
+              :disabled="assignToAllClassLevels || isEdit"
               @change="() => { form.class_arm_id = ''; loadClassArms(form.class_level_id) }"
             >
               <option value="">Select a class level</option>
@@ -30,9 +31,19 @@
                 {{ classLevel.label }}
               </option>
             </select>
+            <label v-if="!isEdit" class="mt-3 flex items-center gap-2 text-sm text-slate-700">
+              <input
+                v-model="assignToAllClassLevels"
+                type="checkbox"
+                class="h-4 w-4 rounded border-slate-300 text-[#0B1F3A] focus:ring-[#D4AF37]"
+                :disabled="!classLevelOptions.length"
+              />
+              <span>Assign to all class levels</span>
+            </label>
+            <p v-if="assignToAllClassLevels" class="mt-1 text-xs text-slate-500">The teacher will be assigned to every class level for this subject.</p>
           </FormField>
 
-          <FormField label="Class Arm" :error="errors.class_arm_id">
+          <FormField v-if="!assignToAllClassLevels" label="Class Arm" :error="errors.class_arm_id">
             <select
               v-model="form.class_arm_id"
               class="w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#D4AF37]"
@@ -109,6 +120,7 @@ const errors = reactive({
 })
 
 const loading = ref(false)
+const assignToAllClassLevels = ref(false)
 
 // Store instances
 const classesStore = useSchoolAdminClassesStore()
@@ -163,7 +175,16 @@ const sessionOptions = computed(() => {
 const resetForm = () => {
   Object.assign(form, { user_id: '', class_level_id: '', class_arm_id: '', academic_session_id: '' })
   Object.assign(errors, { user_id: '', class_level_id: '', class_arm_id: '', academic_session_id: '' })
+  assignToAllClassLevels.value = false
 }
+
+watch(assignToAllClassLevels, (enabled) => {
+  if (enabled) {
+    form.class_level_id = ''
+    form.class_arm_id = ''
+    classArmsStore.classArms = []
+  }
+})
 
 // Fetch related data only when the modal is opened
 // This prevents duplicate requests when the page already loaded teachers/classes/sessions.
@@ -213,10 +234,10 @@ watch(() => props.assignment, async (assignment) => {
 
 const validate = () => {
   errors.user_id = form.user_id ? '' : 'Teacher is required.'
-  errors.class_level_id = form.class_level_id ? '' : 'Class level is required.'
+  errors.class_level_id = form.class_level_id || assignToAllClassLevels.value ? '' : 'Class level is required.'
   errors.class_arm_id = ''
   errors.academic_session_id = form.academic_session_id ? '' : 'Academic session is required.'
-  return !errors.user_id && !errors.class_level_id && !errors.academic_session_id
+  return !errors.user_id && !errors.class_level_id && !errors.academic_session_id && (!assignToAllClassLevels.value || classLevelOptions.value.length > 0)
 }
 
 const submit = async () => {
@@ -228,6 +249,7 @@ const submit = async () => {
     const payload = {
       user_id: form.user_id,
       class_level_id: form.class_level_id,
+      class_level_ids: assignToAllClassLevels.value ? classLevelOptions.value.map((option) => option.value) : [form.class_level_id],
       class_arm_id: form.class_arm_id || undefined,
       academic_session_id: form.academic_session_id
     }

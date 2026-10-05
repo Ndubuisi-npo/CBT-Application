@@ -72,31 +72,43 @@
                 <option value="fill_in_blank">Fill in the Blank</option>
               </select>
             </div>
-            <div>
+            <div class="sm:col-span-2">
               <label class="block text-sm font-medium text-slate-700">
                 Class Level <span class="text-red-500">*</span>
               </label>
-              <select v-model="form.class_level_id" class="sa-input mt-1.5" @change="onClassLevelChange">
-                <option value="">Select class</option>
-                <option v-for="cl in classLevels" :key="cl.id" :value="cl.id">{{ cl.name }}</option>
-              </select>
+              <div class="mt-2 grid max-h-44 gap-2 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-3 sm:grid-cols-2">
+                <label v-for="cl in classLevels" :key="cl.id" class="flex items-center gap-2 rounded-md bg-white px-3 py-2 text-sm text-slate-700">
+                  <input
+                    :checked="isClassLevelSelected(cl.id)"
+                    type="checkbox"
+                    class="h-4 w-4 rounded border-slate-300 text-[#0B1F3A] focus:ring-[#D4AF37]"
+                    :disabled="isEditing"
+                    @change="toggleClassLevel(cl.id, $event.target.checked)"
+                  />
+                  <span>{{ cl.name }}</span>
+                </label>
+                <p v-if="!classLevels.length" class="text-sm text-slate-500">No class levels available.</p>
+              </div>
             </div>
-            <div>
+            <div v-if="form.class_level_ids.length === 1">
               <label class="block text-sm font-medium text-slate-700">Class Arm</label>
               <select v-model="form.class_arm_id" class="sa-input mt-1.5">
-                <option value="">All arms</option>
+                <option value="">All arms (optional)</option>
                 <option v-for="arm in classArms" :key="arm.id" :value="arm.id">{{ arm.name }}</option>
               </select>
             </div>
+            <p v-else-if="form.class_level_ids.length > 1" class="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-3 text-sm text-slate-500">
+              Class arm is optional and can be selected when assigning the question to one class level.
+            </p>
             <div>
               <label class="block text-sm font-medium text-slate-700">
                 Subject <span class="text-red-500">*</span>
               </label>
-              <select v-model="form.subject_id" class="sa-input mt-1.5" :disabled="!form.class_level_id || !form.class_arm_id">
+              <select v-model="form.subject_id" class="sa-input mt-1.5" :disabled="!form.class_level_ids.length">
                 <option value="">Select subject</option>
                 <option v-for="s in subjects" :key="s.id" :value="s.id">{{ s.name }}</option>
               </select>
-              <p v-if="!form.class_level_id || !form.class_arm_id" class="mt-1 text-xs text-slate-400">Select a class level and class arm first to view available subjects.</p>
+              <p v-if="!form.class_level_ids.length" class="mt-1 text-xs text-slate-400">Select at least one class level to view available subjects.</p>
             </div>
             <div class="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
               Marks are assigned later in the exam wizard when the question is added to an exam.
@@ -429,7 +441,7 @@
           <ul class="space-y-3">
             <ValidationItem :valid="!!form.type" label="Question type selected" />
             <ValidationItem :valid="!!form.subject_id" label="Subject assigned" />
-            <ValidationItem :valid="!!form.class_level_id" label="Class level set" />
+            <ValidationItem :valid="!!form.class_level_ids.length" label="Class level set" />
             <ValidationItem :valid="form.content.trim().length > 0" label="Question stem added" />
             <template v-if="form.type === 'mcq' && !form.allow_multiple_answers">
               <ValidationItem :valid="hasMcqCorrectAnswer" label="Correct option selected" />
@@ -469,6 +481,7 @@ import { useTeacherExamsStore } from '../stores/exams'
 import { useTeachersQuestionsStore } from '../stores/questions'
 import { useSchoolAdminUiStore } from '../../schooladmincomponents/stores/ui'
 import { getAuthUser } from '../../../js/lib/auth'
+import { getClassLevels, getSubjects } from '../services/api/exams'
 import {
   QUESTION_TYPE_LABELS,
   isChoiceBased,
@@ -588,7 +601,7 @@ const form = reactive({
   id: null,
   type: '',
   content: '',
-  class_level_id: '',
+  class_level_ids: [],
   class_arm_id: '',
   subject_id: '',
   marks: 1,
@@ -613,7 +626,10 @@ const correctAnswerCount = computed(() => form.options.filter((o) => o.is_correc
 const hasFitbAnswers = computed(() => form.acceptable_answers.some((a) => a.content?.trim()))
 
 const selectedSubjectName = computed(() => subjects.value.find((s) => s.id === form.subject_id)?.name || '')
-const selectedClassName = computed(() => classLevels.value.find((c) => c.id === form.class_level_id)?.name || '')
+const selectedClassName = computed(() => classLevels.value
+  .filter((classLevel) => form.class_level_ids.some((id) => String(id) === String(classLevel.id)))
+  .map((classLevel) => classLevel.name)
+  .join(', '))
 
 // ── Type change handler ──────────────────────────────────────────────────────
 
@@ -752,12 +768,13 @@ watch(showMathKeyboard, (isVisible) => {
 
 const loadMetadata = async () => {
   try {
-    await examsStore.loadFormMetadata()
-    classLevels.value = examsStore.classLevels || []
-    subjects.value = examsStore.subjects || []
+    const [classLevelsResponse, subjectsResponse] = await Promise.all([getClassLevels(), getSubjects()])
+    classLevels.value = unwrapMetadataList(classLevelsResponse, 'class_levels')
+    subjects.value = unwrapMetadataList(subjectsResponse, 'subjects')
 
-    if (teacherClassLevel.value?.id && !form.class_level_id) {
-      form.class_level_id = teacherClassLevel.value.id
+    const teacherLevel = classLevels.value.find((level) => String(level.id) === String(teacherClassLevel.value?.id))
+    if (teacherLevel && !form.class_level_ids.length) {
+      form.class_level_ids = [teacherLevel.id]
       await onClassLevelChange()
     }
   } catch (e) {
@@ -765,15 +782,47 @@ const loadMetadata = async () => {
   }
 }
 
+const unwrapMetadataList = (response, key) => {
+  if (Array.isArray(response)) return response
+  if (Array.isArray(response?.[key])) return response[key]
+  if (Array.isArray(response?.data)) return response.data
+  if (Array.isArray(response?.data?.[key])) return response.data[key]
+  return []
+}
+
+const isClassLevelSelected = (classLevelId) =>
+  form.class_level_ids.some((id) => String(id) === String(classLevelId))
+
+const toggleClassLevel = async (classLevelId, checked) => {
+  if (isEditing.value) return
+  const selected = new Map(form.class_level_ids.map((id) => [String(id), id]))
+  if (checked) selected.set(String(classLevelId), classLevelId)
+  else selected.delete(String(classLevelId))
+  form.class_level_ids = Array.from(selected.values())
+  await onClassLevelChange()
+}
+
 const onClassLevelChange = async () => {
   form.class_arm_id = ''
   form.subject_id = ''
-  if (form.class_level_id) {
-    await examsStore.loadClassArms(form.class_level_id)
+  classArms.value = []
+
+  if (form.class_level_ids.length === 1) {
+    await examsStore.loadClassArms(form.class_level_ids[0])
     classArms.value = examsStore.classArms || []
-    await examsStore.loadSubjectsForClassLevel(form.class_level_id)
-    subjects.value = examsStore.subjects || []
   }
+
+  if (!form.class_level_ids.length) {
+    subjects.value = []
+    return
+  }
+
+  const subjectResponses = await Promise.all(form.class_level_ids.map((classLevelId) => getSubjects({ class_level_id: classLevelId })))
+  const uniqueSubjects = new Map()
+  subjectResponses.flatMap((response) => unwrapMetadataList(response, 'subjects')).forEach((subject) => {
+    if (subject?.id != null) uniqueSubjects.set(String(subject.id), subject)
+  })
+  subjects.value = Array.from(uniqueSubjects.values())
 }
 
 // ── Validation ───────────────────────────────────────────────────────────────
@@ -781,7 +830,7 @@ const onClassLevelChange = async () => {
 const validateForm = () => {
   if (!form.type) { error.value = 'Please select a question type.'; return false }
   if (!form.subject_id) { error.value = 'Please select a subject.'; return false }
-  if (!form.class_level_id) { error.value = 'Please select a class level.'; return false }
+  if (!form.class_level_ids.length) { error.value = 'Please select at least one class level.'; return false }
   if (!form.content?.trim()) { error.value = 'Question content is required.'; return false }
 
   if (form.type === 'mcq') {
@@ -849,8 +898,6 @@ const submitQuestion = async (status) => {
       content: form.content.trim(),
       content_format: 'plain_text',
       subject_id: form.subject_id,
-      class_level_id: form.class_level_id || undefined,
-      class_arm_id: form.class_arm_id || undefined,
       status,
       options,
       // Send allow_multiple_answers for MCQ
@@ -858,11 +905,20 @@ const submitQuestion = async (status) => {
     }
 
     if (isEditing.value) {
-      await questionsStore.updateQuestion(questionId.value, payload)
+      await questionsStore.updateQuestion(questionId.value, {
+        ...payload,
+        class_level_id: form.class_level_ids[0],
+        class_arm_id: form.class_arm_id || undefined,
+      })
       uiStore.addToast({ title: 'Question updated', message: 'Your question has been saved.', variant: 'success' })
     } else {
-      await questionsStore.createQuestion(payload)
-      uiStore.addToast({ title: 'Question saved', message: `Question ${status === 'Published' ? 'published' : 'saved as draft'}.`, variant: 'success' })
+      await Promise.all(form.class_level_ids.map((classLevelId) => questionsStore.createQuestion({
+        ...payload,
+        class_level_id: classLevelId,
+        class_arm_id: form.class_level_ids.length === 1 ? (form.class_arm_id || undefined) : undefined,
+      })))
+      const classCountMessage = form.class_level_ids.length > 1 ? ` for ${form.class_level_ids.length} class levels` : ''
+      uiStore.addToast({ title: 'Question saved', message: `Question ${status === 'Published' ? 'published' : 'saved as draft'}${classCountMessage}.`, variant: 'success' })
     }
     router.push('/teachers/questions')
   } catch (err) {
@@ -885,7 +941,7 @@ onMounted(async () => {
         form.type = existing.type || ''
         form.content = existing.content || existing.question_text || ''
         form.subject_id = existing.subject?.id || existing.subject_id || ''
-        form.class_level_id = existing.class_level?.id || existing.class_level_id || ''
+        form.class_level_ids = [existing.class_level?.id || existing.class_level_id].filter(Boolean)
         form.class_arm_id = existing.class_arm?.id || existing.class_arm_id || ''
         if (existing.type === 'fill_in_blank') {
           if (existing.acceptable_answers?.length) {
@@ -913,7 +969,7 @@ onMounted(async () => {
           form.allow_multiple_answers = existing.allow_multiple_answers === true || correctCount > 1
         }
 
-        if (form.class_level_id) await onClassLevelChange()
+        if (form.class_level_ids.length) await onClassLevelChange()
       }
     } catch (e) {
       console.error('Could not pre-fill question', e)

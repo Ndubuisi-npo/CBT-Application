@@ -143,7 +143,27 @@ const formatClassLevels = (s) => {
 }
 const formatAssignedTeachers = (s) => {
   const assignments = Array.isArray(s.teacher_assignments) ? s.teacher_assignments : Array.isArray(s.teacherAssignments) ? s.teacherAssignments : []
-  const names = assignments.map((a) => a.user ? `${a.user.first_name} ${a.user.last_name}`.trim() : null).filter(Boolean)
+  const teachers = new Map()
+
+  assignments.forEach((assignment, index) => {
+    const user = assignment.user
+    const name = user ? `${user.first_name || ''} ${user.last_name || ''}`.trim() : ''
+    if (!name) return
+
+    const teacherId = assignment.user_id ?? user.id ?? name
+    const classId = assignment.class_arm_id
+      ? `arm:${assignment.class_arm_id}`
+      : assignment.class_level_id
+        ? `level:${assignment.class_level_id}`
+        : `assignment:${assignment.id ?? index}`
+    const teacher = teachers.get(teacherId) || { name, classes: new Set() }
+    teacher.classes.add(classId)
+    teachers.set(teacherId, teacher)
+  })
+
+  const names = Array.from(teachers.values()).map(({ name, classes }) =>
+    classes.size > 1 ? `${name}(${classes.size})` : name,
+  )
   return names.length ? names.join(', ') : 'N/A'
 }
 
