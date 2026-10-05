@@ -344,7 +344,23 @@ const saveSubmissionConfig = async () => {
 }
 
 const subjectName = (id) => subjectOptions.value.find((option) => String(option.value) === String(id))?.label || 'Subject'
-const formatSlotTime = (value) => value ? new Date(value).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'
+const formatSlotTime = (value) => {
+  if (!value) return '—'
+  const timestamp = value instanceof Date
+    ? value
+    : typeof value === 'string' && !/(?:Z|[+-]\d{2}:?\d{2})$/i.test(value)
+      ? `${value}Z`
+      : value
+  const date = new Date(timestamp)
+  if (Number.isNaN(date.getTime())) return '—'
+
+  return new Intl.DateTimeFormat('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+      timeZone: 'Africa/Lagos',
+    }).format(date)
+}
 
 const addScheduleSubject = async () => {
   if (!form.id || !slotForm.subject_id) return
