@@ -1,0 +1,437 @@
+<template>
+  <div class="space-y-6">
+    <SectionCard title="Tenants" subtitle="Search, filter, and manage every school workspace from one place.">
+      <template #header>
+        <div class="flex gap-3">
+          <ActionButton 
+            v-if="!isSelectMode" 
+            tag="RouterLink" 
+            to="/super-admin/tenants/new" 
+            :icon="Plus" 
+            variant="primary" 
+          >
+            New Tenant
+          </ActionButton>
+          <ActionButton 
+            v-if="isSelectMode" 
+            @click="cancelSelectMode()" 
+            variant="outline" 
+          >
+            Cancel Select
+          </ActionButton>
+          <ActionButton 
+            v-if="selectedTenants.size > 0" 
+            @click="deleteSelected()" 
+            variant="danger" 
+          >
+            Delete Selected
+          </ActionButton>
+          <ActionButton 
+            v-if="!isSelectMode" 
+            @click="startSelectMode()" 
+            variant="secondary" 
+          >
+            Select
+          </ActionButton>
+        </div>
+      </template>
+
+      <div class="mb-6 grid gap-4 lg:grid-cols-[1fr_220px]">
+        <div class="relative">
+          <Search class="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+          <input v-model="searchQuery" class="w-full rounded-lg border-2 border-[#0B1F3A] pl-12 px-4 py-2.5 text-slate-900 placeholder:text-slate-400 focus:border-[#D4AF37] focus:outline-none focus:ring-0 transition" placeholder="Search by school name or domain" />
+        </div>
+        <select v-model="statusFilter" class="w-full rounded-lg border-2 border-[#0B1F3A] px-4 py-2.5 text-slate-900 focus:border-[#D4AF37] focus:outline-none focus:ring-0 transition">
+          <option value="All">All statuses</option>
+          <option value="Active">Active</option>
+          <option value="Suspended">Suspended</option>
+        </select>
+      </div>
+
+      <SkeletonTable v-if="loading" />
+
+      <div v-else-if="paginatedTenants.length === 0" class="overflow-hidden rounded-[24px] border border-slate-200">
+        <div class="flex flex-col items-center justify-center py-12 px-4 text-center">
+          <div class="mb-4 rounded-full bg-slate-100 p-3">
+            <Building2 class="h-8 w-8 text-slate-400" />
+          </div>
+          <h3 class="mb-2 text-lg font-semibold text-slate-900">No tenants found</h3>
+          <p class="mb-6 text-sm text-slate-500">
+            {{ searchQuery || statusFilter !== 'All' ? 'Try adjusting your search or filters' : 'Get started by creating your first tenant workspace' }}
+          </p>
+          <ActionButton 
+            v-if="!searchQuery && statusFilter === 'All'"
+            tag="RouterLink" 
+            to="/super-admin/tenants/new" 
+            :icon="Plus" 
+            text="Create Tenant" 
+            variant="primary" 
+          />
+        </div>
+      </div>
+
+      <div v-else class="overflow-hidden rounded-[24px] border border-slate-200">
+        <div class="hidden overflow-x-auto lg:block">
+          <table class="min-w-full divide-y divide-slate-200 bg-white">
+            <thead class="bg-slate-50">
+              <tr>
+                <th v-if="isSelectMode" class="px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                  <input 
+                    type="checkbox" 
+                    @change="toggleSelectAll($event.target.checked)"
+                    :checked="areAllSelected"
+                    class="rounded border-slate-300"
+                  />
+                </th>
+                <th v-for="heading in headings" :key="heading" class="px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                  {{ heading }}
+                </th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              <tr v-for="tenant in paginatedTenants" :key="tenant.id" class="transition hover:bg-slate-50/80">
+                <td v-if="isSelectMode" class="px-5 py-4">
+                  <input 
+                    type="checkbox" 
+                    :checked="selectedTenants.has(tenant.id)"
+                    @change="toggleItemSelection(tenant.id, $event.target.checked)"
+                    class="rounded border-slate-300"
+                  />
+                </td>
+                <td class="px-5 py-4">
+                  <p class="font-semibold text-slate-900 text-nowrap">{{ tenant.name }}</p>
+                  <p class="text-sm text-slate-500">{{ tenant.handle }}</p>
+                </td>
+                <td class="px-5 py-4 text-sm text-slate-600">
+                  <p>{{ tenant.contact?.email || tenant.email || 'No email' }}</p>
+                  <p class="text-xs text-slate-500">{{ tenant.contact?.phone || tenant.phone || 'No phone' }}</p>
+                </td>
+                <td class="px-5 py-4 text-sm text-slate-600">
+                  <p>{{ tenant.contact?.address || tenant.address || 'No address' }}</p>
+                  <p class="text-xs text-slate-500">{{ tenant.contact?.city || tenant.city || 'No city' }}, {{ tenant.contact?.state || tenant.state || 'No state' }}</p>
+                </td>
+                <td class="px-5 py-4">
+                  <StatusBadge :status="tenant.subscription?.status || tenant.subscription_status || 'Not Active'" />
+                </td>
+                <td class="px-5 py-4">
+                  <StatusBadge :status="tenant.is_active ? 'Active' : 'Suspended'" />
+                </td>
+                <td class="px-5 py-4">
+                  <div class="flex flex-wrap gap-2">
+                    <AppButton text="View" @click="viewTenant(tenant)" variant="outline" size="xs" />
+                    <AppButton text="Edit" @click="editTenant(tenant)" variant="outline" size="xs" />
+                    <br>
+                    <AppButton 
+                      :text="tenant.is_active ? 'Suspend' : 'Activate'" 
+                      @click="toggleStatus(tenant)" 
+                      :variant="tenant.is_active ? 'warning' : 'success'" 
+                      size="xs"
+                      :loadingText="tenant.is_active ? 'Suspending...' : 'Activating...'"
+                      :processing="statusLoading.has(tenant.id)"
+                      :disabled="statusLoading.has(tenant.id)"
+                    />
+                    <AppButton 
+                      text="Delete" 
+                      @click="deleteTenant(tenant.id)" 
+                      variant="danger" 
+                      size="xs"
+                      loadingText="Deleting..."
+                      :processing="deleteLoading.has(tenant.id)"
+                      :disabled="deleteLoading.has(tenant.id) || isSelectMode"
+                    />
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="grid gap-3 p-4 lg:hidden">
+          <ResponsiveDataCard
+            v-for="tenant in paginatedTenants"
+            :key="tenant.id"
+            avatar-color="bg-[#0B1F3A]/10 text-[#0B1F3A]"
+            :avatar-text="(tenant.name || '?').slice(0, 2).toUpperCase()"
+            :title="tenant.name"
+            :subtitle="tenant.handle"
+            :fields="[
+              { label: 'Email', value: tenant.contact?.email || tenant.email || 'No email' },
+              { label: 'Phone', value: tenant.contact?.phone || tenant.phone || 'No phone' },
+              { label: 'Location', value: `${tenant.contact?.city || tenant.city || 'No city'}, ${tenant.contact?.state || tenant.state || 'No state'}`, span: 2 },
+            ]"
+          >
+            <template #badge>
+              <div class="flex flex-col items-end gap-1.5">
+                <StatusBadge :status="tenant.subscription?.status || tenant.subscription_status || 'Not Active'" />
+                <StatusBadge :status="tenant.is_active ? 'Active' : 'Suspended'" />
+              </div>
+            </template>
+            <div class="flex flex-wrap gap-2">
+              <AppButton text="View" @click="viewTenant(tenant)" variant="outline" size="xs" />
+              <AppButton text="Edit" @click="editTenant(tenant)" variant="outline" size="xs" />
+              <AppButton
+                :text="tenant.is_active ? 'Suspend' : 'Activate'"
+                @click="toggleStatus(tenant)"
+                :variant="tenant.is_active ? 'warning' : 'success'"
+                size="xs"
+                :loadingText="tenant.is_active ? 'Suspending...' : 'Activating...'"
+                :processing="statusLoading.has(tenant.id)"
+                :disabled="statusLoading.has(tenant.id)"
+              />
+              <AppButton
+                text="Delete"
+                @click="deleteTenant(tenant.id)"
+                variant="danger"
+                size="xs"
+                loadingText="Deleting..."
+                :processing="deleteLoading.has(tenant.id)"
+                :disabled="deleteLoading.has(tenant.id) || isSelectMode"
+              />
+            </div>
+          </ResponsiveDataCard>
+        </div>
+
+        <PaginationControls
+          :page="page"
+          :start="paginationMeta.start"
+          :end="paginationMeta.end"
+          :total="filteredTenants.length"
+          @change="setPage"
+        />
+      </div>
+    </SectionCard>
+    
+    <!-- View Tenant Modal -->
+    <ViewTenantModal 
+      :is-open="showViewModal" 
+      :tenant="currentlyViewing" 
+      @close="closeViewModal" 
+    />
+    
+    <!-- Edit Tenant Modal -->
+    <EditTenantModal 
+      :is-open="showEditModal" 
+      :tenant="currentlyViewing" 
+      @close="closeEditModal" 
+      @updated="onTenantUpdated" 
+    />
+  </div>
+</template>
+
+<script setup>
+import { onMounted, watch, ref, computed } from 'vue'
+import { Plus, Search, Building2 } from 'lucide-vue-next'
+import PaginationControls from '../components/PaginationControls.vue'
+import SectionCard from '../components/SectionCard.vue'
+import SkeletonTable from '../components/SkeletonTable.vue'
+import StatusBadge from '../components/StatusBadge.vue'
+import ViewTenantModal from '../components/ViewTenantModal.vue'
+import EditTenantModal from '../components/EditTenantModal.vue'
+import AppButton from '../../shared/AppButton.vue'
+import ResponsiveDataCard from '../../shared/ResponsiveDataCard.vue'
+import ActionButton from '../../shared/ActionButton.vue'
+import { useSuperAdminTenants } from '../composables/useSuperAdminTenants'
+import { useSuperAdminUiStore } from '../stores/ui'
+
+const {
+  fetchTenants,
+  filteredTenants,
+  loading,
+  page,
+  paginatedTenants,
+  paginationMeta,
+  searchQuery,
+  setPage,
+  statusFilter,
+  suspendTenant,
+  reinstateTenant,
+  deleteTenant: deleteTenantApi,
+} = useSuperAdminTenants()
+const uiStore = useSuperAdminUiStore()
+
+const headings = ['Name', 'Contact', 'Location', 'Subscription', 'Status', 'Actions']
+
+// Multi-select state
+const isSelectMode = ref(false)
+const selectedTenants = ref(new Set())
+
+// Modal state
+const showViewModal = ref(false)
+const showEditModal = ref(false)
+const selectedTenantId = ref(null)
+const currentlyViewing = ref(null);
+
+// Loading states
+const statusLoading = ref(new Set())
+const deleteLoading = ref(new Set())
+
+// Computed properties for multi-select
+const areAllSelected = computed(() => {
+  return filteredTenants.value.length > 0 && 
+         filteredTenants.value.every(tenant => selectedTenants.value.has(tenant.id))
+})
+
+const hasAnySelected = computed(() => selectedTenants.value.size > 0)
+
+onMounted(() => {
+  fetchTenants()
+})
+
+watch(
+  () => [searchQuery.value, statusFilter.value],
+  () => setPage(1),
+)
+
+const notify = (message) => {
+  uiStore.addToast({
+    title: 'Action available',
+    message,
+    variant: 'success',
+  })
+}
+
+const formatDate = (dateString) => {
+  if (!dateString) return 'N/A'
+  return new Date(dateString).toLocaleDateString()
+}
+
+// Multi-select functionality
+const startSelectMode = () => {
+  isSelectMode.value = true
+  selectedTenants.value.clear()
+}
+
+const cancelSelectMode = () => {
+  isSelectMode.value = false
+  selectedTenants.value.clear()
+}
+
+const toggleSelectAll = (checked) => {
+  if (checked) {
+    filteredTenants.value.forEach(tenant => {
+      selectedTenants.value.add(tenant.id)
+    })
+  } else {
+    selectedTenants.value.clear()
+  }
+}
+
+const toggleItemSelection = (id, checked) => {
+  if (checked) {
+    selectedTenants.value.add(id)
+  } else {
+    selectedTenants.value.delete(id)
+  }
+}
+
+const deleteSelected = async () => {
+  if (!confirm(`Are you sure you want to delete ${selectedTenants.value.size} selected tenant(s)? This action cannot be undone.`)) {
+    return
+  }
+
+  try {
+    for (const id of selectedTenants.value) {
+      deleteLoading.value.add(id)
+    }
+    
+    for (const id of selectedTenants.value) {
+      await deleteTenantApi(id)
+    }
+    
+    selectedTenants.value.clear()
+    isSelectMode.value = false
+    uiStore.addToast({
+      title: 'Tenants Deleted',
+      message: `${selectedTenants.value.size} tenant(s) have been deleted successfully.`,
+      variant: 'success',
+    })
+  } catch (error) {
+    uiStore.addToast({
+      title: 'Error',
+      message: 'Failed to delete selected tenants.',
+      variant: 'error',
+    })
+  } finally {
+    // Clear all loading states
+    deleteLoading.value.clear()
+  }
+}
+
+const toggleStatus = async (tenant) => {
+  statusLoading.value = new Set([...statusLoading.value, tenant.id])
+  
+  try {
+    if (tenant.is_active) {
+      await suspendTenant(tenant.id)
+    } else {
+      await reinstateTenant(tenant.id)
+    }
+    uiStore.addToast({
+      title: 'Tenant updated',
+      message: 'Tenant status was updated successfully.',
+      variant: 'success',
+    })
+    // Refresh data to get updated tenant information
+    await fetchTenants()
+  } catch (error) {
+    uiStore.addToast({
+      title: 'Error',
+      message: error.message,
+      variant: 'error',
+    })
+  } finally {
+    statusLoading.value = new Set([...statusLoading.value].filter(loadingId => loadingId !== tenant.id))
+  }
+}
+
+const deleteTenant = async (id) => {
+  if (!confirm('Are you sure you want to delete this tenant? This action cannot be undone.')) {
+    return
+  }
+  
+  deleteLoading.value = new Set([...deleteLoading.value, id])
+  
+  try {
+    await deleteTenantApi(id)
+    uiStore.addToast({
+      title: 'Tenant deleted',
+      message: 'Tenant has been deleted successfully.',
+      variant: 'success',
+    })
+    // Refresh data to get updated tenant list
+    await fetchTenants()
+  } catch (error) {
+    uiStore.addToast({
+      title: 'Error',
+      message: error.message || 'Failed to delete tenant.',
+      variant: 'error',
+    })
+  } finally {
+    deleteLoading.value = new Set([...deleteLoading.value].filter(loadingId => loadingId !== id))
+  }
+}
+
+const viewTenant = (tenant) => {
+  currentlyViewing.value = tenant
+  showViewModal.value = true
+}
+
+const editTenant = (tenant) => {
+  currentlyViewing.value = tenant
+  showEditModal.value = true
+}
+
+const closeViewModal = () => {
+  showViewModal.value = false
+  currentlyViewing.value = null
+}
+
+const closeEditModal = () => {
+  showEditModal.value = false
+  currentlyViewing.value = null
+}
+
+const onTenantUpdated = () => {
+  fetchTenants() // Refresh the tenant list
+}
+</script>
