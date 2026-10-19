@@ -29,8 +29,11 @@
           :key="assessment.id"
           class="flex flex-wrap items-center gap-x-5 gap-y-3 px-5 py-5 transition-colors hover:bg-slate-50/60 sm:px-6"
         >
-          <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#0B1F3A]/5 text-xs font-bold text-[#0B1F3A]">
-            {{ initials(assessment.title) }}
+          <span
+            class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
+            :class="assessmentIconColor(assessment)"
+          >
+            <ClipboardList class="h-5 w-5" aria-hidden="true" />
           </span>
 
           <div class="min-w-[220px] flex-1">
@@ -110,6 +113,23 @@ const loadingSubmissionsByAssessment = ref({})
 
 const classLevelOptions = computed(() => store.classLevelOptions)
 
+const assessmentIconColors = [
+  'bg-blue-50 text-blue-700',
+  'bg-violet-50 text-violet-700',
+  'bg-emerald-50 text-emerald-700',
+  'bg-amber-50 text-amber-700',
+  'bg-rose-50 text-rose-700',
+  'bg-cyan-50 text-cyan-700',
+  'bg-orange-50 text-orange-700',
+  'bg-indigo-50 text-indigo-700',
+]
+
+const assessmentIconColor = (assessment) => {
+  const key = String(assessment.id ?? assessment.schedule_id ?? assessment.title ?? '')
+  const hash = [...key].reduce((value, character) => (value * 31 + character.charCodeAt(0)) >>> 0, 0)
+  return assessmentIconColors[hash % assessmentIconColors.length]
+}
+
 const classLevelName = (id) => store.classLevelOptions.find((o) => String(o.value) === String(id))?.label || ''
 const classArmName = (id) => store.classArmOptions.find((o) => String(o.value) === String(id))?.label || ''
 const classText = (a) => {
@@ -121,13 +141,6 @@ const classText = (a) => {
   return `${level}${arm}`.trim() || '—'
 }
 const termText = (a) => a.term?.name || a.term_name || a.term?.title || '—'
-const initials = (title) => (title || '')
-  .split(' ')
-  .filter(Boolean)
-  .slice(0, 2)
-  .map((word) => word[0]?.toUpperCase())
-  .join('') || '—'
-
 const visibleAssessments = computed(() => {
   const query = searchQuery.value.trim().toLowerCase()
   return store.assessments
