@@ -46,16 +46,17 @@
                 :variant="getSubmissionStatusVariant(mySubmissions[assessment.id].status)"
                 dot
               />
-              <span v-else-if="loadingSubmissionsByAssessment[assessment.id]" class="inline-flex items-center gap-1.5 text-xs text-slate-500" role="status">
-                <LoaderCircle class="h-3.5 w-3.5 animate-spin" />
-                Loading submission
-              </span>
+              
               <AppBadge
                 v-if="isQuestionSubmissionClosed(assessment)"
                 label="Questions closed"
                 variant="default"
               />
               <AppBadge v-else-if="!mySubmissions[assessment.id] && !loadingSubmissionsByAssessment[assessment.id]" label="Not started" variant="warning" />
+              <span v-else-if="loadingSubmissionsByAssessment[assessment.id]" class="inline-flex items-center gap-1.5 text-xs text-slate-500" role="status">
+                <LoaderCircle class="h-3.5 w-3.5 animate-spin" />
+                Loading submission
+              </span>
             </div>
           </div>
 
