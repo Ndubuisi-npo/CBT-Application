@@ -669,6 +669,7 @@ export const useAssessmentsStore = defineStore('assessments', {
       if (!scheduleId) throw new Error('This assessment has not been scheduled yet.')
       const record = await apiCreateScheduleSubject(scheduleId, payload)
       this.scheduleSubjects = [...this.scheduleSubjects, record]
+      this._toast('Subject slot added', 'The subject slot was added successfully.', 'success')
       return record
     },
 

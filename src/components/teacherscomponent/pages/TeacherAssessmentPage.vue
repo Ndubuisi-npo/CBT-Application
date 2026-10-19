@@ -10,13 +10,13 @@
       </template>
     </AppPageHeader>
 
-    <div v-if="assessment" class="-mt-2 mb-1 flex flex-wrap items-center gap-2">
+    <div v-if="assessment && !loadingPage" class="-mt-2 mb-1 flex flex-wrap items-center gap-2">
       <SubmissionCountdown v-if="deadline" :deadline="deadline" @expired="deadlinePassed = true" />
       <AppBadge v-if="submission" :label="getSubmissionStatusLabel(submissionStatus)" :variant="getSubmissionStatusVariant(submissionStatus)" dot />
       <AppBadge :label="classText" variant="default" />
     </div>
 
-    <div v-if="loadingSubmission && !assessment" class="space-y-6">
+    <div v-if="loadingPage" class="space-y-6">
       <div class="h-40 animate-pulse rounded-2xl bg-slate-100" />
       <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px] 2xl:grid-cols-[minmax(0,1fr)_420px]">
         <div class="h-64 animate-pulse rounded-2xl bg-slate-100" />
@@ -246,7 +246,7 @@ const creating = ref(false)
 const submitting = ref(false)
 const savingQuestion = ref(false)
 const addingSelectedQuestions = ref(false)
-const loadingSubmission = ref(true)
+const loadingPage = ref(true)
 
 const assessment = computed(() => store.current)
 const submission = computed(() => store.currentSubmission)
@@ -282,13 +282,17 @@ const canAddQuestion = computed(() => editable.value && marksUsed.value < assess
 const canSubmitForReview = computed(() => editable.value && questionCount.value > 0)
 
 onMounted(async () => {
-  await Promise.all([store.fetchRefData(), store.fetchAssessment(assessmentId)])
-  loadingSubmission.value = true
-  await store.fetchMySubmission(assessmentId)
-  loadingSubmission.value = false
-  if (assessment.value?.schedule_id) await store.fetchScheduleSubjects(assessmentId).catch(() => {})
-  if (deadline.value && new Date(deadline.value).getTime() <= Date.now()) {
-    deadlinePassed.value = true
+  try {
+    await Promise.all([store.fetchRefData(), store.fetchAssessment(assessmentId)])
+    if (assessment.value) {
+      await store.fetchMySubmission(assessmentId)
+      if (assessment.value.schedule_id) await store.fetchScheduleSubjects(assessmentId).catch(() => {})
+      if (deadline.value && new Date(deadline.value).getTime() <= Date.now()) {
+        deadlinePassed.value = true
+      }
+    }
+  } finally {
+    loadingPage.value = false
   }
 })
 

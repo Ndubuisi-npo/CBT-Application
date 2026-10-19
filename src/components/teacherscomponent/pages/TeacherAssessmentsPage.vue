@@ -46,12 +46,16 @@
                 :variant="getSubmissionStatusVariant(mySubmissions[assessment.id].status)"
                 dot
               />
+              <span v-else-if="loadingSubmissionsByAssessment[assessment.id]" class="inline-flex items-center gap-1.5 text-xs text-slate-500" role="status">
+                <LoaderCircle class="h-3.5 w-3.5 animate-spin" />
+                Loading submission
+              </span>
               <AppBadge
                 v-if="isQuestionSubmissionClosed(assessment)"
                 label="Questions closed"
                 variant="default"
               />
-              <AppBadge v-else-if="!mySubmissions[assessment.id] && !loadingSubmissions" label="Not started" variant="warning" />
+              <AppBadge v-else-if="!mySubmissions[assessment.id] && !loadingSubmissionsByAssessment[assessment.id]" label="Not started" variant="warning" />
             </div>
           </div>
 
@@ -65,7 +69,7 @@
           <AppButton
             :text="mySubmissions[assessment.id] ? 'Open paper' : (isQuestionSubmissionClosed(assessment) ? 'Submission closed' : 'Start paper')"
             :variant="mySubmissions[assessment.id] ? 'outline' : 'primary'"
-            :disabled="isQuestionSubmissionClosed(assessment) && !mySubmissions[assessment.id]"
+            :disabled="loadingSubmissionsByAssessment[assessment.id] || (isQuestionSubmissionClosed(assessment) && !mySubmissions[assessment.id])"
             @click="openAssessment(assessment.id)"
           />
         </li>
@@ -75,9 +79,9 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { ClipboardList } from 'lucide-vue-next'
+import { ClipboardList, LoaderCircle } from 'lucide-vue-next'
 import AppBadge from '../../shared/AppBadge.vue'
 import AppButton from '../../shared/AppButton.vue'
 import AppEmptyState from '../../shared/AppEmptyState.vue'
@@ -101,7 +105,7 @@ const filterClassLevel = ref('')
 // assessment's submission in parallel — the list is already scoped to
 // "open for me right now", which keeps this bounded to a handful of calls.
 const mySubmissions = ref({})
-const loadingSubmissions = ref(false)
+const loadingSubmissionsByAssessment = ref({})
 
 const classLevelOptions = computed(() => store.classLevelOptions)
 
@@ -147,7 +151,7 @@ const marksUsed = (assessment) => {
 }
 
 const loadMySubmissions = async (assessments) => {
-  loadingSubmissions.value = true
+  loadingSubmissionsByAssessment.value = Object.fromEntries(assessments.map((assessment) => [assessment.id, true]))
   const results = await Promise.all(
     assessments.map(async (assessment) => {
       try {
@@ -155,18 +159,18 @@ const loadMySubmissions = async (assessments) => {
         return [assessment.id, submission]
       } catch {
         return [assessment.id, null]
+      } finally {
+        loadingSubmissionsByAssessment.value = {
+          ...loadingSubmissionsByAssessment.value,
+          [assessment.id]: false,
+        }
       }
     })
   )
   const next = {}
   for (const [id, submission] of results) if (submission) next[id] = submission
   mySubmissions.value = next
-  loadingSubmissions.value = false
 }
-
-watch(() => store.assessments.length, () => {
-  if (visibleAssessments.value.length) loadMySubmissions(visibleAssessments.value)
-})
 
 onMounted(async () => {
   await Promise.all([
