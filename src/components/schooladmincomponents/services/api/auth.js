@@ -26,7 +26,7 @@ export async function loginSchoolAdmin(payload) {
 
 export async function getCurrentUser() {
   try {
-    return await apiFetch('/api/auth/me')
+    return await apiFetch('/api/auth/me ')
   } catch (error) {
     throw new Error(extractErrorMessage(error, 'Unable to fetch user profile.'))
   }
