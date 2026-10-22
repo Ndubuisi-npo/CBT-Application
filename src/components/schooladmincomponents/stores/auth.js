@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { loginSchoolAdmin, logoutSchoolAdmin } from '../services/api/auth'
+import { loginSchoolAdmin, getCurrentUser, logoutSchoolAdmin } from '../services/api/auth'
 import { setApiToken } from '../../../js/lib/api'
 
 const STORAGE_KEY = 'school-admin-auth'
@@ -58,11 +58,12 @@ export const useSchoolAdminAuthStore = defineStore('school-admin-auth', {
       this.loading = true
       try {
         const response = await loginSchoolAdmin(payload)
-        this.user = response.user
         this.token = response.token
         setApiToken(this.token)
+        const profileResponse = await getCurrentUser()
+        this.user = profileResponse?.data ?? profileResponse?.user ?? profileResponse?.admin ?? profileResponse
         this.persist()
-        return response
+        return { ...response, user: this.user, role: this.user?.role ?? this.user?.type }
       } finally {
         this.loading = false
       }

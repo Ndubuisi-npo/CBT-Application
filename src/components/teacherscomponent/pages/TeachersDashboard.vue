@@ -10,6 +10,16 @@
             Build your papers before each submission window closes, keep your question bank stocked, and monitor
             live exams from here.
           </p>
+          <div class="mt-6 flex flex-wrap gap-3">
+            <div class="min-w-36 rounded-xl bg-white/[0.08] px-4 py-3">
+              <p class="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/50">Assigned class</p>
+              <p class="mt-1 text-sm font-medium text-white">{{ assignedClassName }}</p>
+            </div>
+            <div class="min-w-36 rounded-xl bg-white/[0.08] px-4 py-3">
+              <p class="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/50">Students</p>
+              <p class="mt-1 text-sm font-medium text-white">{{ studentsLoading ? 'Loading…' : studentCount }}</p>
+            </div>
+          </div>
         </div>
         <div class="flex flex-wrap gap-2">
           <button
@@ -160,8 +170,9 @@ import AppEmptyState from '../../shared/AppEmptyState.vue'
 import SubmissionCountdown from '../components/SubmissionCountdown.vue'
 import { getMySubmission } from '../../schooladmincomponents/services/api/assessments'
 import { useAssessmentsStore, getSubmissionStatusLabel, getSubmissionStatusVariant } from '../../schooladmincomponents/stores/assessments'
-import { getDisplayName } from '../../../js/lib/auth'
+import { getAuthUser, getDisplayName } from '../../../js/lib/auth'
 import { fmtDateTime } from '../../../js/lib/helpers'
+import { getStudents } from '../../schooladmincomponents/services/api/students'
 
 const router = useRouter()
 const store = useAssessmentsStore()
@@ -173,8 +184,23 @@ const loading = ref(true)
 // derived from it below — is scoped to assessments that are open for
 // question submission right now, not the teacher's full submission history.
 const mySubmissions = ref({})
+const studentCount = ref('—')
+const studentsLoading = ref(true)
 
 const firstName = computed(() => (getDisplayName() || 'Teacher').split(' ')[0])
+const assignedClassName = computed(() => {
+  const user = getAuthUser() || {}
+  const classes = user.assigned_classes || user.assignedClasses || []
+  if (classes.length) {
+    return classes.map((item) => {
+      const level = item.class_level?.name || item.classLevel?.name || item.class_level_name || ''
+      const arm = item.name || item.class_arm?.name || item.classArm?.name || ''
+      return [level, arm].filter(Boolean).join(' · ')
+    }).filter(Boolean).join(', ') || 'Not assigned'
+  }
+  const levels = user.assigned_levels || user.assignedLevels || []
+  return levels.map((item) => item.class_level?.name || item.classLevel?.name || '').filter(Boolean).join(', ') || 'Not assigned'
+})
 const timeOfDay = computed(() => {
   const hour = new Date().getHours()
   if (hour < 12) return 'morning'
@@ -247,7 +273,18 @@ const goTo = (path) => router.push(path)
 
 onMounted(async () => {
   loading.value = true
-  await Promise.all([store.fetchRefData(), store.fetchTeacherAssessments()])
+  const user = getAuthUser()
+  const [studentsResult] = await Promise.allSettled([
+    user?.id ? getStudents({ teacher_id: user.id }) : Promise.resolve([]),
+    store.fetchRefData(),
+    store.fetchTeacherAssessments(),
+  ])
+  if (studentsResult.status === 'fulfilled') {
+    const response = studentsResult.value
+    const students = Array.isArray(response) ? response : (response?.data || response?.students || [])
+    studentCount.value = response?.total ?? response?.meta?.total ?? students.length
+  }
+  studentsLoading.value = false
   const results = await Promise.all(
     openAssessments.value.map(async (assessment) => {
       try {

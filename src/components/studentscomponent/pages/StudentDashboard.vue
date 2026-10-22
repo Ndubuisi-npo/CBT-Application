@@ -175,7 +175,9 @@ const studentAvatar = computed(() => {
 
 const studentClass = computed(() => {
   const profile = user.value.student_profile || user.value.studentProfile
-  return profile?.class_arm?.name || profile?.class_name || ''
+  const level = profile?.class_level?.name || profile?.classLevel?.name || ''
+  const arm = profile?.class_arm?.name || profile?.classArm?.name || ''
+  return [level, arm].filter(Boolean).join(' · ') || profile?.class_name || ''
 })
 
 const liveExams = computed(() => exams.value);

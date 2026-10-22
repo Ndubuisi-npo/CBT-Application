@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { useSchoolAdminUiStore } from './ui'
 import { useSchoolAdminSessionsStore } from './sessions'
 import { getEffectiveAssessmentStatus, toDatetimeLocalInputValue } from '../../../js/lib/helpers'
+import { normalizeScheduleSubjectMeta } from '../../../js/lib/slotTime'
 import {
   getAssessments,
   getAssessment,
@@ -12,9 +13,8 @@ import {
   updateSchedule as apiUpdateSchedule,
   deleteSchedule as apiDeleteSchedule,
   getScheduleSubjects,
-  createScheduleSubject as apiCreateScheduleSubject,
-  updateScheduleSubject as apiUpdateScheduleSubject,
-  deleteScheduleSubject as apiDeleteScheduleSubject,
+  saveSubmissionScheduleSlot,
+  deleteSubmissionScheduleSlot,
   closeSubmissions as apiCloseSubmissions,
   reopenSubmissions as apiReopenSubmissions,
   activateSchedule as apiActivateSchedule,
@@ -193,6 +193,9 @@ export const useAssessmentsStore = defineStore('assessments', {
     current: null,
     currentSubmission: null,
     scheduleSubjects: [],
+    scheduleSubjectMeta: { daily_cap: null, daily_usage: {} },
+    scheduleSubjectsAssessmentId: null,
+    slotMutating: false,
     refData: {
       subjects: [],
       classLevels: [],
@@ -648,44 +651,76 @@ export const useAssessmentsStore = defineStore('assessments', {
       }
     },
 
+    /** Resolve the schedule for an assessment, also checking the loaded `current` (teacher page). */
+    _resolveScheduleId(assessmentId) {
+      return this.getAssessmentById(assessmentId)?.schedule_id
+        || (String(this.current?.id) === String(assessmentId) ? this.current?.schedule_id : null)
+        || null
+    },
+
+    _resetScheduleSubjects() {
+      this.scheduleSubjects = []
+      this.scheduleSubjectMeta = normalizeScheduleSubjectMeta(null)
+    },
+
+    /**
+     * Loads the timetable. Stores the slots in `scheduleSubjects` and the
+     * daily cap / cross-schedule usage in `scheduleSubjectMeta`, and returns
+     * the slots. Switching to a different assessment clears both first so
+     * stale daily usage is never shown.
+     */
     async fetchScheduleSubjects(assessmentId) {
-      const scheduleId = this.getAssessmentById(assessmentId)?.schedule_id
+      if (String(this.scheduleSubjectsAssessmentId) !== String(assessmentId)) {
+        this._resetScheduleSubjects()
+        this.scheduleSubjectsAssessmentId = assessmentId
+      }
+      const scheduleId = this._resolveScheduleId(assessmentId)
       if (!scheduleId) {
-        this.scheduleSubjects = []
+        this._resetScheduleSubjects()
         return []
       }
       try {
-        const data = await getScheduleSubjects(scheduleId)
-        this.scheduleSubjects = Array.isArray(data) ? data : (data?.data ?? [])
+        const { slots, meta } = await getScheduleSubjects(scheduleId)
+        this.scheduleSubjects = slots
+        this.scheduleSubjectMeta = normalizeScheduleSubjectMeta(meta)
       } catch (error) {
-        this.scheduleSubjects = []
+        this._resetScheduleSubjects()
         throw error
       }
       return this.scheduleSubjects
     },
 
-    async createScheduleSubject(assessmentId, payload) {
-      const scheduleId = this.getAssessmentById(assessmentId)?.schedule_id
-      if (!scheduleId) throw new Error('This assessment has not been scheduled yet.')
-      const record = await apiCreateScheduleSubject(scheduleId, payload)
-      this.scheduleSubjects = [...this.scheduleSubjects, record]
-      this._toast('Subject slot added', 'The subject slot was added successfully.', 'success')
-      return record
+    /**
+     * Teacher-owned slot upsert for the signed-in teacher's own submission.
+     * Errors propagate (with status/data) so the page can show them inline.
+     */
+    async saveMySubmissionSlot(assessmentId, payload) {
+      const submission = this.currentSubmission
+      if (!submission?.id) throw new Error('Start your paper before scheduling it.')
+      if (this.slotMutating) return null
+      this.slotMutating = true
+      try {
+        const record = await saveSubmissionScheduleSlot(submission.id, payload)
+        await this.fetchScheduleSubjects(assessmentId).catch(() => {})
+        this._toast('Subject slot saved', 'Your exam slot has been saved.', 'success')
+        return record
+      } finally {
+        this.slotMutating = false
+      }
     },
 
-    async updateScheduleSubject(assessmentId, slotId, payload) {
-      const scheduleId = this.getAssessmentById(assessmentId)?.schedule_id
-      if (!scheduleId) throw new Error('This assessment has not been scheduled yet.')
-      const record = await apiUpdateScheduleSubject(scheduleId, slotId, payload)
-      this.scheduleSubjects = this.scheduleSubjects.map((slot) => (String(slot.id) === String(slotId) ? record : slot))
-      return record
-    },
-
-    async deleteScheduleSubject(assessmentId, slotId) {
-      const scheduleId = this.getAssessmentById(assessmentId)?.schedule_id
-      if (!scheduleId) throw new Error('This assessment has not been scheduled yet.')
-      await apiDeleteScheduleSubject(scheduleId, slotId)
-      this.scheduleSubjects = this.scheduleSubjects.filter((slot) => String(slot.id) !== String(slotId))
+    async removeMySubmissionSlot(assessmentId) {
+      const submission = this.currentSubmission
+      if (!submission?.id) throw new Error('Start your paper before scheduling it.')
+      if (this.slotMutating) return
+      this.slotMutating = true
+      try {
+        await deleteSubmissionScheduleSlot(submission.id)
+        await this.fetchScheduleSubjects(assessmentId).catch(() => {})
+        this._toast('Subject slot removed', 'Your exam slot has been removed.', 'success')
+      } finally {
+        this.slotMutating = false
+      }
     },
 
     async fetchMySubmission(assessmentId) {
@@ -805,24 +840,30 @@ export const useAssessmentsStore = defineStore('assessments', {
       }
     },
 
-    async fetchSubmissions(assessmentId) {
-      this.loading = true
-      this.error = null
+    // `silent` is for background refreshes (e.g. the schedule drawer's
+    // missing-slots check): no global loading flag, no error toast, and the
+    // error is rethrown so the caller can show its own state.
+    async fetchSubmissions(assessmentId, { silent = false } = {}) {
+      if (!silent) {
+        this.loading = true
+        this.error = null
+      }
       const scheduleId = this.getAssessmentById(assessmentId)?.schedule_id
       if (!scheduleId) {
         this.submissions = []
-        this.loading = false
+        if (!silent) this.loading = false
         return
       }
       try {
         const data = await getSubmissions(scheduleId)
         this.submissions = Array.isArray(data) ? data : (data?.data ?? [])
       } catch (error) {
-        this.error = error?.message || 'Failed to load submissions.'
         this.submissions = []
+        if (silent) throw error
+        this.error = error?.message || 'Failed to load submissions.'
         this._toast('Unable to load submissions', this.error)
       } finally {
-        this.loading = false
+        if (!silent) this.loading = false
       }
     },
 

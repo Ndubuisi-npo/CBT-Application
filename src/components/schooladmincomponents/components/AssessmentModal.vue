@@ -156,7 +156,7 @@ import AppInput from '../../shared/AppInput.vue'
 import AppSelect from '../../shared/AppSelect.vue'
 import AppTextarea from '../../shared/AppTextarea.vue'
 import { useAssessmentsStore } from '../stores/assessments'
-import { toDatetimeLocalInputValue, toDatetimeLocalIsoWithOffset } from '../../../js/lib/helpers'
+import { lagosLocalToDate, lagosLocalToIso, toLagosLocalInput } from '../../../js/lib/slotTime'
 
 const props = defineProps({
   show: { type: Boolean, default: false },
@@ -216,10 +216,10 @@ watch(
       // infer it from the loaded term (if the relation was eager-loaded) —
       // otherwise leave the session picker blank; the term is already set.
       form.sessionId = assessment.term?.academic_session_id ?? assessment.term?.session_id ?? ''
-      form.submissionOpensAt = toDatetimeLocalInputValue(assessment.submission_opens_at ?? assessment.submissionOpensAt)
-      form.submissionClosesAt = toDatetimeLocalInputValue(assessment.submission_closes_at ?? assessment.submissionClosesAt)
-      form.studentStartsAt = toDatetimeLocalInputValue(assessment.student_starts_at ?? assessment.studentStartsAt)
-      form.studentEndsAt = toDatetimeLocalInputValue(assessment.student_ends_at ?? assessment.studentEndsAt)
+      form.submissionOpensAt = toLagosLocalInput(assessment.submission_opens_at ?? assessment.submissionOpensAt)
+      form.submissionClosesAt = toLagosLocalInput(assessment.submission_closes_at ?? assessment.submissionClosesAt)
+      form.studentStartsAt = toLagosLocalInput(assessment.student_starts_at ?? assessment.studentStartsAt)
+      form.studentEndsAt = toLagosLocalInput(assessment.student_ends_at ?? assessment.studentEndsAt)
 
       if (form.classLevelId) await store.fetchClassArms(form.classLevelId)
       if (form.sessionId) await store.fetchTerms(form.sessionId)
@@ -259,7 +259,7 @@ const validate = () => {
   ;['title', 'totalMarks', 'classLevelId', 'sessionId', 'termId'].forEach(validateField)
   errors.studentWindow = ''
   if (form.studentStartsAt && form.studentEndsAt) {
-    if (new Date(form.studentStartsAt).getTime() >= new Date(form.studentEndsAt).getTime()) {
+    if (lagosLocalToDate(form.studentStartsAt)?.getTime() >= lagosLocalToDate(form.studentEndsAt)?.getTime()) {
       errors.studentWindow = 'The student window must start before it ends.'
     }
   }
@@ -284,10 +284,10 @@ const submit = async () => {
         class_level_id: form.classLevelId,
         class_arm_id: form.classArmId || null,
         term_id: form.termId,
-        submission_opens_at: toDatetimeLocalIsoWithOffset(form.submissionOpensAt),
-        submission_closes_at: toDatetimeLocalIsoWithOffset(form.submissionClosesAt),
-        student_starts_at: toDatetimeLocalIsoWithOffset(form.studentStartsAt),
-        student_ends_at: toDatetimeLocalIsoWithOffset(form.studentEndsAt),
+        submission_opens_at: lagosLocalToIso(form.submissionOpensAt),
+        submission_closes_at: lagosLocalToIso(form.submissionClosesAt),
+        student_starts_at: lagosLocalToIso(form.studentStartsAt),
+        student_ends_at: lagosLocalToIso(form.studentEndsAt),
       }
 
   submitting.value = true

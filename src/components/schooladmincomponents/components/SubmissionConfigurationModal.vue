@@ -39,7 +39,7 @@ import { reactive, watch } from 'vue'
 import { X } from 'lucide-vue-next'
 import AppButton from '../../shared/AppButton.vue'
 import AppInput from '../../shared/AppInput.vue'
-import { toDatetimeLocalInputValue, toDatetimeLocalIsoWithOffset } from '../../../js/lib/helpers'
+import { lagosLocalToDate, lagosLocalToIso, toLagosLocalInput } from '../../../js/lib/slotTime'
 
 const props = defineProps({
   show: { type: Boolean, default: false },
@@ -53,9 +53,9 @@ const form = reactive({ question_submission_ends: '', assessment_starts: '', ass
 const errors = reactive({})
 
 const reset = () => {
-  form.question_submission_ends = toDatetimeLocalInputValue(props.assessment?.question_submission_ends)
-  form.assessment_starts = toDatetimeLocalInputValue(props.assessment?.assessment_starts)
-  form.assessment_ends = toDatetimeLocalInputValue(props.assessment?.assessment_ends)
+  form.question_submission_ends = toLagosLocalInput(props.assessment?.question_submission_ends)
+  form.assessment_starts = toLagosLocalInput(props.assessment?.assessment_starts)
+  form.assessment_ends = toLagosLocalInput(props.assessment?.assessment_ends)
   Object.keys(errors).forEach((key) => delete errors[key])
 }
 
@@ -66,9 +66,9 @@ watch(() => [props.show, props.assessment], ([show]) => {
 const submit = () => {
   Object.keys(errors).forEach((key) => delete errors[key])
   if (!form.question_submission_ends) errors.question_submission_ends = 'Required.'
-  const questionEnds = new Date(form.question_submission_ends)
-  const assessmentStarts = new Date(form.assessment_starts)
-  const assessmentEnds = new Date(form.assessment_ends)
+  const questionEnds = lagosLocalToDate(form.question_submission_ends)
+  const assessmentStarts = lagosLocalToDate(form.assessment_starts)
+  const assessmentEnds = lagosLocalToDate(form.assessment_ends)
   if (form.question_submission_ends && form.assessment_starts && assessmentStarts < questionEnds) {
     errors.assessment_starts = 'Must be after question submission ends.'
   }
@@ -77,9 +77,9 @@ const submit = () => {
   }
   if (!Object.keys(errors).length) {
     emit('submit', {
-      question_submission_ends: toDatetimeLocalIsoWithOffset(form.question_submission_ends),
-      assessment_starts: toDatetimeLocalIsoWithOffset(form.assessment_starts),
-      assessment_ends: toDatetimeLocalIsoWithOffset(form.assessment_ends),
+      question_submission_ends: lagosLocalToIso(form.question_submission_ends),
+      assessment_starts: lagosLocalToIso(form.assessment_starts),
+      assessment_ends: lagosLocalToIso(form.assessment_ends),
     })
   }
 }

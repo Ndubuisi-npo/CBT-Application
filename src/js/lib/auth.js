@@ -67,7 +67,7 @@ function persistAuth(authData) {
 }
 
 function normalizeAuthUser(response, fallbackUser = null) {
-  return response?.user ?? response?.admin ?? response ?? fallbackUser
+  return response?.data ?? response?.user ?? response?.admin ?? response?.profile ?? response ?? fallbackUser
 }
 
 function normalizeRole(role) {
@@ -104,13 +104,7 @@ export async function login(credentials) {
     }),
   })
 
-  const user = response.user ?? response.admin ?? response.profile ?? null
   const token = response.token ?? response.access_token ?? response.auth_token ?? null
-  const role = normalizeRole(response.role
-    ?? user?.role?.name
-    ?? user?.role_name
-    ?? user?.role
-    ?? null)
 
   if (!token) {
     throw new Error('Login response did not include an authentication token.')
@@ -119,15 +113,19 @@ export async function login(credentials) {
   const expiresAt = Date.now() + ((response.expires_in || 28800) * 1000)
 
   authState = {
-    user,
+    user: null,
     token,
-    role: role, 
-    tenantSlug: response.tenant_slug || null,
+    role: null,
+    tenantSlug: null,
     expiresAt,
   }
 
   persistAuth(authState)
   setApiToken(authState.token)
+
+  // The login endpoint authenticates and returns a token; /auth/me is the
+  // source of profile, role, tenant, permissions, and assignment data.
+  await refreshAuthUser()
 
   // Reconnect realtime notifications for the newly authenticated user.
   // Dynamic import avoids a static circular dependency, since
@@ -145,9 +143,14 @@ export async function login(credentials) {
 
 export async function refreshAuthUser() {
   const response = await apiFetch('/api/auth/me')
+  const user = normalizeAuthUser(response)
+  if (!user) throw new Error('Profile response did not include a user.')
+  const role = normalizeRole(user?.role?.name ?? user?.role_name ?? user?.role ?? user?.type ?? null)
   authState = {
     ...authState,
-    user: normalizeAuthUser(response, authState.user),
+    user,
+    role,
+    tenantSlug: user?.tenant_handle ?? user?.tenant_slug ?? null,
   }
   persistAuth(authState)
   return authState.user

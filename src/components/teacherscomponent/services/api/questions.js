@@ -156,11 +156,3 @@ export async function getTeacherSubjects(teacherId) {
     throw new Error(extractErrorMessage(error, 'Unable to fetch teacher subjects.'))
   }
 }
-
-export async function getTeacherClasses(teacherId) {
-  try {
-    return await apiFetch(`/api/teachers/${teacherId}/classes`)
-  } catch (error) {
-    throw new Error(extractErrorMessage(error, 'Unable to fetch teacher classes.'))
-  }
-}

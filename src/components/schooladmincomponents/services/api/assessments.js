@@ -171,48 +171,45 @@ export async function deleteSchedule(scheduleId) {
 }
 
 /* --------------------------------------------------------------------------
- * Schedule subjects — the exam calendar (§5.3): per-subject slots inside a
- * schedule's master window. Every approved subject needs one before the
- * schedule can be activated. Not surfaced in the UI yet — wired here so it's
- * ready to hook up.
+ * Schedule subjects — the exam timetable. Admins only READ it; each teacher
+ * places the slot for their own approved submission (schedule must be draft).
+ * The old admin create/update/delete endpoints no longer exist.
  * ------------------------------------------------------------------------ */
 
-export async function getScheduleSubjects(scheduleId) {
-  try {
-    return await apiFetch(`/api/assessment-schedules/${scheduleId}/schedule-subjects`)
-  } catch (error) {
-    throw new Error(extractErrorMessage(error, 'Unable to fetch the exam calendar.'))
-  }
+// Single implementation lives in scheduleSubjects.js (needs apiFetchFull so
+// `meta.daily_cap` / `meta.daily_usage` survive). Resolves { slots, meta }.
+export { getScheduleSubjects } from './scheduleSubjects'
+
+// Slot writes keep `status` and `data` on the thrown error: the UI branches on
+// 403 / 404 / 409 / 422 and reads Laravel field errors from `data.errors`.
+const rethrowSlotError = (error, fallback) => {
+  const wrapped = new Error(extractErrorMessage(error, fallback))
+  wrapped.status = error?.status
+  wrapped.data = error?.data
+  throw wrapped
 }
 
-/** payload: { subject_id, starts_at, ends_at, duration_minutes? } */
-export async function createScheduleSubject(scheduleId, payload) {
+/**
+ * Create-or-move the signed-in teacher's slot (upsert).
+ * payload: { starts_at, ends_at, duration_minutes? } — ISO strings WITH offset.
+ * subject_id is never sent; the backend derives it from the submission.
+ */
+export async function saveSubmissionScheduleSlot(submissionId, payload) {
   try {
-    return await apiFetch(`/api/assessment-schedules/${scheduleId}/schedule-subjects`, {
-      method: 'POST',
+    return await apiFetch(`/api/submissions/${submissionId}/schedule-slot`, {
+      method: 'PUT',
       body: JSON.stringify(payload),
     })
   } catch (error) {
-    throw new Error(extractErrorMessage(error, 'Unable to add subject slot.'))
+    rethrowSlotError(error, 'Unable to save the subject slot.')
   }
 }
 
-export async function updateScheduleSubject(scheduleId, slotId, payload) {
+export async function deleteSubmissionScheduleSlot(submissionId) {
   try {
-    return await apiFetch(`/api/assessment-schedules/${scheduleId}/schedule-subjects/${slotId}`, {
-      method: 'PATCH',
-      body: JSON.stringify(payload),
-    })
+    return await apiFetch(`/api/submissions/${submissionId}/schedule-slot`, { method: 'DELETE' })
   } catch (error) {
-    throw new Error(extractErrorMessage(error, 'Unable to update subject slot.'))
-  }
-}
-
-export async function deleteScheduleSubject(scheduleId, slotId) {
-  try {
-    return await apiFetch(`/api/assessment-schedules/${scheduleId}/schedule-subjects/${slotId}`, { method: 'DELETE' })
-  } catch (error) {
-    throw new Error(extractErrorMessage(error, 'Unable to remove subject slot.'))
+    rethrowSlotError(error, 'Unable to remove the subject slot.')
   }
 }
 

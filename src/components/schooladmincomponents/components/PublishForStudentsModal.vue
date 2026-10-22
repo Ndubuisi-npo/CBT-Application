@@ -55,7 +55,7 @@ import { reactive, ref, watch } from 'vue'
 import { X } from 'lucide-vue-next'
 import AppButton from '../../shared/AppButton.vue'
 import AppInput from '../../shared/AppInput.vue'
-import { toDatetimeLocalIsoWithOffset } from '../../../js/lib/helpers'
+import { lagosLocalToDate, lagosLocalToIso } from '../../../js/lib/slotTime'
 
 const props = defineProps({
   show: { type: Boolean, default: false },
@@ -88,10 +88,10 @@ const validate = () => {
   if (!endsAt.value) errors.endsAt = 'An end date and time is required.'
   if (errors.startsAt || errors.endsAt) return false
 
-  const start = new Date(startsAt.value)
-  const end = new Date(endsAt.value)
-  if (Number.isNaN(start.getTime())) errors.startsAt = 'Enter a valid date and time.'
-  if (Number.isNaN(end.getTime())) errors.endsAt = 'Enter a valid date and time.'
+  const start = lagosLocalToDate(startsAt.value)
+  const end = lagosLocalToDate(endsAt.value)
+  if (!start) errors.startsAt = 'Enter a valid date and time.'
+  if (!end) errors.endsAt = 'Enter a valid date and time.'
   if (errors.startsAt || errors.endsAt) return false
 
   if (end.getTime() <= start.getTime()) {
@@ -104,8 +104,8 @@ const validate = () => {
 const submit = () => {
   if (!validate()) return
   emit('submit', {
-    student_starts_at: toDatetimeLocalIsoWithOffset(startsAt.value),
-    student_ends_at: toDatetimeLocalIsoWithOffset(endsAt.value),
+    student_starts_at: lagosLocalToIso(startsAt.value),
+    student_ends_at: lagosLocalToIso(endsAt.value),
   })
 }
 </script>

@@ -4,7 +4,7 @@ import { createPinia } from 'pinia';
 import App from '../App.vue';
 import router from '../router/index';
 import { initializeApiState } from './lib/api';
-import { initializeAuthState, getAuthRole, getAuthUser } from './lib/auth';
+import { initializeAuthState, getAuthRole, getAuthUser, refreshAuthUser } from './lib/auth';
 import { initializeRealtimeNotifications } from './echoNotifications';
 import { useNotificationStore } from '../components/shared/stores/notifications';
 import '../css/app.css';
@@ -18,7 +18,6 @@ const pinia = createPinia();
 
 app.use(pinia);
 app.use(router);
-app.mount('#app');
 
 // Echo must only ever exist for logged-in users — guests never attempt to
 // connect to private/presence channels. We also explicitly skip this on the
@@ -29,6 +28,10 @@ app.mount('#app');
 const isLoginPage = window.location.pathname === '/login';
 
 if (getAuthUser() && !isLoginPage) {
+  // Refresh every authenticated role with current /auth/me profile data.
+  await refreshAuthUser().catch(() => {
+    // Keep the cached profile available when the profile endpoint is offline.
+  });
   initializeRealtimeNotifications();
 
   // Prime the notification bell for whichever role is logged in (school
@@ -38,3 +41,5 @@ if (getAuthUser() && !isLoginPage) {
     void useNotificationStore().initialize();
   }
 }
+
+app.mount('#app');

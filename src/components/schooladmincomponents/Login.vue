@@ -219,9 +219,10 @@ const authData = await unifiedLogin(form)
     const redirectPath = roleRedirectMap[authData.role] || '/school-admin/dashboard'
     const fullRedirectUrl = buildRedirectUrl(redirectPath)
 
-    const userName = authData.user?.first_name
-      ? `${authData.user.first_name} ${authData.user.last_name || ''}`.trim()
-      : authData.admin?.name || authData.user?.name || 'User'
+    const user = authData.user
+    const userName = user?.first_name
+      ? `${user.first_name} ${user.last_name || ''}`.trim()
+      : user?.name || user?.full_name || 'User'
 
     uiStore.addToast({
       title: 'Welcome back',

@@ -4,7 +4,9 @@
   The tabbed slide-over used from AssessmentSchedulePage.vue to create or
   edit a scheduled assessment for a given calendar day. Mirrors the
   reference implementation's ScheduleDrawer.tsx: three tabs (Details,
-  Submission window, Exam slots) plus a lifecycle-aware footer.
+  Submission window, Exam timetable) plus a lifecycle-aware footer.
+  The exam timetable is READ-ONLY for admins: teachers place their own
+  subject slots (see TeacherAssessmentPage.vue).
 
   Owns its own store calls (assessments + class arms), same as the page
   did before this was split out, so the page stays a thin calendar +
@@ -93,35 +95,116 @@
       <AppButton type="submit" :text="hasSubmissionConfig ? 'Update window' : 'Create window'" variant="primary" :processing="savingSubmission" />
     </form>
 
-    <!-- Exam slots tab -->
+    <!-- Exam timetable tab (read-only) -->
     <div v-if="tab === 'slots'" class="space-y-5">
-      <ul class="space-y-2">
-        <li v-if="!scheduleSubjects.length" class="rounded-xl border border-dashed border-slate-200 px-4 py-6 text-center text-sm text-slate-400">
-          No subject slots yet. Add the first paper below.
-        </li>
-        <li v-for="slot in scheduleSubjects" :key="slot.id" class="flex items-center justify-between gap-3 rounded-xl border border-slate-200 px-4 py-3">
-          <div class="min-w-0">
-            <p class="truncate text-sm font-semibold text-slate-900">{{ subjectName(slot.subject_id ?? slot.subjectId ?? slot.subject?.id) }}</p>
-            <p class="text-xs text-slate-500">{{ formatSlotTime(slot.starts_at) }} – {{ formatSlotTime(slot.ends_at) }}</p>
-          </div>
-          <div class="flex shrink-0 gap-1.5">
-            <AppButton text="Edit" variant="ghost" size="xs" :disabled="assessmentStatus !== 'draft'" @click="editScheduleSubject(slot)" />
-            <AppButton text="Delete" variant="danger" size="xs" :disabled="assessmentStatus !== 'draft'" @click="removeScheduleSubject(slot)" />
-          </div>
-        </li>
-      </ul>
+      <div class="flex items-start gap-2 rounded-xl px-3 py-2.5 text-xs" :class="assessmentStatus === 'draft' ? 'bg-sky-50 text-sky-800' : 'bg-amber-50 text-amber-800'">
+        <Lock v-if="assessmentStatus !== 'draft'" class="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+        <CalendarDays v-else class="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+        <p v-if="assessmentStatus === 'draft'">Teachers place the slot for their own approved subject while the schedule is in draft. You can monitor progress here.</p>
+        <p v-else>This schedule is {{ assessmentStatus }} — the timetable is locked and can no longer change.</p>
+      </div>
 
-      <form class="grid gap-3 border-t border-slate-100 pt-4" @submit.prevent="addScheduleSubject">
-        <AppSelect v-model="slotForm.subject_id" label="Subject" :options="subjectOptions" placeholder="Select subject" required />
-        <ResponsiveFormGrid :cols="2">
-          <AppInput v-model="slotForm.starts_at" type="datetime-local" label="Starts at" required />
-          <AppInput v-model="slotForm.ends_at" type="datetime-local" label="Ends at" required />
-        </ResponsiveFormGrid>
-        <div class="flex gap-2">
-          <AppButton :text="editingSlotId ? 'Update subject slot' : 'Add subject slot'" variant="outline" size="sm" :processing="savingSlot" :disabled="assessmentStatus !== 'draft'" type="submit" />
-          <AppButton v-if="editingSlotId" text="Cancel" variant="ghost" size="sm" type="button" @click="resetSlotForm" />
-        </div>
-      </form>
+      <div v-if="timetableState === 'loading'" class="space-y-2" role="status" aria-label="Loading exam timetable">
+        <div class="h-14 animate-pulse rounded-xl bg-slate-100" />
+        <div class="h-14 animate-pulse rounded-xl bg-slate-100" />
+      </div>
+
+      <div v-else-if="timetableState === 'error'" class="rounded-xl border border-rose-100 bg-rose-50 p-3 text-sm text-rose-700" role="alert">
+        <p>{{ timetableError }}</p>
+        <AppButton class="mt-2" text="Try again" variant="outline" size="xs" @click="refreshTimetable" />
+      </div>
+
+      <template v-else>
+        <!-- Daily capacity summary -->
+        <section aria-labelledby="capacity-heading" class="rounded-2xl border border-slate-200 p-4">
+          <div class="flex items-center justify-between gap-2">
+            <h3 id="capacity-heading" class="text-sm font-semibold text-[#0B1F3A]">Daily capacity</h3>
+            <span class="rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-semibold text-slate-600">
+              {{ dailyCap === null ? 'No daily cap' : `Max ${dailyCap} per day` }}
+            </span>
+          </div>
+          <p class="mt-1 text-xs text-slate-500">
+            {{ dailyCap === null
+              ? 'No daily limit applies to this class level.'
+              : 'How many subjects this class level may sit on one day.' }}
+            Usage counts slots across <span class="font-semibold">all schedules</span> for this class level, not only this one.
+          </p>
+          <ul v-if="usageDays.length" class="mt-3 space-y-2">
+            <li v-for="day in usageDays" :key="day.key">
+              <div class="flex items-center justify-between text-xs">
+                <span class="font-medium text-slate-700">{{ formatDateKey(day.key) }}</span>
+                <span class="tabular-nums" :class="day.full ? 'font-semibold text-rose-600' : 'text-slate-500'">
+                  {{ day.used }}{{ dailyCap === null ? ' scheduled' : ` of ${dailyCap}` }}{{ day.full ? ' · full' : '' }}
+                </span>
+              </div>
+              <div
+                v-if="dailyCap !== null"
+                class="mt-1 h-1.5 overflow-hidden rounded-full bg-slate-100"
+                role="progressbar"
+                :aria-label="`Subject slots used on ${formatDateKey(day.key)}`"
+                :aria-valuemin="0"
+                :aria-valuemax="dailyCap"
+                :aria-valuenow="Math.min(day.used, dailyCap)"
+              >
+                <div class="h-full rounded-full transition-[width] motion-reduce:transition-none" :class="day.full ? 'bg-rose-500' : 'bg-[#0B1F3A]'" :style="{ width: `${day.percent}%` }" />
+              </div>
+            </li>
+          </ul>
+          <p v-else class="mt-3 text-xs text-slate-400">No days are in use yet.</p>
+        </section>
+
+        <!-- Missing slots -->
+        <section aria-labelledby="missing-heading" class="rounded-2xl border p-4" :class="missingSlots.length ? 'border-amber-200 bg-amber-50/60' : 'border-emerald-200 bg-emerald-50/60'">
+          <div class="flex items-center justify-between gap-2">
+            <h3 id="missing-heading" class="text-sm font-semibold text-[#0B1F3A]">Missing slots</h3>
+            <span class="rounded-full px-2.5 py-0.5 text-[11px] font-semibold" :class="missingSlots.length ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'">
+              {{ missingSlots.length }}
+            </span>
+          </div>
+          <p v-if="submissionsError" class="mt-2 text-xs text-amber-800">
+            Couldn’t check approved papers: {{ submissionsError }}
+          </p>
+          <p v-else-if="!missingSlots.length" class="mt-1 flex items-center gap-1.5 text-xs text-emerald-800">
+            <CheckCircle2 class="h-3.5 w-3.5" aria-hidden="true" />
+            All approved subjects have been scheduled.
+          </p>
+          <template v-else>
+            <p class="mt-1 text-xs text-amber-900">These approved subjects still need their teacher to choose a time slot.</p>
+            <ul class="mt-3 space-y-1.5">
+              <li v-for="item in missingSlots" :key="item.id" class="flex items-baseline justify-between gap-3 rounded-xl bg-white px-3 py-2 text-sm">
+                <span class="min-w-0 truncate font-medium text-slate-900">{{ submissionSubjectLabel(item) }}</span>
+                <span class="shrink-0 truncate text-xs text-slate-500">{{ submissionTeacherLabel(item) }}</span>
+              </li>
+            </ul>
+          </template>
+        </section>
+
+        <!-- Timetable -->
+        <section aria-labelledby="timetable-heading">
+          <h3 id="timetable-heading" class="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Timetable</h3>
+          <p v-if="!scheduleSubjects.length" class="rounded-xl border border-dashed border-slate-200 px-4 py-6 text-center text-sm text-slate-400">
+            Teachers schedule their own subjects. No slots placed yet.
+          </p>
+          <div v-else class="space-y-4">
+            <div v-for="day in timetableDays" :key="day.key">
+              <p class="mb-1.5 text-xs font-semibold text-slate-500">{{ formatDateKey(day.key) }}</p>
+              <ul class="space-y-2">
+                <li v-for="slot in day.slots" :key="slot.id" class="rounded-xl border border-slate-200 px-4 py-3">
+                  <div class="flex items-baseline justify-between gap-3">
+                    <p class="min-w-0 truncate text-sm font-semibold text-slate-900">{{ slotSubjectLabel(slot) }}</p>
+                    <span v-if="slot.subject?.code" class="shrink-0 rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-500">{{ slot.subject.code }}</span>
+                  </div>
+                  <p class="mt-0.5 text-xs text-slate-500">
+                    {{ formatSlotTime(slot.starts_at) }} – {{ formatSlotTime(slot.ends_at) }}
+                    <template v-if="formatDuration(slotDurationMinutes(slot))"> · {{ formatDuration(slotDurationMinutes(slot)) }}</template>
+                    <span class="text-slate-400"> · Lagos time</span>
+                  </p>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </section>
+      </template>
     </div>
 
     <template #footer>
@@ -129,9 +212,10 @@
         <div v-if="form.id" class="flex flex-wrap gap-2 sm:mr-auto">
           <AppButton v-if="questionSubmissionStatus === 'open'" text="Close questions" variant="outline" size="sm" :processing="lifecycleBusy" @click="runLifecycle('close')" />
           <AppButton v-if="questionSubmissionStatus === 'closed' && assessmentStatus !== 'complete'" text="Reopen questions" variant="outline" size="sm" :processing="lifecycleBusy" @click="runLifecycle('reopen')" />
-          <AppButton v-if="questionSubmissionStatus === 'closed' && assessmentStatus === 'draft'" text="Activate" variant="success" size="sm" :processing="lifecycleBusy" @click="runLifecycle('activate')" />
+          <AppButton v-if="questionSubmissionStatus === 'closed' && assessmentStatus === 'draft'" text="Activate" variant="success" size="sm" :processing="lifecycleBusy" :disabled="activateBlocked" :aria-describedby="activateHint ? 'activate-hint' : undefined" @click="runLifecycle('activate')" />
           <AppButton v-if="assessmentStatus === 'active'" text="Mark complete" variant="outline" size="sm" :processing="lifecycleBusy" @click="runLifecycle('complete')" />
         </div>
+        <p v-if="activateHint" id="activate-hint" class="text-xs font-medium text-amber-700 sm:mr-2" role="status">{{ activateHint }}</p>
         <AppButton v-if="form.id" text="Teacher submissions" variant="primary" size="sm" :icon="ArrowRight" icon-position="right" @click="goToSubmissions" />
       </div>
     </template>
@@ -141,7 +225,7 @@
 <script setup>
 import { computed, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { ArrowRight, Trash2 } from 'lucide-vue-next'
+import { ArrowRight, CalendarDays, CheckCircle2, Lock, Trash2 } from 'lucide-vue-next'
 import AppBadge from '../../shared/AppBadge.vue'
 import AppButton from '../../shared/AppButton.vue'
 import AppDrawer from '../../shared/AppDrawer.vue'
@@ -152,7 +236,23 @@ import AppTextarea from '../../shared/AppTextarea.vue'
 import ResponsiveFormGrid from '../../shared/ResponsiveFormGrid.vue'
 import { useSchoolAdminClassArmsStore } from '../stores/classArms'
 import { useAssessmentsStore, getAssessmentStatusLabel, getStatusVariant, isQuestionSubmissionClosed } from '../stores/assessments'
-import { getAssessmentWindowState, getEffectiveAssessmentStatus, toDatetimeLocalInputValue, toDatetimeLocalIsoWithOffset } from '../../../js/lib/helpers'
+import { getAssessmentWindowState, getEffectiveAssessmentStatus } from '../../../js/lib/helpers'
+import {
+  computeDayCapacity,
+  formatDateKey,
+  formatDuration,
+  formatSlotTime,
+  getMissingSlotSubmissions,
+  groupSlotsByDay,
+  lagosLocalToDate,
+  lagosLocalToIso,
+  normalizeScheduleSubjectMeta,
+  slotDurationMinutes,
+  slotErrorMessage,
+  slotSubjectId,
+  submissionSubjectId,
+  toLagosLocalInput,
+} from '../../../js/lib/slotTime'
 
 const props = defineProps({
   show: { type: Boolean, default: false },
@@ -169,9 +269,10 @@ const tab = ref('details')
 const savingAssessment = ref(false)
 const savingSubmission = ref(false)
 const deletingSchedule = ref(false)
-const savingSlot = ref(false)
 const lifecycleBusy = ref(false)
-const editingSlotId = ref('')
+const timetableState = ref('idle') // idle | loading | ready | error
+const timetableError = ref('')
+const submissionsError = ref('')
 const saveError = ref('')
 const submissionSaveError = ref('')
 const errors = reactive({})
@@ -184,7 +285,6 @@ const form = reactive({
   class_level_id: '', class_arm_id: '', session_id: '', scheduled_date: '',
 })
 const submission = reactive({ class_level_id: '', question_submission_ends: '', assessment_starts: '', assessment_ends: '' })
-const slotForm = reactive({ subject_id: '', starts_at: '', ends_at: '' })
 
 const classLevelOptions = computed(() => assessmentStore.classLevelOptions)
 const sessionOptions = computed(() => assessmentStore.sessionOptions)
@@ -194,6 +294,29 @@ const hasSchedule = computed(() => !!assessmentStore.selectedAssessment?.schedul
 const hasSubmissionConfig = computed(() => !!assessmentStore.selectedAssessment?.schedule_id)
 const scheduleSubjects = computed(() => assessmentStore.scheduleSubjects)
 const subjectOptions = computed(() => assessmentStore.subjectOptions)
+const dailyCap = computed(() => normalizeScheduleSubjectMeta(assessmentStore.scheduleSubjectMeta).daily_cap)
+const timetableDays = computed(() => groupSlotsByDay(scheduleSubjects.value))
+// Days with usage (any schedule of this class level), soonest first.
+const usageDays = computed(() => {
+  const usage = normalizeScheduleSubjectMeta(assessmentStore.scheduleSubjectMeta).daily_usage
+  return Object.keys(usage)
+    .filter((key) => usage[key] > 0)
+    .sort()
+    .map((key) => {
+      const capacity = computeDayCapacity({ meta: assessmentStore.scheduleSubjectMeta, dateKey: key })
+      return { key, used: capacity.used, full: capacity.cap !== null && capacity.used >= capacity.cap, percent: capacity.percent }
+    })
+})
+const missingSlots = computed(() => getMissingSlotSubmissions(assessmentStore.submissions, scheduleSubjects.value))
+// Activation needs a slot for every approved subject. While the check is
+// loading we hold the button; if it FAILED we don't block (the backend's 409
+// is the real gate) and the Missing slots card says the check couldn't run.
+const activateBlocked = computed(() => timetableState.value === 'loading' || missingSlots.value.length > 0)
+const activateHint = computed(() => {
+  if (missingSlots.value.length) return `${missingSlots.value.length} subject(s) still need a time slot.`
+  if (timetableState.value === 'loading') return 'Checking subject slots…'
+  return ''
+})
 const questionSubmissionStatus = computed(() => (isQuestionSubmissionClosed(assessmentStore.selectedAssessment) ? 'closed' : 'open'))
 const assessmentWindowState = computed(() => getAssessmentWindowState(assessmentStore.selectedAssessment))
 const assessmentWindowLabel = computed(() => ({ upcoming: 'Assessment upcoming', open: 'Assessment open', closed: 'Assessment ended' }[assessmentWindowState.value]))
@@ -204,7 +327,7 @@ const lockedAfterDraft = computed(() => !!form.id && assessmentStatus.value !== 
 const tabs = computed(() => [
   { id: 'details', label: 'Details' },
   { id: 'window', label: 'Submission window', disabled: !form.id },
-  { id: 'slots', label: 'Exam slots', disabled: !hasSubmissionConfig.value },
+  { id: 'slots', label: 'Exam timetable', disabled: !hasSubmissionConfig.value },
 ])
 
 const weekday = computed(() => props.date.toLocaleDateString(undefined, { weekday: 'long' }))
@@ -229,13 +352,44 @@ const loadAssessmentIntoForm = (assessment) => {
   form.session_id = sessionId === '' ? '' : String(sessionId)
   form.scheduled_date = assessment?.scheduled_date || assessment?.scheduledDate || ''
 
-  submission.question_submission_ends = toDatetimeLocalInputValue(assessment?.question_submission_ends)
+  submission.question_submission_ends = toLagosLocalInput(assessment?.question_submission_ends)
   submission.class_level_id = classLevelId === '' ? '' : String(classLevelId)
-  submission.assessment_starts = toDatetimeLocalInputValue(assessment?.assessment_starts)
-  submission.assessment_ends = toDatetimeLocalInputValue(assessment?.assessment_ends)
+  submission.assessment_starts = toLagosLocalInput(assessment?.assessment_starts)
+  submission.assessment_ends = toLagosLocalInput(assessment?.assessment_ends)
 }
 
-const resetSlotForm = () => { editingSlotId.value = ''; slotForm.subject_id = ''; slotForm.starts_at = ''; slotForm.ends_at = '' }
+/** Reloads the read-only timetable plus the approved papers needed for the missing-slots check. */
+const refreshTimetable = async () => {
+  const id = form.id
+  if (!id || !assessmentStore.selectedAssessment?.schedule_id) {
+    timetableState.value = 'idle'
+    return
+  }
+  timetableState.value = 'loading'
+  timetableError.value = ''
+  submissionsError.value = ''
+  const [slotsResult, submissionsResult] = await Promise.allSettled([
+    assessmentStore.fetchScheduleSubjects(id),
+    assessmentStore.fetchSubmissions(id, { silent: true }),
+  ])
+  if (form.id !== id) return // drawer moved on to another assessment
+  if (submissionsResult.status === 'rejected') {
+    submissionsError.value = slotErrorMessage(submissionsResult.reason, 'Unable to load teacher submissions.')
+  }
+  if (slotsResult.status === 'rejected') {
+    timetableError.value = slotErrorMessage(slotsResult.reason, 'Unable to load the exam timetable.')
+    timetableState.value = 'error'
+    return
+  }
+  timetableState.value = 'ready'
+}
+
+const slotSubjectLabel = (slot) => slot.subject?.name || subjectName(slotSubjectId(slot)) || 'Subject'
+const submissionSubjectLabel = (item) => item.subject?.name || subjectName(submissionSubjectId(item)) || item.title || 'Subject'
+const submissionTeacherLabel = (item) => {
+  const teacher = item.teacher || {}
+  return `${teacher.first_name || teacher.firstName || ''} ${teacher.last_name || teacher.lastName || ''}`.trim() || teacher.name || ''
+}
 
 watch(
   () => [props.show, props.assessment, props.date],
@@ -244,11 +398,11 @@ watch(
     tab.value = 'details'
     resetErrors()
     resetSubmissionErrors()
-    resetSlotForm()
+    timetableState.value = 'idle'
     if (assessment) {
       assessmentStore.selectAssessment(assessment.id)
       loadAssessmentIntoForm(assessment)
-      await assessmentStore.fetchScheduleSubjects(assessment.id).catch(() => {})
+      await refreshTimetable()
     } else {
       assessmentStore.selectAssessment(null)
       loadAssessmentIntoForm({ scheduled_date: date })
@@ -258,6 +412,11 @@ watch(
   },
   { immediate: true }
 )
+
+// Teachers may place slots while the drawer is open — re-check whenever the timetable tab is opened.
+watch(tab, (value) => {
+  if (value === 'slots' && props.show && timetableState.value !== 'loading') refreshTimetable()
+})
 
 const onLevelChange = async (value) => {
   form.class_arm_id = ''
@@ -278,9 +437,9 @@ const validateSubmission = () => {
   resetSubmissionErrors()
   if (!submission.question_submission_ends) submissionErrors.question_submission_ends = 'This field is required.'
   if (!submission.class_level_id) submissionErrors.class_level_id = 'Class level is required.'
-  const qEnd = new Date(submission.question_submission_ends)
-  const aStart = new Date(submission.assessment_starts)
-  const aEnd = new Date(submission.assessment_ends)
+  const qEnd = lagosLocalToDate(submission.question_submission_ends)
+  const aStart = lagosLocalToDate(submission.assessment_starts)
+  const aEnd = lagosLocalToDate(submission.assessment_ends)
   if (submission.question_submission_ends && submission.assessment_starts && aStart < qEnd) {
     submissionErrors.assessment_starts = 'Assessment start must be after question submission ends.'
   }
@@ -327,13 +486,13 @@ const saveSubmissionConfig = async () => {
     await assessmentStore.saveSubmissionConfiguration(form.id, {
       class_level_id: submission.class_level_id,
       class_arm_id: form.class_arm_id,
-      question_submission_ends: toDatetimeLocalIsoWithOffset(submission.question_submission_ends),
-      assessment_starts: toDatetimeLocalIsoWithOffset(submission.assessment_starts),
-      assessment_ends: toDatetimeLocalIsoWithOffset(submission.assessment_ends),
+      question_submission_ends: lagosLocalToIso(submission.question_submission_ends),
+      assessment_starts: lagosLocalToIso(submission.assessment_starts),
+      assessment_ends: lagosLocalToIso(submission.assessment_ends),
       question_submission_status: 'open',
       assessment_status: 'pending',
     })
-    await assessmentStore.fetchScheduleSubjects(form.id).catch(() => {})
+    await refreshTimetable()
     emit('saved', assessmentStore.selectedAssessment)
     tab.value = 'slots'
   } catch (error) {
@@ -343,64 +502,7 @@ const saveSubmissionConfig = async () => {
   }
 }
 
-const subjectName = (id) => subjectOptions.value.find((option) => String(option.value) === String(id))?.label || 'Subject'
-const formatSlotTime = (value) => {
-  if (!value) return '—'
-  const timestamp = value instanceof Date
-    ? value
-    : typeof value === 'string' && !/(?:Z|[+-]\d{2}:?\d{2})$/i.test(value)
-      ? `${value}Z`
-      : value
-  const date = new Date(timestamp)
-  if (Number.isNaN(date.getTime())) return '—'
-
-  return new Intl.DateTimeFormat('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true,
-      timeZone: 'Africa/Lagos',
-    }).format(date)
-}
-
-const addScheduleSubject = async () => {
-  if (!form.id || !slotForm.subject_id) return
-  savingSlot.value = true
-  try {
-    if (editingSlotId.value) {
-      await assessmentStore.updateScheduleSubject(form.id, editingSlotId.value, {
-        starts_at: toDatetimeLocalIsoWithOffset(slotForm.starts_at),
-        ends_at: toDatetimeLocalIsoWithOffset(slotForm.ends_at),
-      })
-    } else {
-      await assessmentStore.createScheduleSubject(form.id, {
-        subject_id: slotForm.subject_id,
-        starts_at: toDatetimeLocalIsoWithOffset(slotForm.starts_at),
-        ends_at: toDatetimeLocalIsoWithOffset(slotForm.ends_at),
-      })
-    }
-    resetSlotForm()
-  } catch (error) {
-    saveError.value = error?.message || 'Unable to add subject slot.'
-  } finally {
-    savingSlot.value = false
-  }
-}
-
-const editScheduleSubject = (slot) => {
-  editingSlotId.value = slot.id
-  slotForm.subject_id = slot.subject_id ?? slot.subjectId ?? slot.subject?.id ?? ''
-  slotForm.starts_at = assessmentStore.formatDateTimeValue(slot.starts_at)
-  slotForm.ends_at = assessmentStore.formatDateTimeValue(slot.ends_at)
-}
-
-const removeScheduleSubject = async (slot) => {
-  if (!window.confirm('Delete this subject slot?')) return
-  try {
-    await assessmentStore.deleteScheduleSubject(form.id, slot.id)
-  } catch (error) {
-    saveError.value = error?.message || 'Unable to delete subject slot.'
-  }
-}
+const subjectName = (id) => subjectOptions.value.find((option) => String(option.value) === String(id))?.label || ''
 
 const runLifecycle = async (action) => {
   if (!form.id) return
@@ -409,12 +511,13 @@ const runLifecycle = async (action) => {
     if (action === 'close') await assessmentStore.closeSubmissions(form.id)
     if (action === 'reopen') {
       await assessmentStore.reopenSubmissions(form.id, {
-        question_submission_ends: toDatetimeLocalIsoWithOffset(submission.question_submission_ends),
+        question_submission_ends: lagosLocalToIso(submission.question_submission_ends),
       })
     }
     if (action === 'activate') await assessmentStore.activateAssessment(form.id)
     if (action === 'complete') await assessmentStore.completeAssessment(form.id)
     emit('saved', assessmentStore.selectedAssessment)
+    if (action === 'close' || action === 'reopen') await refreshTimetable()
   } catch (error) {
     saveError.value = error?.message || 'Unable to update assessment lifecycle.'
   } finally {

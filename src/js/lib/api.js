@@ -96,7 +96,12 @@ export function getTenantHandle(hostname) {
   return handle && !handle.includes('.') && handle !== 'www' ? handle : null
 }
 
-export async function apiFetch(path, options = {}) {
+/**
+ * Shared request core for apiFetch / apiFetchFull: auth + tenant headers,
+ * timeout, 401 handling and error construction live here once. Resolves with
+ * the parsed response body, untouched (no envelope unwrapping).
+ */
+async function apiRequest(path, options = {}) {
   const tenantHandle = getTenantHandle()
   const baseUrl = tenantHandle ? window.location.origin : API_BASE_URL
 
@@ -200,7 +205,21 @@ export async function apiFetch(path, options = {}) {
     throw error
   }
 
+  return data
+}
+
+/** Unwraps the { success, message, data } envelope. Drops `meta` — use apiFetchFull when you need it. */
+export async function apiFetch(path, options = {}) {
+  const data = await apiRequest(path, options)
   return data?.data ?? data
+}
+
+/**
+ * Same request/auth/error behaviour as apiFetch, but returns the WHOLE JSON
+ * payload ({ success, message, data, meta }) instead of unwrapping `data`.
+ */
+export async function apiFetchFull(path, options = {}) {
+  return await apiRequest(path, options)
 }
 
 export async function unauthenticatedFetch(path, options = {}) {

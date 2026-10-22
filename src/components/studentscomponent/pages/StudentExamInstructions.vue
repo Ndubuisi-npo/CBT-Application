@@ -138,7 +138,7 @@ import { Maximize } from 'lucide-vue-next'
 import AppButton from '../../shared/AppButton.vue'
 import LeaveExamDialog from '../../shared/LeaveExamDialog.vue'
 import { getStudentExam, startStudentExam } from '../services/api/studentExams'
-import { fmtDateTime } from '../../../js/lib/helpers'
+import { formatSlotDateTime } from '../../../js/lib/slotTime'
 import { useSchoolAdminUiStore } from '../../schooladmincomponents/stores/ui'
 import {
   disableProtection,
@@ -206,8 +206,8 @@ const formattedStartError = computed(() => {
   return startError.value.replace(
     /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})?/g,
     (match) => {
-      const formatted = fmtDateTime(match)
-      return formatted || match
+      const formatted = formatSlotDateTime(match)
+      return formatted === '—' ? match : formatted
     }
   )
 })

@@ -12,10 +12,10 @@ export function useSuperAdminAuth() {
 
     try {
       const response = await loginSuperAdmin(payload)
-      user.value = response.user ?? response.admin ?? null
       token.value = response.token ?? response.access_token ?? ''
       setApiToken(token.value)
-      return response
+      user.value = await fetchCurrentUser()
+      return { ...response, user: user.value, role: user.value?.role ?? user.value?.type }
     } finally {
       loading.value = false
     }
@@ -24,7 +24,8 @@ export function useSuperAdminAuth() {
   const fetchCurrentUser = async () => {
     loading.value = true
     try {
-      user.value = await getCurrentSuperAdmin()
+      const response = await getCurrentSuperAdmin()
+      user.value = response?.data ?? response?.user ?? response?.admin ?? response
       return user.value
     } finally {
       loading.value = false

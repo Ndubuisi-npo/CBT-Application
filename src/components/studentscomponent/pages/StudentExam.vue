@@ -344,7 +344,7 @@ import { useSchoolAdminUiStore } from '../../schooladmincomponents/stores/ui'
 import { getAuthUser } from '../../../js/lib/auth'
 import { enableProtection, disableProtection, protectionState, reenterFullscreen, dismissLeaveConfirm } from '../../../js/examProtection'
 import { leaveExam } from '../../../js/examProtection/leaveExam'
-import { fmtDateTime } from '../../../js/lib/helpers'
+import { formatSlotDateTime } from '../../../js/lib/slotTime'
 import { normalizeQuestionText } from '../../../js/lib/questionText'
 import { isChoiceBased, isFillInBlank, isMultipleAnswer, QUESTION_TYPE_LABELS, buildAnswerPayload } from '../../../types/question'
 import katex from 'katex'
@@ -415,7 +415,10 @@ const formattedError = computed(() => {
   if (!error.value) return ''
   return error.value.replace(
     /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})?/g,
-    (match) => fmtDateTime(match) || match
+    (match) => {
+      const formatted = formatSlotDateTime(match)
+      return formatted === '—' ? match : formatted
+    }
   )
 })
 
