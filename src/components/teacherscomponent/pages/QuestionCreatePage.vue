@@ -1,5 +1,11 @@
 <template>
-  <div class="space-y-6">
+  <PageLoadingScreen
+    v-if="pageLoading"
+    :title="isEditing ? 'Loading question' : 'Preparing question form'"
+    description="Loading class and subject information."
+  />
+
+  <div v-else class="space-y-6">
 
     <!-- Breadcrumb + header -->
     <div>
@@ -480,6 +486,7 @@ import { AlertCircle, Check, LoaderCircle, Plus, Send, Trash2 } from 'lucide-vue
 import { useTeacherExamsStore } from '../stores/exams'
 import { useTeachersQuestionsStore } from '../stores/questions'
 import { useSchoolAdminUiStore } from '../../schooladmincomponents/stores/ui'
+import PageLoadingScreen from '../../shared/PageLoadingScreen.vue'
 import { getAuthUser } from '../../../js/lib/auth'
 import { getClassLevels, getSubjects } from '../services/api/exams'
 import {
@@ -518,6 +525,7 @@ const questionsStore = useTeachersQuestionsStore()
 const uiStore = useSchoolAdminUiStore()
 
 const saving = ref(false)
+const pageLoading = ref(true)
 const error = ref(null)
 const classLevels = ref([])
 const classArms = ref([])
@@ -767,18 +775,14 @@ watch(showMathKeyboard, (isVisible) => {
 // ── Metadata loading ─────────────────────────────────────────────────────────
 
 const loadMetadata = async () => {
-  try {
-    const [classLevelsResponse, subjectsResponse] = await Promise.all([getClassLevels(), getSubjects()])
-    classLevels.value = unwrapMetadataList(classLevelsResponse, 'class_levels')
-    subjects.value = unwrapMetadataList(subjectsResponse, 'subjects')
+  const [classLevelsResponse, subjectsResponse] = await Promise.all([getClassLevels(), getSubjects()])
+  classLevels.value = unwrapMetadataList(classLevelsResponse, 'class_levels')
+  subjects.value = unwrapMetadataList(subjectsResponse, 'subjects')
 
-    const teacherLevel = classLevels.value.find((level) => String(level.id) === String(teacherClassLevel.value?.id))
-    if (teacherLevel && !form.class_level_ids.length) {
-      form.class_level_ids = [teacherLevel.id]
-      await onClassLevelChange()
-    }
-  } catch (e) {
-    console.error('Failed to load metadata', e)
+  const teacherLevel = classLevels.value.find((level) => String(level.id) === String(teacherClassLevel.value?.id))
+  if (teacherLevel && !form.class_level_ids.length) {
+    form.class_level_ids = [teacherLevel.id]
+    await onClassLevelChange()
   }
 }
 
@@ -931,10 +935,10 @@ const submitQuestion = async (status) => {
 // ── Lifecycle ─────────────────────────────────────────────────────────────────
 
 onMounted(async () => {
-  await loadMetadata()
-
-  if (isEditing.value) {
-    try {
+  pageLoading.value = true
+  try {
+    await loadMetadata()
+    if (isEditing.value) {
       const existing = questionsStore.questions.find((q) => String(q.id) === String(questionId.value))
       if (existing) {
         form.id = existing.id
@@ -971,9 +975,11 @@ onMounted(async () => {
 
         if (form.class_level_ids.length) await onClassLevelChange()
       }
-    } catch (e) {
-      console.error('Could not pre-fill question', e)
     }
+  } catch (e) {
+    error.value = e?.message || 'Unable to load question form data.'
+  } finally {
+    pageLoading.value = false
   }
 })
 

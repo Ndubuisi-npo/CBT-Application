@@ -1,5 +1,8 @@
 <template>
   <div class="space-y-6">
+    <p v-if="pageLoadError" class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700" role="alert">
+      {{ pageLoadError }}
+    </p>
     <!-- Hero -->
     <section class="overflow-hidden rounded-3xl bg-[#0B1F3A] p-7 text-white shadow-sm sm:p-9">
       <div class="flex flex-wrap items-end justify-between gap-8">
@@ -178,6 +181,7 @@ const router = useRouter()
 const store = useAssessmentsStore()
 
 const loading = ref(true)
+const pageLoadError = ref('')
 // Keyed by assessment id -> the teacher's own submission for currently-open
 // assessments. No batch "my submissions" endpoint exists on the backend
 // (only per-schedule getMySubmission), so this — and therefore every stat
@@ -273,18 +277,24 @@ const goTo = (path) => router.push(path)
 
 onMounted(async () => {
   loading.value = true
-  const snapshot = await loadTeacherDashboardData(getAuthUser(), getTenantHandle())
-  if (snapshot) {
-    studentCount.value = snapshot.studentCount ?? '—'
-    mySubmissions.value = snapshot.mySubmissions || {}
-  } else {
-    const fallback = await preloadTeacherDashboardData(getAuthUser(), getTenantHandle())
-    if (fallback) {
-      studentCount.value = fallback.studentCount ?? '—'
-      mySubmissions.value = fallback.mySubmissions || {}
+  pageLoadError.value = ''
+  try {
+    const snapshot = await loadTeacherDashboardData(getAuthUser(), getTenantHandle())
+    if (snapshot) {
+      studentCount.value = snapshot.studentCount ?? '—'
+      mySubmissions.value = snapshot.mySubmissions || {}
+    } else {
+      const fallback = await preloadTeacherDashboardData(getAuthUser(), getTenantHandle())
+      if (fallback) {
+        studentCount.value = fallback.studentCount ?? '—'
+        mySubmissions.value = fallback.mySubmissions || {}
+      }
     }
+  } catch (error) {
+    pageLoadError.value = error?.message || 'Unable to load your dashboard data.'
+  } finally {
+    studentsLoading.value = false
+    loading.value = false
   }
-  studentsLoading.value = false
-  loading.value = false
 })
 </script>

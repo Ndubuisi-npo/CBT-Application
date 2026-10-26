@@ -1,5 +1,16 @@
 <template>
-  <div class="space-y-6">
+  <PageLoadingScreen
+    v-if="pageLoading"
+    title="Loading assessment schedule"
+    description="Preparing the calendar and scheduled assessments."
+  />
+
+  <div v-else class="space-y-6">
+    <div v-if="pageLoadError" class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700" role="alert">
+      <span>{{ pageLoadError }}</span>
+      <AppButton text="Try again" variant="outline" size="xs" @click="loadPage" />
+    </div>
+
     <AppPageHeader
       title="Assessment schedule"
       subtitle="Plan assessments on the calendar, then move straight into submission windows and exam slots."
@@ -210,6 +221,7 @@ import AppBadge from '../../shared/AppBadge.vue'
 import AppButton from '../../shared/AppButton.vue'
 import AppEmptyState from '../../shared/AppEmptyState.vue'
 import AppPageHeader from '../../shared/AppPageHeader.vue'
+import PageLoadingScreen from '../../shared/PageLoadingScreen.vue'
 import AssessmentScheduleDrawer from '../components/AssessmentScheduleDrawer.vue'
 import { useSchoolAdminSessionsStore } from '../stores/sessions'
 import { useAssessmentsStore, getAssessmentStatusLabel, getStatusVariant, isQuestionSubmissionClosed } from '../stores/assessments'
@@ -222,6 +234,8 @@ const router = useRouter()
 const assessmentStore = useAssessmentsStore()
 const sessionsStore = useSchoolAdminSessionsStore()
 const notificationStore = useNotificationStore()
+const pageLoading = ref(true)
+const pageLoadError = ref('')
 
 const today = new Date()
 const weekdays = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']
@@ -410,13 +424,25 @@ const handleSaved = (record) => {
   if (!drawerOpen.value && record) drawerAssessment.value = record
 }
 
-onMounted(async () => {
-  await Promise.all([
-    sessionsStore.fetchSessions().catch(() => {}),
-    assessmentStore.fetchRefData(),
-    assessmentStore.fetchAssessments(),
-  ])
-  assessmentStore.setCurrentMonth(new Date())
-  if (!assessmentStore.selectedDate) assessmentStore.selectDate(today)
-})
+const loadPage = async () => {
+  pageLoading.value = true
+  pageLoadError.value = ''
+  try {
+    const [, refDataErrors] = await Promise.all([
+      sessionsStore.fetchSessions(),
+      assessmentStore.fetchRefData(),
+      assessmentStore.fetchAssessments(),
+    ])
+    if (refDataErrors.length) throw refDataErrors[0]
+    if (assessmentStore.error) throw new Error(assessmentStore.error)
+    assessmentStore.setCurrentMonth(new Date())
+    if (!assessmentStore.selectedDate) assessmentStore.selectDate(today)
+  } catch (error) {
+    pageLoadError.value = error?.message || String(error) || 'Unable to load the assessment schedule.'
+  } finally {
+    pageLoading.value = false
+  }
+}
+
+onMounted(loadPage)
 </script>

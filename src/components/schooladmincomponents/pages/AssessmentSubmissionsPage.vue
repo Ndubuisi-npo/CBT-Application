@@ -1,5 +1,16 @@
 <template>
-  <div class="space-y-6">
+  <PageLoadingScreen
+    v-if="pageLoading"
+    title="Loading assessment submissions"
+    description="Fetching assessments and class information."
+  />
+
+  <div v-else class="space-y-6">
+    <div v-if="pageLoadError" class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700" role="alert">
+      <span>{{ pageLoadError }}</span>
+      <AppButton text="Try again" variant="outline" size="xs" @click="loadPage" />
+    </div>
+
     <AppPageHeader
       title="Assessment submissions"
       subtitle="Review scheduled assessments, set their submission windows, and open the teacher papers waiting on you."
@@ -129,6 +140,7 @@ import AppEmptyState from '../../shared/AppEmptyState.vue'
 import AppInput from '../../shared/AppInput.vue'
 import AppPageHeader from '../../shared/AppPageHeader.vue'
 import AppSelect from '../../shared/AppSelect.vue'
+import PageLoadingScreen from '../../shared/PageLoadingScreen.vue'
 import ResponsiveDataCard from '../../shared/ResponsiveDataCard.vue'
 import SubmissionConfigurationModal from '../components/SubmissionConfigurationModal.vue'
 import { fmtDateTime } from '../../../js/lib/helpers'
@@ -140,6 +152,8 @@ const route = useRoute()
 const router = useRouter()
 const store = useAssessmentsStore()
 const notificationStore = useNotificationStore()
+const pageLoading = ref(true)
+const pageLoadError = ref('')
 const saving = ref(false)
 const saveError = ref('')
 const showSubmissionModal = ref(false)
@@ -225,11 +239,23 @@ watch(selectedAssessment, (assessment) => {
   store.selectAssessment(assessment.id)
 }, { immediate: true })
 
-onMounted(async () => {
-  await Promise.all([store.fetchRefData(), store.fetchAssessments()])
-  if (route.params.assessmentId) {
-    const assessment = store.getAssessmentById(route.params.assessmentId)
-    if (assessment) editAssessment(assessment)
+const loadPage = async () => {
+  pageLoading.value = true
+  pageLoadError.value = ''
+  try {
+    const [refDataErrors] = await Promise.all([store.fetchRefData(), store.fetchAssessments()])
+    if (refDataErrors.length) throw refDataErrors[0]
+    if (store.error) throw new Error(store.error)
+    if (route.params.assessmentId) {
+      const assessment = store.getAssessmentById(route.params.assessmentId)
+      if (assessment) editAssessment(assessment)
+    }
+  } catch (error) {
+    pageLoadError.value = error?.message || String(error) || 'Unable to load assessment submissions.'
+  } finally {
+    pageLoading.value = false
   }
-})
+}
+
+onMounted(loadPage)
 </script>
