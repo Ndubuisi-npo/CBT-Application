@@ -184,7 +184,7 @@ export const formatSlotDate = (value) => {
 /** Label for a "YYYY-MM-DD" key without any timezone shifting. */
 export const formatDateKey = (key) => {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(key || ''))
-  if (!match) return key || '—'
+  if (!match) return key === 'unknown' ? 'Date not available' : key || '—'
   const [year, month, day] = match.slice(1).map(Number)
   return new Intl.DateTimeFormat('en-US', {
     weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC',
@@ -197,11 +197,52 @@ export const formatDateKey = (key) => {
 
 export const slotSubjectId = (slot) => slot?.subject_id ?? slot?.subjectId ?? slot?.subject?.id ?? null
 
+const slotDateTime = (slot, datetimeKeys, timeKeys) => {
+  const value = datetimeKeys.map((key) => slot?.[key]).find((item) => item !== null && item !== undefined && item !== '')
+  const normalizedValue = typeof value === 'string'
+    ? value.replace(/^(\d{4}-\d{2}-\d{2})\s+/, '$1T')
+    : value
+  const parsed = parseSlotInstant(normalizedValue)
+  if (parsed) return parsed
+
+  const dateValue = [
+    slot?.slot_date,
+    slot?.slotDate,
+    slot?.scheduled_date,
+    slot?.scheduledDate,
+    slot?.assessment_date,
+    slot?.exam_date,
+    slot?.date,
+  ].find((item) => item !== null && item !== undefined && item !== '')
+  const date = typeof dateValue === 'string' ? dateValue.slice(0, 10) : ''
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return null
+
+  const timePattern = /^\d{2}:\d{2}(?::\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})?)?$/
+  const time = (typeof value === 'string' && timePattern.test(value) ? value : null)
+    ?? timeKeys.map((key) => slot?.[key]).find((item) => item !== null && item !== undefined && item !== '')
+  if (typeof time !== 'string' || !timePattern.test(time)) return null
+  return parseSlotInstant(`${date}T${time}`)
+}
+
+/** Slot start as an instant, accepting API datetime or date/time field variants. */
+export const slotStartInstant = (slot) => slotDateTime(
+  slot,
+  ['starts_at', 'startsAt', 'start_at', 'startAt', 'start_datetime', 'startDateTime', 'scheduled_start'],
+  ['start_time', 'startTime', 'start']
+)
+
+/** Slot end as an instant, accepting API datetime or date/time field variants. */
+export const slotEndInstant = (slot) => slotDateTime(
+  slot,
+  ['ends_at', 'endsAt', 'end_at', 'endAt', 'end_datetime', 'endDateTime', 'scheduled_end'],
+  ['end_time', 'endTime', 'end']
+)
+
 export const slotDurationMinutes = (slot) => {
   const explicit = Number(slot?.duration_minutes ?? slot?.durationMinutes)
   if (Number.isFinite(explicit) && explicit > 0) return explicit
-  const start = parseSlotInstant(slot?.starts_at)
-  const end = parseSlotInstant(slot?.ends_at)
+  const start = slotStartInstant(slot)
+  const end = slotEndInstant(slot)
   if (!start || !end) return null
   const minutes = Math.round((end.getTime() - start.getTime()) / 60000)
   return minutes > 0 ? minutes : null
@@ -219,8 +260,8 @@ export const formatDuration = (minutes) => {
 
 export const sortSlots = (slots) =>
   [...(Array.isArray(slots) ? slots : [])].sort((a, b) => {
-    const left = parseSlotInstant(a?.starts_at)?.getTime() ?? Infinity
-    const right = parseSlotInstant(b?.starts_at)?.getTime() ?? Infinity
+    const left = slotStartInstant(a)?.getTime() ?? Infinity
+    const right = slotStartInstant(b)?.getTime() ?? Infinity
     return left - right
   })
 
@@ -228,7 +269,7 @@ export const sortSlots = (slots) =>
 export const groupSlotsByDay = (slots) => {
   const groups = new Map()
   for (const slot of sortSlots(slots)) {
-    const key = toLagosDateKey(slot.starts_at) || 'unknown'
+    const key = toLagosDateKey(slotStartInstant(slot)) || 'unknown'
     if (!groups.has(key)) groups.set(key, [])
     groups.get(key).push(slot)
   }
@@ -275,7 +316,7 @@ export const normalizeScheduleSubjectMeta = (meta) => {
 export const computeDayCapacity = ({ meta, dateKey, ownSlot = null }) => {
   const { daily_cap: cap, daily_usage: usage } = normalizeScheduleSubjectMeta(meta)
   const used = dateKey ? (usage[dateKey] ?? 0) : 0
-  const ownOnThisDay = !!ownSlot && !!dateKey && toLagosDateKey(ownSlot.starts_at) === dateKey
+  const ownOnThisDay = !!ownSlot && !!dateKey && toLagosDateKey(slotStartInstant(ownSlot)) === dateKey
   const othersUsed = Math.max(0, used - (ownOnThisDay ? 1 : 0))
   const unlimited = cap === null
   const full = !unlimited && !!dateKey && othersUsed >= cap

@@ -192,10 +192,10 @@
                 <li v-for="slot in day.slots" :key="slot.id" class="rounded-xl border border-slate-200 px-4 py-3">
                   <div class="flex items-baseline justify-between gap-3">
                     <p class="min-w-0 truncate text-sm font-semibold text-slate-900">{{ slotSubjectLabel(slot) }}</p>
-                    <span v-if="slot.subject?.code" class="shrink-0 rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-500">{{ slot.subject.code }}</span>
+                    <span v-if="slot.subject?.code || slot.subject_code || slot.subjectCode" class="shrink-0 rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-500">{{ slot.subject?.code || slot.subject_code || slot.subjectCode }}</span>
                   </div>
                   <p class="mt-0.5 text-xs text-slate-500">
-                    {{ formatSlotTime(slot.starts_at) }} – {{ formatSlotTime(slot.ends_at) }}
+                    {{ formatSlotTime(slotStartInstant(slot)) }} – {{ formatSlotTime(slotEndInstant(slot)) }}
                     <template v-if="formatDuration(slotDurationMinutes(slot))"> · {{ formatDuration(slotDurationMinutes(slot)) }}</template>
                     <span class="text-slate-400"> · Lagos time</span>
                   </p>
@@ -248,7 +248,9 @@ import {
   lagosLocalToIso,
   normalizeScheduleSubjectMeta,
   slotDurationMinutes,
+  slotEndInstant,
   slotErrorMessage,
+  slotStartInstant,
   slotSubjectId,
   submissionSubjectId,
   toLagosLocalInput,
@@ -384,7 +386,7 @@ const refreshTimetable = async () => {
   timetableState.value = 'ready'
 }
 
-const slotSubjectLabel = (slot) => slot.subject?.name || subjectName(slotSubjectId(slot)) || 'Subject'
+const slotSubjectLabel = (slot) => slot.subject?.name || slot.subject_name || slot.subjectName || subjectName(slotSubjectId(slot)) || 'Subject'
 const submissionSubjectLabel = (item) => item.subject?.name || subjectName(submissionSubjectId(item)) || item.title || 'Subject'
 const submissionTeacherLabel = (item) => {
   const teacher = item.teacher || {}

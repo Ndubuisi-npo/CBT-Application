@@ -6,6 +6,7 @@ import {
   lagosLocalToIso, toLagosLocalInput, toLagosDateKey, toLagosTimeInput, addMinutesToLagosLocal,
   formatSlotTime, formatSlotDate, formatSlotDateTime, computeDayCapacity, normalizeScheduleSubjectMeta,
   getMissingSlotSubmissions, groupSlotsByDay, slotDurationMinutes, slotErrorMessage, firstFieldError,
+  slotStartInstant, slotEndInstant,
   lagosLocalToDate, lagosLocalToUtcIso, formatDuration, parseSlotInstant,
 } from '../slotTime.js'
 import {
@@ -209,6 +210,34 @@ test('groupSlotsByDay sorts by time and groups by Lagos day', () => {
     { id: 'c', starts_at: '2026-09-08T10:00:00Z' },
   ])
   assert.deepEqual(groups.map((g) => [g.key, g.slots.map((s) => s.id)]), [['2026-09-08', ['a', 'c']], ['2026-09-09', ['b']]])
+})
+
+test('slot date and time field variants resolve real Lagos instants', () => {
+  const slot = {
+    date: '2026-10-26',
+    start_time: '08:25:00Z',
+    end_time: '08:32:00Z',
+    duration_minutes: 7,
+  }
+  assert.equal(slotStartInstant(slot)?.toISOString(), '2026-10-26T08:25:00.000Z')
+  assert.equal(slotEndInstant(slot)?.toISOString(), '2026-10-26T08:32:00.000Z')
+  assert.equal(formatSlotTime(slotStartInstant(slot)), '09:25 AM')
+  assert.equal(toLagosDateKey(slotStartInstant(slot)), '2026-10-26')
+  assert.equal(groupSlotsByDay([slot])[0].key, '2026-10-26')
+  assert.equal(slotDurationMinutes(slot), 7)
+})
+
+test('slot date and local clock field variants resolve as Lagos wall time', () => {
+  const slot = { scheduled_date: '2026-10-26', startTime: '09:25:00', endTime: '09:32:00' }
+  assert.equal(slotStartInstant(slot)?.toISOString(), '2026-10-26T08:25:00.000Z')
+  assert.equal(slotEndInstant(slot)?.toISOString(), '2026-10-26T08:32:00.000Z')
+  assert.equal(slotDurationMinutes(slot), 7)
+})
+
+test('slot SQL datetime fields are treated as Lagos wall time when offset is absent', () => {
+  const slot = { starts_at: '2026-10-26 09:25:00', ends_at: '2026-10-26 09:32:00' }
+  assert.equal(slotStartInstant(slot)?.toISOString(), '2026-10-26T08:25:00.000Z')
+  assert.equal(slotEndInstant(slot)?.toISOString(), '2026-10-26T08:32:00.000Z')
 })
 
 test('duration helpers', () => {

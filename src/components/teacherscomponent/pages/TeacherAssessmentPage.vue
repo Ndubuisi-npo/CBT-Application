@@ -1,6 +1,7 @@
 <template>
   <div class="space-y-6">
     <AppPageHeader
+      v-if="!loadingPage"
       :title="assessment?.title || 'Assessment Workspace'"
       :subtitle="assessment?.description || 'Build your paper for this assessment.'"
       eyebrow="Submissions"
@@ -16,12 +17,19 @@
       <AppBadge :label="classText" variant="default" />
     </div>
 
-    <div v-if="loadingPage" class="space-y-6">
-      <div class="h-40 animate-pulse rounded-2xl bg-slate-100" />
-      <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px] 2xl:grid-cols-[minmax(0,1fr)_420px]">
-        <div class="h-64 animate-pulse rounded-2xl bg-slate-100" />
-        <div class="h-64 animate-pulse rounded-2xl bg-slate-100" />
+    <div
+      v-if="loadingPage"
+      class="flex min-h-[55vh] flex-col items-center justify-center rounded-3xl border border-slate-200 bg-white px-6 text-center shadow-sm"
+      role="status"
+      aria-live="polite"
+    >
+      <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#0B1F3A]/5">
+        <LoaderCircle class="h-8 w-8 animate-spin text-[#0B1F3A]" aria-hidden="true" />
       </div>
+      <h1 class="mt-5 text-lg font-semibold text-slate-900">Loading assessment</h1>
+      <p class="mt-2 max-w-sm text-sm leading-6 text-slate-500">
+        Preparing your assessment workspace, submission, and timetable.
+      </p>
     </div>
 
     <template v-else-if="assessment">
@@ -221,7 +229,7 @@
                 <p v-if="ownSlot" class="rounded-xl bg-[#F3F6FB] px-3 py-2 text-xs text-slate-600">
                   Currently scheduled:
                   <span class="font-semibold text-[#0B1F3A]">
-                    {{ formatSlotDate(ownSlot.starts_at) }}, {{ formatSlotTime(ownSlot.starts_at) }} – {{ formatSlotTime(ownSlot.ends_at) }}
+                    {{ formatSlotDate(slotStartInstant(ownSlot)) }}, {{ formatSlotTime(slotStartInstant(ownSlot)) }} – {{ formatSlotTime(slotEndInstant(ownSlot)) }}
                   </span>
                 </p>
 
@@ -393,12 +401,12 @@
                         <div class="flex items-baseline justify-between gap-2">
                           <span class="min-w-0 truncate font-medium text-slate-900">
                             {{ slotSubjectName(slot) }}
-                            <span v-if="slot.subject?.code" class="font-normal text-slate-400">· {{ slot.subject.code }}</span>
+                            <span v-if="slot.subject?.code || slot.subject_code || slot.subjectCode" class="font-normal text-slate-400">· {{ slot.subject?.code || slot.subject_code || slot.subjectCode }}</span>
                           </span>
                           <span v-if="isOwnSlot(slot)" class="shrink-0 rounded-full bg-[#0B1F3A] px-2 py-0.5 text-[10px] font-semibold text-white">You</span>
                         </div>
                         <p class="mt-0.5 text-xs text-slate-500">
-                          {{ formatSlotTime(slot.starts_at) }} – {{ formatSlotTime(slot.ends_at) }}
+                          {{ formatSlotTime(slotStartInstant(slot)) }} – {{ formatSlotTime(slotEndInstant(slot)) }}
                           <template v-if="formatDuration(slotDurationMinutes(slot))"> · {{ formatDuration(slotDurationMinutes(slot)) }}</template>
                         </p>
                       </li>
@@ -449,7 +457,7 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ArrowLeft, CalendarClock, CheckCircle2, FileQuestion, Inbox, Lock, PencilLine, Plus, Send, Trash2 } from 'lucide-vue-next'
+import { ArrowLeft, CalendarClock, CheckCircle2, FileQuestion, Inbox, LoaderCircle, Lock, PencilLine, Plus, Send, Trash2 } from 'lucide-vue-next'
 import AppBadge from '../../shared/AppBadge.vue'
 import AppButton from '../../shared/AppButton.vue'
 import AppEmptyState from '../../shared/AppEmptyState.vue'
@@ -473,6 +481,8 @@ import {
   lagosLocalToIso,
   parseSlotInstant,
   slotDurationMinutes,
+  slotEndInstant,
+  slotStartInstant,
   slotErrorMessage,
   slotSubjectId,
   submissionSubjectId,
@@ -683,9 +693,9 @@ const hydrateSlotForm = () => {
   confirmingRemove.value = false
   const own = ownSlot.value
   if (own) {
-    slotForm.date = toLagosDateKey(own.starts_at)
-    slotForm.start = toLagosTimeInput(own.starts_at)
-    slotForm.end = toLagosTimeInput(own.ends_at)
+    slotForm.date = toLagosDateKey(slotStartInstant(own))
+    slotForm.start = toLagosTimeInput(slotStartInstant(own))
+    slotForm.end = toLagosTimeInput(slotEndInstant(own))
     slotForm.duration = String(slotDurationMinutes(own) ?? assessment.value?.duration_minutes ?? '')
   } else {
     slotForm.date = windowStartKey.value || ''
@@ -846,7 +856,7 @@ const submissionSubjectName = computed(() => {
   return store.subjectOptions.find((o) => String(o.value) === String(subjectId))?.label || 'Submission'
 })
 const slotSubjectName = (slot) => {
-  if (slot.subject?.name) return slot.subject.name
+  if (slot.subject?.name || slot.subject_name || slot.subjectName) return slot.subject?.name || slot.subject_name || slot.subjectName
   const id = slot.subject_id ?? slot.subjectId
   return store.subjectOptions.find((o) => String(o.value) === String(id))?.label || 'Subject'
 }
