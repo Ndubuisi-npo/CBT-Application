@@ -186,7 +186,10 @@ const statusLabel = computed(() => (student.value?.is_active !== false ? 'Active
 const email = computed(() => displayValue(student.value?.email || student.value?.user?.email))
 const phone = computed(() => displayValue(student.value?.phone || student.value?.user?.phone))
 const gender = computed(() => displayValue(sp.value?.gender || student.value?.gender))
-const dob = computed(() => displayValue(sp.value?.date_of_birth || sp.value?.dateOfBirth || student.value?.date_of_birth))
+const dob = computed(() => formatDate(
+  sp.value?.date_of_birth || sp.value?.dateOfBirth
+  || student.value?.date_of_birth || student.value?.dateOfBirth,
+))
 const bloodGroup = computed(() => displayValue(sp.value?.blood_group || sp.value?.bloodGroup))
 const stateOfOrigin = computed(() => displayValue(sp.value?.state_of_origin || sp.value?.stateOfOrigin))
 const admissionNumber = computed(() => displayValue(sp.value?.admission_number || sp.value?.admissionNumber || student.value?.admission_number))

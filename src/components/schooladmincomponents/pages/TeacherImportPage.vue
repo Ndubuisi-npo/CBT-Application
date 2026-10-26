@@ -53,6 +53,9 @@
         <div class="flex-1">
           <h3 class="font-semibold text-rose-900">Import failed</h3>
           <p class="mt-2 text-sm text-rose-700">{{ state.errorMessage }}</p>
+          <ul v-if="state.errorDetails.length" class="mt-2 list-inside list-disc space-y-1 text-sm text-rose-700">
+            <li v-for="(detail, index) in state.errorDetails" :key="index">{{ detail }}</li>
+          </ul>
           <div class="mt-4 flex flex-wrap gap-2">
             <button
               type="button"
@@ -82,6 +85,7 @@ import AppButton from '../../shared/AppButton.vue'
 import FileDropzone from '../components/StudentImport/FileDropzone.vue'
 import ImportPreviewModal from '../components/StudentImport/ImportPreviewModal.vue'
 import ImportResultBanner from '../components/StudentImport/ImportResultBanner.vue'
+import { getImportError } from '../components/StudentImport/importError.js'
 import { getTeacherImportTemplate, importTeachers } from '../services/api/teachers'
 import { useSchoolAdminTeachersStore } from '../stores/teachers'
 
@@ -101,6 +105,7 @@ const state = reactive({
   importResult: null,
   overwritePolicy: null,
   errorMessage: null,
+  errorDetails: [],
   conflictErrors: [],
 })
 
@@ -112,6 +117,7 @@ function reset() {
     importResult: null,
     overwritePolicy: null,
     errorMessage: null,
+    errorDetails: [],
     conflictErrors: [],
   })
 }
@@ -121,6 +127,7 @@ async function handleFileSelected(file) {
   state.page = 'file_selected'
   state.conflictErrors = []
   state.errorMessage = null
+  state.errorDetails = []
 
   try {
     const response = await importTeachers(file, { dryRun: true })
@@ -131,17 +138,21 @@ async function handleFileSelected(file) {
       state.errorMessage = null
       state.page = 'previewing'
     } else {
-      state.conflictErrors = response.body.errors ?? []
-      state.errorMessage = response.body.message ?? 'Upload validation failed'
+      const uploadError = getImportError(response.body, 'Upload validation failed.')
+      state.conflictErrors = response.body?.errors ?? []
+      state.errorMessage = uploadError.message
+      state.errorDetails = uploadError.details
 
-      if (response.body.missing_headers?.length) {
+      if (response.body?.missing_headers?.length) {
         state.errorMessage = `Your CSV is missing: ${response.body.missing_headers.join(', ')}`
       }
 
       state.page = 'error'
     }
   } catch (err) {
-    state.errorMessage = err.message || 'Network error. Please try again.'
+    const uploadError = getImportError(err, 'Unable to validate the uploaded teacher file. Please try again.')
+    state.errorMessage = uploadError.message
+    state.errorDetails = uploadError.details
     state.page = 'error'
   }
 }
@@ -178,11 +189,15 @@ async function handleConfirmImport(policy) {
       }
       state.page = 'done'
     } else {
-      state.errorMessage = response.body?.message ?? 'Import failed'
+      const importError = getImportError(response.body, 'Unable to import teachers.')
+      state.errorMessage = importError.message
+      state.errorDetails = importError.details
       state.page = 'error'
     }
   } catch (err) {
-    state.errorMessage = err.message || 'Network error during import. Please check the teacher list before retrying.'
+    const importError = getImportError(err, 'Unable to import teachers. Please check the teacher list before retrying.')
+    state.errorMessage = importError.message
+    state.errorDetails = importError.details
     state.page = 'error'
   }
 }
