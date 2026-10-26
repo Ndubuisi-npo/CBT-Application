@@ -130,7 +130,7 @@ export async function getSchedules(assessmentId) {
   }
 }
 
-/** payload: { question_submission_ends, assessment_starts?, assessment_ends? } */
+/** Schedule dates are ISO 8601 timestamps serialized with the Africa/Lagos (+01:00) offset. */
 export async function createSchedule(assessmentId, payload) {
   try {
     return await apiFetch(`/api/assessments/${assessmentId}/schedules`, {
@@ -150,7 +150,7 @@ export async function getSchedule(scheduleId) {
   }
 }
 
-/** payload: any subset of { question_submission_ends, assessment_starts, assessment_ends } — draft-only, 409 otherwise. */
+/** Draft-only schedule update; date values use explicit Africa/Lagos (+01:00) offsets. */
 export async function updateSchedule(scheduleId, payload) {
   try {
     return await apiFetch(`/api/assessment-schedules/${scheduleId}`, {
@@ -191,7 +191,9 @@ const rethrowSlotError = (error, fallback) => {
 
 /**
  * Create-or-move the signed-in teacher's slot (upsert).
- * payload: { starts_at, ends_at, duration_minutes? } — ISO strings WITH offset.
+ * payload: { starts_at, ends_at, duration_minutes? } — ISO timestamps with
+ * the Africa/Lagos offset. The endpoint compares real instants with the
+ * schedule's exam-period timestamps.
  * subject_id is never sent; the backend derives it from the submission.
  */
 export async function saveSubmissionScheduleSlot(submissionId, payload) {

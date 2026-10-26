@@ -1,5 +1,23 @@
 <template>
   <div class="space-y-6">
+    <div
+      v-if="pageLoading"
+      class="flex min-h-[55vh] flex-col items-center justify-center rounded-3xl border border-slate-200 bg-white px-6 text-center shadow-sm"
+      role="status"
+      aria-live="polite"
+    >
+      <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#0B1F3A]/5">
+        <LoaderCircle class="h-8 w-8 animate-spin text-[#0B1F3A]" />
+      </div>
+      <h1 class="mt-5 text-lg font-semibold text-slate-900">Loading your assessments</h1>
+      <p class="mt-2 max-w-sm text-sm leading-6 text-slate-500">Preparing your scheduled assessments and submission status.</p>
+      <div class="mt-6 w-full max-w-sm space-y-2" aria-hidden="true">
+        <div class="h-2 animate-pulse rounded-full bg-slate-100" />
+        <div class="h-2 w-2/3 animate-pulse rounded-full bg-slate-100" />
+      </div>
+    </div>
+
+    <template v-else>
     <AppPageHeader
       title="Your submissions"
       subtitle="Open an assessment to build your paper. Each window closes at the time set by your school admin."
@@ -79,6 +97,7 @@
         </li>
       </ul>
     </section>
+    </template>
   </div>
 </template>
 
@@ -96,6 +115,9 @@ import SubmissionCountdown from '../components/SubmissionCountdown.vue'
 import { useNotificationStore } from '../../shared/stores/notifications'
 import { getMySubmission } from '../../schooladmincomponents/services/api/assessments'
 import { useAssessmentsStore, getSubmissionStatusLabel, getSubmissionStatusVariant } from '../../schooladmincomponents/stores/assessments'
+import { loadTeacherDashboardData, preloadTeacherDashboardData } from '../services/teacherDashboardCache'
+import { getAuthUser } from '../../../js/lib/auth'
+import { getTenantHandle } from '../../../js/lib/api'
 
 const router = useRouter()
 const store = useAssessmentsStore()
@@ -110,6 +132,7 @@ const filterClassLevel = ref('')
 // "open for me right now", which keeps this bounded to a handful of calls.
 const mySubmissions = ref({})
 const loadingSubmissionsByAssessment = ref({})
+const pageLoading = ref(true)
 
 const classLevelOptions = computed(() => store.classLevelOptions)
 
@@ -164,34 +187,34 @@ const marksUsed = (assessment) => {
   return questions.reduce((sum, q) => sum + Number(q.marks || 0), 0)
 }
 
-const loadMySubmissions = async (assessments) => {
-  loadingSubmissionsByAssessment.value = Object.fromEntries(assessments.map((assessment) => [assessment.id, true]))
-  const results = await Promise.all(
-    assessments.map(async (assessment) => {
+onMounted(async () => {
+  pageLoading.value = true
+  try {
+    let snapshot = await loadTeacherDashboardData(getAuthUser(), getTenantHandle())
+    if (!snapshot) snapshot = await preloadTeacherDashboardData(getAuthUser(), getTenantHandle())
+    if (snapshot?.assessmentSubmissions) {
+      mySubmissions.value = Object.fromEntries(
+        Object.entries(snapshot.assessmentSubmissions).filter(([, submission]) => submission)
+      )
+      return
+    }
+
+    // Recover this page's data if a background prefetch request failed.
+    await Promise.all([store.fetchRefData(), store.fetchTeacherAssessments()])
+    const assessments = visibleAssessments.value
+    loadingSubmissionsByAssessment.value = Object.fromEntries(assessments.map((assessment) => [assessment.id, true]))
+    const results = await Promise.all(assessments.map(async (assessment) => {
       try {
-        const submission = await getMySubmission(assessment.schedule_id)
-        return [assessment.id, submission]
+        return [assessment.id, await getMySubmission(assessment.schedule_id)]
       } catch {
         return [assessment.id, null]
-      } finally {
-        loadingSubmissionsByAssessment.value = {
-          ...loadingSubmissionsByAssessment.value,
-          [assessment.id]: false,
-        }
       }
-    })
-  )
-  const next = {}
-  for (const [id, submission] of results) if (submission) next[id] = submission
-  mySubmissions.value = next
-}
-
-onMounted(async () => {
-  await Promise.all([
-    store.fetchRefData(),
-    store.fetchTeacherAssessments(),
-  ])
-  if (visibleAssessments.value.length) await loadMySubmissions(visibleAssessments.value)
+    }))
+    mySubmissions.value = Object.fromEntries(results.filter(([, submission]) => submission))
+    loadingSubmissionsByAssessment.value = {}
+  } finally {
+    pageLoading.value = false
+  }
 })
 
 const openAssessment = (id) => {

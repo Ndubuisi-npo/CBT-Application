@@ -132,6 +132,7 @@ import AppSelect from '../../shared/AppSelect.vue'
 import ResponsiveDataCard from '../../shared/ResponsiveDataCard.vue'
 import SubmissionConfigurationModal from '../components/SubmissionConfigurationModal.vue'
 import { fmtDateTime } from '../../../js/lib/helpers'
+import { formatSlotDateTime } from '../../../js/lib/slotTime'
 import { useAssessmentsStore, getAssessmentStatusLabel, getStatusVariant, isQuestionSubmissionClosed } from '../stores/assessments'
 import { useNotificationStore } from '../../shared/stores/notifications'
 
@@ -182,7 +183,7 @@ const classText = (assessment) => {
 }
 const sessionName = (assessment) => store.sessionOptions.find((option) => String(option.value) === String(assessment.session_id ?? assessment.sessionId ?? assessment.academic_session_id ?? assessment.academicSessionId))?.label || '—'
 const termName = (assessment) => store.activeTermLabel || assessment.term?.name || '—'
-const formatDate = (value) => value ? fmtDateTime(value) : 'Not set'
+const formatDate = (value) => value ? formatSlotDateTime(value) : 'Not set'
 
 const questionSubmissionStatusLabel = (assessment) => (isQuestionSubmissionClosed(assessment) ? 'Question submission closed' : 'Question submission open')
 const questionSubmissionVariant = (assessment) => (isQuestionSubmissionClosed(assessment) ? 'default' : 'success')

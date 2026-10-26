@@ -176,6 +176,7 @@ export const useNotificationStore = defineStore('notifications', () => {
   const isLoadingList = ref(false)
   const isLoadingCount = ref(false)
   const hasLoadedList = ref(false)
+  const hasLoadedCount = ref(false)
   // Server-reported total, kept mainly as a sanity check against
   // notifications.value.length after a full fetch (they should match).
   const serverTotal = ref(0)
@@ -230,6 +231,7 @@ export const useNotificationStore = defineStore('notifications', () => {
   const MAX_PAGES = 50 // 50 * 20/page = 1,000 notifications — a generous ceiling
   const fetchNotificationsList = async (params = {}) => {
     isLoadingList.value = true
+    hasLoadedList.value = false
     try {
       let page = 1
       let lastPage = 1
@@ -258,9 +260,11 @@ export const useNotificationStore = defineStore('notifications', () => {
   /** GET /notifications/unread-count — refresh just the badge count. */
   const fetchUnreadCount = async () => {
     isLoadingCount.value = true
+    hasLoadedCount.value = false
     try {
       const response = await apiFetchUnreadCount()
       unreadCount.value = extractCount(response)
+      hasLoadedCount.value = true
       return unreadCount.value
     } catch {
       // Non-fatal — the bell just keeps showing its last known count.
@@ -272,7 +276,7 @@ export const useNotificationStore = defineStore('notifications', () => {
 
   /** Convenience: load both the list and the count together. */
   const initialize = async () => {
-    await Promise.allSettled([fetchNotificationsList(), fetchUnreadCount()])
+    return await Promise.allSettled([fetchNotificationsList(), fetchUnreadCount()])
   }
 
   const prependNotification = (notification) => {
@@ -472,6 +476,7 @@ export const useNotificationStore = defineStore('notifications', () => {
     isLoadingList,
     isLoadingCount,
     hasLoadedList,
+    hasLoadedCount,
     serverTotal,
     totalUnread,
     unreadByRole,

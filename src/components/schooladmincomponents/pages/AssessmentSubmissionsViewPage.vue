@@ -1,5 +1,23 @@
 <template>
   <div class="space-y-6">
+    <div
+      v-if="pageLoading"
+      class="flex min-h-[55vh] flex-col items-center justify-center rounded-3xl border border-slate-200 bg-white px-6 text-center shadow-sm"
+      role="status"
+      aria-live="polite"
+    >
+      <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#0B1F3A]/5">
+        <LoaderCircle class="h-8 w-8 animate-spin text-[#0B1F3A]" />
+      </div>
+      <h1 class="mt-5 text-lg font-semibold text-slate-900">Loading assessment submissions</h1>
+      <p class="mt-2 max-w-sm text-sm leading-6 text-slate-500">Fetching assessment details and teacher papers. This may take a moment.</p>
+      <div class="mt-6 w-full max-w-sm space-y-2" aria-hidden="true">
+        <div class="h-2 animate-pulse rounded-full bg-slate-100" />
+        <div class="h-2 w-2/3 animate-pulse rounded-full bg-slate-100" />
+      </div>
+    </div>
+
+    <template v-else>
     <AppPageHeader
       :title="assessment ? assessment.title : 'View Submissions'"
       subtitle="Review the papers each teacher has built for this assessment, then activate it for students."
@@ -34,7 +52,7 @@
           <div class="min-w-0">
             <AppLifecycleTrail :assessment-status="displayAssessmentStatus" :question-submission-status="questionSubmissionStatus" class="mb-4" />
             <p class="text-sm text-slate-500">
-              {{ approvedCount }} of {{ submissions.length }} papers approved · questions close {{ formatDate(assessment.submission_closes_at ?? assessment.submissionClosesAt) }}
+              {{ approvedCount }} of {{ submissions.length }} papers approved · questions close {{ formatScheduleDate(assessment.submission_closes_at ?? assessment.submissionClosesAt) }}
             </p>
           </div>
           <div class="flex flex-wrap gap-2">
@@ -83,7 +101,7 @@
           Teachers can still edit their papers. Close question submissions to lock them before activating.
         </p>
         <p v-if="assessment.assessment_starts || assessment.assessment_ends" class="mt-4 rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-          Students can take this assessment from {{ formatDate(assessment.assessment_starts) }} until {{ formatDate(assessment.assessment_ends) }}.
+          Students can take this assessment from {{ formatScheduleDate(assessment.assessment_starts) }} until {{ formatScheduleDate(assessment.assessment_ends) }}.
         </p>
         <p v-if="activationError" class="mt-4 rounded-2xl border border-rose-100 bg-rose-50 px-3 py-2 text-sm text-rose-700">{{ activationError }}</p>
       </section>
@@ -92,10 +110,8 @@
         <div class="border-b border-slate-100 px-5 py-4 sm:px-6">
           <h2 class="text-sm font-semibold text-slate-900">Teacher papers</h2>
         </div>
-
-        <div v-if="store.loading && !submissions.length" class="p-8 text-center text-sm text-slate-500">Loading submissions…</div>
         <AppEmptyState
-          v-else-if="!submissions.length"
+          v-if="!submissions.length"
           :icon="Inbox"
           title="No teacher papers yet"
           description="Papers will appear here as teachers build their submissions for this assessment."
@@ -126,6 +142,7 @@
         </ul>
       </section>
     </template>
+    </template>
 
   </div>
 </template>
@@ -133,13 +150,14 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ArrowLeft, Inbox } from 'lucide-vue-next'
+import { ArrowLeft, Inbox, LoaderCircle } from 'lucide-vue-next'
 import AppBadge from '../../shared/AppBadge.vue'
 import AppButton from '../../shared/AppButton.vue'
 import AppEmptyState from '../../shared/AppEmptyState.vue'
 import AppLifecycleTrail from '../../shared/AppLifecycleTrail.vue'
 import AppPageHeader from '../../shared/AppPageHeader.vue'
 import { fmtDateTime, getAssessmentWindowState, getEffectiveAssessmentStatus } from '../../../js/lib/helpers'
+import { formatSlotDateTime } from '../../../js/lib/slotTime'
 import { useAssessmentsStore, getAssessmentStatusLabel, getStatusVariant, getSubmissionStatusLabel, getSubmissionStatusVariant, isQuestionSubmissionClosed } from '../stores/assessments'
 import { useNotificationStore } from '../../shared/stores/notifications'
 
@@ -155,6 +173,7 @@ const closingSubmissions = ref(false)
 const publishingResults = ref(false)
 const completingAssessment = ref(false)
 const activationError = ref('')
+const pageLoading = ref(true)
 
 const questionSubmissionStatus = computed(() => (isQuestionSubmissionClosed(assessment.value) ? 'closed' : 'open'))
 const assessmentStatus = computed(() => (assessment.value?.assessment_status || assessment.value?.status || 'draft').trim().toLowerCase())
@@ -196,6 +215,7 @@ const initials = (name) => (name || '')
   .join('') || '—'
 const subjectName = (submission) => submission.subject?.name || store.subjectOptions.find((option) => String(option.value) === String(submission.subject_id ?? submission.subjectId))?.label || 'Unknown subject'
 const formatDate = (value) => value ? fmtDateTime(value) : 'Not submitted'
+const formatScheduleDate = (value) => value ? formatSlotDateTime(value) : 'Not set'
 const viewSubmission = (submission) => {
   const path = `/school-admin/assessments/${assessmentId}/submissions/${submission.id}`
   void notificationStore.markReadForAction(path, ['submission', 'assessment'])
@@ -261,7 +281,12 @@ const forceCompleteAssessment = async () => {
 }
 
 onMounted(async () => {
-  await Promise.all([store.fetchRefData(), store.fetchAssessment(assessmentId)])
-  await store.fetchSubmissions(assessmentId)
+  pageLoading.value = true
+  try {
+    await Promise.all([store.fetchRefData(), store.fetchAssessment(assessmentId)])
+    if (assessment.value) await store.fetchSubmissions(assessmentId)
+  } finally {
+    pageLoading.value = false
+  }
 })
 </script>

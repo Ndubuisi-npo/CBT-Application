@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { useSchoolAdminUiStore } from './ui'
 import { useSchoolAdminSessionsStore } from './sessions'
 import { getEffectiveAssessmentStatus, toDatetimeLocalInputValue } from '../../../js/lib/helpers'
-import { normalizeScheduleSubjectMeta } from '../../../js/lib/slotTime'
+import { normalizeScheduleSubjectMeta, parseSlotInstant, toLagosDateKey } from '../../../js/lib/slotTime'
 import {
   getAssessments,
   getAssessment,
@@ -93,8 +93,8 @@ export const getSubmissionStatusVariant = (status) => {
 export const isQuestionSubmissionClosed = (assessment) => {
   if ((assessment?.question_submission_status || 'open').toLowerCase() === 'closed') return true
   if (!assessment?.question_submission_ends) return false
-  const deadline = new Date(assessment.question_submission_ends)
-  return !Number.isNaN(deadline.getTime()) && deadline.getTime() <= Date.now()
+  const deadline = parseSlotInstant(assessment.question_submission_ends)
+  return !!deadline && deadline.getTime() <= Date.now()
 }
 
 const toOptions = (list, labelKey = 'name', valueKey = 'id') =>
@@ -105,9 +105,7 @@ const toOptions = (list, labelKey = 'name', valueKey = 'id') =>
 
 const toDateKey = (value) => {
   if (!value) return ''
-  const date = value instanceof Date ? value : new Date(value)
-  if (Number.isNaN(date.getTime())) return ''
-  return date.toISOString().slice(0, 10)
+  return toLagosDateKey(value)
 }
 
 /**
@@ -276,16 +274,28 @@ export const useAssessmentsStore = defineStore('assessments', {
       if (assessment?.scheduled_date) this.selectDate(assessment.scheduled_date)
     },
 
-    async fetchRefData() {
+    async fetchRefData({ forceSessions = false } = {}) {
       const sessionsStore = useSchoolAdminSessionsStore()
-      const [subjects, classLevels, sessions] = await Promise.all([
-        getSubjects().catch(() => []),
-        getClassLevels().catch(() => []),
-        sessionsStore.sessions.length ? Promise.resolve(sessionsStore.sessions) : getAcademicSessions().catch(() => []),
+      const results = await Promise.allSettled([
+        getSubjects(),
+        getClassLevels(),
+        !forceSessions && sessionsStore.sessions.length
+          ? Promise.resolve(sessionsStore.sessions)
+          : getAcademicSessions(),
       ])
-      this.refData.subjects = Array.isArray(subjects) ? subjects : []
-      this.refData.classLevels = Array.isArray(classLevels) ? classLevels : []
-      this.refData.sessions = Array.isArray(sessions) ? sessions : []
+      const [subjectsResult, classLevelsResult, sessionsResult] = results
+      this.refData.subjects = subjectsResult.status === 'fulfilled' && Array.isArray(subjectsResult.value)
+        ? subjectsResult.value
+        : []
+      this.refData.classLevels = classLevelsResult.status === 'fulfilled' && Array.isArray(classLevelsResult.value)
+        ? classLevelsResult.value
+        : []
+      this.refData.sessions = sessionsResult.status === 'fulfilled' && Array.isArray(sessionsResult.value)
+        ? sessionsResult.value
+        : []
+      return results
+        .filter((result) => result.status === 'rejected')
+        .map((result) => result.reason)
     },
 
     async fetchClassArms(classLevelId) {
@@ -375,10 +385,12 @@ export const useAssessmentsStore = defineStore('assessments', {
         const data = await getTeacherAssessments(params)
         const apiRecords = Array.isArray(data) ? data : (data?.data ?? [])
         this.assessments = await this._hydrateWithSchedules(apiRecords)
+        return true
       } catch (error) {
         this.error = error?.message || 'Failed to load assessments.'
         this.assessments = []
         this._toast('Unable to load assessments', this.error)
+        return false
       } finally {
         this.loading = false
       }

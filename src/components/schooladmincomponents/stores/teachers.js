@@ -23,6 +23,7 @@ export const useSchoolAdminTeachersStore = defineStore(
             totalTeachers: 0,
             totalArchivedTeachers: 0,
             loading: false,
+            importProgress: null,
         }),
 
         getters: {

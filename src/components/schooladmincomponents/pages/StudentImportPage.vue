@@ -152,13 +152,33 @@ async function handleFileSelected(file) {
 async function handleConfirmImport(policy) {
   state.page = 'confirming'
   state.errorMessage = null
+  studentsStore.importProgress = null
 
   try {
+    await studentsStore.fetchStudents()
+    const startingStudentCount = studentsStore.totalStudents
     const response = await importStudents(state.file, { dryRun: false, overwriteExisting: policy })
 
     if (response.ok) {
       state.importResult = response.body.data ?? response.body
-      await studentsStore.fetchStudents()
+      const importedCount = Number(state.importResult?.imported)
+      const expectedCount = Number(
+        importedCount > 0
+          ? importedCount
+          : state.dryRunResult?.total_rows
+            ?? state.dryRunResult?.total
+            ?? state.dryRunResult?.valid_count
+            ?? state.dryRunResult?.students_count
+            ?? state.dryRunResult?.rows?.length
+            ?? state.dryRunResult?.preview_rows?.length
+            ?? 0
+      )
+      if (Number.isSafeInteger(expectedCount) && expectedCount > 0) {
+        studentsStore.importProgress = {
+          startingCount: startingStudentCount,
+          total: expectedCount,
+        }
+      }
       state.page = 'done'
     } else {
       state.errorMessage = response.body?.message ?? 'Import failed'

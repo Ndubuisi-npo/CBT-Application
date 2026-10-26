@@ -40,6 +40,7 @@ import { X } from 'lucide-vue-next'
 import AppButton from '../../shared/AppButton.vue'
 import AppInput from '../../shared/AppInput.vue'
 import { toDatetimeLocalIsoWithOffset } from '../../../js/lib/helpers'
+import { lagosLocalToDate } from '../../../js/lib/slotTime'
 
 const props = defineProps({
   show: { type: Boolean, default: false },
@@ -66,8 +67,8 @@ const validate = () => {
     error.value = 'A submission deadline is required.'
     return false
   }
-  const when = new Date(deadline.value)
-  if (Number.isNaN(when.getTime())) {
+  const when = lagosLocalToDate(deadline.value)
+  if (!when) {
     error.value = 'Enter a valid date and time.'
     return false
   }

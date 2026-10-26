@@ -203,7 +203,6 @@ const submitLogin = async () => {
 const authData = await unifiedLogin(form)
 
     const tenantHandle = getTenantHandle()
-
     const buildRedirectUrl = (path) => {
       if (!tenantHandle) return path
       return `${window.location.origin}${path}`

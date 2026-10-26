@@ -168,11 +168,11 @@ import AppBadge from '../../shared/AppBadge.vue'
 import AppButton from '../../shared/AppButton.vue'
 import AppEmptyState from '../../shared/AppEmptyState.vue'
 import SubmissionCountdown from '../components/SubmissionCountdown.vue'
-import { getMySubmission } from '../../schooladmincomponents/services/api/assessments'
 import { useAssessmentsStore, getSubmissionStatusLabel, getSubmissionStatusVariant } from '../../schooladmincomponents/stores/assessments'
 import { getAuthUser, getDisplayName } from '../../../js/lib/auth'
 import { fmtDateTime } from '../../../js/lib/helpers'
-import { getStudents } from '../../schooladmincomponents/services/api/students'
+import { getTenantHandle } from '../../../js/lib/api'
+import { loadTeacherDashboardData, preloadTeacherDashboardData } from '../services/teacherDashboardCache'
 
 const router = useRouter()
 const store = useAssessmentsStore()
@@ -273,30 +273,18 @@ const goTo = (path) => router.push(path)
 
 onMounted(async () => {
   loading.value = true
-  const user = getAuthUser()
-  const [studentsResult] = await Promise.allSettled([
-    user?.id ? getStudents({ teacher_id: user.id }) : Promise.resolve([]),
-    store.fetchRefData(),
-    store.fetchTeacherAssessments(),
-  ])
-  if (studentsResult.status === 'fulfilled') {
-    const response = studentsResult.value
-    const students = Array.isArray(response) ? response : (response?.data || response?.students || [])
-    studentCount.value = response?.total ?? response?.meta?.total ?? students.length
+  const snapshot = await loadTeacherDashboardData(getAuthUser(), getTenantHandle())
+  if (snapshot) {
+    studentCount.value = snapshot.studentCount ?? '—'
+    mySubmissions.value = snapshot.mySubmissions || {}
+  } else {
+    const fallback = await preloadTeacherDashboardData(getAuthUser(), getTenantHandle())
+    if (fallback) {
+      studentCount.value = fallback.studentCount ?? '—'
+      mySubmissions.value = fallback.mySubmissions || {}
+    }
   }
   studentsLoading.value = false
-  const results = await Promise.all(
-    openAssessments.value.map(async (assessment) => {
-      try {
-        return [assessment.id, await getMySubmission(assessment.schedule_id)]
-      } catch {
-        return [assessment.id, null]
-      }
-    })
-  )
-  const next = {}
-  for (const [id, submission] of results) if (submission) next[id] = submission
-  mySubmissions.value = next
   loading.value = false
 })
 </script>

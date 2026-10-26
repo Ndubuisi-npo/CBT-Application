@@ -21,6 +21,29 @@
       </div>
     </div>
 
+    <div
+      v-if="!showArchived && studentsStore.importProgress"
+      class="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800"
+      role="status"
+      aria-live="polite"
+    >
+      <div class="flex items-center gap-3">
+        <span class="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-blue-200 border-t-blue-700" aria-hidden="true" />
+        <div class="min-w-0 flex-1">
+          <p class="font-medium">
+            Importing {{ importedStudentCount }} out of {{ studentsStore.importProgress.total }} students
+          </p>
+          <p v-if="importProgressError" class="mt-1 text-xs text-rose-700">{{ importProgressError }}</p>
+        </div>
+        <div class="hidden h-2 w-32 overflow-hidden rounded-full bg-blue-100 sm:block">
+          <div
+            class="h-full rounded-full bg-blue-600 transition-[width]"
+            :style="{ width: `${studentImportProgressPercent}%` }"
+          />
+        </div>
+      </div>
+    </div>
+
     <!-- ── Active Students table ──────────────────────────────────────────── -->
     <section v-if="!showArchived" class="rounded-2xl border border-slate-200 bg-white">
 
@@ -35,6 +58,20 @@
             placeholder="Search students…"
             class="h-9 w-full rounded-lg border border-slate-200 bg-slate-50 pl-10 pr-4 text-sm text-slate-900 transition placeholder:text-slate-400 focus:border-[#0B1F3A] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#D4AF37]"
           />
+        </div>
+        <div class="w-full sm:w-52">
+          <label for="student-class-filter" class="sr-only">Filter by class</label>
+          <select
+            id="student-class-filter"
+            v-model="classFilter"
+            aria-label="Filter students by class"
+            class="h-9 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 transition focus:border-[#0B1F3A] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#D4AF37]"
+          >
+            <option value="">All classes</option>
+            <option v-for="option in classOptions" :key="option.value" :value="option.value">
+              {{ option.label }}
+            </option>
+          </select>
         </div>
         <!-- Bulk / select actions -->
         <div class="flex flex-wrap items-center gap-2">
@@ -86,13 +123,13 @@
       <AppEmptyState
         v-else-if="!filteredStudents.length"
         :icon="GraduationCap"
-        :title="searchQuery ? 'No students found' : 'No students yet'"
-        :description="searchQuery ? 'Try adjusting your search.' : 'Get started by adding your first student.'"
+        :title="searchQuery || classFilter ? 'No students match these filters' : 'No students yet'"
+        :description="searchQuery || classFilter ? 'Try adjusting the search or class filter.' : 'Get started by adding your first student.'"
         class="m-4 border-0"
       >
         <template #actions>
-          <AppButton v-if="searchQuery" text="Clear Search" variant="outline" size="sm" @click="searchQuery = ''" />
-          <AppButton v-if="!searchQuery" :icon="Plus" text="Add First Student" variant="primary" size="sm" @click="openModal()" />
+          <AppButton v-if="searchQuery || classFilter" text="Clear Filters" variant="outline" size="sm" @click="clearStudentFilters" />
+          <AppButton v-if="!searchQuery && !classFilter" :icon="Plus" text="Add First Student" variant="primary" size="sm" @click="openModal()" />
         </template>
       </AppEmptyState>
 
@@ -367,7 +404,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { Archive, Ban, BarChart2, CheckSquare, ChevronLeft, ChevronRight, Eye, GraduationCap, Pencil, Plus, RotateCcw, Search, Trash2, UploadCloud } from 'lucide-vue-next'
 import AppButton from '../../shared/AppButton.vue'
@@ -401,6 +438,7 @@ const selectedStudent    = ref(null)
 const savingStudent      = ref(false)
 const showArchived       = ref(false)
 const searchQuery        = ref('')
+const classFilter        = ref('')
 const isSelectMode       = ref(false)
 const selectedStudents   = ref(new Set())
 const isArchivedSelectMode       = ref(false)
@@ -415,11 +453,52 @@ const isDeletingArchivedSelected  = ref(false)
 const itemsPerPage       = 10
 const studentsPage       = ref(1)
 const archivedStudentsPage = ref(1)
+const importProgressError = ref('')
+let importProgressPollId = null
+let importProgressPollPending = false
+const importedStudentCount = computed(() => {
+  const progress = studentsStore.importProgress
+  if (!progress) return 0
+  return Math.min(progress.total, Math.max(0, studentsStore.totalStudents - progress.startingCount))
+})
+const studentImportProgressPercent = computed(() => {
+  const total = studentsStore.importProgress?.total ?? 0
+  return total ? (importedStudentCount.value / total) * 100 : 0
+})
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 const initials = (s) =>
   `${s.first_name?.[0] || ''}${s.last_name?.[0] || ''}`.toUpperCase() || '?'
 const studentFullName = (s) => `${s.first_name || ''} ${s.last_name || ''}`.trim() || 'Student'
+const studentClassInfo = (student) => {
+  const profile = student.studentProfile ?? student.student_profile ?? {}
+  const arm = profile.class_arm ?? profile.classArm ?? {}
+  const level = profile.class_level ?? profile.classLevel ?? arm.class_level ?? arm.classLevel ?? {}
+  const label = arm.name
+    || arm.title
+    || profile.class_name
+    || student.class_name
+    || level.name
+    || 'Unassigned'
+  const id = arm.id
+    ?? profile.class_arm_id
+    ?? profile.classArmId
+    ?? student.class_arm_id
+    ?? student.classArmId
+  return {
+    label,
+    value: id == null ? (label === 'Unassigned' ? 'unassigned' : `name:${label.toLowerCase()}`) : `id:${id}`,
+  }
+}
+
+const classOptions = computed(() => {
+  const options = new Map()
+  for (const student of studentsStore.students) {
+    const option = studentClassInfo(student)
+    if (!options.has(option.value)) options.set(option.value, option)
+  }
+  return [...options.values()].sort((a, b) => a.label.localeCompare(b.label))
+})
 
 const studentActions = (student) => [
   { key: 'view', label: 'Preview', icon: Eye, onClick: () => viewStudent(student) },
@@ -460,16 +539,17 @@ const archivedStudentActions = (student) => [
 // ── Filtered data ──────────────────────────────────────────────────────────
 const filteredStudents = computed(() => {
   const q = searchQuery.value.toLowerCase().trim()
-  if (!q) return studentsStore.students
   return studentsStore.students.filter((s) => {
     const name = `${s.first_name || ''} ${s.last_name || ''}`.toLowerCase()
-    return (
+    const matchesSearch = !q || (
       name.includes(q) ||
       (s.email || '').toLowerCase().includes(q) ||
       (s.phone || '').toLowerCase().includes(q) ||
       (s.studentProfile?.admission_number || s.student_profile?.admission_number || '').toLowerCase().includes(q) ||
-      (s.studentProfile?.class_arm?.name || s.student_profile?.class_name || '').toLowerCase().includes(q)
+      studentClassInfo(s).label.toLowerCase().includes(q)
     )
+    const matchesClass = !classFilter.value || studentClassInfo(s).value === classFilter.value
+    return matchesSearch && matchesClass
   })
 })
 
@@ -483,6 +563,10 @@ const studentsStartIndex = computed(() => filteredStudents.value.length ? (stude
 const studentsEndIndex = computed(() => Math.min(studentsPage.value * itemsPerPage, filteredStudents.value.length))
 const archivedStudentsStartIndex = computed(() => studentsStore.archivedStudents.length ? (archivedStudentsPage.value - 1) * itemsPerPage + 1 : 0)
 const archivedStudentsEndIndex = computed(() => Math.min(archivedStudentsPage.value * itemsPerPage, studentsStore.archivedStudents.length))
+const clearStudentFilters = () => {
+  searchQuery.value = ''
+  classFilter.value = ''
+}
 
 // ── Selection ──────────────────────────────────────────────────────────────
 const areAllVisibleSelected = computed(() =>
@@ -648,10 +732,40 @@ const deleteSelectedArchivedStudents = async () => {
 const goToImport = () => router.push('/school-admin/students/import')
 
 // ── Watchers ───────────────────────────────────────────────────────────────
-watch(searchQuery, () => { studentsPage.value = 1; selectedStudents.value = new Set() })
+watch([searchQuery, classFilter], () => { studentsPage.value = 1; selectedStudents.value = new Set() })
 watch(studentsTotalPages, (total) => { if (studentsPage.value > total) studentsPage.value = total })
 watch(archivedStudentsTotalPages, (total) => { if (archivedStudentsPage.value > total) archivedStudentsPage.value = total })
 watch(showArchived, () => { cancelSelectMode(); cancelArchivedSelectMode() })
 
-onMounted(() => studentsStore.fetchStudents())
+const refreshStudentImportProgress = async () => {
+  if (!studentsStore.importProgress || importProgressPollPending) return
+  importProgressPollPending = true
+  try {
+    await studentsStore.fetchStudents()
+    importProgressError.value = ''
+    const progress = studentsStore.importProgress
+    if (progress && studentsStore.totalStudents - progress.startingCount >= progress.total) {
+      studentsStore.importProgress = null
+      if (importProgressPollId !== null) window.clearInterval(importProgressPollId)
+      importProgressPollId = null
+    }
+  } catch (error) {
+    importProgressError.value = `Unable to refresh import progress: ${error?.message || 'Please try again.'}`
+  } finally {
+    importProgressPollPending = false
+  }
+}
+
+onMounted(() => {
+  if (studentsStore.importProgress) {
+    void refreshStudentImportProgress()
+    importProgressPollId = window.setInterval(refreshStudentImportProgress, 2000)
+  } else {
+    studentsStore.fetchStudents()
+  }
+})
+
+onUnmounted(() => {
+  if (importProgressPollId !== null) window.clearInterval(importProgressPollId)
+})
 </script>

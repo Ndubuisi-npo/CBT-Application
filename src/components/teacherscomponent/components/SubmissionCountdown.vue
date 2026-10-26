@@ -12,6 +12,7 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { Clock } from 'lucide-vue-next'
+import { parseSlotInstant } from '../../../js/lib/slotTime'
 
 const props = defineProps({
   // ISO datetime string the submission window closes at.
@@ -66,7 +67,7 @@ const start = () => {
     clearInterval(intervalId)
     intervalId = null
   }
-  const when = props.deadline ? new Date(props.deadline).getTime() : NaN
+  const when = parseSlotInstant(props.deadline)?.getTime() ?? NaN
   if (Number.isNaN(when)) {
     expired.value = false
     remaining.value = 0

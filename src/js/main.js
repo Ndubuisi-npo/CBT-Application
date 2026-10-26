@@ -4,9 +4,11 @@ import { createPinia } from 'pinia';
 import App from '../App.vue';
 import router from '../router/index';
 import { initializeApiState } from './lib/api';
-import { initializeAuthState, getAuthRole, getAuthUser, refreshAuthUser } from './lib/auth';
+import { initializeAuthState, getAuthRole, getAuthUser } from './lib/auth';
 import { initializeRealtimeNotifications } from './echoNotifications';
 import { useNotificationStore } from '../components/shared/stores/notifications';
+import { preloadTeacherDashboardData, restoreCachedTeacherDashboardData } from '../components/teacherscomponent/services/teacherDashboardCache';
+import { getTenantHandle } from './lib/api';
 import '../css/app.css';
 
 // Initialize auth state first, then API state (auth sets the token)
@@ -28,16 +30,15 @@ app.use(router);
 const isLoginPage = window.location.pathname === '/login';
 
 if (getAuthUser() && !isLoginPage) {
-  // Refresh every authenticated role with current /auth/me profile data.
-  await refreshAuthUser().catch(() => {
-    // Keep the cached profile available when the profile endpoint is offline.
-  });
   initializeRealtimeNotifications();
 
   // Prime the notification bell for whichever role is logged in (school
   // admin, teacher, or student — GET /notifications + GET
   // /notifications/unread-count). No-op on public/unauthenticated pages.
-  if (getAuthRole() !== 'super_admin') {
+  if (getAuthRole() === 'teacher') {
+    restoreCachedTeacherDashboardData(getAuthUser(), getTenantHandle());
+    void preloadTeacherDashboardData(getAuthUser(), getTenantHandle());
+  } else if (getAuthRole() !== 'super_admin') {
     void useNotificationStore().initialize();
   }
 }

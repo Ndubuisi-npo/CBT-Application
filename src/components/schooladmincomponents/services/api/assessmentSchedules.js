@@ -6,6 +6,8 @@ import { apiFetch, extractErrorMessage } from '../../../../js/lib/api'
  *
  * - academic_session_id / term_id are server-resolved from the current term
  *   and never sent by the client (Locked Decision #4).
+ * - Schedule dates are sent as ISO 8601 timestamps with the Africa/Lagos
+ *   (+01:00) offset; API timestamps with Z are parsed as real UTC instants.
  * - Creating a schedule opens the question window immediately — only
  *   question_submission_ends is required (Locked Decision #6); there is no
  *   separate "open" action.

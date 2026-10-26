@@ -26,7 +26,7 @@
 
     <template v-else-if="assessment">
       <p v-if="deadlinePassed" class="rounded-2xl bg-rose-50 px-5 py-4 text-sm text-rose-800">
-        The submission window closed on {{ formatDate(deadline) }}. Your paper is now read-only.
+        The submission window closed on {{ formatScheduleDate(deadline) }}. Your paper is now read-only.
       </p>
       <p v-else-if="banner" class="rounded-2xl px-5 py-4 text-sm" :class="banner.tone">{{ banner.text }}</p>
 
@@ -158,7 +158,7 @@
               </div>
               <div class="flex items-baseline justify-between gap-4">
                 <dt class="text-xs text-slate-400">Window closes</dt>
-                <dd class="text-right text-sm font-medium text-slate-900">{{ formatDate(deadline) }}</dd>
+                <dd class="text-right text-sm font-medium text-slate-900">{{ formatScheduleDate(deadline) }}</dd>
               </div>
             </dl>
           </section>
@@ -471,6 +471,7 @@ import {
   groupSlotsByDay,
   lagosLocalToDate,
   lagosLocalToIso,
+  parseSlotInstant,
   slotDurationMinutes,
   slotErrorMessage,
   slotSubjectId,
@@ -540,7 +541,7 @@ onMounted(async () => {
     if (assessment.value) {
       await store.fetchMySubmission(assessmentId)
       if (assessment.value.schedule_id) await loadSlots()
-      if (deadline.value && new Date(deadline.value).getTime() <= Date.now()) {
+      if (deadline.value && (parseSlotInstant(deadline.value)?.getTime() ?? Infinity) <= Date.now()) {
         deadlinePassed.value = true
       }
     }
@@ -645,8 +646,8 @@ const liveErrors = computed(() => {
   if (!out.date && !out.start && !out.end) {
     const starts = lagosLocalToDate(startsLocal.value)
     const ends = lagosLocalToDate(endsLocal.value)
-    const windowStart = assessment.value?.assessment_starts ? new Date(assessment.value.assessment_starts) : null
-    const windowEnd = assessment.value?.assessment_ends ? new Date(assessment.value.assessment_ends) : null
+    const windowStart = parseSlotInstant(assessment.value?.assessment_starts)
+    const windowEnd = parseSlotInstant(assessment.value?.assessment_ends)
     if (starts && windowStart && !Number.isNaN(windowStart.getTime()) && starts < windowStart) {
       out.date = `The slot must start no earlier than ${formatSlotDate(windowStart)}, ${formatSlotTime(windowStart)} (Lagos time).`
     } else if (ends && windowEnd && !Number.isNaN(windowEnd.getTime()) && ends > windowEnd) {
@@ -878,6 +879,7 @@ const questionTypeLabel = (type) => {
   }
 }
 const formatDate = (value) => (value ? fmtDateTime(value) : 'N/A')
+const formatScheduleDate = (value) => (value ? `${formatSlotDate(value)}, ${formatSlotTime(value)}` : 'N/A')
 
 const touch = (field) => {
   if (field === 'subjectId') errors.subjectId = form.subjectId ? '' : 'Subject is required.'

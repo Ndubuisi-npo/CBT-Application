@@ -40,18 +40,50 @@ const lagosOffsetMinutes = (date) => {
   return Math.round((asUtc - Math.floor(date.getTime() / 1000) * 1000) / 60000)
 }
 
-/**
- * Parse an API / input value into a Date. Backend timestamps carry "Z" or an
- * offset; a bare "YYYY-MM-DDTHH:mm:ss" string from the API is treated as UTC
- * (matches the previous behaviour of the drawer's formatSlotTime).
- */
+const localWallClockToDate = (year, month, day, hour, minute, second = 0, millisecond = 0) => {
+  if (
+    month < 1 || month > 12 || day < 1 || day > 31
+    || hour > 23 || minute > 59 || second > 59
+  ) return null
+
+  const wallClockMs = Date.UTC(year, month - 1, day, hour, minute, second, millisecond)
+  let instantMs = wallClockMs - lagosOffsetMinutes(new Date(wallClockMs)) * 60000
+  instantMs = wallClockMs - lagosOffsetMinutes(new Date(instantMs)) * 60000
+  const date = new Date(instantMs)
+  const parts = lagosParts(date)
+
+  if (
+    parts.year !== year || parts.month !== month || parts.day !== day
+    || parts.hour !== hour || parts.minute !== minute || parts.second !== second
+  ) return null
+
+  return date
+}
+
+/** Parse offset-bearing API timestamps as instants; bare values are Lagos wall time. */
 export const parseSlotInstant = (value) => {
   if (!value) return null
   if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value
   const text = String(value)
-  const normalized = /T/.test(text) && !/(?:Z|[+-]\d{2}:?\d{2})$/i.test(text) ? `${text}Z` : text
-  const date = new Date(normalized)
-  return Number.isNaN(date.getTime()) ? null : date
+  const match = /^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d+))?)?([zZ]|[+-]\d{2}:?\d{2})?)?$/.exec(text)
+  if (!match) return null
+
+  const [, year, month, day, hour = '00', minute = '00', second = '00', fraction = '', zone] = match
+  if (zone) {
+    const date = new Date(text)
+    return Number.isNaN(date.getTime()) ? null : date
+  }
+
+  const millisecond = Number((fraction + '000').slice(0, 3))
+  return localWallClockToDate(
+    Number(year),
+    Number(month),
+    Number(day),
+    Number(hour),
+    Number(minute),
+    Number(second),
+    millisecond
+  )
 }
 
 /** "YYYY-MM-DDTHH:mm" (datetime-local style) for an instant, in Lagos time. */
@@ -75,15 +107,7 @@ export const lagosLocalToDate = (local) => {
   const match = LOCAL_PATTERN.exec(String(local || ''))
   if (!match) return null
   const [year, month, day, hour, minute] = match.slice(1).map(Number)
-  if (month < 1 || month > 12 || day < 1 || day > 31 || hour > 23 || minute > 59) return null
-  const naive = Date.UTC(year, month - 1, day, hour, minute)
-  // Two passes make the result correct even if the offset ever differed
-  // around the boundary (Lagos is a fixed UTC+1 today, so one pass suffices).
-  let instant = naive - lagosOffsetMinutes(new Date(naive)) * 60000
-  instant = naive - lagosOffsetMinutes(new Date(instant)) * 60000
-  const date = new Date(instant)
-  // Reject impossible dates such as 2026-02-31 (Date.UTC would roll them over).
-  return toLagosLocalInput(date) === local ? date : null
+  return localWallClockToDate(year, month, day, hour, minute)
 }
 
 /** Lagos wall-clock input -> ISO string with an explicit offset ("...+01:00"). */
@@ -95,6 +119,9 @@ export const lagosLocalToIso = (local) => {
   const abs = Math.abs(offset)
   return `${local}:00${sign}${pad(Math.floor(abs / 60))}:${pad(abs % 60)}`
 }
+
+/** Lagos wall-clock input -> UTC ISO string for APIs that store UTC timestamps. */
+export const lagosLocalToUtcIso = (local) => lagosLocalToDate(local)?.toISOString() ?? null
 
 /** Add minutes to a Lagos wall-clock input value, returning a Lagos wall-clock value. */
 export const addMinutesToLagosLocal = (local, minutes) => {

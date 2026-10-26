@@ -21,6 +21,29 @@
       </div>
     </div>
 
+    <div
+      v-if="!showArchived && teachersStore.importProgress"
+      class="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800"
+      role="status"
+      aria-live="polite"
+    >
+      <div class="flex items-center gap-3">
+        <span class="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-blue-200 border-t-blue-700" aria-hidden="true" />
+        <div class="min-w-0 flex-1">
+          <p class="font-medium">
+            Importing {{ importedTeacherCount }} out of {{ teachersStore.importProgress.total }} teachers
+          </p>
+          <p v-if="importProgressError" class="mt-1 text-xs text-rose-700">{{ importProgressError }}</p>
+        </div>
+        <div class="hidden h-2 w-32 overflow-hidden rounded-full bg-blue-100 sm:block">
+          <div
+            class="h-full rounded-full bg-blue-600 transition-[width]"
+            :style="{ width: `${teacherImportProgressPercent}%` }"
+          />
+        </div>
+      </div>
+    </div>
+
     <!-- ── Active Teachers table ──────────────────────────────────────────── -->
     <section v-if="!showArchived" class="rounded-2xl border border-slate-200 bg-white">
       <!-- Toolbar -->
@@ -265,7 +288,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { Archive, Ban, CheckSquare, ChevronLeft, ChevronRight, Eye, Pencil, Plus, RotateCcw, Search, Trash2, UploadCloud, Users } from 'lucide-vue-next'
 import AppButton from '../../shared/AppButton.vue'
@@ -304,6 +327,18 @@ const isDeletingArchivedSelected    = ref(false)
 const itemsPerPage        = 10
 const teachersPage        = ref(1)
 const archivedTeachersPage = ref(1)
+const importProgressError = ref('')
+let importProgressPollId = null
+let importProgressPollPending = false
+const importedTeacherCount = computed(() => {
+  const progress = teachersStore.importProgress
+  if (!progress) return 0
+  return Math.min(progress.total, Math.max(0, teachersStore.totalTeachers - progress.startingCount))
+})
+const teacherImportProgressPercent = computed(() => {
+  const total = teachersStore.importProgress?.total ?? 0
+  return total ? (importedTeacherCount.value / total) * 100 : 0
+})
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 const initials = (t) => `${t.first_name?.[0] || ''}${t.last_name?.[0] || ''}`.toUpperCase() || '?'
@@ -495,5 +530,35 @@ watch(teachersTotalPages, (total) => { if (teachersPage.value > total) teachersP
 watch(archivedTeachersTotalPages, (total) => { if (archivedTeachersPage.value > total) archivedTeachersPage.value = total })
 watch(showArchived, () => { cancelSelectMode(); cancelArchivedSelectMode() })
 
-onMounted(() => teachersStore.fetchTeachers())
+const refreshTeacherImportProgress = async () => {
+  if (!teachersStore.importProgress || importProgressPollPending) return
+  importProgressPollPending = true
+  try {
+    await teachersStore.fetchTeachers()
+    importProgressError.value = ''
+    const progress = teachersStore.importProgress
+    if (progress && teachersStore.totalTeachers - progress.startingCount >= progress.total) {
+      teachersStore.importProgress = null
+      if (importProgressPollId !== null) window.clearInterval(importProgressPollId)
+      importProgressPollId = null
+    }
+  } catch (error) {
+    importProgressError.value = `Unable to refresh import progress: ${error?.message || 'Please try again.'}`
+  } finally {
+    importProgressPollPending = false
+  }
+}
+
+onMounted(() => {
+  if (teachersStore.importProgress) {
+    void refreshTeacherImportProgress()
+    importProgressPollId = window.setInterval(refreshTeacherImportProgress, 2000)
+  } else {
+    teachersStore.fetchTeachers()
+  }
+})
+
+onUnmounted(() => {
+  if (importProgressPollId !== null) window.clearInterval(importProgressPollId)
+})
 </script>

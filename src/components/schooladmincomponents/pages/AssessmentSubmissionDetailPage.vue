@@ -1,5 +1,23 @@
 <template>
   <div class="space-y-4">
+    <div
+      v-if="pageLoading"
+      class="flex min-h-[55vh] flex-col items-center justify-center rounded-3xl border border-slate-200 bg-white px-6 text-center shadow-sm"
+      role="status"
+      aria-live="polite"
+    >
+      <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#0B1F3A]/5">
+        <LoaderCircle class="h-8 w-8 animate-spin text-[#0B1F3A]" />
+      </div>
+      <h1 class="mt-5 text-lg font-semibold text-slate-900">Loading submission details</h1>
+      <p class="mt-2 max-w-sm text-sm leading-6 text-slate-500">Fetching the teacher’s paper and assessment details. This may take a moment.</p>
+      <div class="mt-6 w-full max-w-sm space-y-2" aria-hidden="true">
+        <div class="h-2 animate-pulse rounded-full bg-slate-100" />
+        <div class="h-2 w-2/3 animate-pulse rounded-full bg-slate-100" />
+      </div>
+    </div>
+
+    <template v-else>
     <AppPageHeader
       title="Submission Detail"
       :subtitle="submission?.description || (submission?.id ? 'No description provided by the teacher.' : 'Review the teacher submission and the questions created for it.')"
@@ -15,15 +33,7 @@
       <AppBadge :label="assessment?.title || '—'" variant="default" />
     </div>
 
-    <div v-if="store.loading && !submission?.id" class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
-      <div class="h-64 animate-pulse rounded-2xl bg-slate-100" />
-      <div class="space-y-6">
-        <div class="h-48 animate-pulse rounded-2xl bg-slate-100" />
-        <div class="h-64 animate-pulse rounded-2xl bg-slate-100" />
-      </div>
-    </div>
-
-    <div v-else class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
+    <div v-if="submission?.id" class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
       <!-- Questions -->
       <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4 sm:px-6">
@@ -143,13 +153,24 @@
         </section>
       </div>
     </div>
+    <AppEmptyState
+      v-else
+      :icon="FileQuestion"
+      title="Submission not found"
+      description="This paper may have been removed or is no longer available."
+    >
+      <template #actions>
+        <AppButton text="Back to papers" variant="outline" @click="router.push(`/school-admin/assessments/${assessmentId}/submissions`)" />
+      </template>
+    </AppEmptyState>
+    </template>
   </div>
 </template>
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ArrowLeft, CheckCircle2, FileQuestion } from 'lucide-vue-next'
+import { ArrowLeft, CheckCircle2, FileQuestion, LoaderCircle } from 'lucide-vue-next'
 import AppBadge from '../../shared/AppBadge.vue'
 import AppButton from '../../shared/AppButton.vue'
 import AppEmptyState from '../../shared/AppEmptyState.vue'
@@ -168,6 +189,7 @@ const commentText = ref('')
 const commentError = ref('')
 const requesting = ref(false)
 const approving = ref(false)
+const pageLoading = ref(true)
 
 const assessment = computed(() => store.current)
 const submission = computed(() => store.currentSubmission || { questions: [] })
@@ -181,11 +203,16 @@ const comments = computed(() => (Array.isArray(submission.value.comments) ? subm
 const isApproved = computed(() => (submission.value.status || '').toLowerCase() === 'approved')
 
 onMounted(async () => {
-  await Promise.all([
-    store.fetchRefData(),
-    store.fetchAssessment(assessmentId),
-    store.fetchSubmission(submissionId),
-  ])
+  pageLoading.value = true
+  try {
+    await Promise.all([
+      store.fetchRefData(),
+      store.fetchAssessment(assessmentId),
+      store.fetchSubmission(submissionId),
+    ])
+  } finally {
+    pageLoading.value = false
+  }
 })
 
 const teacherName = computed(() => {

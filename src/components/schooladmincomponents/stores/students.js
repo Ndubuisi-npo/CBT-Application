@@ -23,6 +23,7 @@ export const useSchoolAdminStudentsStore = defineStore(
             totalStudents: 0,
             totalArchivedStudents: 0,
             loading: false,
+            importProgress: null,
         }),
 
         getters: {
