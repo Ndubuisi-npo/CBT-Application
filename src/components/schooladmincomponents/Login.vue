@@ -14,31 +14,31 @@
             <img src="/educbt.png" alt="EduCBT Logo" class="h-full w-full object-contain rounded-xl">
           </div>
           <div>
-            <p class="text-sm font-semibold uppercase tracking-[0.26em] text-[#D4AF37]">Admin Portal</p>
+            <p class="text-sm font-semibold uppercase tracking-[0.26em] text-[#D4AF37]">School Portal</p>
             <span class="text-2xl font-semibold tracking-wide">{{ branding.schoolName }}</span>
           </div>
         </div>
 
         <div class="max-w-xl">
           <h1 class="mb-6 text-5xl font-semibold leading-[1.05] tracking-tight xl:text-6xl">
-            Unified Admin Portal
+            Welcome to {{ branding.schoolName }}
           </h1>
 
           <p class="max-w-lg text-lg leading-8 text-white/78 xl:text-xl">
-            Sign in to access your dashboard. Manage academic operations, create exams, and track student progress.
+            Your school’s secure space for learning, assessments, and academic progress.
           </p>
 
           <div class="mt-10 grid max-w-lg gap-4">
             <div class="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/10 px-4 py-4 backdrop-blur-sm">
               <Sparkles class="h-5 w-5 text-[#D4AF37]" />
-              <span class="text-base text-white/88">Unified access for admins and teachers with role-based permissions.</span>
+              <span class="text-base text-white/88">Sign in to access your classes, exams, and school tools.</span>
             </div>
           </div>
         </div>
 
         <div class="flex items-center gap-3 text-sm text-white/60">
           <div class="h-2 w-2 rounded-full bg-emerald-400"></div>
-          Secure role-based access for admins and teachers
+          Secure access for students, teachers, and school administrators
         </div>
       </div>
     </div>
@@ -63,7 +63,11 @@
             </p>
           </div>
 
-          <form class="space-y-6" @submit.prevent="submitLogin">
+          <p v-if="schoolUnavailable" class="mb-6 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-center text-sm font-medium text-rose-600" role="alert">
+            {{ schoolUnavailable }}
+          </p>
+
+          <form v-if="!schoolUnavailable" class="space-y-6" @submit.prevent="submitLogin">
             <div class="space-y-2">
               <label class="block text-base font-semibold text-slate-700" for="school-identifier">Identifier</label>
 
@@ -120,10 +124,6 @@
               </button>
             </div>
 
-            <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-center text-sm leading-6 text-slate-500 sm:text-base">
-              Need access to a new school workspace?
-              <ActionButton tag="RouterLink" to="/onboarding" text="Start onboarding" variant="primary" class="font-semibold text-[#0B1F3A] transition hover:text-[#D4AF37]" />
-            </div>
           </form>
         </div>
 
@@ -144,22 +144,57 @@
 </template>
 
 <script setup>
-import { computed, reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { Eye, EyeOff, Globe, LockKeyhole, Mail, School, Shield, Sparkles } from 'lucide-vue-next'
+import { computed, onMounted, reactive, ref } from 'vue'
+import { Eye, EyeOff, LockKeyhole, Mail, Sparkles } from 'lucide-vue-next'
 import AppButton from '../shared/AppButton.vue'
-import ActionButton from '../shared/ActionButton.vue'
 import ForgotPassword from '../shared/ForgotPassword.vue'
 import { useSchoolAdminUiStore } from './stores/ui'
 import { login as unifiedLogin } from '../../js/lib/auth'
-import { getTenantHandle } from '../../js/lib/api'
+import { apiFetch, getTenantHandle } from '../../js/lib/api'
 
-const router = useRouter()
 const uiStore = useSchoolAdminUiStore()
 
+const FALLBACK_SCHOOL_NAME = 'CBT Application'
+const schoolName = ref(FALLBACK_SCHOOL_NAME)
+const schoolUnavailable = ref('')
+
 const branding = computed(() => ({
-  schoolName: 'CBT Application',
+  schoolName: schoolName.value,
 }))
+
+onMounted(async () => {
+  const handle = getTenantHandle()
+  if (!handle) return
+
+  const cacheKey = `tenantProfile:${handle}`
+  try {
+    const cached = localStorage.getItem(cacheKey)
+    if (cached) {
+      const parsed = JSON.parse(cached)
+      const cachedName = typeof parsed?.name === 'string' ? parsed.name.trim() : ''
+      if (cachedName) applySchoolName(cachedName)
+    }
+  } catch {
+    // Ignore malformed cache entries and fall through to the network call.
+  }
+
+  try {
+    // apiFetch attaches X-Tenant so the API can resolve this school before sign-in.
+    const profile = await apiFetch('/api/tenant', { timeoutMs: 8000 })
+    const name = typeof profile?.name === 'string' ? profile.name.trim() : ''
+    if (name) applySchoolName(name)
+    localStorage.setItem(cacheKey, JSON.stringify(profile || {}))
+  } catch (error) {
+    if (error?.status === 404 || error?.status === 403) {
+      schoolUnavailable.value = error.message || 'This school workspace is not available.'
+    }
+  }
+})
+
+function applySchoolName(name) {
+  schoolName.value = name
+  document.title = `${name} | Sign in`
+}
 
 const form = reactive({
   identifier: '',

@@ -81,14 +81,17 @@
 </template>
 
 <script setup>
-import { reactive } from 'vue'
+import { onUnmounted, reactive } from 'vue'
 import { useRouter } from 'vue-router'
+import { subscribeToImportProgress } from '../services/api/importStream'
+import { getImportProgressCount } from '../services/api/importProgress'
 import { AlertCircle, ArrowLeft } from 'lucide-vue-next'
 import AppButton from '../../shared/AppButton.vue'
 import FileDropzone from '../components/StudentImport/FileDropzone.vue'
 import ImportPreviewModal from '../components/StudentImport/ImportPreviewModal.vue'
 import ImportResultBanner from '../components/StudentImport/ImportResultBanner.vue'
 import { getImportError } from '../components/StudentImport/importError.js'
+import { parseCsvPreview } from '../components/StudentImport/parseCsvPreview.js'
 import { getImportTemplate, importStudents } from '../services/api/students'
 import { useSchoolAdminStudentsStore } from '../stores/students'
 
@@ -101,6 +104,8 @@ const studentDuplicateColumns = [
 ]
 const studentPreviewColumns = ['row', 'first_name', 'last_name', 'email', 'admission_number', 'class', 'class_arm']
 
+let unsubscribeFromProgress = null
+
 const state = reactive({
   page: 'idle', // idle | file_selected | previewing | confirming | done | error
   file: null,
@@ -112,7 +117,12 @@ const state = reactive({
   conflictErrors: [],
 })
 
+onUnmounted(() => unsubscribeFromProgress?.())
+
 function reset() {
+  unsubscribeFromProgress?.()
+  unsubscribeFromProgress = null
+
   Object.assign(state, {
     page: 'idle',
     file: null,
@@ -137,6 +147,19 @@ async function handleFileSelected(file) {
 
     if (response.ok) {
       state.dryRunResult = response.body?.data ?? response.body
+      const hasPreviewRows = [
+        state.dryRunResult?.rows,
+        state.dryRunResult?.preview_rows,
+        state.dryRunResult?.students,
+        state.dryRunResult?.teachers,
+        state.dryRunResult?.valid_rows,
+      ].some((rows) => Array.isArray(rows) && rows.length > 0)
+      if (!hasPreviewRows) {
+        state.dryRunResult = {
+          ...(state.dryRunResult && !Array.isArray(state.dryRunResult) ? state.dryRunResult : {}),
+          rows: await parseCsvPreview(file),
+        }
+      }
       state.conflictErrors = []
       state.errorMessage = null
       state.page = 'previewing'
@@ -166,7 +189,6 @@ async function handleConfirmImport(policy) {
   studentsStore.importProgress = null
 
   try {
-    await studentsStore.fetchStudents()
     const startingStudentCount = studentsStore.totalStudents
     const response = await importStudents(state.file, { dryRun: false, overwriteExisting: policy })
 
@@ -188,9 +210,36 @@ async function handleConfirmImport(policy) {
         studentsStore.importProgress = {
           startingCount: startingStudentCount,
           total: expectedCount,
+          processed: 0,
+          jobId: state.importResult?.import_job_id,
         }
       }
       state.page = 'done'
+
+      unsubscribeFromProgress?.()
+      unsubscribeFromProgress = subscribeToImportProgress(state.importResult?.import_job_id, {
+        onUpdate: (payload) => {
+          if (studentsStore.importProgress) {
+            const processed = getImportProgressCount(payload)
+            const total = Number(payload?.total_rows)
+            studentsStore.importProgress = {
+              ...studentsStore.importProgress,
+              ...(Number.isSafeInteger(total) && total > 0 ? { total } : {}),
+              ...(processed !== null
+                ? { processed: Math.max(studentsStore.importProgress.processed || 0, processed) }
+                : {}),
+            }
+          }
+        },
+        onDone: (payload) => {
+          unsubscribeFromProgress = null
+          studentsStore.importProgress = null
+          state.importResult = payload
+        },
+        onError: () => {
+          unsubscribeFromProgress = null
+        },
+      })
     } else {
       const importError = getImportError(response.body, 'Unable to import students.')
       state.errorMessage = importError.message

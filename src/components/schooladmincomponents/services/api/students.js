@@ -94,7 +94,7 @@ export async function importStudents(file, { dryRun = true, overwriteExisting = 
     formData.append('dry_run', dryRun ? 'true' : 'false')
 
     if (overwriteExisting !== null) {
-      const overwriteValue = overwriteExisting === 'update' || overwriteExisting === true ? 'true' : 'false'
+      const overwriteValue = overwriteExisting === 'update' || overwriteExisting === true ? 'update' : 'skip'
       formData.append('overwrite_existing', overwriteValue)
     }
 

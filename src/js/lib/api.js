@@ -239,6 +239,10 @@ export async function unauthenticatedFetch(path, options = {}) {
     ...(options.headers || {}),
   }
 
+  if (tenantHandle) {
+    headers['X-Tenant'] = tenantHandle
+  }
+
   const isFormData = options.body instanceof FormData
   if (!isFormData) {
     headers['Content-Type'] = headers['Content-Type'] || 'application/json'

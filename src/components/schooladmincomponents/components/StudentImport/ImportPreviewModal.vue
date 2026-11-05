@@ -60,9 +60,9 @@
           </p>
         </div>
 
-        <div v-if="previewRows.length > 0" class="overflow-x-auto rounded-2xl border border-slate-200">
+        <div v-if="previewRows.length > 0" class="max-h-[50vh] overflow-auto rounded-2xl border border-slate-200">
           <table class="min-w-full divide-y divide-slate-200 bg-white">
-            <thead class="bg-slate-50">
+            <thead class="sticky top-0 z-10 bg-slate-50">
               <tr>
                 <th
                   v-for="column in previewColumns"
@@ -251,15 +251,15 @@ const duplicateRows = computed(() => {
 })
 
 const previewRows = computed(() => {
-  const rows =
-    props.dryRunResult?.rows ??
-    props.dryRunResult?.preview_rows ??
-    props.dryRunResult?.students ??
-    props.dryRunResult?.teachers ??
-    props.dryRunResult?.valid_rows ??
-    []
+  const rows = [
+    props.dryRunResult?.rows,
+    props.dryRunResult?.preview_rows,
+    props.dryRunResult?.students,
+    props.dryRunResult?.teachers,
+    props.dryRunResult?.valid_rows,
+  ].find((candidate) => Array.isArray(candidate) && candidate.length > 0)
 
-  return Array.isArray(rows) ? rows.slice(0, 10) : []
+  return rows || []
 })
 
 const previewColumns = computed(() => {

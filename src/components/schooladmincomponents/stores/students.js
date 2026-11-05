@@ -14,6 +14,12 @@ import {
 import { useActivities } from "../composables/useActivities";
 import { useSchoolAdminUiStore } from "./ui";
 
+const newestStudentsFirst = (students) => [...students].sort((a, b) => {
+    const aCreatedAt = Date.parse(a.created_at || a.createdAt || "") || 0;
+    const bCreatedAt = Date.parse(b.created_at || b.createdAt || "") || 0;
+    return bCreatedAt - aCreatedAt;
+});
+
 export const useSchoolAdminStudentsStore = defineStore(
     "school-admin-students",
     {
@@ -51,10 +57,10 @@ export const useSchoolAdminStudentsStore = defineStore(
 
                     // Support either an array response (legacy/simple) or an object with `data` and `total`
                     if (Array.isArray(response)) {
-                        this.students = response || [];
+                        this.students = newestStudentsFirst(response);
                         this.totalStudents = response.length || 0;
                     } else if (response && response.data) {
-                        this.students = response.data || [];
+                        this.students = newestStudentsFirst(response.data);
                         // prefer explicit total, fall back to data length if total is not provided
                         this.totalStudents =
                             response.total ??

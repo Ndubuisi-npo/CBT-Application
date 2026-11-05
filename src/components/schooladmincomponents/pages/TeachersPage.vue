@@ -31,14 +31,23 @@
         <span class="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-blue-200 border-t-blue-700" aria-hidden="true" />
         <div class="min-w-0 flex-1">
           <p class="font-medium">
-            Importing {{ importedTeacherCount }} out of {{ teachersStore.importProgress.total }} teachers
+            <template v-if="importedTeacherCount > 0">
+              Importing {{ importedTeacherCount }} out of {{ teachersStore.importProgress.total }} teachers
+            </template>
+            <template v-else>Import in progress</template>
           </p>
           <p v-if="importProgressError" class="mt-1 text-xs text-rose-700">{{ importProgressError }}</p>
         </div>
         <div class="hidden h-2 w-32 overflow-hidden rounded-full bg-blue-100 sm:block">
           <div
+            v-if="importedTeacherCount > 0"
             class="h-full rounded-full bg-blue-600 transition-[width]"
             :style="{ width: `${teacherImportProgressPercent}%` }"
+          />
+          <div
+            v-else
+            class="h-full w-1/3 rounded-full bg-blue-600 animate-import-progress"
+            aria-hidden="true"
           />
         </div>
       </div>
@@ -298,6 +307,8 @@ import ResponsiveTableActions from '../../shared/ResponsiveTableActions.vue'
 import ResponsiveDataCard from '../../shared/ResponsiveDataCard.vue'
 import SkeletonRows from '../components/SkeletonRows.vue'
 import TeacherFormDrawer from '../components/TeacherFormDrawer.vue'
+import { subscribeToImportProgress } from '../services/api/importStream'
+import { getImportProgressCount } from '../services/api/importProgress'
 import { useSchoolAdminTeachersStore } from '../stores/teachers'
 import { useSchoolAdminUiStore } from '../stores/ui'
 import { useNotificationStore } from '../../shared/stores/notifications'
@@ -330,15 +341,46 @@ const archivedTeachersPage = ref(1)
 const importProgressError = ref('')
 let importProgressPollId = null
 let importProgressPollPending = false
+let unsubscribeFromImportProgress = null
 const importedTeacherCount = computed(() => {
   const progress = teachersStore.importProgress
   if (!progress) return 0
-  return Math.min(progress.total, Math.max(0, teachersStore.totalTeachers - progress.startingCount))
+  const listCount = Math.max(0, teachersStore.totalTeachers - progress.startingCount)
+  return Math.min(progress.total, Math.max(progress.processed || 0, listCount))
 })
 const teacherImportProgressPercent = computed(() => {
   const total = teachersStore.importProgress?.total ?? 0
   return total ? (importedTeacherCount.value / total) * 100 : 0
 })
+const followTeacherImportProgress = () => {
+  const jobId = teachersStore.importProgress?.jobId
+  if (!jobId) return
+
+  unsubscribeFromImportProgress?.()
+  unsubscribeFromImportProgress = subscribeToImportProgress(jobId, {
+    onUpdate: (payload) => {
+      const progress = teachersStore.importProgress
+      if (!progress) return
+
+      const processed = getImportProgressCount(payload)
+      const total = Number(payload?.total_rows)
+      teachersStore.importProgress = {
+        ...progress,
+        ...(Number.isSafeInteger(total) && total > 0 ? { total } : {}),
+        ...(processed !== null ? { processed: Math.max(progress.processed || 0, processed) } : {}),
+      }
+    },
+    onDone: () => {
+      teachersStore.importProgress = null
+      unsubscribeFromImportProgress = null
+      if (importProgressPollId !== null) window.clearInterval(importProgressPollId)
+      importProgressPollId = null
+    },
+    onError: (error) => {
+      importProgressError.value = `Unable to follow import progress: ${error.message}`
+    },
+  })
+}
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 const initials = (t) => `${t.first_name?.[0] || ''}${t.last_name?.[0] || ''}`.toUpperCase() || '?'
@@ -551,6 +593,7 @@ const refreshTeacherImportProgress = async () => {
 
 onMounted(() => {
   if (teachersStore.importProgress) {
+    followTeacherImportProgress()
     void refreshTeacherImportProgress()
     importProgressPollId = window.setInterval(refreshTeacherImportProgress, 2000)
   } else {
@@ -560,5 +603,17 @@ onMounted(() => {
 
 onUnmounted(() => {
   if (importProgressPollId !== null) window.clearInterval(importProgressPollId)
+  unsubscribeFromImportProgress?.()
 })
 </script>
+
+<style scoped>
+@keyframes import-progress {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(300%); }
+}
+
+.animate-import-progress {
+  animation: import-progress 1.5s ease-in-out infinite;
+}
+</style>
