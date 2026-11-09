@@ -24,3 +24,27 @@ export function getImportProgressCount(payload) {
 
   return count === undefined ? null : Math.max(0, Number(count))
 }
+
+export function createRafBatcher(callback) {
+  let frameId = null
+  let latestValue
+
+  return {
+    schedule(value) {
+      latestValue = value
+      if (frameId !== null) return
+
+      frameId = requestAnimationFrame(() => {
+        frameId = null
+        const valueToProcess = latestValue
+        latestValue = undefined
+        callback(valueToProcess)
+      })
+    },
+    cancel() {
+      if (frameId !== null) cancelAnimationFrame(frameId)
+      frameId = null
+      latestValue = undefined
+    },
+  }
+}

@@ -308,11 +308,11 @@ import ResponsiveDataCard from '../../shared/ResponsiveDataCard.vue'
 import SkeletonRows from '../components/SkeletonRows.vue'
 import TeacherFormDrawer from '../components/TeacherFormDrawer.vue'
 import { subscribeToImportProgress } from '../services/api/importStream'
-import { getImportProgressCount } from '../services/api/importProgress'
+import { createRafBatcher, getImportProgressCount } from '../services/api/importProgress'
 import { useSchoolAdminTeachersStore } from '../stores/teachers'
 import { useSchoolAdminUiStore } from '../stores/ui'
 import { useNotificationStore } from '../../shared/stores/notifications'
-import { isNameTakenError } from '../../../js/lib/api'
+import { getAccountDeletionErrorMessage, isNameTakenError } from '../../../js/lib/api'
 
 const router = useRouter()
 const teachersStore = useSchoolAdminTeachersStore()
@@ -342,6 +342,18 @@ const importProgressError = ref('')
 let importProgressPollId = null
 let importProgressPollPending = false
 let unsubscribeFromImportProgress = null
+const importProgressBatcher = createRafBatcher((payload) => {
+  const progress = teachersStore.importProgress
+  if (!progress) return
+
+  const processed = getImportProgressCount(payload)
+  const total = Number(payload?.total_rows)
+  teachersStore.importProgress = {
+    ...progress,
+    ...(Number.isSafeInteger(total) && total > 0 ? { total } : {}),
+    ...(processed !== null ? { processed: Math.max(progress.processed || 0, processed) } : {}),
+  }
+})
 const importedTeacherCount = computed(() => {
   const progress = teachersStore.importProgress
   if (!progress) return 0
@@ -358,25 +370,16 @@ const followTeacherImportProgress = () => {
 
   unsubscribeFromImportProgress?.()
   unsubscribeFromImportProgress = subscribeToImportProgress(jobId, {
-    onUpdate: (payload) => {
-      const progress = teachersStore.importProgress
-      if (!progress) return
-
-      const processed = getImportProgressCount(payload)
-      const total = Number(payload?.total_rows)
-      teachersStore.importProgress = {
-        ...progress,
-        ...(Number.isSafeInteger(total) && total > 0 ? { total } : {}),
-        ...(processed !== null ? { processed: Math.max(progress.processed || 0, processed) } : {}),
-      }
-    },
+    onUpdate: importProgressBatcher.schedule,
     onDone: () => {
+      importProgressBatcher.cancel()
       teachersStore.importProgress = null
       unsubscribeFromImportProgress = null
       if (importProgressPollId !== null) window.clearInterval(importProgressPollId)
       importProgressPollId = null
     },
     onError: (error) => {
+      importProgressBatcher.cancel()
       importProgressError.value = `Unable to follow import progress: ${error.message}`
     },
   })
@@ -549,9 +552,18 @@ const restoreSelectedArchivedTeachers = async () => {
 
 const deleteArchivedTeacher = async (id) => {
   if (!confirm('Permanently delete this teacher? Cannot be undone.')) return
+  const teacher = [...teachersStore.archivedTeachers, ...teachersStore.teachers]
+    .find((item) => String(item.id) === String(id))
+  const teacherName = teacherFullName(teacher || {})
   deleteLoading.value = new Set([...deleteLoading.value, id])
   try { await teachersStore.deleteTeacherFromStore(id); uiStore.addToast({ title: 'Teacher deleted', message: 'Permanently deleted.', variant: 'success' }) }
-  catch (e) { uiStore.addToast({ title: 'Error', message: e.message || 'Failed.', variant: 'error' }) }
+  catch (e) {
+    uiStore.addToast({
+      title: 'Error',
+      message: getAccountDeletionErrorMessage(e, 'teacher', teacherName, 'Failed to delete teacher.'),
+      variant: 'error',
+    })
+  }
   finally { deleteLoading.value = new Set([...deleteLoading.value].filter((x) => x !== id)) }
 }
 
@@ -559,8 +571,27 @@ const deleteSelectedArchivedTeachers = async () => {
   const ids = Array.from(selectedArchivedTeachers.value)
   if (!confirm(`Permanently delete ${ids.length} teacher(s)? Cannot be undone.`)) return
   isDeletingArchivedSelected.value = true
-  try { for (const id of ids) await teachersStore.deleteTeacherFromStore(id); cancelArchivedSelectMode(); uiStore.addToast({ title: 'Deleted', message: `${ids.length} teacher(s) permanently deleted.`, variant: 'success' }) }
-  catch (e) { uiStore.addToast({ title: 'Error', message: e.message || 'Failed.', variant: 'error' }) }
+  let failedTeacher = null
+  try {
+    for (const id of ids) {
+      failedTeacher = [...teachersStore.archivedTeachers, ...teachersStore.teachers]
+        .find((item) => String(item.id) === String(id))
+      await teachersStore.deleteTeacherFromStore(id)
+    }
+    cancelArchivedSelectMode()
+    uiStore.addToast({ title: 'Deleted', message: `${ids.length} teacher(s) permanently deleted.`, variant: 'success' })
+  } catch (e) {
+    uiStore.addToast({
+      title: 'Error',
+      message: getAccountDeletionErrorMessage(
+        e,
+        'teacher',
+        failedTeacher ? teacherFullName(failedTeacher) : '',
+        'Failed to delete selected teachers.',
+      ),
+      variant: 'error',
+    })
+  }
   finally { isDeletingArchivedSelected.value = false }
 }
 
@@ -604,6 +635,7 @@ onMounted(() => {
 onUnmounted(() => {
   if (importProgressPollId !== null) window.clearInterval(importProgressPollId)
   unsubscribeFromImportProgress?.()
+  importProgressBatcher.cancel()
 })
 </script>
 

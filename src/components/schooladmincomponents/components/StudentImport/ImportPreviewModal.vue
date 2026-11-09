@@ -60,7 +60,12 @@
           </p>
         </div>
 
-        <div v-if="previewRows.length > 0" class="max-h-[50vh] overflow-auto rounded-2xl border border-slate-200">
+        <div
+          v-if="previewRows.length > 0"
+          ref="previewViewport"
+          class="max-h-[50vh] overflow-auto rounded-2xl border border-slate-200"
+          @scroll="updatePreviewViewport"
+        >
           <table class="min-w-full divide-y divide-slate-200 bg-white">
             <thead class="sticky top-0 z-10 bg-slate-50">
               <tr>
@@ -74,10 +79,20 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
-              <tr v-for="(row, idx) in previewRows" :key="idx" class="hover:bg-slate-50">
-                <td v-for="column in previewColumns" :key="column" class="px-4 py-3 text-sm text-slate-600">
+              <tr v-if="topSpacerHeight > 0" aria-hidden="true">
+                <td :colspan="previewColumns.length" :style="{ height: `${topSpacerHeight}px`, padding: 0, border: 0 }" />
+              </tr>
+              <tr v-for="(row, idx) in visiblePreviewRows" :key="previewStartIndex + idx" class="h-11 hover:bg-slate-50">
+                <td
+                  v-for="column in previewColumns"
+                  :key="column"
+                  class="h-11 max-w-[16rem] truncate whitespace-nowrap px-4 py-0 text-sm text-slate-600"
+                >
                   {{ formatCell(row[column]) }}
                 </td>
+              </tr>
+              <tr v-if="bottomSpacerHeight > 0" aria-hidden="true">
+                <td :colspan="previewColumns.length" :style="{ height: `${bottomSpacerHeight}px`, padding: 0, border: 0 }" />
               </tr>
             </tbody>
           </table>
@@ -199,7 +214,7 @@
 </template>
 
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { X } from 'lucide-vue-next'
 import DuplicateResolution from './DuplicateResolution.vue'
 
@@ -235,11 +250,21 @@ const props = defineProps({
     type: Array,
     default: () => ['row', 'first_name', 'last_name', 'email', 'admission_number', 'class', 'class_arm'],
   },
+  parsedPreviewRows: {
+    type: Array,
+    default: null,
+  },
 })
 
 const emit = defineEmits(['confirm', 'cancel', 'policy-changed'])
 
 const selectedPolicy = ref(null)
+const previewViewport = ref(null)
+const previewScrollTop = ref(0)
+const previewViewportHeight = ref(500)
+const previewRowHeight = 44
+const previewHeaderHeight = 40
+const previewOverscan = 8
 
 const normalizedConflictErrors = computed(() => {
   return Array.isArray(props.conflictErrors) ? props.conflictErrors : []
@@ -251,6 +276,8 @@ const duplicateRows = computed(() => {
 })
 
 const previewRows = computed(() => {
+  if (props.parsedPreviewRows) return props.parsedPreviewRows
+
   const rows = [
     props.dryRunResult?.rows,
     props.dryRunResult?.preview_rows,
@@ -263,13 +290,28 @@ const previewRows = computed(() => {
 })
 
 const previewColumns = computed(() => {
-  const availableColumns = new Set(previewRows.value.flatMap((row) => Object.keys(row ?? {})))
+  const availableColumns = new Set(previewRows.value.slice(0, 20).flatMap((row) => Object.keys(row ?? {})))
   const orderedColumns = props.preferredColumns.filter((column) => availableColumns.has(column))
 
   if (orderedColumns.length > 0) return orderedColumns
 
   return Array.from(availableColumns).slice(0, 7)
 })
+
+const previewStartIndex = computed(() => Math.max(
+  0,
+  Math.floor(Math.max(0, previewScrollTop.value - previewHeaderHeight) / previewRowHeight) - previewOverscan,
+))
+const previewEndIndex = computed(() => Math.min(
+  previewRows.value.length,
+  Math.ceil((previewScrollTop.value + previewViewportHeight.value) / previewRowHeight) + previewOverscan,
+))
+const visiblePreviewRows = computed(() => previewRows.value.slice(previewStartIndex.value, previewEndIndex.value))
+const topSpacerHeight = computed(() => previewStartIndex.value * previewRowHeight)
+const bottomSpacerHeight = computed(() => Math.max(
+  0,
+  (previewRows.value.length - previewEndIndex.value) * previewRowHeight,
+))
 
 const totalRows = computed(() => {
   return (
@@ -281,6 +323,14 @@ const totalRows = computed(() => {
     previewRows.value.length
   )
 })
+
+function updatePreviewViewport() {
+  if (!previewViewport.value) return
+  previewScrollTop.value = previewViewport.value.scrollTop
+  previewViewportHeight.value = previewViewport.value.clientHeight
+}
+
+onMounted(updatePreviewViewport)
 
 function firstErrorField(error) {
   return Object.keys(error?.errors ?? {})[0] || error?.field || 'unknown'

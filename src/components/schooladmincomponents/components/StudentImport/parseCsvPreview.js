@@ -1,48 +1,61 @@
-export async function parseCsvPreview(file, limit = Infinity) {
-  const text = (await file.text()).replace(/^\uFEFF/, '')
-  const rows = []
-  let row = []
-  let cell = ''
-  let inQuotes = false
+export function parseCsvPreview(file, { onBatch, batchSize = 500, columns = [] } = {}) {
+  const worker = new Worker(new URL('./csvPreview.worker.js', import.meta.url), { type: 'module' })
+  let resolve
+  let reject
+  let settled = false
 
-  for (let index = 0; index < text.length; index += 1) {
-    const character = text[index]
+  const promise = new Promise((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise
+    reject = rejectPromise
+  })
 
-    if (inQuotes) {
-      if (character === '"' && text[index + 1] === '"') {
-        cell += '"'
-        index += 1
-      } else if (character === '"') {
-        inQuotes = false
-      } else {
-        cell += character
+  const settleError = (error) => {
+    if (settled) return
+    settled = true
+    cleanup()
+    reject(error)
+  }
+
+  const cleanup = () => {
+    worker.terminate()
+    worker.onmessage = null
+    worker.onerror = null
+  }
+
+  worker.onmessage = ({ data }) => {
+    if (data.type === 'batch') {
+      try {
+        onBatch?.(data.rows)
+        worker.postMessage({ type: 'ack' })
+      } catch (error) {
+        settleError(error)
       }
-    } else if (character === '"' && cell.length === 0) {
-      inQuotes = true
-    } else if (character === ',') {
-      row.push(cell)
-      cell = ''
-    } else if (character === '\n' || character === '\r') {
-      row.push(cell)
-      if (row.some((value) => value.trim())) rows.push(row)
-      row = []
-      cell = ''
-      if (character === '\r' && text[index + 1] === '\n') index += 1
-    } else {
-      cell += character
+    } else if (data.type === 'done') {
+      settled = true
+      cleanup()
+      resolve(data.totalRows)
+    } else if (data.type === 'error') {
+      settleError(new Error(data.message))
     }
   }
 
-  row.push(cell)
-  if (row.some((value) => value.trim())) rows.push(row)
+  worker.onerror = (event) => {
+    settleError(new Error(event.message || 'Unable to parse the uploaded CSV file.'))
+  }
 
-  const [headerRow, ...dataRows] = rows
-  if (!headerRow?.length) return []
+  try {
+    worker.postMessage({ type: 'parse', file, batchSize, columns })
+  } catch (error) {
+    settleError(error)
+  }
 
-  const headers = headerRow.map((header) => header.trim().toLowerCase().replace(/[\s-]+/g, '_'))
-  return dataRows.slice(0, limit).map((values, index) => {
-    const record = Object.fromEntries(headers.map((header, columnIndex) => [header, values[columnIndex] ?? '']))
-    if (!Object.prototype.hasOwnProperty.call(record, 'row')) record.row = index + 2
-    return record
-  })
+  return {
+    promise,
+    cancel() {
+      if (settled) return
+      settled = true
+      cleanup()
+      reject(new DOMException('CSV preview parsing was cancelled.', 'AbortError'))
+    },
+  }
 }

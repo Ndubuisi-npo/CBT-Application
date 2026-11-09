@@ -32,6 +32,7 @@
       entity-label="student"
       :duplicate-columns="studentDuplicateColumns"
       :preferred-columns="studentPreviewColumns"
+      :parsed-preview-rows="parsedPreviewRows"
       @confirm="handleConfirmImport"
       @cancel="reset"
       @policy-changed="(policy) => (state.overwritePolicy = policy)"
@@ -81,10 +82,10 @@
 </template>
 
 <script setup>
-import { onUnmounted, reactive } from 'vue'
+import { onUnmounted, reactive, shallowRef } from 'vue'
 import { useRouter } from 'vue-router'
 import { subscribeToImportProgress } from '../services/api/importStream'
-import { getImportProgressCount } from '../services/api/importProgress'
+import { createRafBatcher, getImportProgressCount } from '../services/api/importProgress'
 import { AlertCircle, ArrowLeft } from 'lucide-vue-next'
 import AppButton from '../../shared/AppButton.vue'
 import FileDropzone from '../components/StudentImport/FileDropzone.vue'
@@ -105,6 +106,20 @@ const studentDuplicateColumns = [
 const studentPreviewColumns = ['row', 'first_name', 'last_name', 'email', 'admission_number', 'class', 'class_arm']
 
 let unsubscribeFromProgress = null
+let activePreviewParser = null
+const parsedPreviewRows = shallowRef([])
+const importProgressBatcher = createRafBatcher((payload) => {
+  if (!studentsStore.importProgress) return
+  const processed = getImportProgressCount(payload)
+  const total = Number(payload?.total_rows)
+  studentsStore.importProgress = {
+    ...studentsStore.importProgress,
+    ...(Number.isSafeInteger(total) && total > 0 ? { total } : {}),
+    ...(processed !== null
+      ? { processed: Math.max(studentsStore.importProgress.processed || 0, processed) }
+      : {}),
+  }
+})
 
 const state = reactive({
   page: 'idle', // idle | file_selected | previewing | confirming | done | error
@@ -117,11 +132,18 @@ const state = reactive({
   conflictErrors: [],
 })
 
-onUnmounted(() => unsubscribeFromProgress?.())
+onUnmounted(() => {
+  unsubscribeFromProgress?.()
+  activePreviewParser?.cancel()
+  importProgressBatcher.cancel()
+})
 
 function reset() {
   unsubscribeFromProgress?.()
   unsubscribeFromProgress = null
+  activePreviewParser?.cancel()
+  activePreviewParser = null
+  parsedPreviewRows.value = []
 
   Object.assign(state, {
     page: 'idle',
@@ -136,6 +158,9 @@ function reset() {
 }
 
 async function handleFileSelected(file) {
+  activePreviewParser?.cancel()
+  activePreviewParser = null
+  parsedPreviewRows.value = []
   state.file = file
   state.page = 'file_selected'
   state.conflictErrors = []
@@ -146,19 +171,29 @@ async function handleFileSelected(file) {
     const response = await importStudents(file, { dryRun: true })
 
     if (response.ok) {
-      state.dryRunResult = response.body?.data ?? response.body
-      const hasPreviewRows = [
-        state.dryRunResult?.rows,
-        state.dryRunResult?.preview_rows,
-        state.dryRunResult?.students,
-        state.dryRunResult?.teachers,
-        state.dryRunResult?.valid_rows,
-      ].some((rows) => Array.isArray(rows) && rows.length > 0)
-      if (!hasPreviewRows) {
-        state.dryRunResult = {
-          ...(state.dryRunResult && !Array.isArray(state.dryRunResult) ? state.dryRunResult : {}),
-          rows: await parseCsvPreview(file),
-        }
+      const result = response.body?.data ?? response.body
+      const previewFields = ['rows', 'preview_rows', 'students', 'teachers', 'valid_rows']
+      const resultRows = previewFields
+        .map((field) => result?.[field])
+        .find((rows) => Array.isArray(rows) && rows.length > 0)
+      const expectedRowCount = Number(
+        result?.total_rows ?? result?.total ?? result?.valid_count ?? result?.students_count,
+      )
+      state.dryRunResult = Array.isArray(result)
+        ? {}
+        : Object.fromEntries(Object.entries(result ?? {}).filter(([key]) => !previewFields.includes(key)))
+
+      if (resultRows && (!Number.isSafeInteger(expectedRowCount) || expectedRowCount <= resultRows.length)) {
+        parsedPreviewRows.value = resultRows
+      } else {
+        activePreviewParser = parseCsvPreview(file, {
+          columns: studentPreviewColumns,
+          onBatch: (batch) => {
+            parsedPreviewRows.value.push(...batch)
+          },
+        })
+        await activePreviewParser.promise
+        activePreviewParser = null
       }
       state.conflictErrors = []
       state.errorMessage = null
@@ -176,6 +211,7 @@ async function handleFileSelected(file) {
       state.page = 'error'
     }
   } catch (err) {
+    if (err?.name === 'AbortError') return
     const uploadError = getImportError(err, 'Unable to validate the uploaded student file. Please try again.')
     state.errorMessage = uploadError.message
     state.errorDetails = uploadError.details
@@ -202,8 +238,7 @@ async function handleConfirmImport(policy) {
             ?? state.dryRunResult?.total
             ?? state.dryRunResult?.valid_count
             ?? state.dryRunResult?.students_count
-            ?? state.dryRunResult?.rows?.length
-            ?? state.dryRunResult?.preview_rows?.length
+            ?? parsedPreviewRows.value.length
             ?? 0
       )
       if (Number.isSafeInteger(expectedCount) && expectedCount > 0) {
@@ -218,25 +253,15 @@ async function handleConfirmImport(policy) {
 
       unsubscribeFromProgress?.()
       unsubscribeFromProgress = subscribeToImportProgress(state.importResult?.import_job_id, {
-        onUpdate: (payload) => {
-          if (studentsStore.importProgress) {
-            const processed = getImportProgressCount(payload)
-            const total = Number(payload?.total_rows)
-            studentsStore.importProgress = {
-              ...studentsStore.importProgress,
-              ...(Number.isSafeInteger(total) && total > 0 ? { total } : {}),
-              ...(processed !== null
-                ? { processed: Math.max(studentsStore.importProgress.processed || 0, processed) }
-                : {}),
-            }
-          }
-        },
+        onUpdate: importProgressBatcher.schedule,
         onDone: (payload) => {
+          importProgressBatcher.cancel()
           unsubscribeFromProgress = null
           studentsStore.importProgress = null
           state.importResult = payload
         },
         onError: () => {
+          importProgressBatcher.cancel()
           unsubscribeFromProgress = null
         },
       })

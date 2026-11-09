@@ -284,20 +284,37 @@ export async function unauthenticatedFetch(path, options = {}) {
   return data?.data ?? data
 }
 
+function normalizeErrorMessage(message) {
+  if (
+    /SQLSTATE\[23001\]/i.test(message) &&
+    /RESTRICT/i.test(message) &&
+    /table\s+"users"/i.test(message) &&
+    (/\bquestions_created_by_foreign\b/i.test(message) || /table\s+"questions"/i.test(message))
+  ) {
+    return 'This account cannot be deleted because it is linked to existing questions. Reassign or remove those questions first.'
+  }
+
+  return message
+}
+
 export function extractErrorMessage(error, fallback = 'Something went wrong.') {
-  if (typeof error?.message === 'string' && error.message.trim()) {
-    return error.message
+  const message = [
+    error?.message,
+    error?.data?.message,
+    typeof error === 'string' ? error : null,
+  ].find((value) => typeof value === 'string' && value.trim())
+
+  return message ? normalizeErrorMessage(message) : fallback
+}
+
+export function getAccountDeletionErrorMessage(error, entityLabel, accountName, fallback = 'Unable to delete this account.') {
+  const message = extractErrorMessage(error, fallback)
+  if (!message.startsWith('This account cannot be deleted because it is linked to existing questions.')) {
+    return message
   }
 
-  if (typeof error?.data?.message === 'string' && error.data.message.trim()) {
-    return error.data.message
-  }
-
-  if (typeof error === 'string' && error.trim()) {
-    return error
-  }
-
-  return fallback
+  const account = accountName ? `${entityLabel} "${accountName}"` : `this ${entityLabel}`
+  return `Could not delete ${account} because the account is linked to existing questions. Reassign or remove those questions first.`
 }
 
 export function isNameTakenError(error) {
